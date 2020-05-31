@@ -10,7 +10,7 @@ capabilities.
 - [Puzzle](#puzzle)
     - [Features](#puzzle-features)
         - [Cell numbering](#cell-numbering)
-        - [Load and to_json](#load-and-load)
+        - [Save and restore](#load-and-save)
         - [Export](#export)
 - [Clue](#clues)
 - [Wordlist](#wordlist)
