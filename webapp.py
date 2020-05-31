@@ -20,7 +20,7 @@ config = Configuration()
 
 
 #   ============================================================
-#   Method handlers
+#   Screen handlers
 #   ============================================================
 @app.route('/')
 def main_screen():
@@ -35,6 +35,9 @@ def main_screen():
                            enabled=enabled)
 
 
+#   ============================================================
+#   Menu option handlers
+#   ============================================================
 @app.route('/new-grid', methods=['POST'])
 def new_grid_screen():
     # Get the grid size from the form
@@ -68,22 +71,6 @@ def new_grid_screen():
                            gridname=gridname,
                            boxsize=boxsize,
                            svgstr=svgstr)
-
-
-@app.route('/grids')
-def grids():
-    # Make a list of all the saved grids
-    gridlist = []
-    rootdir = config.get_grids_root()
-    for filename in os.listdir(rootdir):
-        if filename.endswith(".json"):
-            basename = os.path.splitext(filename)[0]
-            gridlist.append(basename)
-
-    # Send this back to the client in JSON
-    resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
 
 
 @app.route('/open-grid')
@@ -126,32 +113,6 @@ def open_grid_screen():
     pass
 
 
-@app.route('/grid-click', methods=['GET'])
-def  grid_click():
-    # Get the row and column clicked from the query parms
-    r = int(request.args.get('r'))
-    c = int(request.args.get('c'))
-
-    # Get the existing grid from the session
-    jsonstr = session['grid']
-    grid = Grid.from_json(jsonstr)
-
-    # Toggle the black cell status
-    if grid.is_black_cell(r, c):
-        grid.remove_black_cell(r, c)
-    else:
-        grid.add_black_cell(r, c)
-
-    # Save the updated grid in the session
-    session['grid'] = grid.to_json()
-
-    # Send the new SVG data to the client
-    svg = GridToSVG(grid)
-    svgstr = svg.generate_xml()
-    response = make_response(svgstr, HTTPStatus.OK)
-    return response
-
-
 @app.route('/grid-save', methods=['GET'])
 def grid_save():
     gridname = session['gridname']
@@ -190,22 +151,6 @@ def new_puzzle_screen():
     return redirect(url_for('puzzle_screen'))
 
     pass
-
-
-@app.route('/puzzles')
-def puzzles():
-    # Make a list of all the saved puzzles
-    puzzlelist = []
-    rootdir = config.get_puzzles_root()
-    for filename in os.listdir(rootdir):
-        if filename.endswith(".json"):
-            basename = os.path.splitext(filename)[0]
-            puzzlelist.append(basename)
-
-    # Send this back to the client in JSON
-    resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
 
 
 @app.route('/open-puzzle')
@@ -487,6 +432,68 @@ def puzzle_click(direction):
     resp.headers['Content-Type'] = "application/json"
 
     return resp
+
+
+#   ============================================================
+#   REST api - functions that just return JSON
+#   ============================================================
+
+@app.route('/grids')
+def grids():
+    # Make a list of all the saved grids
+    gridlist = []
+    rootdir = config.get_grids_root()
+    for filename in os.listdir(rootdir):
+        if filename.endswith(".json"):
+            basename = os.path.splitext(filename)[0]
+            gridlist.append(basename)
+
+    # Send this back to the client in JSON
+    resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
+@app.route('/puzzles')
+def puzzles():
+    # Make a list of all the saved puzzles
+    puzzlelist = []
+    rootdir = config.get_puzzles_root()
+    for filename in os.listdir(rootdir):
+        if filename.endswith(".json"):
+            basename = os.path.splitext(filename)[0]
+            puzzlelist.append(basename)
+
+    # Send this back to the client in JSON
+    resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
+@app.route('/grid-click', methods=['GET'])
+def grid_click():
+    # Get the row and column clicked from the query parms
+    r = int(request.args.get('r'))
+    c = int(request.args.get('c'))
+
+    # Get the existing grid from the session
+    jsonstr = session['grid']
+    grid = Grid.from_json(jsonstr)
+
+    # Toggle the black cell status
+    if grid.is_black_cell(r, c):
+        grid.remove_black_cell(r, c)
+    else:
+        grid.add_black_cell(r, c)
+
+    # Save the updated grid in the session
+    session['grid'] = grid.to_json()
+
+    # Send the new SVG data to the client
+    svg = GridToSVG(grid)
+    svgstr = svg.generate_xml()
+    response = make_response(svgstr, HTTPStatus.OK)
+    return response
 
 #   ============================================================
 #   Mainline
