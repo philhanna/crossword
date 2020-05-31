@@ -1,0 +1,11 @@
+<!-- grid.html -->
+{% include 'header.html' %}
+<script>
+{% include 'grid.js' %}
+</script>
+<div class="w3-container"><h3>Editing grid {{ gridname }}</h3></div>
+<div class="w3-container">Click grid to set up black cells</div>
+<div id="grid-svg" class="w3-container" onclick="grid_click(event)">
+  {{ svgstr|safe }}
+</div>
+{% include 'footer.html' %}

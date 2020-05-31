@@ -1,0 +1,22 @@
+<!-- messages-dialog.html -->
+<div class="w3-container">
+   {% with messages = get_flashed_messages() %}
+   {% if messages %}
+   <div id="messages-dialog" class="w3-modal" style="display: block">
+      <div class="w3-modal-content w3-card-4" style="width:30%;">
+          <header class="w3-container w3-blue-grey">
+             <h3>Messages</h3>
+             <span class="w3-button w3-display-topright"
+                onclick="document.getElementById('messages-dialog').style.display='none';"
+                >&times;</span>
+          </header>
+         <div class="w3-container">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+         </div>
+      </div>
+   </div>
+   {% endif %}
+   {% endwith %}
+</div>

@@ -1,0 +1,16 @@
+<!-- puzzle.html -->
+{% include 'header.html' %}
+<script>
+{% include 'puzzle.js' %}
+</script>
+<div class="w3-container"><h3>Editing Puzzle {{ puzzlename }}</h3></div>
+<div class="w3-container"><p>
+    Click the starting cell of an "ACROSS" word,
+    or double-click to work with a "DOWN" word.</p>
+</div>
+
+<div id="puzzle-svg" class="w3-container" onclick="puzzle_click(event)">
+  {{ svgstr|safe }}
+</div>
+{% include 'edit-word.html' %}
+{% include 'footer.html' %}

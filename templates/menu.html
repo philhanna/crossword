@@ -1,0 +1,101 @@
+<!-- menu.html -->
+<script>
+{% include 'do-new-grid.js' %}
+{% include 'do-open-grid.js' %}
+{% include 'do-save-grid-as.js' %}
+{% include 'do-new-puzzle.js' %}
+{% include 'do-open-puzzle.js' %}
+{% include 'do-save-puzzle-as.js' %}
+</script>
+<div class="w3-bar w3-blue-gray">
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Grid</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+         <a class="w3-bar-item w3-button
+            {% if not enabled.new_grid %} w3-disabled {% endif %}"
+            {% if enabled.new_grid %}
+            href="#"
+            onclick="do_new_grid()"
+            {% endif %}
+            >New grid...</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.open_grid %} w3-disabled {% endif %}"
+            {% if enabled.open_grid %}
+            href="#"
+            onclick="do_open_grid()"
+            {% endif %}
+            >Open grid...</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.save_grid %} w3-disabled {% endif %}"
+            {% if enabled.save_grid %}
+            href="{{ url_for('grid_save') }}"
+            {% endif %}
+            >Save grid</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.save_grid_as %} w3-disabled {% endif %}"
+            {% if enabled.save_grid_as %}
+            href="#"
+            onclick="do_save_grid_as()"
+            {% endif %}
+            >Save grid as...</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.close_grid %} w3-disabled {% endif %}"
+            {% if enabled.close_grid %}
+            href="{{ url_for('main_screen') }}"
+            {% endif %}
+            >Close grid</a>
+      </div>
+   </div>
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Puzzle</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+         <a class="w3-bar-item w3-button
+            {% if not enabled.new_puzzle %} w3-disabled {% endif %}"
+            {% if enabled.new_puzzle %}
+            href="#"
+            onclick="do_new_puzzle()"
+            {% endif %}
+            >New puzzle...</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.open_puzzle %} w3-disabled {% endif %}"
+            {% if enabled.open_puzzle %}
+            href="#"
+            onclick="do_open_puzzle()"
+            {% endif %}
+            >Open puzzle...</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.save_puzzle %} w3-disabled {% endif %}"
+            {% if enabled.save_puzzle %}
+            href="{{ url_for('puzzle_save') }}"
+            {% endif %}
+            >Save puzzle</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.save_puzzle_as %} w3-disabled {% endif %}"
+            {% if enabled.save_puzzle_as %}
+            href="#"
+            onclick="do_save_puzzle_as()"
+            {% endif %}
+            >Save puzzle as...</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.close_puzzle %} w3-disabled {% endif %}"
+            {% if enabled.close_puzzle %}
+            href="{{ url_for('main_screen') }}"
+            {% endif %}
+            >Close puzzle</a>
+      </div>
+   </div>
+   <a class="w3-bar-item w3-button">Word lookup</a>
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Export</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+         <a class="w3-bar-item w3-button
+            {% if not enabled.new_york_times_format %} w3-disabled {% endif %}"
+            {% if enabled.new_york_times_format %}
+            href="#"
+            onclick="do_export_nytimes()"
+            {% endif %}
+            >New York Times format</a>
+      </div>
+   </div>
+   <a class="w3-bar-item w3-button">Help</a>
+</div>
