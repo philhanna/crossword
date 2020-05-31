@@ -22,3 +22,13 @@ class TestWordList(TestCase):
         expected = ['ATS', 'ITS']
         actual = self.wordlist.lookup(".ts")
         self.assertEqual(expected, actual)
+
+    def test_wildfirst_space(self):
+        expected = ['ATS', 'ITS']
+        actual = self.wordlist.lookup(" ts")
+        self.assertEqual(expected, actual)
+
+    def test_wildfirst_qmark(self):
+        expected = ['ATS', 'ITS']
+        actual = self.wordlist.lookup("?ts")
+        self.assertEqual(expected, actual)
