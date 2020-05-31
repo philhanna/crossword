@@ -36,6 +36,7 @@ function do_word(event, url) {
 
         // Make the modal dialog visible
         document.getElementById('edit-word-dialog').style.display='block';
+        elem_word.focus()
      }
   };
   url += "?r=" + r
