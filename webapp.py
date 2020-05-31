@@ -226,7 +226,6 @@ def puzzle_click_down():
 
 @app.route('/edit-word', methods=['POST'])
 def edit_word_screen():
-
     # Get the seq, direction, and length from the session
     seq = session.get('seq')
     direction = session.get('direction')
@@ -276,11 +275,46 @@ def edit_word_screen():
 
 
 #   ============================================================
+#   REST api - functions that just return JSON
+#   ============================================================
+
+@app.route('/grids')
+def grids():
+    # Make a list of all the saved grids
+    gridlist = []
+    rootdir = config.get_grids_root()
+    for filename in os.listdir(rootdir):
+        if filename.endswith(".json"):
+            basename = os.path.splitext(filename)[0]
+            gridlist.append(basename)
+
+    # Send this back to the client in JSON
+    resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
+@app.route('/puzzles')
+def puzzles():
+    # Make a list of all the saved puzzles
+    puzzlelist = []
+    rootdir = config.get_puzzles_root()
+    for filename in os.listdir(rootdir):
+        if filename.endswith(".json"):
+            basename = os.path.splitext(filename)[0]
+            puzzlelist.append(basename)
+
+    # Send this back to the client in JSON
+    resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
+#   ============================================================
 #   Internal methods
 #   ============================================================
 
 def grid_common_save(gridname):
-
     jsonstr = session['grid']
 
     # Save the file
@@ -416,42 +450,6 @@ def puzzle_click(direction):
     return resp
 
 
-#   ============================================================
-#   REST api - functions that just return JSON
-#   ============================================================
-
-@app.route('/grids')
-def grids():
-    # Make a list of all the saved grids
-    gridlist = []
-    rootdir = config.get_grids_root()
-    for filename in os.listdir(rootdir):
-        if filename.endswith(".json"):
-            basename = os.path.splitext(filename)[0]
-            gridlist.append(basename)
-
-    # Send this back to the client in JSON
-    resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
-
-
-@app.route('/puzzles')
-def puzzles():
-    # Make a list of all the saved puzzles
-    puzzlelist = []
-    rootdir = config.get_puzzles_root()
-    for filename in os.listdir(rootdir):
-        if filename.endswith(".json"):
-            basename = os.path.splitext(filename)[0]
-            puzzlelist.append(basename)
-
-    # Send this back to the client in JSON
-    resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
-
-
 @app.route('/grid-click', methods=['GET'])
 def grid_click():
     # Get the row and column clicked from the query parms
@@ -476,6 +474,7 @@ def grid_click():
     svgstr = svg.generate_xml()
     response = make_response(svgstr, HTTPStatus.OK)
     return response
+
 
 #   ============================================================
 #   Mainline
