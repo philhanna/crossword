@@ -170,25 +170,7 @@ def open_puzzle_screen():
     session['puzzle'] = jsonstr
     session['puzzlename'] = puzzlename
 
-    # Create the SVG
-    svg = PuzzleToSVG(puzzle)
-    boxsize = svg.boxsize
-    svgstr = svg.generate_xml()
-
-    # Enable the menu options
-    enabled = {
-        "save_puzzle": True,
-        "save_puzzle_as": True,
-        "close_puzzle": True
-    }
-
-    # Go to puzzle.html
-    return render_template('puzzle.html',
-                           enabled=enabled,
-                           n=puzzle.n,
-                           puzzlename=puzzlename,
-                           boxsize=boxsize,
-                           svgstr=svgstr)
+    return redirect(url_for('puzzle_screen'))
 
     pass
 
@@ -264,7 +246,7 @@ def edit_word_screen():
 
     # Make the text uppercase and replace "." with blanks
     text = text.upper()
-    text = re.sub('\.', ' ', text)
+    text = re.sub('.', ' ', text)
 
     # Update the word in the puzzle
     word.set_text(text)
