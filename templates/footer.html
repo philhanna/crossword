@@ -1,3 +1,19 @@
 <!-- footer.html -->
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div id="messages" class="w3-display-container">
+<span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
+      onclick="document.getElementById('messages').style.display='none'"
+      >&times;</span>
+   <div class="w3-panel w3-pale-yellow">
+      <div class="w3-container">
+         {% for message in messages %}
+         <p>{{ message }}</p>
+         {% endfor %}
+      </div>
+   </div>
+</div>
+{% endif %}
+{% endwith %}
 </body>
 </head>
