@@ -9,6 +9,7 @@ from configuration import Configuration
 from grid import Grid
 from puzzle import Puzzle
 from to_svg import GridToSVG, PuzzleToSVG
+from wordlist import WordList
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -17,7 +18,7 @@ app.config["DEBUG"] = True
 app.secret_key = b'\x8aws+6\x99\xd9\x87\xf0\xd6\xe8\xad\x9b\xfd\xed\xb9'
 
 config = Configuration()
-
+wordlist = WordList()
 
 #   ============================================================
 #   Screen handlers
@@ -309,6 +310,18 @@ def puzzles():
     resp.headers['Content-Type'] = "application/json"
     return resp
 
+
+@app.route('/wordlists', methods=['GET'])
+def wordlists():
+    # Get the pattern from the query parameters
+    pattern = request.args.get('pattern')
+    words = wordlist.lookup(pattern)
+    jsonstr = json.dumps(words)
+
+    # Send this back to the client in JSON
+    resp = make_response(jsonstr, HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
 
 #   ============================================================
 #   Internal methods
