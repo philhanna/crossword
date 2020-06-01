@@ -245,7 +245,7 @@ def edit_word_screen():
 
     # Make the text uppercase and replace "." with blanks
     text = text.upper()
-    text = re.sub('.', ' ', text)
+    text = re.sub('\.', ' ', text)
 
     # Update the word in the puzzle
     word.set_text(text)
