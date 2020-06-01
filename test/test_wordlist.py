@@ -1,11 +1,18 @@
 from unittest import TestCase
-
+import os
 from wordlist import WordList
 
 
 class TestWordList(TestCase):
 
-    wordlist = WordList("../words")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        filename = "words"
+        if not os.path.exists(filename):
+            filename = "../words"
+            if not os.path.exists(filename):
+                raise RuntimeError("No words or ../words file found")
+        self.wordlist = WordList(filename)
 
     def test_wildcards(self):
         expected = ['DASH', 'DISH', 'DOTH']
