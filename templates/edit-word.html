@@ -21,7 +21,7 @@
 <div class="w3-section">
 
 <div class="w3-bar w3-border w3-blue-gray">
-  <div class="w3-bar-item w3-button">Suggest</div>
+  <div class="w3-bar-item w3-button" onclick="do_suggest_word()">Suggest</div>
   <div class="w3-bar-item w3-button">Undo</div>
   <div class="w3-bar-item w3-button">Redo</div>
 </div>
@@ -70,11 +70,6 @@ style="width:100px"
 type="button"
 onclick="document.getElementById('edit-word-dialog').style.display='none'"
 >Cancel</button>
-<button  class="w3-button w3-border w3-round w3-gray"
-style="width:100px"
-type="button"
-onclick="do_suggest_word()"
->Suggest</button>
 
 </div> <!-- End of button container -->
    <div class="w3-panel" id="edit-word-wordlist" style="display:none">

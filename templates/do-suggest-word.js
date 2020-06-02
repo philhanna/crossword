@@ -1,6 +1,8 @@
 /* Suggest a word that matches the pattern */
 function do_suggest_word() {
+
     // Get the pattern
+
     var elem_word = document.getElementById('edit-word-dialog-word');
     var pattern = elem_word.value;
 
