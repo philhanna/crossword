@@ -7,6 +7,7 @@
 {% include 'do-open-puzzle.js' %}
 {% include 'do-save-puzzle-as.js' %}
 {% include 'do-suggest-word.js' %}
+{% include 'do-publish.js' %}
 </script>
 <div class="w3-bar w3-blue-gray">
    <div class="w3-dropdown-hover w3-blue-gray">
@@ -87,14 +88,11 @@
    </div>
    <a class="w3-bar-item w3-button">Word lookup</a>
    <div class="w3-dropdown-hover w3-blue-gray">
-      <button class="w3-button">Export</button>
+      <button class="w3-button">Publish</button>
       <div class="w3-dropdown-content w3-bar-block w3-card-4">
-         <a class="w3-bar-item w3-button
-            {% if not enabled.new_york_times_format %} w3-disabled {% endif %}"
-            {% if enabled.new_york_times_format %}
+         <a class="w3-bar-item w3-button"
             href="#"
-            onclick="do_export_nytimes()"
-            {% endif %}
+            onclick="do_publish_nytimes()"
             >New York Times format</a>
       </div>
    </div>

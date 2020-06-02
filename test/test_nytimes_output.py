@@ -12,8 +12,8 @@ class TestNYTimesOutput(TestCase):
         puzzle = TestPuzzle.create_nyt_puzzle()
         filename = os.path.join(tempfile.gettempdir(), "nyt.html")
         app = NYTimesOutput(filename, puzzle)
-        app.generate_svg()
-        app.generate_html()
+        svg_filename = app.generate_svg()
+        html_filename = app.generate_html()
 
     def test_write_daily_nyt(self):
         puzzle = TestPuzzle.create_nyt_daily()

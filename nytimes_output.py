@@ -28,6 +28,7 @@ class NYTimesOutput:
         svg_filename = self.filename + ".svg"
         with open(svg_filename, "wt") as fp:
             print(xmlstr, file=fp)
+        return svg_filename
 
     def generate_html(self):
         """ Generates the wrapper HTML """
@@ -141,3 +142,5 @@ tr.ds {
         html_filename = self.filename + ".html"
         with open(html_filename, "wt") as fp:
             print(htmlstr, file=fp)
+
+        return html_filename

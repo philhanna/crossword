@@ -2,11 +2,13 @@
 import json
 import os
 import re
+import tempfile
 from http import HTTPStatus
 from flask import Flask, flash, request, make_response, redirect, render_template, session, url_for
 
 from configuration import Configuration
 from grid import Grid
+from nytimes_output import NYTimesOutput
 from puzzle import Puzzle
 from to_svg import GridToSVG, PuzzleToSVG
 from wordlist import WordList
@@ -19,6 +21,7 @@ app.secret_key = b'\x8aws+6\x99\xd9\x87\xf0\xd6\xe8\xad\x9b\xfd\xed\xb9'
 
 config = Configuration()
 wordlist = WordList()
+
 
 #   ============================================================
 #   Screen handlers
@@ -173,8 +176,6 @@ def open_puzzle_screen():
 
     return redirect(url_for('puzzle_screen'))
 
-    pass
-
 
 @app.route('/puzzle-save', methods=['GET'])
 def puzzle_save():
@@ -275,6 +276,31 @@ def edit_word_screen():
                            svgstr=svgstr)
 
 
+@app.route('/publish_nytimes')
+def publish_nytimes_screen():
+    # Get the chosen puzzle name from the query parameters
+    puzzlename = request.args.get('puzzlename')
+
+    # Open the corresponding file and read its contents as json
+    # and recreate the puzzle from it
+    rootdir = config.get_puzzles_root()
+    filename = os.path.join(rootdir, puzzlename + ".json")
+    with open(filename) as fp:
+        jsonstr = fp.read()
+    puzzle = Puzzle.from_json(jsonstr)
+
+    # Get directory for output files
+    filename = os.path.join(tempfile.gettempdir(), puzzlename)
+    app = NYTimesOutput(filename, puzzle)
+    svg_filename = app.generate_svg()
+    html_filename = app.generate_html()
+
+    flash(f"SVG written to {svg_filename}")
+    flash(f"HTML written to {html_filename}")
+
+    return redirect(url_for('main_screen'))
+
+
 #   ============================================================
 #   REST api - functions that just return JSON
 #   ============================================================
@@ -322,6 +348,7 @@ def wordlists():
     resp = make_response(jsonstr, HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
+
 
 #   ============================================================
 #   Internal methods
