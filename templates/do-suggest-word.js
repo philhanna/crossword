@@ -10,13 +10,15 @@ function do_suggest_word() {
        if (this.readyState == 4 && this.status == 200) {
           jsonstr = this.responseText;
           words = JSON.parse(jsonstr);
-          elem_select = document.getElementById('edit-word-wordlist-select')
-          options = ""
+          elem_select = document.getElementById('edit-word-wordlist-select');
+          elem_select.innerHTML = "";
           for (var i = 0; i < words.length; i++) {
-            word = words[i]
-            options += "<option value='" + word + "'>" + word + "</option>"
+            word = words[i];
+            elem_option = document.createElement("option")
+            elem_option.value = word
+            elem_option.appendChild(document.createTextNode(word))
+            elem_select.appendChild(elem_option)
           }
-          elem_select.innerHTML = options
           document.getElementById('edit-word-wordlist').style.display = 'block';
        }
    }
