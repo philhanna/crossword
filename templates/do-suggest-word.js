@@ -21,7 +21,7 @@ function do_suggest_word() {
             elem_option.appendChild(document.createTextNode(word))
             elem_select.appendChild(elem_option)
           }
-          document.getElementById('ew-wordlist').style.display = 'block';
+          openModalDialog('ew-wordlist');
        }
    }
    var url = '{{ url_for("wordlists")}}';
