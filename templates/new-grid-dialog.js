@@ -1,5 +1,5 @@
 function validateNewGridForm() {
-  n = document.forms["new-grid-form"]["n"].value;
+  n = document.forms["ng-form"]["n"].value;
   if (isNaN(n)) {
     alert(n + " is not a number");
     return false;

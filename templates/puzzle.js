@@ -17,25 +17,25 @@ function do_word(event, url) {
         parms = JSON.parse(this.responseText);
 
         // Set the <h3>17 Across</h3> text
-        elem_h3 = document.getElementById('edit-word-dialog-heading');
+        elem_h3 = document.getElementById('ew-heading');
         heading = parms.seq + " " + parms.direction + " (" + parms.length + " letters)"
         elem_h3.innerHTML = heading;
 
         // Set the length in the tooltip
-        elem_length = document.getElementById('edit-word-dialog-length');
+        elem_length = document.getElementById('ew-length');
         elem_length.innerHTML=parms.length;
 
         // Set the word maxlength and value
-        elem_word = document.getElementById('edit-word-dialog-word');
+        elem_word = document.getElementById('ew-word');
         elem_word.maxlength = parms.length;
         elem_word.value = parms.text;
 
         // Set the clue
-        elem_clue = document.getElementById('edit-word-dialog-clue');
+        elem_clue = document.getElementById('ew-clue');
         elem_clue.value = parms.clue;
 
         // Make the modal dialog visible
-        document.getElementById('edit-word-dialog').style.display='block';
+        document.getElementById('ew-dialog').style.display='block';
         elem_word.focus()
      }
   };

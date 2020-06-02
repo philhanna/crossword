@@ -1,18 +1,18 @@
 <!-- edit-word.html -->
 <!-- edit-word-dialog -->
-<div id="edit-word-dialog" class="w3-modal">
+<div id="ew-dialog" class="w3-modal">
 <!-- modal content -->
 <div class="w3-modal-content w3-card-4" style="width:50%;">
 
 <header class="w3-container w3-blue-gray">
-<h3 id="edit-word-dialog-heading"></h3>
+<h3 id="ew-heading"></h3>
 <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-      onclick="document.getElementById('edit-word-dialog').style.display='none'"
+      onclick="document.getElementById('ew-dialog').style.display='none'"
       >&times;</span>
 </header>
 
 <form class="w3-container w3-card-4"
-      name="edit-word-form"
+      name="ew-form"
       action="{{ url_for('edit_word_screen') }}"
       method="POST"
 >
@@ -32,12 +32,12 @@
    Word:
    <span class="w3-text w3-tag w3-small w3-pale-yellow">
       <i>length
-         <span id="edit-word-dialog-length"></span>
+         <span id="ew-length"></span>
       </i>
    </span>
 </label>
 <input   class="w3-input w3-border w3-tooltip"
-         id="edit-word-dialog-word"
+         id="ew-word"
          name="text"
          style="font-family: Courier; font-size: large"
          maxlength="{{ length }}"
@@ -50,7 +50,7 @@
 <p style="width:100%">
 <label>Clue:</label>
 <input   class="w3-input w3-border"
-         id="edit-word-dialog-clue"
+         id="ew-clue"
          name="clue"
          type="text"
          value="{{ clue }}"
@@ -68,13 +68,13 @@ type="submit"
 <button  class="w3-button w3-border w3-round w3-gray"
 style="width:100px"
 type="button"
-onclick="document.getElementById('edit-word-dialog').style.display='none'"
+onclick="document.getElementById('ew-dialog').style.display='none'"
 >Cancel</button>
 
 </div> <!-- End of button container -->
-   <div class="w3-panel" id="edit-word-wordlist" style="display:none">
+   <div class="w3-panel" id="ew-wordlist" style="display:none">
       <label for="words">Possible matches:</label>
-      <select name="words" id="edit-word-wordlist-select">
+      <select name="words" id="ew-select">
       </select>
    </div>
 </div> <!-- End of form section -->

@@ -1,16 +1,16 @@
 <!-- grid-save-as-dialog.html -->
 <div class="w3-container">
-  <div id="grid-save-as-dialog" class="w3-modal">
+  <div id="gsa-dialog" class="w3-modal">
     <div class="w3-modal-content w3-card-4" style="max-width:300px">
       <header class="w3-container w3-blue-gray">
         <h3>Save grid as</h3>
         <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-            onclick="document.getElementById('grid-save-as-dialog').style.display='none'"
+            onclick="document.getElementById('gsa-dialog').style.display='none'"
             title="Close Modal"
             >&times;</span>
       </header>
       <form class="w3-container"
-            name="grid-save-as-form"
+            name="gsa-form"
             action="{{ url_for('grid_save_as') }}"
       >
         <div class="w3-section">
@@ -27,7 +27,7 @@
           <button class="w3-button w3-border w3-round w3-gray"
                   style="width:100px"
                   type="button"
-                  onclick="document.getElementById('grid-save-as-dialog').style.display='none'"
+                  onclick="document.getElementById('gsa-dialog').style.display='none'"
                   >Cancel</button>
           </div>
         </div>

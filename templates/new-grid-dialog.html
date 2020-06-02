@@ -3,17 +3,17 @@
   <script>
   {% include "new-grid-dialog.js" %}
   </script>
-  <div id="new-grid-dialog" class="w3-modal"> <!-- new-grid-dialog -->
+  <div id="ng-dialog" class="w3-modal"> <!-- new-grid-dialog -->
     <div class="w3-modal-content w3-card-4" style="max-width:300px"> <!-- modal content -->
       <header class="w3-container w3-blue-gray">
         <h3>New grid</h3>
         <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-            onclick="document.getElementById('new-grid-dialog').style.display='none'"
+            onclick="document.getElementById('ng-dialog').style.display='none'"
             title="Close Modal"
             >&times;</span>
       </header>
       <form class="w3-container"
-            name="new-grid-form"
+            name="ng-form"
             action="{{ url_for('new_grid_screen') }}"
             method="POST"
             onsubmit="return validateNewGridForm()"
@@ -33,7 +33,7 @@
              <button class="w3-button w3-border w3-round w3-gray"
                      style="width:100px"
                      type="button"
-                     onclick="document.getElementById('new-grid-dialog').style.display='none'"
+                     onclick="document.getElementById('ng-dialog').style.display='none'"
                      >Cancel</button>
           </div> <!-- End of button container -->
         </div> <!-- End of form section -->

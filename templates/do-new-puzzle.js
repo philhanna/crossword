@@ -9,5 +9,5 @@ function do_new_puzzle() {
 
       {% include 'grid-chooser-ajax.js' %}
 
-  document.getElementById('grid-chooser-dialog').style.display='block';
+  document.getElementById('gc-dialog').style.display='block';
 }

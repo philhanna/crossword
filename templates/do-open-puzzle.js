@@ -9,5 +9,5 @@ function do_open_puzzle() {
 
       {% include 'puzzle-chooser-ajax.js' %}
 
-  document.getElementById('puzzle-chooser-dialog').style.display='block';
+  document.getElementById('pc-dialog').style.display='block';
 }
