@@ -20,6 +20,10 @@ class Configuration:
         """ Returns the puzzles root """
         return self.config.get('data', 'puzzles_root')
 
+    def get_words_filename(self):
+        """ Returns the path to the words file """
+        return self.config.get('data', 'words_filename')
+
     def get_author_name(self):
         """ Returns the author name """
         return self.config.get('author', 'name')

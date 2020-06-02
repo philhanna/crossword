@@ -1,5 +1,7 @@
 from unittest import TestCase
 import os
+
+from configuration import Configuration
 from wordlist import WordList
 
 
@@ -7,11 +9,8 @@ class TestWordList(TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        filename = "words"
-        if not os.path.exists(filename):
-            filename = "../words"
-            if not os.path.exists(filename):
-                raise RuntimeError("No words or ../words file found")
+        config = Configuration()
+        filename = config.get_words_filename()
         self.wordlist = WordList(filename)
 
     def test_wildcards(self):
