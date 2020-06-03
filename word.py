@@ -40,7 +40,9 @@ class Word:
 
     def set_text(self, text):
         """ Sets the word's text in the puzzle """
-        text = text[:self.length]
+        if len(text) < self.length:
+            text += " "*self.length
+            text = text[:self.length]
         i = 0
         for r, c in self.cell_iterator():
             letter = text[i]
