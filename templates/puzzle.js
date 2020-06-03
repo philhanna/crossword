@@ -21,10 +21,6 @@ function do_word(event, url) {
         heading = parms.seq + " " + parms.direction + " (" + parms.length + " letters)"
         elem_h3.innerHTML = heading;
 
-        // Set the length in the tooltip
-        elem_length = document.getElementById('ew-length');
-        elem_length.innerHTML=parms.length;
-
         // Set the word maxlength and value
         elem_word = document.getElementById('ew-word');
         elem_word.maxlength = parms.length;
@@ -35,7 +31,7 @@ function do_word(event, url) {
         elem_clue.value = parms.clue;
 
         // Make the modal dialog visible
-        document.getElementById('ew-dialog').style.display='block';
+        openModalDialog('ew-dialog');
         elem_word.focus()
      }
   };
