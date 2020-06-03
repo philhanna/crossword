@@ -29,6 +29,16 @@ wordlist = WordList()
 @app.route('/')
 def main_screen():
     """ Handles top-level request """
+
+    # Clear any existing session
+    keys = []
+    for key in session.keys():
+        keys.append(key)
+
+    for key in keys:
+        print(f"DEBUG: Clearing session key {key}={session.get(key, None)}")
+        session.pop(key)
+
     enabled = {
         "new_grid": True,
         "open_grid": True,
@@ -166,10 +176,10 @@ def open_puzzle_screen():
     filename = os.path.join(rootdir, puzzlename + ".json")
     with open(filename) as fp:
         jsonstr = fp.read()
-    puzzle = Puzzle.from_json(jsonstr)
 
     # Store the puzzle and puzzle name in the session
     session['puzzle'] = jsonstr
+    session['puzzle.initial'] = jsonstr
     session['puzzlename'] = puzzlename
 
     return redirect(url_for('puzzle_screen'))
@@ -245,7 +255,7 @@ def edit_word_screen():
 
     # Make the text uppercase and replace "." with blanks
     text = text.upper()
-    text = re.sub('\.', ' ', text)
+    text = re.sub(r'\.', ' ', text)
 
     # Update the word in the puzzle
     word.set_text(text)
@@ -348,6 +358,21 @@ def wordlists():
     return resp
 
 
+@app.route('/puzzle-changed', methods=['GET'])
+def puzzle_changed():
+    # Compare the original puzzle loaded to its current values.
+    # Return True if they are different, False if they are the same.
+    jsonstr_initial = session.get('puzzle.initial', None)
+    jsonstr_current = session.get('puzzle', None)
+    changed = not (jsonstr_current == jsonstr_initial)
+    obj = { "changed" : changed}
+
+    # Send this back to the client in JSON
+    resp = make_response(json.dumps(obj), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
 #   ============================================================
 #   Internal methods
 #   ============================================================
@@ -390,7 +415,7 @@ def grid_common_save(gridname):
 
 
 def puzzle_save_common(puzzlename):
-    jsonstr = session['puzzle']
+    jsonstr = session.get('puzzle', None)
 
     # Save the file
     rootdir = config.get_puzzles_root()
@@ -398,11 +423,15 @@ def puzzle_save_common(puzzlename):
     with open(filename, "w") as fp:
         print(session['puzzle'], file=fp)
 
+    # Store the saved version of the puzzle in the session
+    # as 'puzzle.initial' so that we can detect whether
+    # it has been changed since it was last saved
+    session['puzzle.initial'] = jsonstr
+
     # Send message about the save
     flash(f"Puzzle saved as {puzzlename}")
 
-    # Create the puzzle
-    jsonstr = session['puzzle']
+    # Recreate the puzzle
     puzzle = Puzzle.from_json(jsonstr)
 
     # Create the SVG
