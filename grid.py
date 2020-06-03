@@ -45,8 +45,6 @@ class Grid:
 
     def get_numbered_cells(self):
         """ Finds list of all cells that start a word """
-        if self.numbered_cells:
-            return self.numbered_cells
         n = self.n
         nclist = []
         for r in range(1, n + 1):

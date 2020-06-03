@@ -1,6 +1,7 @@
 <!-- menu.html -->
 <script>
 {% include 'globals.js' %}
+{% include 'do-close-grid.js' %}
 {% include 'do-close-puzzle.js' %}
 {% include 'do-new-grid.js' %}
 {% include 'do-open-grid.js' %}
@@ -45,7 +46,7 @@
          <a class="w3-bar-item w3-button
             {% if not enabled.close_grid %} w3-disabled {% endif %}"
             {% if enabled.close_grid %}
-            href="{{ url_for('main_screen') }}"
+            onclick="do_close_grid()"
             {% endif %}
             >Close grid</a>
       </div>
