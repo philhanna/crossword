@@ -3,7 +3,15 @@
 <script>
 {% include 'puzzle.js' %}
 </script>
-<div class="w3-container"><h3>Editing Puzzle {{ puzzlename }}</h3></div>
+<div class="w3-container">
+    <h3>Editing puzzle
+        {% if puzzlename %}
+        {{ puzzlename }}
+        {% else %}
+        (untitled)
+        {% endif %}
+    </h3>
+</div>
 <div class="w3-container"><p>
     Click the starting cell of an "ACROSS" word,
     or double-click to work with a "DOWN" word.</p>

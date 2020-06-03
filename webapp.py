@@ -48,9 +48,8 @@ def new_grid_screen():
 
     n = int(request.form.get('n'))
 
-    # Construct a default grid name and store it in the session
-    gridname = f"grid{n}x{n}"
-    session['gridname'] = gridname
+    # Remove any leftover grid name in the session
+    session.pop('gridname', None)
 
     # Create the grid
     grid = Grid(n)
@@ -63,7 +62,6 @@ def new_grid_screen():
 
     # Enable menu options
     enabled = {
-        "save_grid": True,
         "save_grid_as": True,
         "close_grid": True
     }
@@ -72,7 +70,6 @@ def new_grid_screen():
     return render_template('grid.html',
                            enabled=enabled,
                            n=n,
-                           gridname=gridname,
                            boxsize=boxsize,
                            svgstr=svgstr)
 
@@ -146,11 +143,12 @@ def new_puzzle_screen():
     # Now pass this grid to the Puzzle() constructor
     puzzle = Puzzle(grid)
     n = puzzle.n
-    puzzlename = f"puzzle{n}x{n}"
 
     # Save puzzle in the session
     session['puzzle'] = puzzle.to_json()
-    session['puzzlename'] = puzzlename
+
+    # Remove any leftover puzzlde name in the session
+    session.pop('puzzlename', None)
 
     return redirect(url_for('puzzle_screen'))
 
@@ -194,7 +192,7 @@ def puzzle_save_as():
 def puzzle_screen():
     # Get the existing puzzle from the session
     puzzle = Puzzle.from_json(session['puzzle'])
-    puzzlename = session['puzzlename']
+    puzzlename = session.get('puzzlename', None)
 
     # Create the SVG
     svg = PuzzleToSVG(puzzle)
@@ -202,7 +200,7 @@ def puzzle_screen():
     svgstr = svg.generate_xml()
 
     enabled = {
-        "save_puzzle": True,
+        "save_puzzle": puzzlename is not None,
         "save_puzzle_as": True,
         "close_puzzle": True
     }
@@ -253,7 +251,7 @@ def edit_word_screen():
     word.set_text(text)
     word.set_clue(clue)
     session['puzzle'] = puzzle.to_json()
-    puzzlename = session['puzzlename']
+    puzzlename = session.get('puzzlename', None)
 
     # Create the SVG
     svg = PuzzleToSVG(puzzle)
@@ -262,7 +260,7 @@ def edit_word_screen():
 
     # Enable the appropriate menu options
     enabled = {
-        "save_puzzle": True,
+        "save_puzzle": puzzlename is not None,
         "save_puzzle_as": True,
         "close_puzzle": True,
     }
