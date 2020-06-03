@@ -4,6 +4,9 @@ a crossword puzzle. What follows is a list of
 the objects it uses and a discussion of their
 capabilities.
 
+See the technical details at the
+[github project wiki](https://github.com/philhanna/crossword/wiki)
+
 ## Table of Contents
 
 - [Grid](#grid)
