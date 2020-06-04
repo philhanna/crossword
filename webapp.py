@@ -30,8 +30,11 @@ wordlist = WordList()
 def main_screen():
     """ Handles top-level request """
 
-    # Clear any existing session
+    # Clear any existing session (except messages)
+    messages = session.get('_flashes')
     session.clear()
+    if messages:
+        session['_flashes'] = messages
 
     enabled = {
         "new_grid": True,
