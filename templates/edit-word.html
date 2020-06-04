@@ -65,11 +65,19 @@ onclick="closeModalDialog('ew-dialog');"
 >Cancel</button>
 
 </div> <!-- End of button container -->
-   <div class="w3-panel" id="ew-wordlist" style="display:none">
-      <label for="words">Possible matches:</label>
-      <select name="words" id="ew-select">
-      </select>
-   </div>
+<div class="w3-panel" id="ew-wordlist" style="display:none">
+    <script>
+        function do_select_changed() {
+            elem_select = document.getElementById('ew-select')
+            value = elem_select.value
+            elem_word = document.getElementById('ew-word')
+            elem_word.value = value
+        }
+    </script>
+  <label for="words">Possible matches:</label>
+  <select name="words" id="ew-select" onchange="do_select_changed()">
+  </select>
+</div>
 </div> <!-- End of form section -->
 </form>
 </div> <!-- End of modal content -->
