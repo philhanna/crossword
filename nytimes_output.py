@@ -1,5 +1,7 @@
 import io
 import os
+import re
+import xml.etree.ElementTree as ET
 
 from configuration import Configuration
 from puzzle import Puzzle
@@ -32,115 +34,132 @@ class NYTimesOutput:
 
     def generate_html(self):
         """ Generates the wrapper HTML """
-        fp = io.StringIO()
 
-        # Write the header
+        # Create the <html> root element
 
-        boilerplate = r'''<html>
-<head>
-<style>
+        elem_root = ET.Element("html")
+
+        # Create the <head> element
+
+        elem_head = ET.SubElement(elem_root, "head")
+        elem_style = ET.SubElement(elem_head, "style")
+        elem_style.text = r'''
 td { vertical-align: top; }
 h1 { text-align: center; }
 tr.ds {
    height: 8mm
 }
-</style>
-</head>
-<body>
-        '''
-        print(boilerplate, file=fp)
+'''
+        # Create the <body> element
+
+        elem_body = ET.SubElement(elem_root, "body")
 
         # Write the author name and address block
 
-        author_name = self.config.get_author_name()
-        author_addr = self.config.get_author_address()
-        author_csz = self.config.get_author_city_state_zip()
-        author_email = self.config.get_author_email()
+        elem_body.append(ET.Comment(" Name and address "))
+        elem_div = ET.SubElement(elem_body, "div")
+        elem_div.set("style", "font-family: 'sans serif'; font-size: 16pt;")
+        elem_table = ET.SubElement(elem_div, "table")
 
-        boilerplate = fr'''
-<!-- Name and address -->
-<div style="font-family: 'sans serif'; font-size: 16pt">
-<table>
-<tr><td>{author_name}</td></tr>
-<tr><td>{author_addr}</td></tr>
-<tr><td>{author_csz}</td></tr>
-<tr><td>{author_email}</td></tr>
-</table>
-</div>
-'''
-        print(boilerplate, file=fp)
-
+        for author_text in [
+            self.config.get_author_name(),
+            self.config.get_author_address(),
+            self.config.get_author_city_state_zip(),
+            self.config.get_author_email(),
+        ]:
+            elem_tr = ET.SubElement(elem_table, "tr")
+            elem_td = ET.SubElement(elem_tr, "td")
+            elem_td.text = author_text
 
         # Write the SVG calling lines
 
+        elem_body.append(ET.Comment(" SVG image of the puzzle "))
         svg_file_name = os.path.basename(self.filename) + '.svg'
-        boilerplate = fr'''
-<img src="{svg_file_name}" width="{self.get_svg_width()}" height="{self.get_svg_height()}"/>
-'''
-        print(boilerplate, file=fp)
+        elem_img = ET.SubElement(elem_body, "img")
+        elem_img.set("src", svg_file_name)
+        elem_img.set("width", str(self.get_svg_width()))
+        elem_img.set("height", str(self.get_svg_height()))
 
         # Write the across clues
 
-        boilerplate = r'''
-<!-- Across clues -->
-<div style="page-break-before: always">
-<table width="95%">
-<tr class="ds">
-<th width="80%" align="left">ACROSS</th>
-<th width="20%">&nbsp;</th>
-</tr>        
-'''
-        print(boilerplate, file=fp)
+        elem_body.append(ET.Comment(" Across clues "))
+        elem_div = ET.SubElement(elem_body, "div")
+        elem_div.set("style", "page-break-before: always;")
+        elem_table = ET.SubElement(elem_div, "table")
+        elem_table.set("width", "95%")
+        elem_tr = ET.SubElement(elem_table, "tr")
+
+        elem_tr.set("class", "ds")
+        elem_th = ET.SubElement(elem_tr, "th")
+        elem_th.set("width", "80%")
+        elem_th.set("align", "left")
+        elem_th.text = "ACROSS"
+
+        elem_th = ET.SubElement(elem_tr, "th")
+        elem_th.set("width", "20%")
 
         for seq in sorted(self.puzzle.across_words):
             across_word = self.puzzle.across_words[seq]
             across_text = across_word.get_text()
+            if not across_text:
+                across_text = ""
             across_clue = across_word.get_clue()
+            if not across_clue:
+                across_clue = ""
 
-            boilerplate = fr'''
-<tr class="ds">
-<td>{seq} {across_clue}</td>
-<td style="font-family: monospace">{across_text}</td>
-</tr>
-'''
-            print(boilerplate, file=fp)
+            elem_tr = ET.SubElement(elem_table, "tr")
+            elem_tr.set("class", "ds")
 
-        print('</table>', file=fp)
+            elem_td = ET.SubElement(elem_tr, "td")
+            elem_td.text = f"{seq} {across_clue}"
+
+            elem_td = ET.SubElement(elem_tr, "td")
+            elem_td.set("style", "font-family: monospace")
+            elem_td.text = re.sub(' ', '.', across_text)
 
         # Write the down clues
 
-        boilerplate = r'''
-<!-- Down clues -->
-<div style="page-break-before: always">
-<table width="95%">
-<tr class="ds">
-<th width="80%" align="left">DOWN</th>
-<th width="20%">&nbsp;</th>
-</tr>        
-'''
-        print(boilerplate, file=fp)
+        elem_body.append(ET.Comment(" Down clues "))
+        elem_div = ET.SubElement(elem_body, "div")
+        elem_div.set("style", "page-break-before: always;")
+        elem_table = ET.SubElement(elem_div, "table")
+        elem_table.set("width", "95%")
+        elem_tr = ET.SubElement(elem_table, "tr")
+
+        elem_tr.set("class", "ds")
+        elem_th = ET.SubElement(elem_tr, "th")
+        elem_th.set("width", "80%")
+        elem_th.set("align", "left")
+        elem_th.text = "DOWN"
+
+        elem_th = ET.SubElement(elem_tr, "th")
+        elem_th.set("width", "20%")
 
         for seq in sorted(self.puzzle.down_words):
             down_word = self.puzzle.down_words[seq]
             down_text = down_word.get_text()
+            if not down_text:
+                down_text = ""
             down_clue = down_word.get_clue()
+            if not down_clue:
+                down_clue = ""
 
-            boilerplate = fr'''
-<tr class="ds">
-<td>{seq} {down_clue}</td>
-<td>{down_text}</td>
-</tr>
-'''
-            print(boilerplate, file=fp)
+            elem_tr = ET.SubElement(elem_table, "tr")
+            elem_tr.set("class", "ds")
 
-        print('</table>', file=fp)
+            elem_td = ET.SubElement(elem_tr, "td")
+            elem_td.text = f"{seq} {down_clue}"
 
-        print('</html>', file=fp)
+            elem_td = ET.SubElement(elem_tr, "td")
+            elem_td.set("style", "font-family: monospace")
+            elem_td.text = re.sub(' ', '.', down_text)
 
-        htmlstr = fp.getvalue()
-        fp.close()
+        # Write the html to the file
+
+        htmlstr = ET.tostring(element=elem_root, encoding="utf-8").decode()
+        htmlstr = re.sub("><", ">\n<", htmlstr)
         html_filename = self.filename + ".html"
         with open(html_filename, "wt") as fp:
-            print(htmlstr, file=fp)
+            fp.write(htmlstr + "\n")
 
         return html_filename
