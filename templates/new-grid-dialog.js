@@ -9,5 +9,8 @@ function validateNewGridForm() {
     alert(n + " is not an odd number")
     return false;
   }
+  if (n < 0) {
+     alert(n + " is not a positive number")
+  }
   return true;
 }
