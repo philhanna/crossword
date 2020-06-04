@@ -6,6 +6,7 @@ from configuration import Configuration
 from puzzle import Puzzle
 from clue_import_visitor import ClueImportVisitor
 
+
 def main(args):
 
     config = Configuration()
