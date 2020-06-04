@@ -294,9 +294,9 @@ def publish_nytimes_screen():
 
     # Get directory for output files
     filename = os.path.join(tempfile.gettempdir(), puzzlename)
-    app = NYTimesOutput(filename, puzzle)
-    svg_filename = app.generate_svg()
-    html_filename = app.generate_html()
+    publisher = NYTimesOutput(filename, puzzle)
+    svg_filename = publisher.generate_svg()
+    html_filename = publisher.generate_html()
 
     flash(f"SVG written to {svg_filename}")
     flash(f"HTML written to {html_filename}")
