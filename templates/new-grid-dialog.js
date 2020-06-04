@@ -11,6 +11,7 @@ function validateNewGridForm() {
   }
   if (n < 0) {
      alert(n + " is not a positive number")
+     return false;
   }
   return true;
 }
