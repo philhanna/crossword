@@ -38,7 +38,7 @@ class ToSVG:
         self.generate_horizontal_lines()
         self.generate_cells()
         self.generate_word_numbers()
-        xmlstr = ET.tostring(self.root, encoding='utf8', method='xml').decode()
+        xmlstr = ET.tostring(element=self.root, encoding="utf-8", method="xml").decode()
         xmlstr = re.sub('><', '>\n<', xmlstr)
         return xmlstr
 

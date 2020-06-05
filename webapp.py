@@ -4,6 +4,9 @@ import os
 import re
 import tempfile
 from http import HTTPStatus
+from io import BytesIO
+from zipfile import ZipFile, ZIP_DEFLATED
+
 from flask import Flask, flash, request, make_response, redirect, render_template, session, url_for
 
 from configuration import Configuration
@@ -285,26 +288,52 @@ def edit_word_screen():
 @app.route('/publish_nytimes')
 def publish_nytimes_screen():
     # Get the chosen puzzle name from the query parameters
+
     puzzlename = request.args.get('puzzlename')
 
     # Open the corresponding file and read its contents as json
     # and recreate the puzzle from it
+
     rootdir = config.get_puzzles_root()
     filename = os.path.join(rootdir, puzzlename + ".json")
     with open(filename) as fp:
         jsonstr = fp.read()
     puzzle = Puzzle.from_json(jsonstr)
 
-    # Get directory for output files
-    filename = os.path.join(tempfile.gettempdir(), puzzlename)
-    publisher = NYTimesOutput(filename, puzzle)
-    svg_filename = publisher.generate_svg()
-    html_filename = publisher.generate_html()
+    # Generate the output
 
-    flash(f"SVG written to {svg_filename}")
-    flash(f"HTML written to {html_filename}")
+    publisher = NYTimesOutput(puzzle, puzzlename)
 
-    return redirect(url_for('main_screen'))
+    # SVG
+
+    filename = os.path.join(tempfile.gettempdir(), puzzlename + ".svg")
+    svg_filename = filename
+    with open(filename, "wt") as fp:
+        fp.write(publisher.get_svg() + "\n")
+
+    # HTML
+
+    filename = os.path.join(tempfile.gettempdir(), puzzlename + ".html")
+    html_filename = filename
+    with open(filename, "wt") as fp:
+        fp.write(publisher.get_html() + "\n")
+
+    # Create an in-memory zip file
+
+    with BytesIO() as fp:
+        with ZipFile(fp, mode="w", compression=ZIP_DEFLATED) as zf:
+            zf.write(svg_filename, puzzlename + ".svg")
+            zf.write(html_filename, puzzlename + ".html")
+        zipbytes = fp.getvalue()
+
+    # Return it as an attachment
+
+    zipfilename = puzzlename + ".zip"
+    flash(f"NYTimes output returned as {zipfilename}")
+    resp = make_response(zipbytes)
+    resp.headers['Content-Type'] = "application/zip"
+    resp.headers['Content-Disposition'] = f'attachment; filename="{zipfilename}"'
+    return resp
 
 
 #   ============================================================
@@ -369,7 +398,6 @@ def grid_changed():
             print(jsonstr_initial, file=fp)
         with open("/tmp/grid-changed-current.json", "wt") as fp:
             print(jsonstr_current, file=fp)
-
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(obj), HTTPStatus.OK)

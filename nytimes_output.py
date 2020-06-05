@@ -11,26 +11,25 @@ from to_svg import PuzzleToSVG
 class NYTimesOutput:
     """ Creates an HTML file with the puzzle and clues """
 
-    def __init__(self, filename, puzzle: Puzzle, configfile="~/.crossword_config.ini"):
-        # Consider just the base name, with path but without extension
-        self.filename = os.path.splitext(os.path.expanduser(filename))[0]
+    def __init__(self, puzzle: Puzzle, basename: str):
         self.puzzle = puzzle
+        self.basename = basename
         self.config = Configuration()
         self.svg = PuzzleToSVG(self.puzzle)
+        self.svgstr = self.svg.generate_xml()
+        self.htmlstr = self.generate_html()
+
+    def get_svg(self):
+        return self.svgstr
+
+    def get_html(self):
+        return self.htmlstr
 
     def get_svg_width(self):
         return self.svg.gridsize
 
     def get_svg_height(self):
         return self.svg.gridsize
-
-    def generate_svg(self):
-        """ Generates an image of the puzzle in an SVG file """
-        xmlstr = self.svg.generate_xml()
-        svg_filename = self.filename + ".svg"
-        with open(svg_filename, "wt") as fp:
-            print(xmlstr, file=fp)
-        return svg_filename
 
     def generate_html(self):
         """ Generates the wrapper HTML """
@@ -74,7 +73,7 @@ tr.ds {
         # Write the SVG calling lines
 
         elem_body.append(ET.Comment(" SVG image of the puzzle "))
-        svg_file_name = os.path.basename(self.filename) + '.svg'
+        svg_file_name = os.path.basename(self.basename) + '.svg'
         elem_img = ET.SubElement(elem_body, "img")
         elem_img.set("src", svg_file_name)
         elem_img.set("width", str(self.get_svg_width()))
@@ -154,12 +153,7 @@ tr.ds {
             elem_td.set("style", "font-family: monospace")
             elem_td.text = re.sub(' ', '.', down_text)
 
-        # Write the html to the file
-
+        # Return the HTML as a string
         htmlstr = ET.tostring(element=elem_root, encoding="utf-8").decode()
         htmlstr = re.sub("><", ">\n<", htmlstr)
-        html_filename = self.filename + ".html"
-        with open(html_filename, "wt") as fp:
-            fp.write(htmlstr + "\n")
-
-        return html_filename
+        return htmlstr
