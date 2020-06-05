@@ -1,3 +1,4 @@
+import json
 from unittest import TestCase
 
 from numbered_cell import NumberedCell
@@ -27,3 +28,37 @@ class TestNumberClues(TestCase):
         puzzle = TestPuzzle.create_nyt_puzzle()
         nclist = puzzle.numbered_cells
         self.assertEqual(124, len(nclist))
+
+    def test_contains_across(self):
+        # Construct 42 across
+        data = """
+        {
+            "seq": 42,
+            "r": 9,
+            "c": 12,
+            "across_length": 4,
+            "down_length": 0
+        }
+        """
+        nc = NumberedCell.from_json(data)
+        self.assertTrue(nc.contains_across(9, 13))
+        self.assertTrue(nc.contains_across(9, 15))
+        self.assertFalse(nc.contains_across(10, 1))
+        self.assertFalse(nc.contains_across(9, 45))
+
+    def test_contains_down(self):
+        # Construct 1 down
+        data = """
+        {
+            "seq": 1,
+            "r": 1,
+            "c": 1,
+            "across_length": 4,
+            "down_length": 4
+        }
+        """
+        nc = NumberedCell.from_json(data)
+        self.assertTrue(nc.contains_down(2, 1))
+        self.assertTrue(nc.contains_down(4, 1))
+        self.assertFalse(nc.contains_down(10, 1))
+        self.assertFalse(nc.contains_down(9, 45))

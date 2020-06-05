@@ -1,3 +1,6 @@
+import json
+
+
 class NumberedCell:
     """ A data structure representing a numbered cell
     in a puzzle, which may be the start of either
@@ -6,12 +9,29 @@ class NumberedCell:
     3. Both
     """
 
+    @staticmethod
+    def from_json(jsonstr):
+        obj = json.loads(jsonstr)
+        return NumberedCell(
+            obj['seq'],
+            obj['r'],
+            obj['c'],
+            obj['across_length'],
+            obj['down_length']
+        )
+
     def __init__(self, seq, r, c, a=0, d=0):
         self.seq = seq
         self.r = r
         self.c = c
         self.across_length = a
         self.down_length = d
+
+    def contains_across(self, r, c):
+        return r == self.r and c < self.c + self.across_length
+
+    def contains_down(self, r, c):
+        return c == self.c and r < self.c + self.down_length
 
     def __eq__(self, other):
         return self.seq == other.seq and \
