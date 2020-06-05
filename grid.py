@@ -23,11 +23,13 @@ class Grid:
         """ Mark cell (r, c) as black (also its symmetric cell) """
         self.black_cells.add((r, c))
         self.black_cells.add(self.symmetric_point(r, c))
+        self.numbered_cells = None
 
     def remove_black_cell(self, r, c):
         """ Mark cell (r, c) as not black (also its symmetric cell) """
         self.black_cells.discard((r, c))
         self.black_cells.discard(self.symmetric_point(r, c))
+        self.numbered_cells = None
 
     def is_black_cell(self, r, c):
         """ Returns True is there is a black cell at (r, c) """
@@ -45,6 +47,12 @@ class Grid:
 
     def get_numbered_cells(self):
         """ Finds list of all cells that start a word """
+
+        # If already calculated, return that
+        if self.numbered_cells:
+            return self.numbered_cells
+
+        # Otherwise calculate and store
         n = self.n
         nclist = []
         for r in range(1, n + 1):
@@ -116,6 +124,151 @@ class Grid:
         # Add the numbered cells
         grid.get_numbered_cells()
         return grid
+
+    def validate(self):
+        """ Validates the grid according to the NYTimes rules """
+
+        # 1. Crosswords must have black square symmetry, which typically comes
+        # in the form of 180-degree rotational symmetry
+        # 2. Crosswords must have all-over interlock;
+        # 3. Crosswords must not have unchecked squares 
+        # (i.e., all letters must be found in both Across and Down answers);
+        # 4. All answers must be at least 3 letters long;
+        # 5. Black squares should be used in moderation.
+        # (Source: NYTimes submissions guidelines)
+        #
+        # Item 1 is taken care of by virtue of the symmetric point
+        # awareness of add_black_cell and remove_black_cell.
+        #
+        # Item 5 is subjective
+
+        ok = True
+        messages = ""
+
+        for fun in (self.validate_interlock,
+                    self.validate_unchecked_squares,
+                    self.validate_minimum_word_length):
+            errmsg = fun()
+            if errmsg:
+                ok = False
+                messages += errmsg + "\n"
+
+        return ok, messages
+
+    def validate_interlock(self):
+        """ No islands of white cells enclosed in black cells """
+
+        # Create a matrix corresponding to the grid, with each
+        # cell having a value of its partition number (initially 0)
+
+        partition = {}
+        for r in range(1, self.n + 1):
+            for c in range(1, self.n + 1):
+                if self.is_black_cell(r, c):
+                    continue
+                partition[(r, c)] = (0, 0)
+
+        def mark_partition(r, c, pr, pc):
+
+            if r < 1 or r > self.n or c < 1 or c > self.n:
+                return      # Off the grid
+
+            if self.is_black_cell(r, c):
+                return      # Black cell
+
+            if partition[(r, c)] != (0, 0):
+                return      # Already marked
+
+            # Otherwise, add this to the partition
+            partition[(r, c)] = (pr, pc)
+            mark_partition(r-1, c, pr, pc)  # Up
+            mark_partition(r, c+1, pr, pc)  # Right
+            mark_partition(r, c-1, pr, pc)  # Left
+            mark_partition(r+1, c, pr, pc)  # Down
+            pass
+
+        for r in range(1, self.n + 1):
+            for c in range(1, self.n + 1):
+                if self.is_black_cell(r, c):
+                    continue
+                if partition[(r, c)] == (0, 0):
+                    mark_partition(r, c, r, c)
+
+        partitions = set()
+        for r in range(1, self.n + 1):
+            for c in range(1, self.n + 1):
+                if self.is_black_cell(r, c):
+                    continue
+                markr, markc = partition[(r, c)]
+                partitions.add((markr, markc))
+
+        errmsg = ""
+        if len(partitions) > 1:
+            errmsg += "*** No all-over interlock: ***\n"
+            np = 0
+            for r, c in sorted(list(partitions)):
+                np += 1
+                errmsg += f"Cell at ({r}, {c}) starts partition {np}" + "\n"
+
+        return errmsg.strip()
+
+    def validate_unchecked_squares(self):
+        """ Crosswords must not have unchecked squares:
+            All letters must be found in both Across and Down answers
+        """
+        errmsg = ""
+
+        aset = set()  # All the (r, c) in across words
+        dset = set()  # All the (r, c) in down words
+        ncdict = {}
+        for nc in self.get_numbered_cells():
+            r = nc.r
+            c = nc.c
+            for i in range(nc.across_length):
+                aset.add((r, c))
+                ncdict[(r, c)] = nc
+                c += 1
+            r = nc.r
+            c = nc.c
+            for i in range(nc.down_length):
+                dset.add((r, nc.c))
+                ncdict[(r, c)] = nc
+                r += 1
+        across_but_not_down = aset - dset
+        down_but_not_across = dset - aset
+        all_checked = True
+        if across_but_not_down:
+            for r, c in across_but_not_down:
+                all_checked = False
+                nc = ncdict[(r, c)]
+                errmsg += f"({r},{c}) is part of {nc.seq} across but no down word" + "\n"
+        if down_but_not_across:
+            for r, c in down_but_not_across:
+                all_checked = False
+                nc = ncdict[(r, c)]
+                errmsg += f"({r},{c}) is part of {nc.seq} down but no across word" + "\n"
+
+        if all_checked:
+            return ""
+
+        return "*** Some unchecked cells: ***\n" + errmsg.strip()
+
+    def validate_minimum_word_length(self):
+        """ All words must be at least three characters long """
+        errmsg = ""
+        all_long = True
+        for nc in self.get_numbered_cells():
+            if 0 < nc.across_length < 3:
+                all_long = False
+                errmsg += f"{nc.seq} across is only {nc.across_length} letters long\n"
+            if 0 < nc.down_length < 3:
+                all_long = False
+                errmsg += f"{nc.seq} down is only {nc.down_length} letters long\n"
+
+        if all_long:
+            return ""
+
+        return "*** Some words shorter than 3 letters: ***\n" + errmsg.strip()
 
     def __str__(self):
         sb = f'+{"-" * (self.n * 2 - 1)}+' + "\n"

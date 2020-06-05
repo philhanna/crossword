@@ -425,24 +425,35 @@ def puzzle_changed():
 #   ============================================================
 
 def grid_save_common(gridname):
+
+    # Recreate the grid from the JSON in the session
+    # and validate it
+
     jsonstr = session['grid']
-
-    # Save the file
-    rootdir = config.get_grids_root()
-    filename = os.path.join(rootdir, gridname + ".json")
-    with open(filename, "w") as fp:
-        print(jsonstr, file=fp)
-
-    # Send message about save
-    flash(f"Grid saved as {gridname}")
-
-    # Store the saved version of the grid in the session
-    # as 'grid.initial' so that we can detect whether
-    # it has been changed since it was last saved
-    session['grid.initial'] = jsonstr.strip()
-
-    # Create the grid
     grid = Grid.from_json(jsonstr)
+    ok, messages = grid.validate()
+    if not ok:
+        flash("GRID NOT SAVED")
+        for message in messages.split("\n"):
+            flash(message)
+
+    else:
+        # Save the file
+
+        rootdir = config.get_grids_root()
+        filename = os.path.join(rootdir, gridname + ".json")
+        with open(filename, "w") as fp:
+            print(jsonstr, file=fp)
+
+        # Send message about save
+        flash(f"Grid saved as {gridname}")
+
+        # Store the saved version of the grid in the session
+        # as 'grid.initial' so that we can detect whether
+        # it has been changed since it was last saved
+        session['grid.initial'] = jsonstr.strip()
+
+    # Store the grid in the session
     session['grid'] = grid.to_json()
 
     # Create the SVG
