@@ -1,14 +1,14 @@
 import re
 
+from configuration import Configuration
+
 
 class WordList:
     """ Given a regular expression, returns a list of all the words that match the pattern """
 
     def __init__(self, filename=None):
         if not filename:
-            from configuration import Configuration
-            config = Configuration()
-            filename = config.get_words_filename()
+            filename = Configuration.get_words_filename()
         self.filename = filename
         self.words = []
         with open(filename, "rt") as fp:

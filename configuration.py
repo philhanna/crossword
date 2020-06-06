@@ -3,40 +3,76 @@ import os
 
 
 class Configuration:
-    """ Handles configuration data """
+    """ Singleton class that handles configuration data """
+
+    _instance = None
+
+
+    ############################################################
+    #  Instance methods
+    ############################################################
+
     def __init__(self, config_filename="~/.crossword_config.ini"):
         """ Constructor """
         filename = os.path.expanduser(config_filename)
         config = configparser.ConfigParser()
         with open(filename) as fp:
             config.read_file(fp)
-        self.config = config
+        self._config = config
 
-    def get_grids_root(self):
+    def get(self, section, key):
+        return self._config.get(section, key)
+
+    ############################################################
+    #  Class methods
+    ############################################################
+
+    @staticmethod
+    def get_instance():
+        """ Returns the singleton instance of this class """
+        if not Configuration._instance:
+            Configuration._instance = Configuration()
+        return Configuration._instance
+
+    @staticmethod
+    def get_grids_root():
         """ Returns the grids root """
-        return self.config.get('data', 'grids_root')
+        config = Configuration.get_instance()
+        return config.get('data', 'grids_root')
 
-    def get_puzzles_root(self):
+    @staticmethod
+    def get_puzzles_root():
         """ Returns the puzzles root """
-        return self.config.get('data', 'puzzles_root')
+        config = Configuration.get_instance()
+        return config.get('data', 'puzzles_root')
 
-    def get_words_filename(self):
+    @staticmethod
+    def get_words_filename():
         """ Returns the path to the words file """
-        return self.config.get('data', 'words_filename')
+        config = Configuration.get_instance()
+        return config.get('data', 'words_filename')
 
-    def get_author_name(self):
+    @staticmethod
+    def get_author_name():
         """ Returns the author name """
-        return self.config.get('author', 'name')
+        config = Configuration.get_instance()
+        return config.get('author', 'name')
 
-    def get_author_address(self):
+    @staticmethod
+    def get_author_address():
         """ Returns the author address """
-        return self.config.get('author', 'address')
+        config = Configuration.get_instance()
+        return config.get('author', 'address')
 
-    def get_author_city_state_zip(self):
+    @staticmethod
+    def get_author_city_state_zip():
         """ Returns the author city_state_zip """
-        return self.config.get('author', 'city_state_zip')
+        config = Configuration.get_instance()
+        return config.get('author', 'city_state_zip')
 
-    def get_author_email(self):
+    @staticmethod
+    def get_author_email():
         """ Returns the author email """
-        return self.config.get('author', 'email')
+        config = Configuration.get_instance()
+        return config.get('author', 'email')
 

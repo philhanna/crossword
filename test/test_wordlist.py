@@ -9,8 +9,7 @@ class TestWordList(TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        config = Configuration()
-        filename = config.get_words_filename()
+        filename = Configuration().get_words_filename()
         self.wordlist = WordList(filename)
 
     def test_wildcards(self):

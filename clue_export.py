@@ -9,8 +9,7 @@ from clue_export_visitor import ClueExportVisitor
 
 def main(args):
 
-    config = Configuration()
-    puzzles_root = config.get_puzzles_root()
+    puzzles_root = Configuration.get_puzzles_root()
 
     # If the --list option was specified, just show the
     # list of puzzles in the puzzles root directory

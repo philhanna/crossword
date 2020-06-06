@@ -14,7 +14,6 @@ class NYTimesOutput:
     def __init__(self, puzzle: Puzzle, basename: str):
         self.puzzle = puzzle
         self.basename = basename
-        self.config = Configuration()
         self.svg = PuzzleToSVG(self.puzzle)
         self.svgstr = self.svg.generate_xml()
         self.htmlstr = self.generate_html()
@@ -61,10 +60,10 @@ tr.ds {
         elem_table = ET.SubElement(elem_div, "table")
 
         for author_text in [
-            self.config.get_author_name(),
-            self.config.get_author_address(),
-            self.config.get_author_city_state_zip(),
-            self.config.get_author_email(),
+            Configuration.get_author_name(),
+            Configuration.get_author_address(),
+            Configuration.get_author_city_state_zip(),
+            Configuration.get_author_email(),
         ]:
             elem_tr = ET.SubElement(elem_table, "tr")
             elem_td = ET.SubElement(elem_tr, "td")

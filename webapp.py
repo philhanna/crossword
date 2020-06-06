@@ -22,7 +22,6 @@ app.config["DEBUG"] = True
 # Secret key comes from os.urandom(24)
 app.secret_key = b'\x8aws+6\x99\xd9\x87\xf0\xd6\xe8\xad\x9b\xfd\xed\xb9'
 
-config = Configuration()
 wordlist = WordList()
 
 
@@ -91,7 +90,7 @@ def open_grid_screen():
 
     # Open the corresponding file and read its contents as json
     # and recreate the grid from it
-    rootdir = config.get_grids_root()
+    rootdir = Configuration.get_grids_root()
     filename = os.path.join(rootdir, gridname + ".json")
     with open(filename) as fp:
         jsonstr = fp.read()
@@ -145,7 +144,7 @@ def new_puzzle_screen():
 
     # Open the corresponding file and read its contents as json
     # and recreate the grid from it
-    rootdir = config.get_grids_root()
+    rootdir = Configuration.get_grids_root()
     filename = os.path.join(rootdir, gridname + ".json")
     with open(filename) as fp:
         jsonstr = fp.read()
@@ -173,7 +172,7 @@ def open_puzzle_screen():
 
     # Open the corresponding file and read its contents as json
     # and recreate the puzzle from it
-    rootdir = config.get_puzzles_root()
+    rootdir = Configuration.get_puzzles_root()
     filename = os.path.join(rootdir, puzzlename + ".json")
     with open(filename) as fp:
         jsonstr = fp.read()
@@ -294,7 +293,7 @@ def publish_nytimes_screen():
     # Open the corresponding file and read its contents as json
     # and recreate the puzzle from it
 
-    rootdir = config.get_puzzles_root()
+    rootdir = Configuration.get_puzzles_root()
     filename = os.path.join(rootdir, puzzlename + ".json")
     with open(filename) as fp:
         jsonstr = fp.read()
@@ -344,7 +343,7 @@ def publish_nytimes_screen():
 def grids():
     # Make a list of all the saved grids
     gridlist = []
-    rootdir = config.get_grids_root()
+    rootdir = Configuration.get_grids_root()
     for filename in os.listdir(rootdir):
         if filename.endswith(".json"):
             basename = os.path.splitext(filename)[0]
@@ -361,7 +360,7 @@ def grids():
 def puzzles():
     # Make a list of all the saved puzzles
     puzzlelist = []
-    rootdir = config.get_puzzles_root()
+    rootdir = Configuration.get_puzzles_root()
     for filename in os.listdir(rootdir):
         if filename.endswith(".json"):
             basename = os.path.splitext(filename)[0]
@@ -437,7 +436,7 @@ def grid_save_common(gridname):
     else:
         # Save the file
 
-        rootdir = config.get_grids_root()
+        rootdir = Configuration.get_grids_root()
         filename = os.path.join(rootdir, gridname + ".json")
         with open(filename, "w") as fp:
             print(jsonstr, file=fp)
@@ -478,7 +477,7 @@ def puzzle_save_common(puzzlename):
     jsonstr = session.get('puzzle', None)
 
     # Save the file
-    rootdir = config.get_puzzles_root()
+    rootdir = Configuration.get_puzzles_root()
     filename = os.path.join(rootdir, puzzlename + ".json")
     with open(filename, "w") as fp:
         print(session['puzzle'], file=fp)

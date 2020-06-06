@@ -8,9 +8,7 @@ from clue_import_visitor import ClueImportVisitor
 
 
 def main(args):
-
-    config = Configuration()
-    puzzles_root = config.get_puzzles_root()
+    puzzles_root = Configuration.get_puzzles_root()
 
     # If the --list option was specified, just show the
     # list of puzzles in the puzzles root directory
@@ -53,6 +51,7 @@ def main(args):
 
     with open(puzzle_filename, "wt") as fp:
         fp.write(puzzle.to_json())
+
 
 #   ============================================================
 #   Mainline
