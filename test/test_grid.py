@@ -80,7 +80,7 @@ class TestGrid(TestCase):
     def test_validate_bad(self):
         grid = TestGrid.get_bad_grid()
         ok, errmsg = grid.validate()
-        print(errmsg)
+        # print(errmsg)
         self.assertFalse(ok)
 
     def test_validate_good(self):

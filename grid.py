@@ -7,6 +7,7 @@ class Grid:
     """ An empty n x n cells with black cells and numbered cells """
 
     def __init__(self, n):
+        """ Creates a new Grid object of the specified size """
         self.n = n
         self.black_cells = set()
         self.numbered_cells = None  # Use lazy instantiation
@@ -20,13 +21,13 @@ class Grid:
         return rprime, cprime
 
     def add_black_cell(self, r, c):
-        """ Mark cell (r, c) as black (also its symmetric cell) """
+        """ Marks cell (r, c) as black (also its symmetric cell) """
         self.black_cells.add((r, c))
         self.black_cells.add(self.symmetric_point(r, c))
         self.numbered_cells = None
 
     def remove_black_cell(self, r, c):
-        """ Mark cell (r, c) as not black (also its symmetric cell) """
+        """ Marks cell (r, c) as not black (also its symmetric cell) """
         self.black_cells.discard((r, c))
         self.black_cells.discard(self.symmetric_point(r, c))
         self.numbered_cells = None
@@ -48,26 +49,32 @@ class Grid:
     def get_numbered_cells(self):
         """ Finds list of all cells that start a word """
 
-        # If already calculated, return that
+        # If already calculated, return that (lazy instantiation)
+
         if self.numbered_cells:
             return self.numbered_cells
 
         # Otherwise calculate and store
+
         n = self.n
         nclist = []
         for r in range(1, n + 1):
             for c in range(1, n + 1):
 
                 # Ignore black cells
+
                 if self.is_black_cell(r, c):
                     continue
 
                 # See if this is the start of an "across" word
+
                 across_length = 0
                 if c == 1 or self.is_black_cell(r, c - 1):
+
                     # This is the beginning of an "across" word
                     # Find the (r, c) of the stopping point, which is either
                     # the next black cell, or the edge of the puzzle
+
                     for cprime in range(c + 1, n + 1):
                         if self.is_black_cell(r, cprime):
                             across_length = cprime - c
@@ -79,11 +86,14 @@ class Grid:
                     across_length = 0
 
                 # Same for "down" word
+
                 down_length = 0
                 if r == 1 or self.is_black_cell(r - 1, c):
+
                     # This is the beginning of a "down" word
                     # Find the (r, c) of the stopping point, which is either
                     # the next black cell, or the edge of the puzzle
+
                     for rprime in range(r + 1, n + 1):
                         if self.is_black_cell(rprime, c):
                             down_length = rprime - r
@@ -98,10 +108,12 @@ class Grid:
                     seq = 1 + len(nclist)
                     numbered_cell = NumberedCell(seq, r, c, a=across_length, d=down_length)
                     nclist.append(numbered_cell)
+
         self.numbered_cells = nclist
         return nclist
 
     def to_json(self):
+        """ Returns the JSON string representation of the Grid """
         image = dict()
         image['n'] = self.n
         image['black_cells'] = self.get_black_cells()
@@ -116,12 +128,15 @@ class Grid:
 
     @staticmethod
     def from_json(jsonstr):
+        """ Creates a Grid object from its JSON string representation """
         image = json.loads(jsonstr)
         n = image['n']
         grid = Grid(n)
         for r, c in image['black_cells']:
             grid.add_black_cell(r, c)
+
         # Add the numbered cells
+
         grid.get_numbered_cells()
         return grid
 
@@ -158,8 +173,15 @@ class Grid:
     def validate_interlock(self):
         """ No islands of white cells enclosed in black cells """
 
-        # Create a matrix corresponding to the grid, with each
-        # cell having a value of its partition number (initially 0)
+        # ==============================================================
+        # Create a matrix corresponding to the grid,
+        # with each cell having the value of its partition number
+        # (which we will calculate).  Call the matrix "partition".
+        #
+        # The partition number is (r, c), where r and c
+        # are the row and column of the first cell in the partition.
+        # We'll initialize them all to (0, 0).
+        # ==============================================================
 
         partition = {}
         for r in range(1, self.n + 1):
@@ -167,6 +189,11 @@ class Grid:
                 if self.is_black_cell(r, c):
                     continue
                 partition[(r, c)] = (0, 0)
+
+        # ==============================================================
+        # Inner function which recursively marks its immediate neighbors
+        # (up, down, left, right) as belonging to the same partition.
+        # ==============================================================
 
         def mark_partition(r, c, pr, pc):
 
@@ -180,12 +207,18 @@ class Grid:
                 return      # Already marked
 
             # Otherwise, add this to the partition
+
             partition[(r, c)] = (pr, pc)
             mark_partition(r-1, c, pr, pc)  # Up
             mark_partition(r, c+1, pr, pc)  # Right
             mark_partition(r, c-1, pr, pc)  # Left
             mark_partition(r+1, c, pr, pc)  # Down
-            pass
+
+        # ==============================================================
+        # Now go through the whole grid, left to right, top to bottom.
+        # If a cell does not yet belong to a partition, call
+        # mark_partition on it.
+        # ==============================================================
 
         for r in range(1, self.n + 1):
             for c in range(1, self.n + 1):
@@ -193,6 +226,12 @@ class Grid:
                     continue
                 if partition[(r, c)] == (0, 0):
                     mark_partition(r, c, r, c)
+
+        # ==============================================================
+        # Everything is now marked.  Create the set of all the distict
+        # partitions.  We are expecting only one if the grid has
+        # all-over interlock
+        # ==============================================================
 
         partitions = set()
         for r in range(1, self.n + 1):
@@ -202,6 +241,11 @@ class Grid:
                 markr, markc = partition[(r, c)]
                 partitions.add((markr, markc))
 
+        # ==============================================================
+        # If there are more than one partitions, format an appropriate
+        # set of error messages
+        # ==============================================================
+
         errmsg = ""
         if len(partitions) > 1:
             errmsg += "*** No all-over interlock: ***\n"
@@ -209,6 +253,10 @@ class Grid:
             for r, c in sorted(list(partitions)):
                 np += 1
                 errmsg += f"Cell at ({r}, {c}) starts partition {np}" + "\n"
+
+        # ==============================================================
+        # Done
+        # ==============================================================
 
         return errmsg.strip()
 
@@ -271,6 +319,7 @@ class Grid:
         return "*** Some words shorter than 3 letters: ***\n" + errmsg.strip()
 
     def __str__(self):
+        """ Returns the string representation of the Grid """
         sb = f'+{"-" * (self.n * 2 - 1)}+' + "\n"
         for r in range(1, self.n + 1):
             if r > 1:
