@@ -30,9 +30,10 @@ function do_word(event, url) {
         elem_clue = document.getElementById('ew-clue');
         elem_clue.value = parms.clue;
 
-        // Clear any previous select for "suggest"
+        // Clear any previous select for "suggest" and turn it off
         elem_select = document.getElementById('ew-select')
         elem_select.innerHTML = ""
+        closeModalDialog('ew-select')
 
         // Make the modal dialog visible
         openModalDialog('ew-dialog');

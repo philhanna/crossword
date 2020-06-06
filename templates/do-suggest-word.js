@@ -22,6 +22,7 @@ function do_suggest_word() {
             elem_select.appendChild(elem_option)
           }
           openModalDialog('ew-wordlist');
+          openModalDialog('ew-select')
        }
    }
    var url = '{{ url_for("wordlists")}}';
