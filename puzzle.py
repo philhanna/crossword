@@ -18,7 +18,6 @@ class Puzzle:
         but rather as a map of (r, c) to single-character strings.
         The puzzle is initially set to all empty.
         """
-        self.grid = grid
         n = grid.n
         self.n = n
         self.black_cells = grid.get_black_cells()
@@ -68,7 +67,7 @@ class Puzzle:
         return self.down_words.get(seq, None)
 
     def is_black_cell(self, r, c):
-        return self.grid.is_black_cell(r, c)
+        return (r, c) in self.black_cells
 
     def get_numbered_cell(self, r, c):
         result = None
