@@ -98,8 +98,6 @@ def grid_delete_screen():
 
     return redirect(url_for('main_screen'))
 
-    pass
-
 
 @app.route('/open-grid')
 def open_grid_screen():
@@ -217,6 +215,22 @@ def puzzle_save_as():
     return puzzle_save_common(puzzlename)
 
 
+@app.route('/puzzle-delete')
+def puzzle_delete_screen():
+
+    # Get the name of the puzzle to be deleted from the session
+    # Delete the file
+
+    puzzlename = session['puzzlename']
+    filename = os.path.join(Configuration.get_puzzles_root(), puzzlename + ".json")
+    os.remove(filename)
+    flash(f"{puzzlename} puzzle deleted")
+
+    # Redirect to the main screen
+
+    return redirect(url_for('main_screen'))
+
+
 @app.route('/puzzle', methods=['GET'])
 def puzzle_screen():
     # Get the existing puzzle from the session
@@ -231,7 +245,8 @@ def puzzle_screen():
     enabled = {
         "save_puzzle": puzzlename is not None,
         "save_puzzle_as": True,
-        "close_puzzle": True
+        "close_puzzle": True,
+        "delete_puzzle": True,
     }
 
     # Send puzzle.html to the client
