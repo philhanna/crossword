@@ -395,11 +395,6 @@ def grid_changed():
     jsonstr_current = session.get('grid', None)
     changed = not (jsonstr_current == jsonstr_initial)
     obj = {"changed": changed}
-    if changed:
-        with open("/tmp/grid-changed-initial.json", "wt") as fp:
-            print(jsonstr_initial, file=fp)
-        with open("/tmp/grid-changed-current.json", "wt") as fp:
-            print(jsonstr_current, file=fp)
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(obj), HTTPStatus.OK)
