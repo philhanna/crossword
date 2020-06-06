@@ -85,7 +85,6 @@ def new_grid_screen():
 
 @app.route('/grid-delete')
 def grid_delete_screen():
-
     # Get the name of the grid to be deleted from the session
     # Delete the file
 
@@ -217,7 +216,6 @@ def puzzle_save_as():
 
 @app.route('/puzzle-delete')
 def puzzle_delete_screen():
-
     # Get the name of the puzzle to be deleted from the session
     # Delete the file
 
@@ -229,6 +227,54 @@ def puzzle_delete_screen():
     # Redirect to the main screen
 
     return redirect(url_for('main_screen'))
+
+
+@app.route('/puzzle-save-grid')
+def puzzle_save_grid_screen():
+    # Extract the grid from the current puzzle
+
+    puzzlename = session.get('puzzlename', None)
+    jsonstr = session.get('puzzle', None)
+    grid = Grid.from_json(jsonstr)
+
+    # Save it with the specified name
+
+    gridname = request.args.get('gridname').strip()
+    filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
+    with open(filename, "wt") as fp:
+        fp.write(grid.to_json())
+
+    flash(f"Saved {puzzlename} grid as {gridname}")
+    return redirect(url_for('puzzle_screen'))
+
+
+@app.route('/puzzle-replace-grid')
+def puzzle_replace_grid_screen():
+
+    # Load the specified grid
+
+    gridname = request.args.get('gridname').strip()
+    filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
+    with open(filename, "rt") as fp:
+        jsonstr = fp.read().strip()
+    grid = Grid.from_json(jsonstr)
+
+    # Load the current puzzle
+
+    puzzle = Puzzle.from_json(session['puzzle'])
+    try:
+        puzzle.replace_grid(grid)
+    except ValueError as e:
+        flash(f"Puzzle grid cannot be replaced from {gridname}")
+        flash(e)
+        return redirect(url_for('puzzle_screen'))
+
+    # Send the new puzzle back to the client
+
+    session['puzzle'] = puzzle.to_json()
+    flash(f"Puzzle grid replaced by grid {gridname}")
+
+    return redirect(url_for('puzzle_screen'))
 
 
 @app.route('/puzzle', methods=['GET'])
@@ -246,6 +292,8 @@ def puzzle_screen():
         "save_puzzle": puzzlename is not None,
         "save_puzzle_as": True,
         "close_puzzle": True,
+        "save_puzzle_grid": True,
+        "replace_puzzle_grid": True,
         "delete_puzzle": True,
     }
 
@@ -281,7 +329,7 @@ def edit_word_screen():
 
     # Get the word
     puzzle = Puzzle.from_json(session.get('puzzle'))
-    if direction.startswith('A'):
+    if direction.startswith('A'):  # TODO this is fragile. Better to use an Enum
         word = puzzle.get_across_word(seq)
     else:
         word = puzzle.get_down_word(seq)
@@ -455,7 +503,6 @@ def puzzle_changed():
 #   ============================================================
 
 def grid_save_common(gridname):
-
     # Recreate the grid from the JSON in the session
     # and validate it
 
@@ -537,6 +584,7 @@ def puzzle_save_common(puzzlename):
         "save_puzzle": True,
         "save_puzzle_as": True,
         "close_puzzle": True,
+        "save_puzzle_grid": True,
     }
 
     # Show the puzzle.html screen

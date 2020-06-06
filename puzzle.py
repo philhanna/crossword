@@ -18,26 +18,31 @@ class Puzzle:
         but rather as a map of (r, c) to single-character strings.
         The puzzle is initially set to all empty.
         """
-        n = grid.n
-        self.n = n
+        self.n = grid.n
         self.black_cells = grid.get_black_cells()
         self.numbered_cells = grid.get_numbered_cells()
-        self.across_words = {}
-        self.down_words = {}
+        self.across_words = None
+        self.down_words = None
 
         cells = {}
         self.cells = cells
 
         # All cells are initially empty
-        for r in range(1, n + 1):
-            for c in range(1, n + 1):
+        for r in range(1, self.n + 1):
+            for c in range(1, self.n + 1):
                 cells[(r, c)] = Puzzle.WHITE
 
         # Except for black cells
         for bc in self.black_cells:
             cells[bc] = Puzzle.BLACK
 
+        # Now populate the across and down words
+        self.initialize_words()
+
+    def initialize_words(self):
         # We know where the words go
+        self.across_words = {}
+        self.down_words = {}
         for numbered_cell in self.numbered_cells:
 
             # Yes, this is an across word
@@ -47,6 +52,30 @@ class Puzzle:
             # Yes, this is a down word
             if numbered_cell.down_length:
                 self.down_words[numbered_cell.seq] = DownWord(self, numbered_cell.seq)
+
+    def replace_grid(self, grid):
+        """ Use a new grid for this puzzle """
+
+        # Make sure new grid is the same size
+        if self.n != grid.n:
+            errmsg = f"Incompatible sizes: puzzle={self.n}, new grid={grid.n}"
+            raise ValueError(errmsg)
+
+        self.black_cells = grid.get_black_cells()
+        self.numbered_cells = grid.get_numbered_cells()
+
+        # Set all the old black cells to white
+        for r in range(1, self.n + 1):
+            for c in range(1, self.n + 1):
+                if self.cells[(r, c)] == Puzzle.BLACK:
+                    self.cells[(r, c)] = Puzzle.WHITE
+
+        # Now set the new black cells
+        for bc in self.black_cells:
+            self.cells[bc] = Puzzle.BLACK
+
+        # Repopulate the across and down words
+        self.initialize_words()
 
     #   ========================================================
     #   Getters and setters
