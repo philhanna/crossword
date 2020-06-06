@@ -349,6 +349,7 @@ def grids():
         if filename.endswith(".json"):
             basename = os.path.splitext(filename)[0]
             gridlist.append(basename)
+    gridlist.sort()
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
@@ -365,6 +366,7 @@ def puzzles():
         if filename.endswith(".json"):
             basename = os.path.splitext(filename)[0]
             puzzlelist.append(basename)
+    puzzlelist.sort()
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
