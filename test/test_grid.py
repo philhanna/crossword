@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from grid import Grid
+from test.test_puzzle import TestPuzzle
 
 
 class TestGrid(TestCase):
@@ -87,6 +88,12 @@ class TestGrid(TestCase):
         grid = TestGrid.get_good_grid()
         ok, errmsg = grid.validate()
         self.assertTrue(ok)
+
+    def test_grid_from_puzzle(self):
+        puzzle = TestPuzzle.create_nyt_daily()
+        jsonstr = puzzle.to_json()
+        grid = Grid.from_json(jsonstr)
+        self.assertEqual(puzzle.n, grid.n)
 
     @staticmethod
     def get_good_grid():
