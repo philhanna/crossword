@@ -83,6 +83,24 @@ def new_grid_screen():
                            svgstr=svgstr)
 
 
+@app.route('/grid-delete')
+def grid_delete_screen():
+
+    # Get the name of the grid to be deleted from the session
+    # Delete the file
+
+    gridname = session['gridname']
+    filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
+    os.remove(filename)
+    flash(f"{gridname} grid deleted")
+
+    # Redirect to the main screen
+
+    return redirect(url_for('main_screen'))
+
+    pass
+
+
 @app.route('/open-grid')
 def open_grid_screen():
     # Get the chosen grid name from the query parameters
@@ -110,7 +128,8 @@ def open_grid_screen():
     enabled = {
         "save_grid": True,
         "save_grid_as": True,
-        "close_grid": True
+        "close_grid": True,
+        "delete_grid": True,
     }
 
     # Go to grid.html

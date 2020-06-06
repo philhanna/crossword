@@ -11,6 +11,7 @@
 {% include 'do-save-puzzle-as.js' %}
 {% include 'do-suggest-word.js' %}
 {% include 'do-publish.js' %}
+{% include 'do-delete-grid.js' %}
 </script>
 <div class="w3-bar w3-blue-gray">
    <div class="w3-dropdown-hover w3-blue-gray">
@@ -49,6 +50,12 @@
             onclick="do_close_grid()"
             {% endif %}
             >Close grid</a>
+         <a class="w3-bar-item w3-button
+            {% if not enabled.delete_grid %} w3-disabled {% endif %}"
+            {% if enabled.delete_grid %}
+            onclick="do_delete_grid()"
+            {% endif %}
+            >Delete grid</a>
       </div>
    </div>
    <div class="w3-dropdown-hover w3-blue-gray">
