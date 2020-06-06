@@ -134,8 +134,8 @@ class PuzzleToSVG(ToSVG):
     def __init__(self, puzzle: Puzzle, *args, **kwargs):
         super().__init__(puzzle.n, *args, **kwargs)
         self.puzzle = puzzle
-        self.black_cells = puzzle.grid.get_black_cells()
-        self.numbered_cells = puzzle.grid.get_numbered_cells()
+        self.black_cells = puzzle.black_cells
+        self.numbered_cells = puzzle.numbered_cells
 
     def generate_cell(self, r, c):
         letter = self.puzzle.get_cell(r, c)
