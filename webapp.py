@@ -8,6 +8,7 @@ from io import BytesIO
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from flask import Flask, flash, request, make_response, redirect, render_template, session, url_for
+from flask_session import Session
 
 from configuration import Configuration
 from grid import Grid
@@ -19,8 +20,10 @@ from wordlist import WordList
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 app.config["DEBUG"] = True
+app.config["SESSION_TYPE"] = "filesystem"
 # Secret key comes from os.urandom(24)
 app.secret_key = b'\x8aws+6\x99\xd9\x87\xf0\xd6\xe8\xad\x9b\xfd\xed\xb9'
+Session(app)
 
 wordlist = WordList()
 
@@ -194,9 +197,12 @@ def open_puzzle_screen():
         jsonstr = fp.read()
 
     # Store the puzzle and puzzle name in the session
-    session['puzzle'] = jsonstr.strip()
-    session['puzzle.initial'] = jsonstr.strip()
+    session['puzzle'] = jsonstr
+    session['puzzle.initial'] = jsonstr
     session['puzzlename'] = puzzlename
+
+    # DEBUG
+    show_session("In open_puzzle_screen")
 
     return redirect(url_for('puzzle_screen'))
 
@@ -250,7 +256,6 @@ def puzzle_save_grid_screen():
 
 @app.route('/puzzle-replace-grid')
 def puzzle_replace_grid_screen():
-
     # Load the specified grid
 
     gridname = request.args.get('gridname').strip()
@@ -279,6 +284,8 @@ def puzzle_replace_grid_screen():
 
 @app.route('/puzzle', methods=['GET'])
 def puzzle_screen():
+    # DEBUG
+    show_session("In puzzle_screen")
     # Get the existing puzzle from the session
     puzzle = Puzzle.from_json(session['puzzle'])
     puzzlename = session.get('puzzlename', None)
@@ -682,6 +689,12 @@ def grid_click():
     svgstr = svg.generate_xml()
     response = make_response(svgstr, HTTPStatus.OK)
     return response
+
+
+def show_session(msg):
+    print(f"DEBUG: {msg}")
+    for k, v in session.items():
+        print(f"DEBUG: {k:16}")
 
 
 #   ============================================================
