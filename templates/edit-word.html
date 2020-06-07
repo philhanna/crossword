@@ -12,11 +12,25 @@
       onclick="closeModalDialog('ew-dialog');"
       >&times;</span>
 </header>
-
+<script>
+    function validateWord() {
+        var text = document.getElementById('ew-word').value;
+        for (var i = 0; i < text.length; i++) {
+            var ch = text.charAt(i).toUpperCase();
+            var p = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(ch);
+            if (p < 0) {
+                alert(text + " contains non-alphabetic characters");
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
 <form class="w3-container w3-card-4"
       name="ew-form"
-      action="{{ url_for('edit_word_screen') }}"
       method="POST"
+      action="{{ url_for('edit_word_screen') }}"
+      onsubmit="return validateWord()"
 >
 
 <!-- form section -->
