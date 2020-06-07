@@ -7,7 +7,15 @@ from http import HTTPStatus
 from io import BytesIO
 from zipfile import ZipFile, ZIP_DEFLATED
 
-from flask import Flask, flash, request, make_response, redirect, render_template, session, url_for
+from flask import Flask
+from flask import flash
+from flask import request
+from flask import make_response
+from flask import redirect
+from flask import render_template
+from flask import session
+from flask import url_for
+
 from flask_session import Session
 
 from configuration import Configuration
@@ -20,9 +28,13 @@ from wordlist import WordList
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 app.config["DEBUG"] = True
-app.config["SESSION_TYPE"] = "filesystem"
+
 # Secret key comes from os.urandom(24)
 app.secret_key = b'\x8aws+6\x99\xd9\x87\xf0\xd6\xe8\xad\x9b\xfd\xed\xb9'
+
+# This is required to add server-side session support
+
+app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 wordlist = WordList()
@@ -201,9 +213,6 @@ def open_puzzle_screen():
     session['puzzle.initial'] = jsonstr
     session['puzzlename'] = puzzlename
 
-    # DEBUG
-    show_session("In open_puzzle_screen")
-
     return redirect(url_for('puzzle_screen'))
 
 
@@ -284,8 +293,6 @@ def puzzle_replace_grid_screen():
 
 @app.route('/puzzle', methods=['GET'])
 def puzzle_screen():
-    # DEBUG
-    show_session("In puzzle_screen")
     # Get the existing puzzle from the session
     puzzle = Puzzle.from_json(session['puzzle'])
     puzzlename = session.get('puzzlename', None)
@@ -689,12 +696,6 @@ def grid_click():
     svgstr = svg.generate_xml()
     response = make_response(svgstr, HTTPStatus.OK)
     return response
-
-
-def show_session(msg):
-    print(f"DEBUG: {msg}")
-    for k, v in session.items():
-        print(f"DEBUG: {k:16}")
 
 
 #   ============================================================
