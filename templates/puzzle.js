@@ -34,6 +34,7 @@ function do_word(event, url) {
         elem_select = document.getElementById('ew-select')
         elem_select.innerHTML = ""
         closeModalDialog('ew-select')
+        closeModalDialog('ew-wordlist')
 
         // Make the modal dialog visible
         openModalDialog('ew-dialog');
