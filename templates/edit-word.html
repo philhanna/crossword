@@ -12,26 +12,13 @@
       onclick="closeModalDialog('ew-dialog');"
       >&times;</span>
 </header>
-<script>
-    function validateWord() {
-        var text = document.getElementById('ew-word').value;
-        for (var i = 0; i < text.length; i++) {
-            var ch = text.charAt(i).toUpperCase();
-            var p = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(ch);
-            if (p < 0) {
-                alert(text + " contains non-alphabetic characters");
-                return false;
-            }
-        }
-        return true;
-    }
-</script>
-<form class="w3-container w3-card-4"
+
+    <form class="w3-container w3-card-4"
       name="ew-form"
       method="POST"
       action="{{ url_for('edit_word_screen') }}"
-      onsubmit="return validateWord()"
->
+      onsubmit="return do_validate_word()"
+    >
 
 <!-- form section -->
 <div class="w3-section">
@@ -39,14 +26,6 @@
 <div class="w3-bar w3-border w3-blue-gray">
   <div class="w3-bar-item w3-button" onclick="do_suggest_word()">Suggest</div>
     <div class="w3-bar-item" id="ew-wordlist" style="display:none">
-        <script>
-            function do_select_changed() {
-                elem_select = document.getElementById('ew-select')
-                value = elem_select.value
-                elem_word = document.getElementById('ew-word')
-                elem_word.value = value
-            }
-        </script>
       <label for="words">Possible matches:</label>
       <select name="words"
               id="ew-select"
@@ -94,6 +73,12 @@ style="width:100px"
 type="button"
 onclick="closeModalDialog('ew-dialog');"
 >Cancel</button>
+
+<button  class="w3-button w3-border w3-round w3-gray"
+style="width:100px"
+type="button"
+onclick="do_reset_word()"
+>Reset</button>
 
 </div> <!-- End of button container -->
 </div> <!-- End of form section -->
