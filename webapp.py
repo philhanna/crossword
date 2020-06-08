@@ -77,7 +77,9 @@ def new_grid_screen():
 
     # Create the grid
     grid = Grid(n)
-    session['grid'] = grid.to_json()
+    jsonstr = grid.to_json()
+    session['grid'] = jsonstr
+    session['grid.initial'] = jsonstr
 
     # Create the SVG
     svg = GridToSVG(grid)
@@ -127,8 +129,8 @@ def open_grid_screen():
     grid = Grid.from_json(jsonstr)
 
     # Store the grid and grid name in the session
-    session['grid'] = jsonstr.strip()
-    session['grid.initial'] = jsonstr.strip()
+    session['grid'] = jsonstr
+    session['grid.initial'] = jsonstr
     session['gridname'] = gridname
 
     # Create the SVG
@@ -186,7 +188,9 @@ def new_puzzle_screen():
     n = puzzle.n
 
     # Save puzzle in the session
-    session['puzzle'] = puzzle.to_json()
+    jsonstr = puzzle.to_json()
+    session['puzzle'] = jsonstr
+    session['puzzle.initial'] = jsonstr
 
     # Remove any leftover puzzle name in the session
     session.pop('puzzlename', None)
@@ -270,7 +274,7 @@ def puzzle_replace_grid_screen():
     gridname = request.args.get('gridname').strip()
     filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
     with open(filename, "rt") as fp:
-        jsonstr = fp.read().strip()
+        jsonstr = fp.read()
     grid = Grid.from_json(jsonstr)
 
     # Load the current puzzle
@@ -504,6 +508,7 @@ def puzzle_changed():
     jsonstr_initial = session.get('puzzle.initial', None)
     jsonstr_current = session.get('puzzle', None)
     changed = not (jsonstr_current == jsonstr_initial)
+
     obj = {"changed": changed}
 
     # Send this back to the client in JSON
@@ -534,7 +539,7 @@ def grid_save_common(gridname):
         rootdir = Configuration.get_grids_root()
         filename = os.path.join(rootdir, gridname + ".json")
         with open(filename, "w") as fp:
-            print(jsonstr, file=fp)
+            fp.write(jsonstr)
 
         # Send message about save
         flash(f"Grid saved as {gridname}")
@@ -543,7 +548,7 @@ def grid_save_common(gridname):
         # Store the saved version of the grid in the session
         # as 'grid.initial' so that we can detect whether
         # it has been changed since it was last saved
-        session['grid.initial'] = jsonstr.strip()
+        session['grid.initial'] = jsonstr
 
     # Store the grid in the session
     session['grid'] = grid.to_json()
@@ -578,12 +583,12 @@ def puzzle_save_common(puzzlename):
     rootdir = Configuration.get_puzzles_root()
     filename = os.path.join(rootdir, puzzlename + ".json")
     with open(filename, "w") as fp:
-        print(session['puzzle'], file=fp)
+        fp.write(jsonstr)
 
     # Store the saved version of the puzzle in the session
     # as 'puzzle.initial' so that we can detect whether
     # it has been changed since it was last saved
-    session['puzzle.initial'] = jsonstr.strip()
+    session['puzzle.initial'] = jsonstr
 
     # Send message about the save
     flash(f"Puzzle saved as {puzzlename}")
