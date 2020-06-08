@@ -112,6 +112,16 @@ class Grid:
         self.numbered_cells = nclist
         return nclist
 
+    def get_word_count(self):
+        """ Returns the number of words in the grid """
+        count = 0
+        for nc in self.get_numbered_cells():
+            if nc.across_length:
+                count += 1
+            if nc.down_length:
+                count += 1
+        return count
+
     def to_json(self):
         """ Returns the JSON string representation of the Grid """
         image = dict()

@@ -449,3 +449,9 @@ class TestPuzzle(TestCase):
         word = puzzle.get_down_word(17)
         self.assertEqual("EHRE", word.get_text())
         self.assertEqual("Honor, to Fritz", word.get_clue())
+
+    def test_word_count(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        expected = 26
+        actual = puzzle.get_word_count()
+        self.assertEqual(expected, actual)

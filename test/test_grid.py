@@ -95,6 +95,12 @@ class TestGrid(TestCase):
         grid = Grid.from_json(jsonstr)
         self.assertEqual(puzzle.n, grid.n)
 
+    def test_word_count(self):
+        grid = TestGrid.get_good_grid()
+        expected = 76
+        actual = grid.get_word_count()
+        self.assertEqual(expected, actual)
+
     @staticmethod
     def get_good_grid():
         jsonstr = """
