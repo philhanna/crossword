@@ -344,6 +344,7 @@ def edit_word_screen():
     # Get the word and clue from the form
     text = request.form.get('text')
     clue = request.form.get('clue')
+
     # Make the text uppercase and replace "." with blanks
     text = text.upper()
     text = re.sub(r'\.', ' ', text)
@@ -518,6 +519,29 @@ def puzzle_changed():
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(obj), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
+@app.route('/reset-word', methods=['GET'])
+def reset_word():
+    # Get the puzzle, word seq, word direction, and word length from the session
+    puzzle = Puzzle.from_json(session['puzzle'])
+    seq = session.get('seq')
+    direction = session.get('direction')
+    length = session.get('length')
+
+    # Get the word
+    if direction.startswith('A'):  # TODO this is fragile. Better to use an Enum
+        word = puzzle.get_across_word(seq)
+    else:
+        word = puzzle.get_down_word(seq)
+    pass
+
+    # Send cleared text back to the client in JSON
+    new_text = word.get_clear_word()
+    new_text = re.sub(' ', '.', new_text)
+    resp = make_response(json.dumps(new_text), HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
 
