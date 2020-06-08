@@ -188,7 +188,7 @@ def new_puzzle_screen():
     # Save puzzle in the session
     session['puzzle'] = puzzle.to_json()
 
-    # Remove any leftover puzzlde name in the session
+    # Remove any leftover puzzle name in the session
     session.pop('puzzlename', None)
 
     return redirect(url_for('puzzle_screen'))
@@ -558,6 +558,7 @@ def grid_save_common(gridname):
         "save_grid": True,
         "save_grid_as": True,
         "close_grid": True,
+        "delete_grid": True,
     }
 
     # Show the grid.html screen
@@ -588,29 +589,8 @@ def puzzle_save_common(puzzlename):
     flash(f"Puzzle saved as {puzzlename}")
     flash(f"Word count is {puzzle.get_word_count()}")
 
-    # Recreate the puzzle
-    puzzle = Puzzle.from_json(jsonstr)
-
-    # Create the SVG
-    svg = PuzzleToSVG(puzzle)
-    boxsize = svg.boxsize
-    svgstr = svg.generate_xml()
-
-    # Enable menu options
-    enabled = {
-        "save_puzzle": True,
-        "save_puzzle_as": True,
-        "close_puzzle": True,
-        "save_puzzle_grid": True,
-    }
-
-    # Show the puzzle.html screen
-    return render_template('puzzle.html',
-                           enabled=enabled,
-                           n=puzzle.n,
-                           puzzlename=puzzlename,
-                           boxsize=boxsize,
-                           svgstr=svgstr)
+    # Show the puzzle screen
+    return redirect(url_for('puzzle_screen'))
 
 
 def puzzle_click(direction):
