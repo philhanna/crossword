@@ -344,6 +344,15 @@ def edit_word_screen():
     # Get the word and clue from the form
     text = request.form.get('text')
     clue = request.form.get('clue')
+    # Make the text uppercase and replace "." with blanks
+    text = text.upper()
+    text = re.sub(r'\.', ' ', text)
+    if len(text) < length:
+        text += " " * length
+        text = text[:length]
+    # If the word is not complete, change the clue to blanks
+    if ' ' in text:
+        clue = ""
 
     # Get the word
     puzzle = Puzzle.from_json(session.get('puzzle'))
@@ -352,10 +361,6 @@ def edit_word_screen():
     else:
         word = puzzle.get_down_word(seq)
     pass
-
-    # Make the text uppercase and replace "." with blanks
-    text = text.upper()
-    text = re.sub(r'\.', ' ', text)
 
     # Update the word in the puzzle
     word.set_text(text)
