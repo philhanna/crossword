@@ -28,10 +28,12 @@ class NumberedCell:
         self.down_length = d
 
     def contains_across(self, r, c):
-        return r == self.r and c < self.c + self.across_length
+        result = r == self.r and c < self.c + self.across_length
+        return result
 
     def contains_down(self, r, c):
-        return c == self.c and r < self.c + self.down_length
+        result = c == self.c and r < self.c + self.down_length
+        return result
 
     def __eq__(self, other):
         return self.seq == other.seq and \
