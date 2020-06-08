@@ -538,6 +538,7 @@ def grid_save_common(gridname):
 
         # Send message about save
         flash(f"Grid saved as {gridname}")
+        flash(f"Word count is {grid.get_word_count()}")
 
         # Store the saved version of the grid in the session
         # as 'grid.initial' so that we can detect whether
@@ -570,6 +571,7 @@ def grid_save_common(gridname):
 
 def puzzle_save_common(puzzlename):
     jsonstr = session.get('puzzle', None)
+    puzzle = Puzzle.from_json(jsonstr)
 
     # Save the file
     rootdir = Configuration.get_puzzles_root()
@@ -584,6 +586,7 @@ def puzzle_save_common(puzzlename):
 
     # Send message about the save
     flash(f"Puzzle saved as {puzzlename}")
+    flash(f"Word count is {puzzle.get_word_count()}")
 
     # Recreate the puzzle
     puzzle = Puzzle.from_json(jsonstr)
