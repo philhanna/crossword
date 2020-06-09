@@ -89,6 +89,7 @@ def new_grid_screen():
     # Enable menu options
     enabled = {
         "save_grid_as": True,
+        "grid_stats": True,
         "close_grid": True
     }
 
@@ -143,6 +144,7 @@ def open_grid_screen():
         "save_grid": True,
         "save_grid_as": True,
         "close_grid": True,
+        "grid_stats": True,
         "delete_grid": True,
     }
 
@@ -462,6 +464,17 @@ def grids():
     return resp
 
 
+@app.route('/grid-statistics', methods=['GET'])
+def grid_statistics():
+    # Get the grid name and grid from the session
+    gridname = session.get('gridname', '(Untitled)')
+    grid = Grid.from_json(session['grid'])
+    stats = grid.get_statistics()
+    return make_response(json.dumps(stats), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
 @app.route('/puzzles')
 def puzzles():
     # Make a list of all the saved puzzles
@@ -559,7 +572,7 @@ def grid_save_common(gridname):
     ok, messages = grid.validate()
     if not ok:
         flash("GRID NOT SAVED")
-        for message in messages.split("\n"):
+        for message in messages:
             flash(message)
 
     else:
@@ -572,7 +585,6 @@ def grid_save_common(gridname):
 
         # Send message about save
         flash(f"Grid saved as {gridname}")
-        flash(f"Word count is {grid.get_word_count()}")
 
         # Store the saved version of the grid in the session
         # as 'grid.initial' so that we can detect whether

@@ -211,6 +211,151 @@ function validateNewGridForm() {
    return true;
 }
 
+/***************************************************************
+ *  FUNCTION NAME:   do_grid_stats
+ *  DESCRIPTION:     Assemble grid statistics and shows results
+ ***************************************************************/
+function do_grid_stats() {
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+         // Get the statistics back from the REST call
+         var jsonstr = this.responseText;
+         var stats = JSON.parse(jsonstr);
+
+         // Fill in the "valid" cell
+         var elem_valid = document.getElementById('gst-valid');
+         elem_valid.innerHTML = stats['valid'];
+
+         // Fill in the "errors" cell
+         var elem_errors = document.getElementById('gst-errors');
+         var errors = stats['errors']
+         if (errors.length == 0) {
+            elem_errors.appendChild(document.createTextNode("None"))
+         }
+         else {
+            elem_errors.setAttribute("class", "w3-card w3-panel w3-sand");
+            var elem_ul = document.createElement("ul");
+            elem_ul.style.listStyleType = "none";
+            elem_ul.style.lineHeight = "30%"
+            for (var i = 0; i < errors.length; i++) {
+               var errmsg = errors[i];
+               var elem_li = document.createElement("li");
+               var elem_p = document.createElement("p");
+               var node_text = document.createTextNode(errmsg);
+               elem_p.appendChild(node_text);
+               elem_li.appendChild(elem_p);
+               elem_ul.appendChild(elem_li);
+            }
+            elem_errors.appendChild(elem_ul);
+         }
+
+         // Fill in the "size" cell
+         var elem_size = document.getElementById('gst-size');
+         elem_size.appendChild(document.createTextNode(stats['size']));
+
+         // Fill in the "wordcount" cell
+         var elem_wordcount = document.getElementById('gst-wordcount');
+         elem_wordcount.appendChild(document.createTextNode(stats['wordcount']));
+
+         // Fill in the "wordlengths" table
+         var elem_wordlengths = document.getElementById('gst-wordlengths');
+
+         // Declare variables
+         var elem_table, elem_tr, elem_th, elem_td, node_text, elem_p;
+
+         // Create the table element and assign its classes
+         elem_table = document.createElement("table");
+         elem_table.setAttribute("class", "w3-table");
+         elem_table.style.borderWidth = "thin";
+         elem_table.style.borderStyle = "solid";
+         elem_table.style.borderColor = "black";
+         elem_table.style.borderCollapse = "collapse";
+
+         // Table header
+         elem_tr = document.createElement("tr");
+
+         // Word length
+         elem_th = document.createElement("th");
+         elem_th.style.width = "15%";
+         elem_th.appendChild(document.createTextNode("Word length"));
+         elem_tr.appendChild(elem_th);
+
+         // Across words of that length
+         elem_th = document.createElement("th");
+         elem_th.style.width = "40%";
+         elem_th.appendChild(document.createTextNode("Across"));
+         elem_tr.appendChild(elem_th);
+
+         // Down words of that length
+         elem_th = document.createElement("th");
+         elem_th.style.width = "40%";
+         elem_th.appendChild(document.createTextNode("Down"));
+         elem_tr.appendChild(elem_th);
+
+         // Done with table header
+         elem_table.appendChild(elem_tr);
+
+         // Now loop through the "wordlengths" list and create rows
+         var wlens = stats['wordlengths'];
+         for (var length in wlens) {
+            var wlen = wlens[length];
+            var alist = wlen['alist'];
+            var dlist = wlen['dlist'];
+
+            // Create the table row
+            elem_tr = document.createElement("tr");
+            elem_table.appendChild(elem_tr);
+
+            // Length
+            elem_td = document.createElement("td");
+            elem_td.style.border = "1px solid black";
+            elem_td.style.textAlign = "center";
+            elem_td.appendChild(document.createTextNode(length));
+            elem_tr.appendChild(elem_td);
+
+            // Across words
+            elem_td = document.createElement("td");
+            elem_td.style.border = "1px solid black"
+            elem_p = document.createElement("p");
+            elem_td.appendChild(elem_p);
+            elem_p.style.wordBreak = "break-word";
+            node_text = "";
+            for (var i = 0; i < alist.length; i++) {
+               if (i > 0) {
+                  node_text += ",";
+               }
+               node_text += alist[i];
+            }
+            elem_td.innerHTML = node_text
+            elem_tr.appendChild(elem_td);
+
+            // Down words
+            elem_td = document.createElement("td");
+            elem_td.style.border = "1px solid black"
+            elem_p.style.wordBreak = "break-word";
+            node_text = "";
+            for (var i = 0; i < dlist.length; i++) {
+               if (i > 0) {
+                  node_text += ",";
+               }
+               node_text += dlist[i];
+            }
+            elem_td.innerHTML = node_text;
+            elem_tr.appendChild(elem_td);
+         }
+         elem_wordlengths.appendChild(elem_table);
+
+         // Show the stats screen
+         openModalDialog('gst-dialog');
+      }
+   }
+   // Ask the server if the puzzle has changed
+   var url = '{{ url_for("grid_statistics")}}';
+   xhttp.open("GET", url, true);
+   xhttp.send();
+}
+
 //  ============================================================
 //  Puzzle functions
 //  ============================================================

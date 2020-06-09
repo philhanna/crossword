@@ -49,39 +49,37 @@ class TestGrid(TestCase):
 
     def test_validate_minimum_word_length_bad(self):
         grid = TestGrid.get_bad_grid()
-        errmsg = grid.validate_minimum_word_length()
-        self.assertTrue("12 across" in errmsg)
-        self.assertTrue("16 down" in errmsg)
+        errors = grid.validate_minimum_word_length()
+        self.assertTrue(len(errors) > 0)
 
     def test_validate_minimum_word_length_good(self):
         grid = TestGrid.get_good_grid()
-        errmsg = grid.validate_minimum_word_length()
-        self.assertTrue(not errmsg)
+        errors = grid.validate_minimum_word_length()
+        self.assertTrue(len(errors) == 0)
 
     def test_validate_unchecked_squares_bad(self):
         grid = TestGrid.get_bad_grid()
-        errmsg = grid.validate_unchecked_squares()
-        self.assertNotEqual("", errmsg.strip())
+        errors = grid.validate_unchecked_squares()
+        self.assertTrue(len(errors) > 0)
 
     def test_validate_unchecked_squares_good(self):
         grid = TestGrid.get_good_grid()
-        errmsg = grid.validate_unchecked_squares()
-        self.assertEqual("", errmsg.strip())
+        errors = grid.validate_unchecked_squares()
+        self.assertTrue(len(errors) == 0)
 
     def test_validate_interlock_bad(self):
         grid = TestGrid.get_bad_grid()
-        errmsg = grid.validate_interlock()
-        self.assertNotEqual("", errmsg.strip())
+        errors = grid.validate_interlock()
+        self.assertTrue(len(errors) > 0)
 
     def test_validate_interlock_good(self):
         grid = TestGrid.get_good_grid()
-        errmsg = grid.validate_interlock()
-        self.assertEqual("", errmsg.strip())
+        errors = grid.validate_interlock()
+        self.assertTrue(len(errors) == 0)
 
     def test_validate_bad(self):
         grid = TestGrid.get_bad_grid()
-        ok, errmsg = grid.validate()
-        # print(errmsg)
+        ok, errors = grid.validate()
         self.assertFalse(ok)
 
     def test_validate_good(self):
@@ -100,6 +98,21 @@ class TestGrid(TestCase):
         expected = 76
         actual = grid.get_word_count()
         self.assertEqual(expected, actual)
+
+    def test_statistics_good(self):
+        grid = TestGrid.get_good_grid()
+        stats = grid.get_statistics()
+        self.assertTrue(stats['valid'])
+        self.assertListEqual([1, 24, 53, 69], stats['wordlengths'][3]['alist'])
+        print(stats)
+
+    def test_statistics_bad(self):
+        grid = TestGrid.get_bad_grid()
+        stats = grid.get_statistics()
+        self.assertEqual("7 x 7", stats['size'])
+        self.assertEqual(23, stats['wordcount'])
+        self.assertFalse(stats['valid'])
+        print(stats)
 
     @staticmethod
     def get_good_grid():

@@ -122,6 +122,28 @@ class Grid:
                 count += 1
         return count
 
+    def get_word_lengths(self):
+        """ Returns a list of word lengths and words of that length """
+        table = {}
+        for nc in self.get_numbered_cells():
+            length = nc.across_length
+            if length:
+                if length not in table:
+                    table[length] = {
+                        'alist': [],
+                        'dlist': [],
+                    }
+                table[length]['alist'].append(nc.seq)
+            length = nc.down_length
+            if length:
+                if length not in table:
+                    table[length] = {
+                        'alist': [],
+                        'dlist': [],
+                    }
+                table[length]['dlist'].append(nc.seq)
+        return table
+
     def to_json(self):
         """ Returns the JSON string representation of the Grid """
         image = dict()
@@ -150,6 +172,17 @@ class Grid:
         grid.get_numbered_cells()
         return grid
 
+    def get_statistics(self):
+        """ Returns a dictionary of grid statistics """
+        stats = dict()
+        ok, errors = self.validate()
+        stats['valid'] = ok
+        stats['errors'] = errors
+        stats['size'] = f"{self.n} x {self.n}"
+        stats['wordcount'] = self.get_word_count()
+        stats['wordlengths'] = self.get_word_lengths()
+        return stats
+
     def validate(self):
         """ Validates the grid according to the NYTimes rules """
 
@@ -168,17 +201,17 @@ class Grid:
         # Item 5 is subjective
 
         ok = True
-        messages = ""
+        all_errors = list()
 
         for fun in (self.validate_interlock,
                     self.validate_unchecked_squares,
                     self.validate_minimum_word_length):
-            errmsg = fun()
-            if errmsg:
+            errors = fun()
+            if errors:
                 ok = False
-                messages += errmsg + "\n"
+                all_errors.extend(errors)
 
-        return ok, messages
+        return ok, all_errors
 
     def validate_interlock(self):
         """ No islands of white cells enclosed in black cells """
@@ -256,25 +289,25 @@ class Grid:
         # set of error messages
         # ==============================================================
 
-        errmsg = ""
+        errors = []
         if len(partitions) > 1:
-            errmsg += "*** No all-over interlock: ***\n"
+            errors.append("*** No all-over interlock: ***")
             np = 0
             for r, c in sorted(list(partitions)):
                 np += 1
-                errmsg += f"Cell at ({r}, {c}) starts partition {np}" + "\n"
+                errors.append(f"Cell at ({r},{c}) starts partition {np}")
 
         # ==============================================================
         # Done
         # ==============================================================
 
-        return errmsg.strip()
+        return errors
 
     def validate_unchecked_squares(self):
         """ Crosswords must not have unchecked squares:
             All letters must be found in both Across and Down answers
         """
-        errmsg = ""
+        errors = list()
 
         aset = set()  # All the (r, c) in across words
         dset = set()  # All the (r, c) in down words
@@ -299,34 +332,36 @@ class Grid:
             for r, c in across_but_not_down:
                 all_checked = False
                 nc = ncdict[(r, c)]
-                errmsg += f"({r},{c}) is part of {nc.seq} across but no down word" + "\n"
+                errors.append(f"({r},{c}) is part of {nc.seq} across but no down word")
         if down_but_not_across:
             for r, c in down_but_not_across:
                 all_checked = False
                 nc = ncdict[(r, c)]
-                errmsg += f"({r},{c}) is part of {nc.seq} down but no across word" + "\n"
+                errors.append(f"({r},{c}) is part of {nc.seq} down but no across word")
 
         if all_checked:
             return ""
 
-        return "*** Some unchecked cells: ***\n" + errmsg.strip()
+        errors.insert(0, "*** Some unchecked cells: ***")
+        return errors
 
     def validate_minimum_word_length(self):
         """ All words must be at least three characters long """
-        errmsg = ""
+        errors = list()
         all_long = True
         for nc in self.get_numbered_cells():
             if 0 < nc.across_length < 3:
                 all_long = False
-                errmsg += f"{nc.seq} across is only {nc.across_length} letters long\n"
+                errors.append(f"{nc.seq} across is only {nc.across_length} letters long")
             if 0 < nc.down_length < 3:
                 all_long = False
-                errmsg += f"{nc.seq} down is only {nc.down_length} letters long\n"
+                errors.append(f"{nc.seq} down is only {nc.down_length} letters long")
 
         if all_long:
             return ""
 
-        return "*** Some words shorter than 3 letters: ***\n" + errmsg.strip()
+        errors.insert(0, "*** Some words shorter than 3 letters: ***")
+        return errors
 
     def __str__(self):
         """ Returns the string representation of the Grid """
