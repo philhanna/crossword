@@ -104,7 +104,7 @@ class TestGrid(TestCase):
         stats = grid.get_statistics()
         self.assertTrue(stats['valid'])
         self.assertListEqual([1, 24, 53, 69], stats['wordlengths'][3]['alist'])
-        print(stats)
+        #print(stats)
 
     def test_statistics_bad(self):
         grid = TestGrid.get_bad_grid()
@@ -112,7 +112,7 @@ class TestGrid(TestCase):
         self.assertEqual("7 x 7", stats['size'])
         self.assertEqual(23, stats['wordcount'])
         self.assertFalse(stats['valid'])
-        print(stats)
+        #print(stats)
 
     @staticmethod
     def get_good_grid():

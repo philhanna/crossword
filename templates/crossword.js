@@ -229,6 +229,7 @@ function do_grid_stats() {
 
          // Fill in the "errors" cell
          var elem_errors = document.getElementById('gst-errors');
+         elem_errors.innerHTML = ""
          var errors = stats['errors']
          if (errors.length == 0) {
             elem_errors.appendChild(document.createTextNode("None"))
@@ -252,14 +253,17 @@ function do_grid_stats() {
 
          // Fill in the "size" cell
          var elem_size = document.getElementById('gst-size');
+         elem_size.innerHTML = ""
          elem_size.appendChild(document.createTextNode(stats['size']));
 
          // Fill in the "wordcount" cell
          var elem_wordcount = document.getElementById('gst-wordcount');
+         elem_wordcount.innerHTML = ""
          elem_wordcount.appendChild(document.createTextNode(stats['wordcount']));
 
          // Fill in the "wordlengths" table
          var elem_wordlengths = document.getElementById('gst-wordlengths');
+         elem_wordlengths.innerHTML = ""
 
          // Declare variables
          var elem_table, elem_tr, elem_th, elem_td, node_text, elem_p;
