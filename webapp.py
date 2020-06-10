@@ -604,6 +604,7 @@ def grid_save_common(gridname):
         "save_grid": True,
         "save_grid_as": True,
         "close_grid": True,
+        "grid_stats": True,
         "delete_grid": True,
     }
 
