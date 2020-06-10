@@ -633,7 +633,6 @@ def puzzle_save_common(puzzlename):
 
     # Send message about the save
     flash(f"Puzzle saved as {puzzlename}")
-    flash(f"Word count is {puzzle.get_word_count()}")
 
     # Show the puzzle screen
     return redirect(url_for('puzzle_screen'))
