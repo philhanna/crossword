@@ -249,24 +249,46 @@ function do_statistics(objType, url) {
          var elem_errors = document.getElementById('st-errors');
          elem_errors.innerHTML = ""
          var errors = stats['errors']
-         if (errors.length == 0) {
+         if (stats['valid'] == true) {
             elem_errors.appendChild(document.createTextNode("None"))
          }
          else {
-            elem_errors.setAttribute("class", "w3-card w3-panel w3-sand");
-            var elem_ul = document.createElement("ul");
-            elem_ul.style.listStyleType = "none";
-            elem_ul.style.lineHeight = "30%"
-            for (var i = 0; i < errors.length; i++) {
-               var errmsg = errors[i];
-               var elem_li = document.createElement("li");
-               var elem_p = document.createElement("p");
-               var node_text = document.createTextNode(errmsg);
-               elem_p.appendChild(node_text);
-               elem_li.appendChild(elem_p);
-               elem_ul.appendChild(elem_li);
+
+            // For each error type:
+            var descriptions = {
+               "interlock": "Cell interlock errors",
+               "unchecked": "Cell unchecked errors",
+               "wordlength": "Minimum word length errors",
+            };
+            for (var error_type in errors) {
+
+               var elem_div = document.createElement('div');
+               elem_errors.appendChild(elem_div);
+
+               var elem_header = document.createElement('header');
+               var description = descriptions[error_type] + ":";
+               var text_node = document.createTextNode(description);
+               elem_header.appendChild(text_node);
+               elem_header.style.fontWeight = "bold";
+               elem_div.appendChild(elem_header);
+
+               var elem_ul = document.createElement("ul");
+               elem_ul.style.listStyleType = "none";
+               elem_ul.style.lineHeight = "30%";
+               elem_div.appendChild(elem_ul);
+
+               var error_list = errors[error_type];
+               for (var j in error_list) {
+                  errmsg = error_list[j];
+                  var elem_li = document.createElement("li");
+                  var elem_p = document.createElement("p");
+                  elem_p.style.color = "red";
+                  var node_text = document.createTextNode(errmsg);
+                  elem_p.appendChild(node_text);
+                  elem_li.appendChild(elem_p);
+                  elem_ul.appendChild(elem_li);
+               }
             }
-            elem_errors.appendChild(elem_ul);
          }
 
          // Fill in the "size" cell

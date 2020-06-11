@@ -200,18 +200,17 @@ class Grid:
         #
         # Item 5 is subjective
 
+        errors = dict()
+        errors['interlock'] = self.validate_interlock()
+        errors['unchecked'] = self.validate_unchecked_squares()
+        errors['wordlength'] = self.validate_minimum_word_length()
+
         ok = True
-        all_errors = list()
-
-        for fun in (self.validate_interlock,
-                    self.validate_unchecked_squares,
-                    self.validate_minimum_word_length):
-            errors = fun()
-            if errors:
+        for error_key, error_list in errors.items():
+            if len(error_list) > 0:
                 ok = False
-                all_errors.extend(errors)
 
-        return ok, all_errors
+        return ok, errors
 
     def validate_interlock(self):
         """ No islands of white cells enclosed in black cells """
@@ -226,7 +225,7 @@ class Grid:
         # We'll initialize them all to (0, 0).
         # ==============================================================
 
-        partition = {}
+        partition = dict()
         for r in range(1, self.n + 1):
             for c in range(1, self.n + 1):
                 if self.is_black_cell(r, c):
@@ -241,21 +240,21 @@ class Grid:
         def mark_partition(r, c, pr, pc):
 
             if r < 1 or r > self.n or c < 1 or c > self.n:
-                return      # Off the grid
+                return  # Off the grid
 
             if self.is_black_cell(r, c):
-                return      # Black cell
+                return  # Black cell
 
             if partition[(r, c)] != (0, 0):
-                return      # Already marked
+                return  # Already marked
 
             # Otherwise, add this to the partition
 
             partition[(r, c)] = (pr, pc)
-            mark_partition(r-1, c, pr, pc)  # Up
-            mark_partition(r, c+1, pr, pc)  # Right
-            mark_partition(r, c-1, pr, pc)  # Left
-            mark_partition(r+1, c, pr, pc)  # Down
+            mark_partition(r - 1, c, pr, pc)  # Up
+            mark_partition(r, c + 1, pr, pc)  # Right
+            mark_partition(r, c - 1, pr, pc)  # Left
+            mark_partition(r + 1, c, pr, pc)  # Down
 
         # ==============================================================
         # Now go through the whole grid, left to right, top to bottom.
@@ -285,32 +284,32 @@ class Grid:
                 partitions.add((markr, markc))
 
         # ==============================================================
-        # If there are more than one partitions, format an appropriate
+        # If there is more than one partition, format an appropriate
         # set of error messages
         # ==============================================================
 
-        errors = []
+        error_list = list()
         if len(partitions) > 1:
-            errors.append("*** No all-over interlock: ***")
             np = 0
             for r, c in sorted(list(partitions)):
                 np += 1
-                errors.append(f"Cell at ({r},{c}) starts partition {np}")
+                error_list.append(f"Cell at ({r},{c}) starts partition {np}")
 
         # ==============================================================
         # Done
         # ==============================================================
 
-        return errors
+        return error_list
 
     def validate_unchecked_squares(self):
         """ Crosswords must not have unchecked squares:
             All letters must be found in both Across and Down answers
         """
-        errors = list()
+        error_list = list()
 
         aset = set()  # All the (r, c) in across words
         dset = set()  # All the (r, c) in down words
+
         ncdict = {}
         for nc in self.get_numbered_cells():
             r = nc.r
@@ -325,43 +324,36 @@ class Grid:
                 dset.add((r, nc.c))
                 ncdict[(r, c)] = nc
                 r += 1
+
+        # Both these set differences should be empty if the grid is valid
+
         across_but_not_down = aset - dset
         down_but_not_across = dset - aset
-        all_checked = True
+
+        # Produce error messages
+
         if across_but_not_down:
             for r, c in across_but_not_down:
-                all_checked = False
                 nc = ncdict[(r, c)]
-                errors.append(f"({r},{c}) is part of {nc.seq} across but no down word")
+                error_list.append(f"({r},{c}) is part of {nc.seq} across but no down word")
         if down_but_not_across:
             for r, c in down_but_not_across:
-                all_checked = False
                 nc = ncdict[(r, c)]
-                errors.append(f"({r},{c}) is part of {nc.seq} down but no across word")
+                error_list.append(f"({r},{c}) is part of {nc.seq} down but no across word")
 
-        if all_checked:
-            return ""
-
-        errors.insert(0, "*** Some unchecked cells: ***")
-        return errors
+        return error_list
 
     def validate_minimum_word_length(self):
         """ All words must be at least three characters long """
-        errors = list()
-        all_long = True
+        error_list = list()
+
         for nc in self.get_numbered_cells():
             if 0 < nc.across_length < 3:
-                all_long = False
-                errors.append(f"{nc.seq} across is only {nc.across_length} letters long")
+                error_list.append(f"{nc.seq} across is only {nc.across_length} letters long")
             if 0 < nc.down_length < 3:
-                all_long = False
-                errors.append(f"{nc.seq} down is only {nc.down_length} letters long")
+                error_list.append(f"{nc.seq} down is only {nc.down_length} letters long")
 
-        if all_long:
-            return ""
-
-        errors.insert(0, "*** Some words shorter than 3 letters: ***")
-        return errors
+        return error_list
 
     def __str__(self):
         """ Returns the string representation of the Grid """

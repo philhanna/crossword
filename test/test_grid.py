@@ -49,42 +49,52 @@ class TestGrid(TestCase):
 
     def test_validate_minimum_word_length_bad(self):
         grid = TestGrid.get_bad_grid()
-        errors = grid.validate_minimum_word_length()
-        self.assertTrue(len(errors) > 0)
+        error_list = grid.validate_minimum_word_length()
+        self.assertTrue(len(error_list) > 0)
 
     def test_validate_minimum_word_length_good(self):
         grid = TestGrid.get_good_grid()
-        errors = grid.validate_minimum_word_length()
-        self.assertTrue(len(errors) == 0)
+        error_list = grid.validate_minimum_word_length()
+        self.assertTrue(len(error_list) == 0)
 
     def test_validate_unchecked_squares_bad(self):
         grid = TestGrid.get_bad_grid()
-        errors = grid.validate_unchecked_squares()
-        self.assertTrue(len(errors) > 0)
+        error_list = grid.validate_unchecked_squares()
+        self.assertTrue(len(error_list) > 0)
 
     def test_validate_unchecked_squares_good(self):
         grid = TestGrid.get_good_grid()
-        errors = grid.validate_unchecked_squares()
-        self.assertTrue(len(errors) == 0)
+        error_list = grid.validate_unchecked_squares()
+        self.assertTrue(len(error_list) == 0)
 
     def test_validate_interlock_bad(self):
         grid = TestGrid.get_bad_grid()
-        errors = grid.validate_interlock()
-        self.assertTrue(len(errors) > 0)
+        error_list = grid.validate_interlock()
+        self.assertTrue(len(error_list) > 0)
 
     def test_validate_interlock_good(self):
         grid = TestGrid.get_good_grid()
-        errors = grid.validate_interlock()
-        self.assertTrue(len(errors) == 0)
+        error_list = grid.validate_interlock()
+        self.assertTrue(len(error_list) == 0)
 
     def test_validate_bad(self):
         grid = TestGrid.get_bad_grid()
         ok, errors = grid.validate()
+        debug = False  # Toggle this to see more
+        if debug:
+            import json
+            jsonstr = json.dumps(errors, indent=2)
+            print(jsonstr)
         self.assertFalse(ok)
 
     def test_validate_good(self):
         grid = TestGrid.get_good_grid()
-        ok, errmsg = grid.validate()
+        ok, errors = grid.validate()
+        debug = False  # Toggle this to see more
+        if debug:
+            import json
+            jsonstr = json.dumps(errors, indent=2)
+            print(jsonstr)
         self.assertTrue(ok)
 
     def test_grid_from_puzzle(self):

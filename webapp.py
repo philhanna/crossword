@@ -584,8 +584,10 @@ def grid_save_common(gridname):
     ok, messages = grid.validate()
     if not ok:
         flash("GRID NOT SAVED")
-        for message in messages:
-            flash(message)
+        for message_type in messages:
+            flash(f"*** {message_type} ***")
+            for message in messages[message_type]:
+                flash("   " + message)
 
     else:
         # Save the file
