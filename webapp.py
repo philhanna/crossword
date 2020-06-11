@@ -311,9 +311,10 @@ def puzzle_screen():
     enabled = {
         "save_puzzle": puzzlename is not None,
         "save_puzzle_as": True,
-        "close_puzzle": True,
         "save_puzzle_grid": True,
         "replace_puzzle_grid": True,
+        "puzzle_stats": True,
+        "close_puzzle": True,
         "delete_puzzle": True,
     }
 
@@ -470,9 +471,20 @@ def grid_statistics():
     gridname = session.get('gridname', '(Untitled)')
     grid = Grid.from_json(session['grid'])
     stats = grid.get_statistics()
-    return make_response(json.dumps(stats), HTTPStatus.OK)
+    resp = make_response(json.dumps(stats), HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
+
+
+@app.route('/puzzle-statistics', methods=['GET'])
+def puzzle_statistics():
+    jsonstr = session['puzzle']
+    grid = Grid.from_json(jsonstr)
+    stats = grid.get_statistics()
+    resp = make_response(json.dumps(stats), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
 
 
 @app.route('/puzzles')

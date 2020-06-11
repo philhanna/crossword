@@ -84,6 +84,12 @@
             {% endif %}
             >Save puzzle as...</a>
          <a class="w3-bar-item w3-button
+            {% if not enabled.puzzle_stats %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_stats %}
+            onclick="do_puzzle_stats()"
+            {% endif %}
+            >Show puzzle statistics</a>
+         <a class="w3-bar-item w3-button
             {% if not enabled.close_puzzle %} w3-disabled {% endif %}"
             {% if enabled.close_puzzle %}
             onclick="do_close_puzzle()"

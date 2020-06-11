@@ -212,10 +212,25 @@ function validateNewGridForm() {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_grid_stats
- *  DESCRIPTION:     Assemble grid statistics and shows results
+ *  FUNCTION NAME:   do_grid_statistics
+ *  DESCRIPTION:     Assembles grid statistics and shows results
  ***************************************************************/
 function do_grid_stats() {
+   var objType = "grid"
+   var url = "{{ url_for('grid_statistics') }}";
+   do_statistics(objType, url);
+}
+
+/***************************************************************
+ *  FUNCTION NAME:   do_statistics(objType, url)
+ *                   objType must be 'grid' or 'puzzle'
+ *                   url is '/grid-statistics'
+ *                   or     '/puzzle-statistics'
+ *
+ *  DESCRIPTION:     Common function to grids and puzzles.
+ *                   Assembles grid statistics and shows results.
+ ***************************************************************/
+function do_statistics(objType, url) {
    var xhttp = new XMLHttpRequest();
    xhttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
@@ -224,11 +239,11 @@ function do_grid_stats() {
          var stats = JSON.parse(jsonstr);
 
          // Fill in the "valid" cell
-         var elem_valid = document.getElementById('gst-valid');
+         var elem_valid = document.getElementById('st-valid');
          elem_valid.innerHTML = stats['valid'];
 
          // Fill in the "errors" cell
-         var elem_errors = document.getElementById('gst-errors');
+         var elem_errors = document.getElementById('st-errors');
          elem_errors.innerHTML = ""
          var errors = stats['errors']
          if (errors.length == 0) {
@@ -252,17 +267,17 @@ function do_grid_stats() {
          }
 
          // Fill in the "size" cell
-         var elem_size = document.getElementById('gst-size');
+         var elem_size = document.getElementById('st-size');
          elem_size.innerHTML = ""
          elem_size.appendChild(document.createTextNode(stats['size']));
 
          // Fill in the "wordcount" cell
-         var elem_wordcount = document.getElementById('gst-wordcount');
+         var elem_wordcount = document.getElementById('st-wordcount');
          elem_wordcount.innerHTML = ""
          elem_wordcount.appendChild(document.createTextNode(stats['wordcount']));
 
          // Fill in the "wordlengths" table
-         var elem_wordlengths = document.getElementById('gst-wordlengths');
+         var elem_wordlengths = document.getElementById('st-wordlengths');
          elem_wordlengths.innerHTML = ""
 
          // Declare variables
@@ -351,11 +366,12 @@ function do_grid_stats() {
          elem_wordlengths.appendChild(elem_table);
 
          // Show the stats screen
-         openModalDialog('gst-dialog');
+         document.getElementById('st-title').innerHTML = objType + " statistics"
+         openModalDialog('st-dialog');
       }
    }
-   // Ask the server if the puzzle has changed
-   var url = '{{ url_for("grid_statistics")}}';
+
+   // Ask the server for grid or puzzle statistics
    xhttp.open("GET", url, true);
    xhttp.send();
 }
@@ -571,6 +587,16 @@ function puzzle_chooser_ajax(build_url) {
    var url = '{{ url_for("puzzles")}}';
    xhttp.open("GET", url, true);
    xhttp.send();
+}
+
+/***************************************************************
+ *  FUNCTION NAME:   do_puzzle_statistics
+ *  DESCRIPTION:     Assembles puzzle statistics and shows results
+ ***************************************************************/
+function do_puzzle_stats() {
+   var objType = "puzzle"
+   var url = "{{ url_for('puzzle_statistics') }}";
+   do_statistics(objType, url);
 }
 
 /***************************************************************
