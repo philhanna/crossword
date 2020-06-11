@@ -2,7 +2,10 @@
 //  Global variables and functions
 //  ============================================================
 
-var boxsize = 32;
+var BOXSIZE = 32;
+var CLICK_EVENT;
+var PUZZLE_CLICK_STATE = 0;
+var TIMEOUT_VAR;
 
 /***************************************************************
  * FUNCTION NAME:   openModalDialog
@@ -175,8 +178,8 @@ function do_save_puzzle_grid() {
 function grid_click(event) {
   var x = event.offsetX;
   var y = event.offsetY;
-  var r = Math.floor(1 + y/boxsize); // Boxsize is a global var
-  var c = Math.floor(1 + x/boxsize);
+  var r = Math.floor(1 + y/BOXSIZE); // Boxsize is a global var
+  var c = Math.floor(1 + x/BOXSIZE);
 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
@@ -461,8 +464,8 @@ function do_save_puzzle_as() {
 function getRC(event) {
   var x = event.offsetX;
   var y = event.offsetY;
-  var r = Math.floor(1 + y/boxsize);
-  var c = Math.floor(1 + x/boxsize);
+  var r = Math.floor(1 + y/BOXSIZE);
+  var c = Math.floor(1 + x/BOXSIZE);
   return [r, c]
 }
 
@@ -516,29 +519,25 @@ function do_word(event, url) {
  ***************************************************************/
 function puzzle_click(event) {
 
-   var STATE = 0;
-   var TIMEOUT_VAR;
-   var CLICK_EVENT;
    var TIMEOUT_MS = 300;
-
    CLICK_EVENT = event;
 
    function single_click() {
-      STATE = 0;
+      PUZZLE_CLICK_STATE = 0;
       do_word(CLICK_EVENT, "{{ url_for('puzzle_click_across') }}");
    }
 
    function double_click() {
-      STATE = 0;
+      PUZZLE_CLICK_STATE = 0;
       do_word(event, "{{ url_for('puzzle_click_down') }}");
    }
 
-   if (STATE == 0) {
-      STATE = 1;
+   if (PUZZLE_CLICK_STATE == 0) {
+      PUZZLE_CLICK_STATE = 1;
       TIMEOUT_VAR = setTimeout(single_click, TIMEOUT_MS);
    }
-   else if (STATE == 1) {
-      STATE = 0;
+   else if (PUZZLE_CLICK_STATE == 1) {
+      PUZZLE_CLICK_STATE = 0;
       clearTimeout(TIMEOUT_VAR);
       double_click(CLICK_EVENT);
    }
