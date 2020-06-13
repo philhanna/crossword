@@ -381,6 +381,7 @@ def edit_word_screen():
     enabled = {
         "save_puzzle": puzzlename is not None,
         "save_puzzle_as": True,
+        "puzzle_stats": True,
         "close_puzzle": True,
     }
 
