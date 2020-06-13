@@ -9,7 +9,7 @@
 <header class="w3-container w3-blue-gray">
 <h3 id="ew-heading"></h3>
 <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-      onclick="closeModalDialog('ew-dialog');"
+      onclick="hideElement('ew-dialog');"
       >&times;</span>
 </header>
 
@@ -26,13 +26,13 @@
 <div class="w3-bar w3-border w3-blue-gray">
   <div class="w3-bar-item w3-button" onclick="do_suggest_word()">Suggest</div>
     <div class="w3-bar-item" id="ew-wordlist" style="display:none">
-      <label for="words">Possible matches:</label>
+      <span>Possible matches:</span>
       <select name="words"
               id="ew-select"
               onchange="do_select_changed()"
-              onclick="do_select_changed()"
-      >
+              onclick="do_select_changed()" >
       </select>
+      <span id="ew-select-none" class="w3-center w3-yellow" style="font-weight:bold;display:none">None</span>
     </div>
 </div>
 
@@ -71,7 +71,7 @@ type="submit"
 <button  class="w3-button w3-border w3-round w3-gray"
 style="width:100px"
 type="button"
-onclick="closeModalDialog('ew-dialog');"
+onclick="hideElement('ew-dialog');"
 >Cancel</button>
 
 <button  class="w3-button w3-border w3-round w3-gray"

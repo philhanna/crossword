@@ -8,19 +8,19 @@ var PUZZLE_CLICK_STATE = 0;
 var TIMEOUT_VAR;
 
 /***************************************************************
- * FUNCTION NAME:   openModalDialog
+ * FUNCTION NAME:   showElement
  * DESCRIPTION:     Turns on the display of a dialog
  ***************************************************************/
 
-function openModalDialog(id) {
+function showElement(id) {
    document.getElementById(id).style.display = 'block';
 }
 
 /***************************************************************
- *  FUNCTION NAME:   closeModalDialog
+ *  FUNCTION NAME:   hideElement
  *  DESCRIPTION:     Turns off the display of a dialog
  ***************************************************************/
-function closeModalDialog(id) {
+function hideElement(id) {
    document.getElementById(id).style.display = 'none';
 }
 
@@ -48,7 +48,7 @@ function do_close_grid() {
 
          // If it has changed, open the grid changed dialog
          if (changed) {
-            openModalDialog('gx-dialog');
+            showElement('gx-dialog');
          }
          else {
             window.location.href = "{{ url_for('main_screen') }}";
@@ -68,7 +68,7 @@ function do_close_grid() {
  *                   of grid deletion
  ***************************************************************/
 function do_delete_grid() {
-  openModalDialog('gd-dialog');
+  showElement('gd-dialog');
 }
 
 /***************************************************************
@@ -76,7 +76,7 @@ function do_delete_grid() {
  *  DESCRIPTION:     Prompts the user for a grid size
  ***************************************************************/
 function do_new_grid() {
-  openModalDialog('ng-dialog');
+  showElement('ng-dialog');
 }
 
 /***************************************************************
@@ -90,7 +90,7 @@ function do_open_grid() {
          return "{{ url_for('open_grid_screen') }}" + "?gridname=" + filename;
       }
    );
-   openModalDialog('gc-dialog');
+   showElement('gc-dialog');
 }
 
 /***************************************************************
@@ -149,7 +149,7 @@ function do_replace_puzzle_grid() {
          return "{{ url_for('puzzle_replace_grid_screen') }}" + "?gridname=" + filename;
       }
    );
-   openModalDialog('gc-dialog');
+   showElement('gc-dialog');
 }
 
 /***************************************************************
@@ -157,7 +157,7 @@ function do_replace_puzzle_grid() {
  *  DESCRIPTION:     Turns on the save grid modal dialog
  ***************************************************************/
 function do_save_grid_as() {
-   openModalDialog('gsa-dialog');
+   showElement('gsa-dialog');
 }
 
 /***************************************************************
@@ -165,7 +165,7 @@ function do_save_grid_as() {
  *  DESCRIPTION:     Invokes the puzzle save grid dialog
  ***************************************************************/
 function do_save_puzzle_grid() {
-   openModalDialog('psg-dialog');
+   showElement('psg-dialog');
 }
 
 /***************************************************************
@@ -392,7 +392,7 @@ function do_statistics(objType, url) {
 
          // Show the stats screen
          document.getElementById('st-title').innerHTML = objType + " statistics"
-         openModalDialog('st-dialog');
+         showElement('st-dialog');
       }
    }
 
@@ -422,7 +422,7 @@ function do_close_puzzle() {
          var changed = obj.changed;
          // If it has changed, open the puzzle changed dialog
          if (changed) {
-            openModalDialog('px-dialog');
+            showElement('px-dialog');
          }
          else {
             window.location.href = "{{ url_for('main_screen') }}";
@@ -440,7 +440,7 @@ function do_close_puzzle() {
  *  DESCRIPTION:     Opens the puzzle delete dialog
  ***************************************************************/
 function do_delete_puzzle() {
-   openModalDialog('pd-dialog');
+   showElement('pd-dialog');
 }
 
 /***************************************************************
@@ -454,7 +454,7 @@ function do_new_puzzle() {
          return "{{ url_for('new_puzzle_screen') }}" + "?gridname=" + filename;
       }
    );
-   openModalDialog('gc-dialog');
+   showElement('gc-dialog');
 }
 
 /***************************************************************
@@ -468,7 +468,7 @@ function do_open_puzzle() {
          return "{{ url_for('open_puzzle_screen') }}" + "?puzzlename=" + filename;
       }
    );
-   openModalDialog('pc-dialog');
+   showElement('pc-dialog');
 }
 
 /***************************************************************
@@ -476,7 +476,7 @@ function do_open_puzzle() {
  *  DESCRIPTION:     Turns on the save grid as modal dialog
  ***************************************************************/
 function do_save_puzzle_as() {
-   openModalDialog('psa-dialog');
+   showElement('psa-dialog');
 }
 
 /***************************************************************
@@ -522,11 +522,12 @@ function do_word(event, url) {
          // Clear any previous select for "suggest" and turn it off
          var elem_select = document.getElementById('ew-select');
          elem_select.innerHTML = "";
-         closeModalDialog('ew-select');
-         closeModalDialog('ew-wordlist');
+         hideElement('ew-select');
+         hideElement('ew-select-none');
+         hideElement('ew-wordlist');
 
          // Make the modal dialog visible
-         openModalDialog('ew-dialog');
+         showElement('ew-dialog');
          elem_word.focus();
       }
    };
@@ -633,7 +634,7 @@ function do_publish_nytimes() {
          return "{{ url_for('publish_nytimes_screen') }}" + "?puzzlename=" + filename;
       }
    );
-   openModalDialog('pc-dialog');
+   showElement('pc-dialog');
 }
 
 //  ============================================================
@@ -658,15 +659,23 @@ function do_suggest_word() {
          var words = JSON.parse(jsonstr);
          var elem_select = document.getElementById('ew-select');
          elem_select.innerHTML = "";
-         for (var i = 0; i < words.length; i++) {
-            var word = words[i];
-            var elem_option = document.createElement("option")
-            elem_option.value = word;
-            elem_option.appendChild(document.createTextNode(word))
-            elem_select.appendChild(elem_option);
+         if (words.length == 0) {
+            showElement('ew-wordlist');
+            showElement('ew-select-none')
+            hideElement('ew-select')
          }
-         openModalDialog('ew-wordlist');
-         openModalDialog('ew-select')
+         else {
+            for (var i = 0; i < words.length; i++) {
+               var word = words[i];
+               var elem_option = document.createElement("option")
+               elem_option.value = word;
+               elem_option.appendChild(document.createTextNode(word))
+               elem_select.appendChild(elem_option);
+            }
+            showElement('ew-wordlist');
+            showElement('ew-select')
+            hideElement('ew-select-none')
+         }
       }
    }
    var url = '{{ url_for("wordlists")}}';
