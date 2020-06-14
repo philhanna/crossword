@@ -18,6 +18,7 @@ from flask import url_for
 
 from flask_session import Session
 
+from acrosslite_output import AcrossLiteOutput
 from configuration import Configuration
 from grid import Grid
 from nytimes_output import NYTimesOutput
@@ -394,6 +395,56 @@ def edit_word_screen():
                            svgstr=svgstr)
 
 
+@app.route('/publish_acrosslite')
+def publish_acrosslite_screen():
+    # Get the chosen puzzle name from the query parameters
+
+    puzzlename = request.args.get('puzzlename')
+
+    # Open the corresponding file and read its contents as json
+    # and recreate the puzzle from it
+
+    rootdir = Configuration.get_puzzles_root()
+    filename = os.path.join(rootdir, puzzlename + ".json")
+    with open(filename) as fp:
+        jsonstr = fp.read()
+    puzzle = Puzzle.from_json(jsonstr)
+
+    # Generate the output
+
+    publisher = AcrossLiteOutput(puzzle, puzzlename)
+
+    # Text file
+
+    filename = os.path.join(tempfile.gettempdir(), puzzlename + ".txt")
+    txt_filename = filename
+    with open(filename, "wt") as fp:
+        fp.write(publisher.get_txt() + "\n")
+
+    # JSON
+
+    filename = os.path.join(tempfile.gettempdir(), puzzlename + ".json")
+    json_filename = filename
+    with open(filename, "wt") as fp:
+        fp.write(jsonstr + "\n")
+
+    # Create an in-memory zip file
+
+    with BytesIO() as fp:
+        with ZipFile(fp, mode="w", compression=ZIP_DEFLATED) as zf:
+            zf.write(txt_filename, puzzlename + ".txt")
+            zf.write(json_filename, puzzlename + ".json")
+        zipbytes = fp.getvalue()
+
+    # Return it as an attachment
+
+    zipfilename = f"acrosslite-{puzzlename}.zip"
+    resp = make_response(zipbytes)
+    resp.headers['Content-Type'] = "application/zip"
+    resp.headers['Content-Disposition'] = f'attachment; filename="{zipfilename}"'
+    return resp
+
+
 @app.route('/publish_nytimes')
 def publish_nytimes_screen():
     # Get the chosen puzzle name from the query parameters
@@ -445,13 +496,11 @@ def publish_nytimes_screen():
 
     # Return it as an attachment
 
-    zipfilename = puzzlename + ".zip"
-    flash(f"NYTimes output returned as {zipfilename}")
+    zipfilename = f"nytimes-{puzzlename}.zip"
     resp = make_response(zipbytes)
     resp.headers['Content-Type'] = "application/zip"
     resp.headers['Content-Disposition'] = f'attachment; filename="{zipfilename}"'
     return resp
-
 
 #   ============================================================
 #   REST api - functions that just return JSON

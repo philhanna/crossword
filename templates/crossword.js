@@ -637,6 +637,22 @@ function do_publish_nytimes() {
    showElement('pc-dialog');
 }
 
+/***************************************************************
+ *  FUNCTION NAME:   do_publish_acrosslite
+ *  DESCRIPTION:     Gets a list of puzzle files from the server
+ *                   and prompts the user to choose one, building
+ *                   from it a list of links to the publish
+ *                   function for that puzzle
+ ***************************************************************/
+function do_publish_acrosslite() {
+   puzzle_chooser_ajax(
+      function(filename) {
+         return "{{ url_for('publish_acrosslite_screen') }}" + "?puzzlename=" + filename;
+      }
+   );
+   showElement('pc-dialog');
+}
+
 //  ============================================================
 //  Edit word functions
 //  ============================================================
