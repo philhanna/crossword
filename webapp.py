@@ -427,12 +427,20 @@ def publish_nytimes_screen():
     with open(filename, "wt") as fp:
         fp.write(publisher.get_html() + "\n")
 
+    # JSON
+
+    filename = os.path.join(tempfile.gettempdir(), puzzlename + ".json")
+    json_filename = filename
+    with open(filename, "wt") as fp:
+        fp.write(jsonstr + "\n")
+
     # Create an in-memory zip file
 
     with BytesIO() as fp:
         with ZipFile(fp, mode="w", compression=ZIP_DEFLATED) as zf:
             zf.write(svg_filename, puzzlename + ".svg")
             zf.write(html_filename, puzzlename + ".html")
+            zf.write(json_filename, puzzlename + ".json")
         zipbytes = fp.getvalue()
 
     # Return it as an attachment
