@@ -22,13 +22,10 @@ def main(args):
     # Open the input file and load the JSON it contains.
     # Construct a puzzle from it
 
-    if not args.filename:
-        raise ValueError("No filename specified")
+    if not args.puzzlename:
+        raise ValueError("No puzzle name specified")
 
-    if args.relative:
-        filename = os.path.join(puzzles_root, args.filename)
-    else:
-        filename = args.filename
+    filename = os.path.join(puzzles_root, args.puzzlename + ".json")
 
     if not os.path.exists(filename):
         raise FileNotFoundError(f"Puzzle file name {filename} not found")
@@ -61,11 +58,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("-l", "--list", action="store_true",
                         help="List puzzles in the puzzle directory")
-    parser.add_argument("-r", "--relative", action="store_true",
-                        help="File name is relative to the puzzle directory")
     parser.add_argument("-o", "--output",
                         help="Output file name (default=stdout)")
-    parser.add_argument("filename", nargs="?",
+    parser.add_argument("puzzlename", nargs="?",
                         help="Input JSON file containing puzzle", default=None)
     args = parser.parse_args()
 
