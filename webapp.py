@@ -502,6 +502,7 @@ def publish_nytimes_screen():
     resp.headers['Content-Disposition'] = f'attachment; filename="{zipfilename}"'
     return resp
 
+
 #   ============================================================
 #   REST api - functions that just return JSON
 #   ============================================================
@@ -513,9 +514,12 @@ def grids():
     rootdir = Configuration.get_grids_root()
     for filename in os.listdir(rootdir):
         if filename.endswith(".json"):
+            fullpath = os.path.join(rootdir, filename)
+            filetime = os.path.getmtime(fullpath)
             basename = os.path.splitext(filename)[0]
-            gridlist.append(basename)
-    gridlist.sort()
+            gridlist.append(f"{filetime}|{basename}")
+    gridlist.sort(reverse=True)
+    gridlist = [gridname.split('|', 2)[1] for gridname in gridlist]
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
@@ -544,7 +548,6 @@ def puzzle_statistics():
     return resp
 
 
-
 @app.route('/puzzles')
 def puzzles():
     # Make a list of all the saved puzzles
@@ -552,9 +555,12 @@ def puzzles():
     rootdir = Configuration.get_puzzles_root()
     for filename in os.listdir(rootdir):
         if filename.endswith(".json"):
+            fullpath = os.path.join(rootdir, filename)
+            filetime = os.path.getmtime(fullpath)
             basename = os.path.splitext(filename)[0]
-            puzzlelist.append(basename)
-    puzzlelist.sort()
+            puzzlelist.append(f"{filetime}|{basename}")
+    puzzlelist.sort(reverse=True)
+    puzzlelist = [puzzlename.split('|', 2)[1] for puzzlename in puzzlelist]
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
