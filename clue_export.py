@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 
 import os
-
+import re
 from configuration import Configuration
 from puzzle import Puzzle
 from clue_export_visitor import ClueExportVisitor
@@ -15,7 +15,8 @@ def main(args):
     # list of puzzles in the puzzles root directory
 
     if args.list:
-        for puzzlename in os.listdir(puzzles_root):
+        for filename in sorted(os.listdir(puzzles_root)):
+            puzzlename = re.sub(r'\.json$', '', filename)
             print(puzzlename)
         exit(0)
 
