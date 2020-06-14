@@ -1,0 +1,30 @@
+<!-- puzzle-title-dialog.html -->
+<div class="w3-container">
+  <div id="pt-dialog" class="w3-modal"> <!-- Modal container -->
+    <div class="w3-modal-content w3-card-4" style="max-width:300px">
+      <header class="w3-container w3-blue-gray">
+        <h3>Puzzle title</h3>
+      </header>
+      <form class="w3-container"
+            name="pt-form"
+            action="{{ url_for('puzzle_title', title=title) }}"
+            method="POST" onsubmit="show_puzzle_title()">
+        <div class="w3-section">
+          <label>Puzzle title:</label>
+          <input class="w3-input w3-border w3-margin-top w3-margin-bottom" type="text" name="title"/>
+          <div class="w3-container">
+            <button class="w3-button w3-border w3-round w3-gray"
+              style="width:100px"
+              type="submit"
+            >OK</button>
+            <button class="w3-button w3-border w3-round w3-gray"
+              style="width:100px"
+              type="button"
+              onclick="hideElement('pt-dialog')"
+            >Cancel</button>
+          </div>
+        </div>
+      </form>
+    </div> <!-- End of modal content -->
+  </div> <!-- End of modal container -->
+</div> <!-- End of dialog container -->

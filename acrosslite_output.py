@@ -16,8 +16,7 @@ def get_indent():
 def get_author_name():
     """ Formatted string with author's name and email """
     name = Configuration.get_author_name()
-    email = Configuration.get_author_email()
-    fullname = f"Created by {name} ({email})"
+    fullname = f"by {name}"
     return fullname
 
 
@@ -43,6 +42,13 @@ class AcrossLiteOutput:
         n = self.puzzle.n
         size = f"{n}x{n}"
         return size
+
+    def get_title(self):
+        """ Returns the puzzle title or blank """
+        title = self.puzzle.title
+        if not title:
+            title = ""
+        return title
 
     def get_gridlines(self):
         """ Generator that returns the rows of the puzzle """
@@ -86,7 +92,7 @@ class AcrossLiteOutput:
 
             # TITLE
             fp.write("<TITLE>" + "\n")
-            fp.write("\n")  # Blank line
+            fp.write(get_indent() + self.get_title() + "\n")  # Blank line
 
             # AUTHOR
             fp.write("<AUTHOR>" + "\n")

@@ -12,7 +12,7 @@ class Puzzle:
     WHITE = " "
     BLACK = "*"
 
-    def __init__(self, grid):
+    def __init__(self, grid, title=None):
         """
         Constructor. Internally, the puzzle is not represented as a matrix,
         but rather as a map of (r, c) to single-character strings.
@@ -26,6 +26,7 @@ class Puzzle:
 
         cells = {}
         self.cells = cells
+        self.title = title
 
         # All cells are initially empty
         for r in range(1, self.n + 1):
@@ -119,6 +120,14 @@ class Puzzle:
                 count += 1
         return count
 
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+
     #   ========================================================
     #   to_json and from_json logic
     #   ========================================================
@@ -126,6 +135,7 @@ class Puzzle:
     def to_json(self):
         image = dict()
         image['n'] = self.n
+        image['title'] = self.title
         image['cells']= [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = [black_cell for black_cell in self.black_cells]
 
@@ -180,6 +190,8 @@ class Puzzle:
 
         # Create the puzzle
         puzzle = Puzzle(grid)
+        title = image.get('title', None)
+        puzzle.title = title
 
         # Reload the "ACROSS" words
         awlist = image['across_words']

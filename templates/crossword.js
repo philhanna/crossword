@@ -621,6 +621,14 @@ function do_puzzle_stats() {
 }
 
 /***************************************************************
+ *  FUNCTION NAME:   do_puzzle_title
+ *  DESCRIPTION:     Lets user set the puzzle title
+ ***************************************************************/
+function do_puzzle_title() {
+   showElement('pt-dialog')
+}
+
+/***************************************************************
  *  FUNCTION NAME:   do_publish_nytimes
  *  DESCRIPTION:     Gets a list of puzzle files from the server
  *                   and prompts the user to choose one, building

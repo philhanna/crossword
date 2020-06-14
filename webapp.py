@@ -315,6 +315,7 @@ def puzzle_screen():
         "save_puzzle_grid": True,
         "replace_puzzle_grid": True,
         "puzzle_stats": True,
+        "puzzle_title": True,
         "close_puzzle": True,
         "delete_puzzle": True,
     }
@@ -323,6 +324,7 @@ def puzzle_screen():
     return render_template('puzzle.html',
                            enabled=enabled,
                            puzzlename=puzzlename,
+                           puzzletitle=puzzle.title,
                            n=puzzle.n,
                            boxsize=boxsize,
                            svgstr=svgstr)
@@ -383,6 +385,7 @@ def edit_word_screen():
         "save_puzzle": puzzlename is not None,
         "save_puzzle_as": True,
         "puzzle_stats": True,
+        "puzzle_title": True,
         "close_puzzle": True,
     }
 
@@ -548,6 +551,21 @@ def puzzle_statistics():
     return resp
 
 
+@app.route('/puzzle-title', methods=['POST'])
+def puzzle_title():
+    title = request.form.get('title', None)
+    if title:
+        jsonstr = session['puzzle']
+        puzzle = Puzzle.from_json(jsonstr)
+        puzzle.title = title
+        jsonstr = puzzle.to_json()
+        session['puzzle'] = jsonstr
+        flash(f"Puzzle title set to {puzzle.title}")
+
+    # Show the puzzle screen
+    return redirect(url_for('puzzle_screen'))
+
+
 @app.route('/puzzles')
 def puzzles():
     # Make a list of all the saved puzzles
@@ -697,7 +715,6 @@ def grid_save_common(gridname):
 
 def puzzle_save_common(puzzlename):
     jsonstr = session.get('puzzle', None)
-    puzzle = Puzzle.from_json(jsonstr)
 
     # Save the file
     rootdir = Configuration.get_puzzles_root()
