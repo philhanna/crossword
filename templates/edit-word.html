@@ -25,19 +25,14 @@
 
 <div class="w3-bar w3-border w3-blue-gray">
   <div class="w3-bar-item w3-button" onclick="do_suggest_word()">Suggest</div>
-    <div class="w3-bar-item" id="ew-wordlist" style="display:none">
-      <span>Possible matches:</span>
-      <select name="words"
-              id="ew-select"
-              onchange="do_select_changed()"
-              onclick="do_select_changed()" >
-      </select>
-      <span id="ew-select-none"
-            class="w3-center w3-yellow"
-            style="font-weight:bold;display:none;"
-            onclick="hideElement('ew-dialog')"
-            >None</span>
-    </div>
+  <div class="w3-bar-item" id="ew-match" style="display:none"></div>
+  <select name="words"
+          id="ew-select"
+          class="w3-bar-item"
+          style="display:none"
+          onchange="do_select_changed()"
+          onclick="do_select_changed()" >
+  </select>
 </div>
 
 <!-- Input word -->

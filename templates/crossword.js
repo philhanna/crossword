@@ -523,8 +523,7 @@ function do_word(event, url) {
          var elem_select = document.getElementById('ew-select');
          elem_select.innerHTML = "";
          hideElement('ew-select');
-         hideElement('ew-select-none');
-         hideElement('ew-wordlist');
+         hideElement('ew-match');
 
          // Make the modal dialog visible
          showElement('ew-dialog');
@@ -673,14 +672,20 @@ function do_suggest_word() {
       if (this.readyState == 4 && this.status == 200) {
          var jsonstr = this.responseText;
          var words = JSON.parse(jsonstr);
+
          var elem_select = document.getElementById('ew-select');
          elem_select.innerHTML = "";
+
+         var elem_match = document.getElementById('ew-match');
+         elem_match.innerHTML = "";
+
          if (words.length == 0) {
-            showElement('ew-wordlist');
-            showElement('ew-select-none')
-            hideElement('ew-select')
+            elem_match.innerHTML = "No matches found";
+            showElement('ew-match');
+            hideElement('ew-select');
          }
          else {
+            elem_match.innerHTML = words.length + " matches found:";
             for (var i = 0; i < words.length; i++) {
                var word = words[i];
                var elem_option = document.createElement("option")
@@ -688,9 +693,8 @@ function do_suggest_word() {
                elem_option.appendChild(document.createTextNode(word))
                elem_select.appendChild(elem_option);
             }
-            showElement('ew-wordlist');
+            showElement('ew-match');
             showElement('ew-select')
-            hideElement('ew-select-none')
          }
       }
    }
