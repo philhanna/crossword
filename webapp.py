@@ -544,8 +544,8 @@ def grid_statistics():
 @app.route('/puzzle-statistics', methods=['GET'])
 def puzzle_statistics():
     jsonstr = session['puzzle']
-    grid = Grid.from_json(jsonstr)
-    stats = grid.get_statistics()
+    puzzle = Puzzle.from_json(jsonstr)
+    stats = puzzle.get_statistics()
     resp = make_response(json.dumps(stats), HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
@@ -660,17 +660,17 @@ def reset_word():
 def grid_save_common(gridname):
     # Recreate the grid from the JSON in the session
     # and validate it
-
     jsonstr = session['grid']
     grid = Grid.from_json(jsonstr)
     ok, messages = grid.validate()
     if not ok:
-        flash("GRID NOT SAVED")
+        flash("Grid not saved")
         for message_type in messages:
-            flash(f"*** {message_type} ***")
-            for message in messages[message_type]:
-                flash("   " + message)
-
+            message_list = messages[message_type]
+            if len(message_list) > 0:
+                flash(f"*** {message_type} ***")
+                for message in message_list:
+                    flash("   " + message)
     else:
         # Save the file
 
@@ -686,9 +686,6 @@ def grid_save_common(gridname):
         # as 'grid.initial' so that we can detect whether
         # it has been changed since it was last saved
         session['grid.initial'] = jsonstr
-
-    # Store the grid in the session
-    session['grid'] = grid.to_json()
 
     # Create the SVG
     svg = GridToSVG(grid)
@@ -714,21 +711,33 @@ def grid_save_common(gridname):
 
 
 def puzzle_save_common(puzzlename):
+    # Recreate the puzzle from the JSON in the session
+    # and validate it
     jsonstr = session.get('puzzle', None)
+    puzzle = Puzzle.from_json(jsonstr)
+    ok, messages = puzzle.validate()
+    if not ok:
+        flash("Puzzle not saved")
+        for message_type in messages:
+            message_list = messages[message_type]
+            if len(message_list) > 0:
+                flash(f"*** {message_type} ***")
+                for message in message_list:
+                    flash("   " + message)
+    else:
+        # Save the file
+        rootdir = Configuration.get_puzzles_root()
+        filename = os.path.join(rootdir, puzzlename + ".json")
+        with open(filename, "w") as fp:
+            fp.write(jsonstr)
 
-    # Save the file
-    rootdir = Configuration.get_puzzles_root()
-    filename = os.path.join(rootdir, puzzlename + ".json")
-    with open(filename, "w") as fp:
-        fp.write(jsonstr)
+        # Send message about the save
+        flash(f"Puzzle saved as {puzzlename}")
 
-    # Store the saved version of the puzzle in the session
-    # as 'puzzle.initial' so that we can detect whether
-    # it has been changed since it was last saved
-    session['puzzle.initial'] = jsonstr
-
-    # Send message about the save
-    flash(f"Puzzle saved as {puzzlename}")
+        # Store the saved version of the puzzle in the session
+        # as 'puzzle.initial' so that we can detect whether
+        # it has been changed since it was last saved
+        session['puzzle.initial'] = jsonstr
 
     # Show the puzzle screen
     return redirect(url_for('puzzle_screen'))

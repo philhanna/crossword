@@ -18,6 +18,7 @@ class Puzzle:
         but rather as a map of (r, c) to single-character strings.
         The puzzle is initially set to all empty.
         """
+        self.grid = grid
         self.n = grid.n
         self.black_cells = grid.get_black_cells()
         self.numbered_cells = grid.get_numbered_cells()
@@ -112,13 +113,7 @@ class Puzzle:
 
     def get_word_count(self):
         """ Returns the number of words in the puzzle """
-        count = 0
-        for nc in self.numbered_cells:
-            if nc.across_length:
-                count += 1
-            if nc.down_length:
-                count += 1
-        return count
+        return self.grid.get_word_count()
 
     @property
     def title(self):
@@ -136,7 +131,7 @@ class Puzzle:
         image = dict()
         image['n'] = self.n
         image['title'] = self.title
-        image['cells']= [cellsrow for cellsrow in str(self).split('\n')]
+        image['cells'] = [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = [black_cell for black_cell in self.black_cells]
 
         # Numbered cells
@@ -219,6 +214,69 @@ class Puzzle:
     #   ========================================================
     #   Internal methods
     #   ========================================================
+
+    def validate(self):
+        """ Validates puzzle for errors """
+
+        grid = self.grid
+        errors = dict()
+        errors['interlock'] = grid.validate_interlock()
+        errors['unchecked'] = grid.validate_unchecked_squares()
+        errors['wordlength'] = grid.validate_minimum_word_length()
+        errors['dupwords'] = self.validate_duplicate_words()
+
+        ok = True
+        for error_key, error_list in errors.items():
+            if len(error_list) > 0:
+                ok = False
+
+        return ok, errors
+
+    def validate_duplicate_words(self):
+        """ Checks whether there are any duplicate words """
+
+        # Create a map of unique word text to a list of places it's used
+        uwmap = {}
+
+        for seq, word in self.across_words.items():
+            if not word.is_complete():
+                continue
+            text = word.get_text()
+            if text not in uwmap:
+                uwmap[text] = []
+            place = f"{word.seq} across"
+            uwmap[text].append(place)
+
+        for seq, word in self.down_words.items():
+            if not word.is_complete():
+                continue
+            text = word.get_text()
+            if text not in uwmap:
+                uwmap[text] = []
+            place = f"{word.seq} down"
+            uwmap[text].append(place)
+
+        # For any unique word text that's used in more than one place,
+        # issue an error message
+        error_list = []
+        for text, places in uwmap.items():
+            if len(places) > 1:
+                errmsg = f"'{text}' is used in {', '.join(places)}"
+                error_list.append(errmsg)
+            pass
+
+        return error_list
+
+    def get_statistics(self):
+        """ Returns a dictionary of grid statistics """
+        stats = dict()
+        ok, errors = self.validate()
+        stats['valid'] = ok
+        stats['errors'] = errors
+        stats['size'] = f"{self.n} x {self.n}"
+        stats['wordcount'] = self.get_word_count()
+        stats['wordlengths'] = self.grid.get_word_lengths()
+        return stats
 
     def __str__(self):
         sb = f'+{"-" * (self.n * 2 - 1)}+' + "\n"

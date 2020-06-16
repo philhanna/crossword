@@ -259,8 +259,14 @@ function do_statistics(objType, url) {
                "interlock": "Cell interlock errors",
                "unchecked": "Cell unchecked errors",
                "wordlength": "Minimum word length errors",
+               "dupwords": "Duplicate word errors",
             };
             for (var error_type in errors) {
+
+               var error_list = errors[error_type];
+               if (error_list.length == 0) {
+                  continue;
+               }
 
                var elem_div = document.createElement('div');
                elem_errors.appendChild(elem_div);
@@ -277,7 +283,6 @@ function do_statistics(objType, url) {
                elem_ul.style.lineHeight = "30%";
                elem_div.appendChild(elem_ul);
 
-               var error_list = errors[error_type];
                for (var j in error_list) {
                   errmsg = error_list[j];
                   var elem_li = document.createElement("li");
