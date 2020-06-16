@@ -738,7 +738,7 @@ function do_validate_word() {
     var text = document.getElementById('ew-word').value;
     for (var i = 0; i < text.length; i++) {
         var ch = text.charAt(i).toUpperCase();
-        var p = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(ch);
+        var p = " ABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(ch);
         if (p < 0) {
             alert(text + " contains non-alphabetic characters");
             return false;
