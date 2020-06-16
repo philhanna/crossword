@@ -1,10 +1,13 @@
 #! /usr/bin/python3
 
 import os
-import re
+import sys
+
+sys.path.append('..')
+from clue_export_visitor import ClueExportVisitor
 from configuration import Configuration
 from puzzle import Puzzle
-from clue_export_visitor import ClueExportVisitor
+from util import list_puzzles
 
 
 def main(args):
@@ -15,9 +18,7 @@ def main(args):
     # list of puzzles in the puzzles root directory
 
     if args.list:
-        for filename in sorted(os.listdir(puzzles_root)):
-            puzzlename = re.sub(r'\.json$', '', filename)
-            print(puzzlename)
+        list_puzzles(puzzles_root)
         exit(0)
 
     # Open the input file and load the JSON it contains.

@@ -1,10 +1,13 @@
 #! /usr/bin/python3
 
 import os
+import sys
 
+sys.path.append('..')
+from clue_import_visitor import ClueImportVisitor
 from configuration import Configuration
 from puzzle import Puzzle
-from clue_import_visitor import ClueImportVisitor
+from util import list_puzzles
 
 
 def main(args):
@@ -14,8 +17,7 @@ def main(args):
     # list of puzzles in the puzzles root directory
 
     if args.list:
-        for puzzlename in os.listdir(puzzles_root):
-            print(puzzlename)
+        list_puzzles(puzzles_root)
         exit(0)
 
     # Load the puzzle from the configured puzzles root directory
