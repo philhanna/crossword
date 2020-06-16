@@ -7,7 +7,6 @@ class Configuration:
 
     _instance = None
 
-
     ############################################################
     #  Instance methods
     ############################################################
@@ -47,6 +46,12 @@ class Configuration:
         return config.get('data', 'puzzles_root')
 
     @staticmethod
+    def get_wordlists_root():
+        """ Returns the wordlists root """
+        config = Configuration.get_instance()
+        return config.get('data', 'wordlists_root')
+
+    @staticmethod
     def get_words_filename():
         """ Returns the path to the words file """
         config = Configuration.get_instance()
@@ -75,4 +80,3 @@ class Configuration:
         """ Returns the author email """
         config = Configuration.get_instance()
         return config.get('author', 'email')
-
