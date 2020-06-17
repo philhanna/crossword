@@ -317,7 +317,7 @@ def puzzle_screen():
         "puzzle_stats": True,
         "puzzle_title": True,
         "close_puzzle": True,
-        "delete_puzzle": True,
+        "delete_puzzle": puzzlename is not None,
     }
 
     # Send puzzle.html to the client
