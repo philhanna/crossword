@@ -2,9 +2,7 @@ import os
 import re
 import xml.etree.ElementTree as ET
 
-from crossword.configuration import Configuration
-from crossword.puzzle import Puzzle
-from crossword.to_svg import PuzzleToSVG
+from crossword import Configuration, Puzzle, PuzzleToSVG
 
 
 class NYTimesOutput:

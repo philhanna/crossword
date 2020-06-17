@@ -2,7 +2,7 @@ import os.path
 import tempfile
 from unittest import TestCase
 
-from crossword.clue_export_visitor import ClueExportVisitor
+from crossword import ClueExportVisitor
 from test.test_puzzle import TestPuzzle
 
 

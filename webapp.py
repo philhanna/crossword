@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+
 import json
 import os
 import re
@@ -17,13 +18,13 @@ from flask import session
 from flask import url_for
 from flask_session import Session
 
-from crossword.acrosslite_output import AcrossLiteOutput
-from crossword.configuration import Configuration
-from crossword.grid import Grid
-from crossword.nytimes_output import NYTimesOutput
-from crossword.puzzle import Puzzle
-from crossword.to_svg import GridToSVG, PuzzleToSVG
-from crossword.wordlist import WordList
+from crossword import AcrossLiteOutput
+from crossword import Configuration
+from crossword import Grid
+from crossword import GridToSVG, PuzzleToSVG
+from crossword import NYTimesOutput
+from crossword import Puzzle
+from crossword import WordList
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from crossword.grid import Grid
+from crossword import Grid
 from test.test_puzzle import TestPuzzle
 
 

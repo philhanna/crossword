@@ -4,9 +4,9 @@ import os
 import sys
 sys.path.append('../..')
 
-from crossword.clue_export_visitor import ClueExportVisitor
-from crossword.configuration import Configuration
-from crossword.puzzle import Puzzle
+from crossword import ClueExportVisitor
+from crossword import Configuration
+from crossword import Puzzle
 from crossword.util import list_puzzles
 
 

@@ -2,7 +2,7 @@ import os.path
 import tempfile
 from unittest import TestCase
 
-from crossword.to_svg import PuzzleToSVG
+from crossword import PuzzleToSVG
 from test.test_puzzle import TestPuzzle
 
 

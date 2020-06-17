@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from crossword.configuration import Configuration
-from crossword.wordlist import WordList
+from crossword import Configuration, WordList
 
 
 class TestWordList(TestCase):

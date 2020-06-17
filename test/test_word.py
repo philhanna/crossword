@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from crossword.puzzle import Puzzle
-from crossword.word import AcrossWord
+from crossword import AcrossWord, Puzzle
 from test.test_puzzle import TestPuzzle
 
 

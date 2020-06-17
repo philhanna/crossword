@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from crossword.numbered_cell import NumberedCell
+from crossword import NumberedCell
 
 
 class TestNumberedCell(TestCase):

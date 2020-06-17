@@ -3,7 +3,7 @@ import os
 import re
 import sys
 
-from crossword.configuration import Configuration
+from crossword import Configuration
 
 
 class SplitWordList:

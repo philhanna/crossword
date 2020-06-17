@@ -1,7 +1,8 @@
 # Crossword utilities
 
-from datetime import datetime
 import os.path
+from datetime import datetime
+
 
 
 def list_puzzles(puzzles_root):

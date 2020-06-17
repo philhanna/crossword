@@ -1,7 +1,6 @@
 from io import StringIO
 
-from crossword.configuration import Configuration
-from crossword.puzzle import Puzzle
+from crossword import Configuration, Puzzle
 
 
 def get_indent():

@@ -1,12 +1,8 @@
 #! /usr/bin/python3
 
 import os
-import sys
-sys.path.append('../..')
 
-from crossword.clue_import_visitor import ClueImportVisitor
-from crossword.configuration import Configuration
-from crossword.puzzle import Puzzle
+from crossword import ClueImportVisitor, Configuration, Puzzle
 from crossword.util import list_puzzles
 
 

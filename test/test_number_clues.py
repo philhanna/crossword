@@ -1,7 +1,6 @@
-import json
 from unittest import TestCase
 
-from crossword.numbered_cell import NumberedCell
+from crossword import NumberedCell
 from test.test_puzzle import TestPuzzle
 
 
