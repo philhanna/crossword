@@ -1,7 +1,7 @@
 import csv
 from io import StringIO
 
-from visitor import Visitor
+from crossword import Visitor
 
 
 class ClueImportVisitor(Visitor):

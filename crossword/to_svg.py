@@ -1,7 +1,7 @@
 import re
-from grid import Grid
-from puzzle import Puzzle
 import xml.etree.ElementTree as ET
+
+from crossword import Grid, Puzzle
 
 
 class ToSVG:

@@ -1,11 +1,8 @@
-import io
 import os
 import re
 import xml.etree.ElementTree as ET
 
-from configuration import Configuration
-from puzzle import Puzzle
-from to_svg import PuzzleToSVG
+from crossword import Configuration, Puzzle, PuzzleToSVG
 
 
 class NYTimesOutput:

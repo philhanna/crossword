@@ -1,10 +1,9 @@
 from unittest import TestCase
 
-from puzzle import Puzzle
+from crossword import Puzzle, AcrossWord, DownWord
 from test.test_grid import TestGrid
 from test.test_puzzle import TestPuzzle
 from test.test_word import TestWord
-from word import *
 
 
 class TestDownWord(TestCase):

@@ -2,7 +2,7 @@ import os
 import tempfile
 from unittest import TestCase
 
-from nytimes_output import NYTimesOutput
+from crossword import NYTimesOutput
 from test.test_puzzle import TestPuzzle
 
 
@@ -31,7 +31,8 @@ class TestNYTimesOutput(TestCase):
     # Internal methods
     ############################################################
 
-    def runtest(self, puzzle, basename):
+    @staticmethod
+    def runtest(puzzle, basename):
         app = NYTimesOutput(puzzle, basename)
         tempdir = tempfile.gettempdir()
 

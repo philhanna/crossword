@@ -1,7 +1,7 @@
 import os.path
 from unittest import TestCase
 
-from configuration import Configuration
+from crossword import Configuration
 
 
 class TestConfiguration(TestCase):

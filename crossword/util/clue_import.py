@@ -1,13 +1,9 @@
 #! /usr/bin/python3
 
 import os
-import sys
 
-sys.path.append('..')
-from clue_import_visitor import ClueImportVisitor
-from configuration import Configuration
-from puzzle import Puzzle
-from util import list_puzzles
+from crossword import ClueImportVisitor, Configuration, Puzzle
+from crossword.util import list_puzzles
 
 
 def main(args):

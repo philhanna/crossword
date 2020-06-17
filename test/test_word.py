@@ -1,8 +1,7 @@
 from unittest import TestCase
 
-from puzzle import Puzzle
+from crossword import AcrossWord, Puzzle
 from test.test_puzzle import TestPuzzle
-from word import AcrossWord
 
 
 class TestWord(TestCase):

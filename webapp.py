@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+
 import json
 import os
 import re
@@ -9,22 +10,21 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from flask import Flask
 from flask import flash
-from flask import request
 from flask import make_response
 from flask import redirect
 from flask import render_template
+from flask import request
 from flask import session
 from flask import url_for
-
 from flask_session import Session
 
-from acrosslite_output import AcrossLiteOutput
-from configuration import Configuration
-from grid import Grid
-from nytimes_output import NYTimesOutput
-from puzzle import Puzzle
-from to_svg import GridToSVG, PuzzleToSVG
-from wordlist import WordList
+from crossword import AcrossLiteOutput
+from crossword import Configuration
+from crossword import Grid
+from crossword import GridToSVG, PuzzleToSVG
+from crossword import NYTimesOutput
+from crossword import Puzzle
+from crossword import WordList
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False

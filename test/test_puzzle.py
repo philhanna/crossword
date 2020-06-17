@@ -2,8 +2,7 @@ import os
 import tempfile
 from unittest import TestCase
 
-from grid import Grid
-from puzzle import Puzzle
+from crossword import Grid, Puzzle
 
 
 class TestPuzzle(TestCase):

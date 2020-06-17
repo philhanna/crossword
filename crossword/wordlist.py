@@ -1,6 +1,6 @@
 import re
 
-from configuration import Configuration
+from crossword import Configuration
 
 
 class WordList:
