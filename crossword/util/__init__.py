@@ -3,6 +3,7 @@
 from datetime import datetime
 import os.path
 
+
 def list_puzzles(puzzles_root):
     for filename in sorted(
             [
@@ -17,4 +18,3 @@ def list_puzzles(puzzles_root):
         puzzlename = os.path.splitext(basename)[0]
         line = f"{mtimestr} {puzzlename}"
         print(line)
-    

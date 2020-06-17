@@ -2,7 +2,7 @@ import os
 import tempfile
 from unittest import TestCase
 
-from nytimes_output import NYTimesOutput
+from crossword.nytimes_output import NYTimesOutput
 from test.test_puzzle import TestPuzzle
 
 

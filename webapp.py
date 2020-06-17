@@ -9,22 +9,21 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from flask import Flask
 from flask import flash
-from flask import request
 from flask import make_response
 from flask import redirect
 from flask import render_template
+from flask import request
 from flask import session
 from flask import url_for
-
 from flask_session import Session
 
-from acrosslite_output import AcrossLiteOutput
-from configuration import Configuration
-from grid import Grid
-from nytimes_output import NYTimesOutput
-from puzzle import Puzzle
-from to_svg import GridToSVG, PuzzleToSVG
-from wordlist import WordList
+from crossword.acrosslite_output import AcrossLiteOutput
+from crossword.configuration import Configuration
+from crossword.grid import Grid
+from crossword.nytimes_output import NYTimesOutput
+from crossword.puzzle import Puzzle
+from crossword.to_svg import GridToSVG, PuzzleToSVG
+from crossword.wordlist import WordList
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False

@@ -1,7 +1,7 @@
 from io import StringIO
 from unittest import TestCase
 
-from clue_import_visitor import ClueImportVisitor
+from crossword.clue_import_visitor import ClueImportVisitor
 from test.test_puzzle import TestPuzzle
 
 

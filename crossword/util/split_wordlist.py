@@ -3,8 +3,7 @@ import os
 import re
 import sys
 
-sys.path.append('..')
-from configuration import Configuration
+from crossword.configuration import Configuration
 
 
 class SplitWordList:

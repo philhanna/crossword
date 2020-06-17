@@ -1,12 +1,8 @@
-import os
-import re
 from io import StringIO
 
-from configuration import Configuration
-from puzzle import Puzzle
+from crossword.configuration import Configuration
+from crossword.puzzle import Puzzle
 
-
-# Simple functions
 
 def get_indent():
     """ Amount by which to indent each line of input """

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from grid import Grid
-from numbered_cell import NumberedCell
+from crossword.grid import Grid
+from crossword.numbered_cell import NumberedCell
 
 
 class TestGetNumberedCells(TestCase):

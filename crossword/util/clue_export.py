@@ -2,16 +2,15 @@
 
 import os
 import sys
+sys.path.append('../..')
 
-sys.path.append('..')
-from clue_export_visitor import ClueExportVisitor
-from configuration import Configuration
-from puzzle import Puzzle
-from util import list_puzzles
+from crossword.clue_export_visitor import ClueExportVisitor
+from crossword.configuration import Configuration
+from crossword.puzzle import Puzzle
+from crossword.util import list_puzzles
 
 
 def main(args):
-
     puzzles_root = Configuration.get_puzzles_root()
 
     # If the --list option was specified, just show the
