@@ -11,7 +11,13 @@
             method="POST" onsubmit="show_puzzle_title()">
         <div class="w3-section">
           <label>Puzzle title:</label>
-          <input class="w3-input w3-border w3-margin-top w3-margin-bottom" type="text" name="title"/>
+          <input class="w3-input w3-border w3-margin-top w3-margin-bottom"
+                 type="text"
+                 name="title"
+                 {% if puzzletitle %}
+                 value="{{ puzzletitle }}"
+                 {% endif %}
+          />
           <div class="w3-container">
             <button class="w3-button w3-border w3-round w3-gray"
               style="width:100px"
