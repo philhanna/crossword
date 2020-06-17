@@ -387,6 +387,7 @@ def edit_word_screen():
         "puzzle_stats": True,
         "puzzle_title": True,
         "close_puzzle": True,
+        "delete_puzzle": True,
     }
 
     # Send puzzle.html to the client
