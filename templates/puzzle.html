@@ -13,10 +13,10 @@
     </h3>
 </div>
 
-<div class="w3-container w3-margin-bottom" style="width:600;height:36">
+<div class="w3-container w3-margin-bottom" style="width:700;height:36">
 <div class="w3-bar w3-border"> <!-- Toolbar -->
     <style>
-        #pztb-save, #pztb-close, #pztb-stats, #pztb-undo, #pztb-redo, #pztb-delete {
+        #pztb-save, #pztb-close, #pztb-stats, #pztb-title, #pztb-undo, #pztb-redo, #pztb-delete {
             vertical-align: top;
             font-size: 12px;
         }
@@ -29,7 +29,7 @@
             {% if enabled.save_puzzle %}
             href="{{ url_for('puzzle_save') }}"
             {% endif %}
-            ">
+            >
         <i class="material-icons icon-icon">save</i>
         <span>Save</span>
     </a>
@@ -40,7 +40,7 @@
             {% if enabled.close_puzzle %}
             onclick="do_close_puzzle()"
             {% endif %}
-            ">
+            >
         <i class="material-icons icon-icon">close</i>
         <span>Close</span>
     </a>
@@ -51,9 +51,20 @@
             {% if enabled.puzzle_stats %}
             onclick="do_puzzle_stats()"
             {% endif %}
-            ">
+            >
         <i class="material-icons icon-icon">info</i>
         <span>Info</span>
+    </a>
+
+    <!-- Set title -->
+    <a id="pztb-title" class="w3-bar-item w3-button
+            {% if not enabled.puzzle_title %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_title %}
+            onclick="do_puzzle_title()"
+            {% endif %}
+            >
+        <i class="material-icons icon-icon">title</i>
+        <span>Title</span>
     </a>
 
     <!-- Undo -->
