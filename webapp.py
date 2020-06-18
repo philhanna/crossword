@@ -227,15 +227,13 @@ def open_puzzle_screen():
 def puzzle_save():
     puzzlename = session.get('puzzlename', request.args.get('puzzlename'))
     session['puzzlename'] = puzzlename
-
     return puzzle_save_common(puzzlename)
 
 
 @app.route('/puzzle-save-as', methods=['GET'])
 def puzzle_save_as():
-    puzzlename = request.args.get('puzzlename')
-    session['puzzlename'] = puzzlename
-    return puzzle_save_common(puzzlename)
+    newpuzzlename = request.args.get('newpuzzlename')
+    return puzzle_save_common(newpuzzlename)
 
 
 @app.route('/puzzle-delete')
