@@ -23,13 +23,18 @@
          <a class="w3-bar-item w3-button
             {% if not enabled.save_grid %} w3-disabled {% endif %}"
             {% if enabled.save_grid %}
-            href="{{ url_for('grid_save') }}"
+            onclick="do_save_grid(
+            {% if gridname %}
+            '{{gridname}}'
+            {% else %}
+            ''
+            {% endif %}
+            )"
             {% endif %}
             >Save grid</a>
          <a class="w3-bar-item w3-button
             {% if not enabled.save_grid_as %} w3-disabled {% endif %}"
             {% if enabled.save_grid_as %}
-            href="#"
             onclick="do_save_grid_as()"
             {% endif %}
             >Save grid as...</a>
@@ -85,7 +90,6 @@
          <a class="w3-bar-item w3-button
             {% if not enabled.save_puzzle_as %} w3-disabled {% endif %}"
             {% if enabled.save_puzzle_as %}
-            href="#"
             onclick="do_save_puzzle_as()"
             {% endif %}
             >Save puzzle as...</a>

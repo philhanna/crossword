@@ -153,6 +153,19 @@ function do_replace_puzzle_grid() {
 }
 
 /***************************************************************
+ *  FUNCTION NAME:   do_save_grid
+ *  DESCRIPTION:     Turns on the save grid modal dialog
+ ***************************************************************/
+function do_save_grid(gridname) {
+    if (gridname == "") {
+        showElement('gs-dialog');
+    }
+    else {
+        window.location.href = "{{ url_for('grid_save') }}";
+    }
+}
+
+/***************************************************************
  *  FUNCTION NAME:   do_save_grid_as
  *  DESCRIPTION:     Turns on the save grid modal dialog
  ***************************************************************/

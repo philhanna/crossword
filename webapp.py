@@ -82,39 +82,7 @@ def new_grid_screen():
     session['grid'] = jsonstr
     session['grid.initial'] = jsonstr
 
-    # Create the SVG
-    svg = GridToSVG(grid)
-    boxsize = svg.boxsize
-    svgstr = svg.generate_xml()
-
-    # Enable menu options
-    enabled = {
-        "save_grid_as": True,
-        "grid_stats": True,
-        "close_grid": True
-    }
-
-    # Show the grid.html screen
-    return render_template('grid.html',
-                           enabled=enabled,
-                           n=n,
-                           boxsize=boxsize,
-                           svgstr=svgstr)
-
-
-@app.route('/grid-delete')
-def grid_delete_screen():
-    # Get the name of the grid to be deleted from the session
-    # Delete the file
-
-    gridname = session['gridname']
-    filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
-    os.remove(filename)
-    flash(f"{gridname} grid deleted")
-
-    # Redirect to the main screen
-
-    return redirect(url_for('main_screen'))
+    return redirect(url_for('grid_screen'))
 
 
 @app.route('/open-grid')
@@ -135,42 +103,35 @@ def open_grid_screen():
     session['grid.initial'] = jsonstr
     session['gridname'] = gridname
 
-    # Create the SVG
-    svg = GridToSVG(grid)
-    boxsize = svg.boxsize
-    svgstr = svg.generate_xml()
-
-    # Enable the menu options
-    enabled = {
-        "save_grid": True,
-        "save_grid_as": True,
-        "close_grid": True,
-        "grid_stats": True,
-        "delete_grid": True,
-    }
-
-    # Go to grid.html
-    return render_template('grid.html',
-                           enabled=enabled,
-                           gridname=gridname,
-                           n=grid.n,
-                           boxsize=boxsize,
-                           svgstr=svgstr)
-
-    pass
+    return redirect(url_for('grid_screen'))
 
 
 @app.route('/grid-save', methods=['GET'])
 def grid_save():
-    gridname = session['gridname']
+    gridname = session.get('gridname', request.args.get('gridname'))
+    session['gridname'] = gridname
     return grid_save_common(gridname)
 
 
 @app.route('/grid-save-as', methods=['GET'])
 def grid_save_as():
-    gridname = request.args.get('gridname')
-    session['gridname'] = gridname
-    return grid_save_common(gridname)
+    newgridname = request.args.get('newgridname')
+    return grid_save_common(newgridname)
+
+
+@app.route('/grid-delete')
+def grid_delete_screen():
+    # Get the name of the grid to be deleted from the session
+    # Delete the file
+
+    gridname = session['gridname']
+    filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
+    os.remove(filename)
+    flash(f"{gridname} grid deleted")
+
+    # Redirect to the main screen
+
+    return redirect(url_for('main_screen'))
 
 
 @app.route('/new-puzzle')
@@ -382,7 +343,7 @@ def edit_word_screen():
 
     # Enable the appropriate menu options
     enabled = {
-        "save_puzzle": puzzlename is not None,
+        "save_puzzle": True,
         "save_puzzle_as": True,
         "puzzle_stats": True,
         "puzzle_title": True,
@@ -661,7 +622,7 @@ def reset_word():
 def grid_save_common(gridname):
     # Recreate the grid from the JSON in the session
     # and validate it
-    jsonstr = session['grid']
+    jsonstr = session.get('grid', None)
     grid = Grid.from_json(jsonstr)
     ok, messages = grid.validate()
     if not ok:
@@ -674,7 +635,6 @@ def grid_save_common(gridname):
                     flash("   " + message)
     else:
         # Save the file
-
         rootdir = Configuration.get_grids_root()
         filename = os.path.join(rootdir, gridname + ".json")
         with open(filename, "w") as fp:
@@ -688,6 +648,16 @@ def grid_save_common(gridname):
         # it has been changed since it was last saved
         session['grid.initial'] = jsonstr
 
+    # Show the grid screen
+    return redirect(url_for('grid_screen'))
+
+
+@app.route('/grid', methods=['GET'])
+def grid_screen():
+    # Get the existing grid from the session
+    grid = Grid.from_json(session['grid'])
+    gridname = session.get('gridname', None)
+
     # Create the SVG
     svg = GridToSVG(grid)
     boxsize = svg.boxsize
@@ -697,9 +667,9 @@ def grid_save_common(gridname):
     enabled = {
         "save_grid": True,
         "save_grid_as": True,
-        "close_grid": True,
         "grid_stats": True,
-        "delete_grid": True,
+        "close_grid": True,
+        "delete_grid": gridname is not None,
     }
 
     # Show the grid.html screen
