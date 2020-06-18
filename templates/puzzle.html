@@ -16,15 +16,15 @@
 <div class="w3-container w3-margin-bottom" style="width:700;height:36">
 <div class="w3-bar w3-border"> <!-- Toolbar -->
     <style>
-        #pztb-save, #pztb-close, #pztb-stats, #pztb-title, #pztb-undo, #pztb-redo, #pztb-delete {
+        .crosstb {
             vertical-align: top;
             font-size: 12px;
         }
-        .icon-icon { font-size: 15px; }
+        .crosstb-icon { font-size: 15px; }
     </style>
 
     <!-- Save -->
-    <a id="pztb-save" class="w3-bar-item w3-button
+    <a class="w3-bar-item w3-button crosstb
             {% if not enabled.save_puzzle %} w3-disabled {% endif %}"
             {% if enabled.save_puzzle %}
             onclick="do_save_puzzle(
@@ -36,63 +36,63 @@
             )"
             {% endif %}
             >
-        <i class="material-icons icon-icon">save</i>
+        <i class="material-icons crosstb-icon">save</i>
         <span>Save</span>
     </a>
 
     <!-- Close -->
-    <a id="pztb-close" class="w3-bar-item w3-button
+    <a class="w3-bar-item w3-button crosstb
             {% if not enabled.close_puzzle %} w3-disabled {% endif %}"
             {% if enabled.close_puzzle %}
             onclick="do_close_puzzle()"
             {% endif %}
             >
-        <i class="material-icons icon-icon">close</i>
+        <i class="material-icons crosstb-icon">close</i>
         <span>Close</span>
     </a>
 
     <!-- Stats -->
-    <a id="pztb-stats" class="w3-bar-item w3-button
+    <a class="crosstb w3-bar-item w3-button crosstb
             {% if not enabled.puzzle_stats %} w3-disabled {% endif %}"
             {% if enabled.puzzle_stats %}
             onclick="do_puzzle_stats()"
             {% endif %}
             >
-        <i class="material-icons icon-icon">info</i>
+        <i class="material-icons crosstb-icon">info</i>
         <span>Info</span>
     </a>
 
     <!-- Set title -->
-    <a id="pztb-title" class="w3-bar-item w3-button
+    <a class="w3-bar-item w3-button crosstb
             {% if not enabled.puzzle_title %} w3-disabled {% endif %}"
             {% if enabled.puzzle_title %}
             onclick="do_puzzle_title()"
             {% endif %}
             >
-        <i class="material-icons icon-icon">title</i>
+        <i class="material-icons crosstb-icon">title</i>
         <span>Title</span>
     </a>
 
     <!-- Undo -->
-    <a id="pztb-undo" href="#" class="w3-bar-item w3-button">
-        <i class="material-icons icon-icon">undo</i>
+    <a class="w3-bar-item w3-button crosstb">
+        <i class="material-icons crosstb-icon">undo</i>
         <span>Undo</span>
     </a>
 
     <!-- Redo -->
-    <a id="pztb-redo" href="#" class="w3-bar-item w3-button">
-        <i class="material-icons icon-icon">redo</i>
+    <a class="w3-bar-item w3-button crosstb">
+        <i class="material-icons crosstb-icon">redo</i>
         <span>Redo</span>
     </a>
 
     <!-- Delete -->
-    <a id="pztb-delete" class="w3-bar-item w3-button
+    <a class="w3-bar-item w3-button crosstb
             {% if not enabled.delete_puzzle %} w3-disabled {% endif %}"
             {% if enabled.delete_puzzle %}
             onclick="do_delete_puzzle()"
             {% endif %}
             ">
-        <i class="material-icons icon-icon">delete_forever</i>
+        <i class="material-icons crosstb-icon">delete_forever</i>
         <span>Delete</span>
     </a>
 
