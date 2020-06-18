@@ -73,7 +73,13 @@
          <a class="w3-bar-item w3-button
             {% if not enabled.save_puzzle %} w3-disabled {% endif %}"
             {% if enabled.save_puzzle %}
-            href="{{ url_for('puzzle_save') }}"
+            onclick="do_save_puzzle(
+            {% if puzzlename %}
+            '{{puzzlename}}'
+            {% else %}
+            ''
+            {% endif %}
+            )"
             {% endif %}
             >Save puzzle</a>
          <a class="w3-bar-item w3-button

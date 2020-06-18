@@ -477,8 +477,21 @@ function do_open_puzzle() {
 }
 
 /***************************************************************
+ *  FUNCTION NAME:   do_save_puzzle
+ *  DESCRIPTION:     Turns on the save puzzle modal dialog
+ ***************************************************************/
+function do_save_puzzle(puzzlename) {
+    if (puzzlename == "") {
+        showElement('ps-dialog');
+    }
+    else {
+        window.location.href = "{{ url_for('puzzle_save') }}";
+    }
+}
+
+/***************************************************************
  *  FUNCTION NAME:   do_save_puzzle_as
- *  DESCRIPTION:     Turns on the save grid as modal dialog
+ *  DESCRIPTION:     Turns on the save puzzle as modal dialog
  ***************************************************************/
 function do_save_puzzle_as() {
    showElement('psa-dialog');

@@ -225,7 +225,9 @@ def open_puzzle_screen():
 
 @app.route('/puzzle-save', methods=['GET'])
 def puzzle_save():
-    puzzlename = session['puzzlename']
+    puzzlename = session.get('puzzlename', request.args.get('puzzlename'))
+    session['puzzlename'] = puzzlename
+
     return puzzle_save_common(puzzlename)
 
 
@@ -310,7 +312,7 @@ def puzzle_screen():
     svgstr = svg.generate_xml()
 
     enabled = {
-        "save_puzzle": puzzlename is not None,
+        "save_puzzle": True,
         "save_puzzle_as": True,
         "save_puzzle_grid": True,
         "replace_puzzle_grid": True,
