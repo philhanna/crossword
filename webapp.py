@@ -124,13 +124,18 @@ def grid_delete_screen():
     # Get the name of the grid to be deleted from the session
     # Delete the file
 
-    gridname = session['gridname']
-    filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
-    os.remove(filename)
-    flash(f"{gridname} grid deleted")
+    gridname = session.get('gridname', None)
+    if gridname:
+        filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
+        if os.path.exists(filename):
+            os.remove(filename)
+            flash(f"{gridname} grid deleted")
+        else:
+            flash(f"{gridname} was never saved - no need to delete")
+    else:
+        flash("There is no grid to delete")
 
     # Redirect to the main screen
-
     return redirect(url_for('main_screen'))
 
 
