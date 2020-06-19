@@ -1,6 +1,5 @@
 import json
-
-from crossword import AcrossWord, DownWord, Grid
+from crossword import AcrossWord, DownWord, Grid, Word
 
 
 class Puzzle:
@@ -26,7 +25,7 @@ class Puzzle:
 
         cells = {}
         self.cells = cells
-        self.title = title
+        self._title = title
 
         # All cells are initially empty
         for r in range(1, self.n + 1):
@@ -50,6 +49,9 @@ class Puzzle:
             if numbered_cell.down_length:
                 self.down_words[numbered_cell.seq] = DownWord(self, numbered_cell.seq)
 
+        self.undo_stack = []
+        self.redo_stack = []
+
     #   ========================================================
     #   Getters and setters
     #   ========================================================
@@ -59,6 +61,61 @@ class Puzzle:
 
     def set_cell(self, r, c, letter):
         self.cells[(r, c)] = letter
+
+    def get_word(self, seq, direction):
+        """ Returns the word at <seq><direction> """
+        word = None
+        if direction == Word.ACROSS:
+            word = self.get_across_word(seq)
+        elif direction == Word.DOWN:
+            word = self.get_down_word(seq)
+        return word
+
+    def get_text(self, seq, direction):
+        """ Returns the text of the word at <seq><directino>"""
+        word = self.get_word(seq, direction)
+        return word.get_text()
+
+    def set_text(self, seq, direction, text, undo=True):
+        """ Sets the text of the word at <seq><direction> """
+        word = self.get_word(seq, direction)
+        if undo:
+            new_value = text
+            old_value = word.get_text()
+            if old_value != new_value:
+                undoable = ['text', seq, direction, old_value]
+                self.undo_stack.append(undoable)
+        word.set_text(text)
+
+    def get_clue(self, seq, direction):
+        """ Returns the clue of the word at <seq><directino>"""
+        word = self.get_word(seq, direction)
+        return word.get_clue()
+
+    def set_clue(self, seq, direction, clue, undo=True):
+        """ Sets the clue of the word at <seq><direction> """
+        word = self.get_word(seq, direction)
+        if undo:
+            new_value = clue
+            old_value = word.get_clue()
+            if old_value != new_value:
+                undoable = ['clue', seq, direction, old_value]
+                self.undo_stack.append(undoable)
+        word.set_clue(clue)
+
+    def get_title(self):
+        """ Returns the puzzle title """
+        return self._title
+
+    def set_title(self, title):
+        """ Sets the puzzle title """
+        # Undo/redo
+        new_value = title
+        old_value = self.get_title()
+        if old_value != new_value:
+            undoable = ['title', old_value]
+            self.undo_stack.append(undoable)
+        self._title = new_value
 
     def get_across_word(self, seq):
         """ Returns the word for <seq> across, or None"""
@@ -86,13 +143,107 @@ class Puzzle:
         """ Returns the number of words in the puzzle """
         return self.grid.get_word_count()
 
-    @property
-    def title(self):
-        return self._title
+    #   ========================================================
+    #   undo / redo logic
+    #   ========================================================
 
-    @title.setter
-    def title(self, value):
-        self._title = value
+    def undo(self):
+        """ Undoes the last change """
+
+        if len(self.undo_stack) == 0:
+            return  # Nothing to undo
+
+        # Pop the undoable from the undo stack and get its type
+        undoable = self.undo_stack.pop()
+        undo_type = undoable[0]
+
+        if undo_type == "title":
+            # Extract the set title parameters from the undoable
+            undo_title = undoable[1]
+
+            # Push the current title to the redo stack
+            old_title = self.get_title()
+            self.redo_stack.append([undo_type, old_title])
+
+            # and set the title to the popped value
+            self._title = undo_title
+
+        elif undo_type == 'text':
+            # Extract the set text parameters from the undoable
+            undo_seq = undoable[1]
+            undo_direction = undoable[2]
+            undo_text = undoable[3]
+
+            # Push the current text for this word to the redo stack
+            old_text = self.get_text(undo_seq, undo_direction)
+            self.redo_stack.append([undo_type, undo_seq, undo_direction, old_text])
+
+            # and set the text to the popped value
+            self.set_text(undo_seq, undo_direction, undo_text, undo=False)
+
+        elif undo_type == 'clue':
+            # Extract the set clue parameters from the undoable
+            undo_seq = undoable[1]
+            undo_direction = undoable[2]
+            undo_clue = undoable[3]
+
+            # Push the current clue for this word to the redo stack
+            old_clue = self.get_clue(undo_seq, undo_direction)
+            self.redo_stack.append([undo_type, undo_seq, undo_direction, old_clue])
+
+            # and set the text to the popped value
+            self.set_clue(undo_seq, undo_direction, undo_clue, undo=False)
+
+        pass
+
+    def redo(self):
+        """ Redoes the last change """
+
+        if len(self.redo_stack) == 0:
+            return  # Nothing to undo
+
+        # Pop the undoable from the redo stack and get its type
+        undoable = self.redo_stack.pop()
+        undo_type = undoable[0]
+
+        if undo_type == "title":
+            # Extract the set title parameters from the undoable
+            undo_title = undoable[1]
+
+            # Push the current title to the undo stack
+            old_title = self.get_title()
+            self.undo_stack.append([undo_type, old_title])
+
+            # and set the title to the popped value
+            self._title = undo_title
+
+        elif undo_type == 'text':
+            # Extract the set text parameters from the undoable
+            undo_seq = undoable[1]
+            undo_direction = undoable[2]
+            undo_text = undoable[3]
+
+            # Push the current text for this word to the undo stack
+            old_text = self.get_text(undo_seq, undo_direction)
+            self.undo_stack.append([undo_type, undo_seq, undo_direction, old_text])
+
+            # and set the text to the popped value
+            self.set_text(undo_seq, undo_direction, undo_text, undo=False)
+
+        elif undo_type == 'clue':
+            # Extract the set clue parameters from the undoable
+            undo_seq = undoable[1]
+            undo_direction = undoable[2]
+            undo_clue = undoable[3]
+
+            # Push the current clue for this word to the undo stack
+            old_clue = self.get_clue(undo_seq, undo_direction)
+            self.undo_stack.append([undo_type, undo_seq, undo_direction, old_clue])
+
+            # and set the text to the popped value
+            self.set_clue(undo_seq, undo_direction, undo_clue, undo=False)
+
+        pass
 
     #   ========================================================
     #   to_json and from_json logic
@@ -101,7 +252,7 @@ class Puzzle:
     def to_json(self):
         image = dict()
         image['n'] = self.n
-        image['title'] = self.title
+        image['title'] = self.get_title()
         image['cells'] = [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = [black_cell for black_cell in self.black_cells]
 
@@ -136,6 +287,11 @@ class Puzzle:
             dwlist.append(dwdict)
         image['down_words'] = dwlist
 
+        # Undo/redo stacks
+
+        image['undo_stack'] = self.undo_stack
+        image['redo_stack'] = self.redo_stack
+
         # Create string in JSON format
         jsonstr = json.dumps(image, indent=2)
 
@@ -157,7 +313,7 @@ class Puzzle:
         # Create the puzzle
         puzzle = Puzzle(grid)
         title = image.get('title', None)
-        puzzle.title = title
+        puzzle._title = title   # Can't use the undo/redo here yet
 
         # Reload the "ACROSS" words
         awlist = image['across_words']
@@ -166,8 +322,8 @@ class Puzzle:
             text = aw['text']
             clue = aw['clue']
             word = puzzle.get_across_word(seq)
-            word.set_text(text)
-            word.set_clue(clue)
+            word.set_text(text)     # TODO: Can't do this - undo/redo
+            word.set_clue(clue)     # TODO: Can't do this - undo/redo
 
         # Reload the "DOWN" words
         dwlist = image['down_words']
@@ -176,8 +332,12 @@ class Puzzle:
             text = dw['text']
             clue = dw['clue']
             word = puzzle.get_down_word(seq)
-            word.set_text(text)
-            word.set_clue(clue)
+            word.set_text(text)     # TODO: Can't do this - undo/redo
+            word.set_clue(clue)     # TODO: Can't do this - undo/redo
+
+        # Reload the undo/redo stacks
+        puzzle.undo_stack = image.get('undo_stack', [])
+        puzzle.redo_stack = image.get('redo_stack', [])
 
         # Done
         return puzzle

@@ -155,6 +155,8 @@ def puzzle_screen():
         "save_puzzle_as": True,
         "puzzle_stats": True,
         "puzzle_title": True,
+        "undo": True,
+        "redo": True,
         "close_puzzle": True,
         "delete_puzzle": puzzlename is not None,
     }
@@ -163,7 +165,7 @@ def puzzle_screen():
     return render_template('puzzle.html',
                            enabled=enabled,
                            puzzlename=puzzlename,
-                           puzzletitle=puzzle.title,
+                           puzzletitle=puzzle.get_title(),
                            n=puzzle.n,
                            boxsize=boxsize,
                            svgstr=svgstr)
@@ -253,22 +255,23 @@ def puzzle_delete_screen():
     return redirect(url_for('main_screen'))
 
 
-@app.route('/puzzle-save-grid')
-def puzzle_save_grid_screen():
-    # Extract the grid from the current puzzle
-
-    puzzlename = session.get('puzzlename', None)
+@app.route('/undo', methods=['GET'])
+def undo():
     jsonstr = session.get('puzzle', None)
-    grid = Grid.from_json(jsonstr)
+    puzzle = Puzzle.from_json(jsonstr)
+    puzzle.undo()
+    jsonstr = puzzle.to_json()
+    session['puzzle'] = jsonstr
+    return redirect(url_for('puzzle_screen'))
 
-    # Save it with the specified name
 
-    gridname = request.args.get('gridname').strip()
-    filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
-    with open(filename, "wt") as fp:
-        fp.write(grid.to_json())
-
-    flash(f"Saved {puzzlename} grid as {gridname}")
+@app.route('/redo', methods=['GET'])
+def redo():
+    jsonstr = session.get('puzzle', None)
+    puzzle = Puzzle.from_json(jsonstr)
+    puzzle.redo()
+    jsonstr = puzzle.to_json()
+    session['puzzle'] = jsonstr
     return redirect(url_for('puzzle_screen'))
 
 
@@ -306,16 +309,8 @@ def edit_word_screen():
 
     # Get the word
     puzzle = Puzzle.from_json(session.get('puzzle'))
-    if direction == Word.ACROSS:
-        word = puzzle.get_across_word(seq)
-    elif direction == Word.DOWN:
-        word = puzzle.get_down_word(seq)
-    else:
-        raise RuntimeError("Direction is not A or D")
-
-    # Update the word in the puzzle
-    word.set_text(text)
-    word.set_clue(clue)
+    puzzle.set_text(seq, direction, text)
+    puzzle.set_clue(seq, direction, clue)
     session['puzzle'] = puzzle.to_json()
     puzzlename = session.get('puzzlename', None)
 
@@ -330,6 +325,8 @@ def edit_word_screen():
         "save_puzzle_as": True,
         "puzzle_stats": True,
         "puzzle_title": True,
+        "undo": True,
+        "redo": True,
         "close_puzzle": True,
         "delete_puzzle": True,
     }
@@ -502,10 +499,10 @@ def puzzle_title():
     if title:
         jsonstr = session['puzzle']
         puzzle = Puzzle.from_json(jsonstr)
-        puzzle.title = title
+        puzzle.set_title(title)
         jsonstr = puzzle.to_json()
         session['puzzle'] = jsonstr
-        flash(f"Puzzle title set to {puzzle.title}")
+        flash(f"Puzzle title set to {puzzle.get_title()}")
 
     # Show the puzzle screen
     return redirect(url_for('puzzle_screen'))

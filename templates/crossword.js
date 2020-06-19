@@ -791,3 +791,19 @@ function do_reset_word() {
    xhttp.open("GET", url, true);
    xhttp.send();
 }
+
+/***************************************************************
+ *  FUNCTION NAME:   do_undo
+ *  DESCRIPTION:     Undoes the last change
+ ***************************************************************/
+function do_undo() {
+    window.location.href = "{{ url_for('undo') }}";
+}
+
+/***************************************************************
+ *  FUNCTION NAME:   do_redo
+ *  DESCRIPTION:     Redoes the last change
+ ***************************************************************/
+function do_redo() {
+    window.location.href = "{{ url_for('redo') }}";
+}
