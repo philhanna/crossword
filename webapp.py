@@ -139,6 +139,36 @@ def grid_delete_screen():
     return redirect(url_for('main_screen'))
 
 
+@app.route('/puzzle', methods=['GET'])
+def puzzle_screen():
+    # Get the existing puzzle from the session
+    puzzle = Puzzle.from_json(session['puzzle'])
+    puzzlename = session.get('puzzlename', None)
+
+    # Create the SVG
+    svg = PuzzleToSVG(puzzle)
+    boxsize = svg.boxsize
+    svgstr = svg.generate_xml()
+
+    enabled = {
+        "save_puzzle": True,
+        "save_puzzle_as": True,
+        "puzzle_stats": True,
+        "puzzle_title": True,
+        "close_puzzle": True,
+        "delete_puzzle": puzzlename is not None,
+    }
+
+    # Send puzzle.html to the client
+    return render_template('puzzle.html',
+                           enabled=enabled,
+                           puzzlename=puzzlename,
+                           puzzletitle=puzzle.title,
+                           n=puzzle.n,
+                           boxsize=boxsize,
+                           svgstr=svgstr)
+
+
 @app.route('/new-puzzle')
 def new_puzzle_screen():
     # Get the chosen grid name from the query parameters
@@ -240,66 +270,6 @@ def puzzle_save_grid_screen():
 
     flash(f"Saved {puzzlename} grid as {gridname}")
     return redirect(url_for('puzzle_screen'))
-
-
-@app.route('/puzzle-replace-grid')
-def puzzle_replace_grid_screen():
-    # Load the specified grid
-
-    gridname = request.args.get('gridname').strip()
-    filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
-    with open(filename, "rt") as fp:
-        jsonstr = fp.read()
-    grid = Grid.from_json(jsonstr)
-
-    # Load the current puzzle
-
-    puzzle = Puzzle.from_json(session['puzzle'])
-    try:
-        puzzle.replace_grid(grid)
-    except ValueError as e:
-        flash(f"Puzzle grid cannot be replaced from {gridname}")
-        flash(e)
-        return redirect(url_for('puzzle_screen'))
-
-    # Send the new puzzle back to the client
-
-    session['puzzle'] = puzzle.to_json()
-    flash(f"Puzzle grid replaced by grid {gridname}")
-
-    return redirect(url_for('puzzle_screen'))
-
-
-@app.route('/puzzle', methods=['GET'])
-def puzzle_screen():
-    # Get the existing puzzle from the session
-    puzzle = Puzzle.from_json(session['puzzle'])
-    puzzlename = session.get('puzzlename', None)
-
-    # Create the SVG
-    svg = PuzzleToSVG(puzzle)
-    boxsize = svg.boxsize
-    svgstr = svg.generate_xml()
-
-    enabled = {
-        "save_puzzle": True,
-        "save_puzzle_as": True,
-        "save_puzzle_grid": True,
-        "replace_puzzle_grid": True,
-        "puzzle_stats": True,
-        "puzzle_title": True,
-        "close_puzzle": True,
-        "delete_puzzle": puzzlename is not None,
-    }
-
-    # Send puzzle.html to the client
-    return render_template('puzzle.html',
-                           enabled=enabled,
-                           puzzlename=puzzlename,
-                           puzzletitle=puzzle.title,
-                           n=puzzle.n,
-                           boxsize=boxsize,
-                           svgstr=svgstr)
 
 
 @app.route('/puzzle-click-across', methods=['GET'])
@@ -628,7 +598,6 @@ def reset_word():
 
 @app.route('/grid-rotate', methods=['GET'])
 def grid_rotate():
-
     # Rotate the grid
     jsonstr = session.get('grid', None)
     grid = Grid.from_json(jsonstr)

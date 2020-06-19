@@ -100,18 +100,6 @@
             {% endif %}
             >Close puzzle</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.save_puzzle_grid %} w3-disabled {% endif %}"
-            {% if enabled.save_puzzle_grid %}
-            onclick="do_save_puzzle_grid()"
-            {% endif %}
-            >Save puzzle grid...</a>
-         <a class="w3-bar-item w3-button
-            {% if not enabled.replace_puzzle_grid %} w3-disabled {% endif %}"
-            {% if enabled.replace_puzzle_grid %}
-            onclick="do_replace_puzzle_grid()"
-            {% endif %}
-            >Replace puzzle grid...</a>
-         <a class="w3-bar-item w3-button
             {% if not enabled.delete_puzzle %} w3-disabled {% endif %}"
             {% if enabled.delete_puzzle %}
             onclick="do_delete_puzzle()"
