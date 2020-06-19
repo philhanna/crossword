@@ -6,9 +6,15 @@ from test.test_puzzle import TestPuzzle
 
 class TestWord(TestCase):
 
-    def test_too_short(self):
+    def test_is_complete(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
-        AcrossWord(puzzle, 4).set_text("EFT")
+        word = AcrossWord(puzzle, 4)
+        word.set_text("HEFT")
+        self.assertTrue(word.is_complete())
+        word.set_text("EFT")
+        self.assertFalse(word.is_complete())
+        word.set_text("HEFT")
+        self.assertTrue(word.is_complete())
 
     def test_direction(self):
         self.assertEqual("A", Word.ACROSS)
