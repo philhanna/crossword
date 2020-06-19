@@ -155,20 +155,6 @@ function grid_chooser_ajax(build_url) {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_replace_puzzle_grid
- *  DESCRIPTION:     Gets a list of grid files and prompts
- *                   the user to select one
- ***************************************************************/
-function do_replace_puzzle_grid() {
-   grid_chooser_ajax(
-      function(filename) {
-         return "{{ url_for('puzzle_replace_grid_screen') }}" + "?gridname=" + filename;
-      }
-   );
-   showElement('gc-dialog');
-}
-
-/***************************************************************
  *  FUNCTION NAME:   do_save_grid
  *  DESCRIPTION:     Turns on the save grid modal dialog
  ***************************************************************/
@@ -187,14 +173,6 @@ function do_save_grid(gridname) {
  ***************************************************************/
 function do_save_grid_as() {
    showElement('gsa-dialog');
-}
-
-/***************************************************************
- *  FUNCTION NAME:   do_save_puzzle_grid
- *  DESCRIPTION:     Invokes the puzzle save grid dialog
- ***************************************************************/
-function do_save_puzzle_grid() {
-   showElement('psg-dialog');
 }
 
 /***************************************************************
