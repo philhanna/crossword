@@ -207,10 +207,16 @@ def puzzle_delete_screen():
     # Get the name of the puzzle to be deleted from the session
     # Delete the file
 
-    puzzlename = session['puzzlename']
-    filename = os.path.join(Configuration.get_puzzles_root(), puzzlename + ".json")
-    os.remove(filename)
-    flash(f"{puzzlename} puzzle deleted")
+    puzzlename = session.get('puzzlename', None)
+    if puzzlename:
+        filename = os.path.join(Configuration.get_puzzles_root(), puzzlename + ".json")
+        if os.path.exists(filename):
+            os.remove(filename)
+            flash(f"{puzzlename} puzzle deleted")
+        else:
+            flash(f"{puzzlename} was never saved - no need to delete")
+    else:
+        flash("There is no puzzle to delete")
 
     # Redirect to the main screen
 
