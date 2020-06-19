@@ -12,6 +12,17 @@ class Grid:
         self.black_cells = set()
         self.numbered_cells = None  # Use lazy instantiation
 
+    def rotate(self):
+        """ Rotates the grid 90 degrees counterclockwise """
+        old_black_cells = self.black_cells.copy()
+        self.black_cells = set()
+        n = self.n
+        for r, c in old_black_cells:
+            cprime = r
+            rprime = n + 1 - c
+            self.add_black_cell(rprime, cprime)
+        self.numbered_cells = None
+
     def symmetric_point(self, r, c):
         """ Returns the (r, c) of the cell at 180 degrees rotation """
         if not (1 <= r <= self.n) or not (1 <= c <= self.n):

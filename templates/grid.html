@@ -59,6 +59,17 @@
         <span>Info</span>
     </a>
 
+    <!-- Rotate -->
+    <a class="crosstb w3-bar-item w3-button crosstb
+            {% if not enabled.grid_rotate %} w3-disabled {% endif %}"
+            {% if enabled.grid_rotate %}
+            onclick="do_grid_rotate()"
+            {% endif %}
+            >
+        <i class="material-icons crosstb-icon">rotate_90_degrees_ccw</i>
+        <span>Rotate</span>
+    </a>
+
     <!-- Delete -->
     <a class="w3-bar-item w3-button crosstb
             {% if not enabled.delete_grid %} w3-disabled {% endif %}"

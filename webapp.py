@@ -615,6 +615,24 @@ def reset_word():
     return resp
 
 
+@app.route('/grid-rotate', methods=['GET'])
+def grid_rotate():
+
+    # Rotate the grid
+    jsonstr = session.get('grid', None)
+    grid = Grid.from_json(jsonstr)
+    grid.rotate()
+
+    # Save the updated grid in the session
+    session['grid'] = grid.to_json()
+
+    # Send the new SVG data to the client
+    svg = GridToSVG(grid)
+    svgstr = svg.generate_xml()
+    response = make_response(svgstr, HTTPStatus.OK)
+    return response
+
+
 #   ============================================================
 #   Internal methods
 #   ============================================================
@@ -668,6 +686,7 @@ def grid_screen():
         "save_grid": True,
         "save_grid_as": True,
         "grid_stats": True,
+        "grid_rotate": True,
         "close_grid": True,
         "delete_grid": gridname is not None,
     }

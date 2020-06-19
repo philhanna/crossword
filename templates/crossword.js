@@ -94,6 +94,22 @@ function do_open_grid() {
 }
 
 /***************************************************************
+ *  FUNCTION NAME:   do_grid_rotate
+ *  DESCRIPTION:     Rotates the grid 90 degrees left
+ ***************************************************************/
+function do_grid_rotate() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+     if (this.readyState == 4 && this.status == 200) {
+        document.getElementById("grid-svg").innerHTML = this.responseText;
+     }
+  };
+  var url = '{{ url_for("grid_rotate")}}';
+  xhttp.open("GET", url, true);
+  xhttp.send();
+}
+
+/***************************************************************
  *  FUNCTION NAME:   grid_chooser_ajax
  *  DESCRIPTION:     Gets a list of grid files from the server
  *                   and forms a list of links
