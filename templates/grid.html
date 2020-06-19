@@ -9,6 +9,71 @@
         {% endif %}
     </h3>
 </div>
+
+<div class="w3-container w3-margin-bottom" style="width:700;height:36">
+<div class="w3-bar w3-border"> <!-- Toolbar -->
+    <style>
+        .crosstb {
+            vertical-align: top;
+            font-size: 12px;
+        }
+        .crosstb-icon { font-size: 15px; }
+    </style>
+
+    <!-- Save -->
+    <a class="w3-bar-item w3-button crosstb
+            {% if not enabled.save_grid %} w3-disabled {% endif %}"
+            {% if enabled.save_grid %}
+            onclick="do_save_grid(
+            {% if gridname %}
+            '{{gridname}}'
+            {% else %}
+            ''
+            {% endif %}
+            )"
+            {% endif %}
+            >
+        <i class="material-icons crosstb-icon">save</i>
+        <span>Save</span>
+    </a>
+
+    <!-- Close -->
+    <a class="w3-bar-item w3-button crosstb
+            {% if not enabled.close_grid %} w3-disabled {% endif %}"
+            {% if enabled.close_grid %}
+            onclick="do_close_grid()"
+            {% endif %}
+            >
+        <i class="material-icons crosstb-icon">close</i>
+        <span>Close</span>
+    </a>
+
+    <!-- Stats -->
+    <a class="crosstb w3-bar-item w3-button crosstb
+            {% if not enabled.grid_stats %} w3-disabled {% endif %}"
+            {% if enabled.grid_stats %}
+            onclick="do_grid_stats()"
+            {% endif %}
+            >
+        <i class="material-icons crosstb-icon">info</i>
+        <span>Info</span>
+    </a>
+
+    <!-- Delete -->
+    <a class="w3-bar-item w3-button crosstb
+            {% if not enabled.delete_grid %} w3-disabled {% endif %}"
+            {% if enabled.delete_grid %}
+            onclick="do_delete_grid()"
+            {% endif %}
+            ">
+        <i class="material-icons crosstb-icon">delete_forever</i>
+        <span>Delete</span>
+    </a>
+
+</div> <!-- End of toolbar -->
+</div>
+
+
 <div class="w3-container">Click grid to set up black cells</div>
 <div id="grid-svg" class="w3-container" onclick="grid_click(event)">
   {{ svgstr|safe }}
