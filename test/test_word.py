@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from crossword import AcrossWord, Puzzle
+from crossword import AcrossWord, Puzzle, Word
 from test.test_puzzle import TestPuzzle
 
 
@@ -9,6 +9,10 @@ class TestWord(TestCase):
     def test_too_short(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
         AcrossWord(puzzle, 4).set_text("EFT")
+
+    def test_direction(self):
+        self.assertEqual("A", Word.ACROSS)
+        self.assertEqual("D", Word.DOWN)
 
     @staticmethod
     def create_puzzle():

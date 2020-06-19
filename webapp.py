@@ -18,7 +18,7 @@ from flask import session
 from flask import url_for
 from flask_session import Session
 
-from crossword import AcrossLiteOutput
+from crossword import AcrossLiteOutput, Word
 from crossword import Configuration
 from crossword import Grid
 from crossword import GridToSVG, PuzzleToSVG
@@ -286,8 +286,9 @@ def puzzle_click_down():
 def edit_word_screen():
     # Get the seq, direction, and length from the session
     seq = session.get('seq')
-    direction = session.get('direction')
     length = session.get('length')
+    direction = session.get('direction')
+    direction = Word.ACROSS if direction.upper()[0] == Word.ACROSS else Word.DOWN
 
     # Get the word and clue from the form
     text = request.form.get('text')
@@ -305,11 +306,12 @@ def edit_word_screen():
 
     # Get the word
     puzzle = Puzzle.from_json(session.get('puzzle'))
-    if direction.startswith('A'):  # TODO this is fragile. Better to use an Enum
+    if direction == Word.ACROSS:
         word = puzzle.get_across_word(seq)
-    else:
+    elif direction == Word.DOWN:
         word = puzzle.get_down_word(seq)
-    pass
+    else:
+        raise RuntimeError("Direction is not A or D")
 
     # Update the word in the puzzle
     word.set_text(text)
@@ -578,15 +580,17 @@ def reset_word():
     # Get the puzzle, word seq, word direction, and word length from the session
     puzzle = Puzzle.from_json(session['puzzle'])
     seq = session.get('seq')
-    direction = session.get('direction')
     length = session.get('length')
+    direction = session.get('direction')
+    direction = Word.ACROSS if direction.upper()[0] == Word.ACROSS else Word.DOWN
 
     # Get the word
-    if direction.startswith('A'):  # TODO this is fragile. Better to use an Enum
+    if direction == Word.ACROSS:
         word = puzzle.get_across_word(seq)
-    else:
+    elif direction == Word.DOWN:
         word = puzzle.get_down_word(seq)
-    pass
+    else:
+        raise RuntimeError("Direction is not A or D")
 
     # Send cleared text back to the client in JSON
     new_text = word.get_clear_word()

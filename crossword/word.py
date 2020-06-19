@@ -1,8 +1,16 @@
+from enum import Enum
+
 from crossword import NumberedCell
 
 
 class Word:
     """ Abstract base class for Across and Down words """
+
+    # Enumerated values of word direction.
+    # Safer to use these, like Word.ACROSS and Word.DOWN, instead of string values
+
+    ACROSS = "A"
+    DOWN = "D"
 
     def __init__(self, puzzle, seq):
         self.puzzle = puzzle
