@@ -218,6 +218,7 @@ function do_cancel_grid_save_as() {
     hideElement('gsa-dialog');
     hideElement('ge-dialog');
 }
+
 /***************************************************************
  *  FUNCTION NAME:   grid_click
  *  DESCRIPTION:     Gets the x and y coordinates of a grid click
@@ -545,6 +546,50 @@ function do_save_puzzle(puzzlename) {
  ***************************************************************/
 function do_save_puzzle_as() {
    showElement('psa-dialog');
+}
+
+/***************************************************************
+ *  FUNCTION NAME:   validatePuzzleNameForSaveAs
+ *  DESCRIPTION:     Gets puzzlename from form. Gets a list of
+ *                   puzzle names from webapp.puzzles() and sees
+ *                   if puzzlename is in that list.
+ *                   Yes - show puzzle-exists-dialog
+ *                   No - proceed to puzzle_save_as_screen
+ ***************************************************************/
+function validatePuzzleNameForSaveAs() {
+    var newpuzzlename = document.forms["psa-form"]["newpuzzlename"].value;
+    var url = "{{ url_for('puzzle_save_as') }}" + "?newpuzzlename=" + newpuzzlename;
+    url = encodeURI(url);
+
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+
+            var jsonstr = this.responseText;
+            var puzzle_list = JSON.parse(jsonstr);
+
+            if (puzzle_list.includes(newpuzzlename)) {
+                // Duplicate name - prompt for OK
+                document.getElementById('pe-puzzlename').innerHTML = newpuzzlename;
+                document.getElementById('pe-ok').setAttribute('href', url)
+                showElement('pe-dialog');
+            }
+            else {
+                // No duplicate - proceed
+                window.location.href = url;
+            }
+        }
+    };
+
+    // Send AJAX request for existing puzzle names
+    var ajax_url = '{{ url_for("puzzles")}}';
+    xhttp.open("GET", ajax_url, true);
+    xhttp.send();
+}
+
+function do_cancel_puzzle_save_as() {
+    hideElement('psa-dialog');
+    hideElement('pe-dialog');
 }
 
 /***************************************************************
