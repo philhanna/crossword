@@ -40,7 +40,7 @@ class AcrossLiteOutput:
 
     def get_title(self):
         """ Returns the puzzle title or blank """
-        title = self.puzzle.title
+        title = self.puzzle.get_title()
         if not title:
             title = ""
         return title
