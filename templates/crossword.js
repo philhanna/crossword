@@ -176,6 +176,49 @@ function do_save_grid_as() {
 }
 
 /***************************************************************
+ *  FUNCTION NAME:   validateGridNameForSaveAs
+ *  DESCRIPTION:     Gets gridname from form. Gets a list of
+ *                   grid names from webapp.grids() and sees
+ *                   if gridname is in that list.
+ *                   Yes - show grid-exists-dialog
+ *                   No - proceed to grid_save_as_screen
+ ***************************************************************/
+function validateGridNameForSaveAs() {
+    var newgridname = document.forms["gsa-form"]["newgridname"].value;
+    var url = "{{ url_for('grid_save_as') }}" + "?newgridname=" + newgridname;
+    url = encodeURI(url);
+
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+
+            var jsonstr = this.responseText;
+            var grid_list = JSON.parse(jsonstr);
+
+            if (grid_list.includes(newgridname)) {
+                // Duplicate name - prompt for OK
+                document.getElementById('ge-gridname').innerHTML = newgridname;
+                document.getElementById('ge-ok').setAttribute('href', url)
+                showElement('ge-dialog');
+            }
+            else {
+                // No duplicate - proceed
+                window.location.href = url;
+            }
+        }
+    };
+
+    // Send AJAX request for existing grid names
+    var ajax_url = '{{ url_for("grids")}}';
+    xhttp.open("GET", ajax_url, true);
+    xhttp.send();
+}
+
+function do_cancel_grid_save_as() {
+    hideElement('gsa-dialog');
+    hideElement('ge-dialog');
+}
+/***************************************************************
  *  FUNCTION NAME:   grid_click
  *  DESCRIPTION:     Gets the x and y coordinates of a grid click
  *                   event and converts them to row and column.

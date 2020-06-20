@@ -1,0 +1,29 @@
+<!-- grid-exists-dialog.html -->
+<div class="w3-container">
+   <div id="ge-dialog" class="w3-modal" style="display:none">
+      <div class="w3-modal-content" style="width:30%;">
+         <header class="w3-container w3-blue-gray">
+            <h3>Overwrite grid</h3>
+            <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
+                  onclick="hideElement('ge-dialog');"
+                  >&times;</span>
+         </header>
+         <div class="w3-container">
+            <p>Grid "<span id='ge-gridname'></span>" already exists.  Overwrite it?</p>
+         </div>
+         <div class="w3-section w3-padding-large">
+            <div class="w3-container"> <!-- Button container -->
+             <a id="ge-ok" class="w3-button w3-border w3-round w3-gray"
+                     style="width:100px"
+                     href="#"
+                     >OK</a>
+             <button class="w3-button w3-border w3-round w3-gray"
+                     style="width:100px"
+                     type="button"
+                     onclick="do_cancel_grid_save_as()"
+                     >Cancel</button>
+            </div> <!-- End of button container -->
+         </div> <!-- End of w3-section -->
+      </div> <!-- End of modal content -->
+   </div> <!-- End of ge-dialog -->
+</div>
