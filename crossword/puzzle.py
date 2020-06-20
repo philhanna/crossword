@@ -145,18 +145,7 @@ class Puzzle:
         undoable = self.undo_stack.pop()
         undo_type = undoable[0]
 
-        if undo_type == "title":
-            # Extract the set title parameters from the undoable
-            undo_title = undoable[1]
-
-            # Push the current title to the redo stack
-            old_title = self.get_title()
-            self.redo_stack.append([undo_type, old_title])
-
-            # and set the title to the popped value
-            self._title = undo_title
-
-        elif undo_type == 'text':
+        if undo_type == 'text':
             # Extract the set text parameters from the undoable
             undo_seq = undoable[1]
             undo_direction = undoable[2]
@@ -168,19 +157,6 @@ class Puzzle:
 
             # and set the text to the popped value
             self.set_text(undo_seq, undo_direction, undo_text, undo=False)
-
-        elif undo_type == 'clue':
-            # Extract the set clue parameters from the undoable
-            undo_seq = undoable[1]
-            undo_direction = undoable[2]
-            undo_clue = undoable[3]
-
-            # Push the current clue for this word to the redo stack
-            old_clue = self.get_clue(undo_seq, undo_direction)
-            self.redo_stack.append([undo_type, undo_seq, undo_direction, old_clue])
-
-            # and set the text to the popped value
-            self.set_clue(undo_seq, undo_direction, undo_clue, undo=False)
 
         pass
 
