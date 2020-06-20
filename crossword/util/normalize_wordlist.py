@@ -49,7 +49,7 @@ class NormalizeWordList:
             for line in fp:
                 line = line.strip()
                 line = line.upper()  # Make uppercase
-                line = re.sub('[^A-Z ]', '', line)  # Remove special characters
+                line = re.sub('[^A-Z ]', ' ', line)  # Remove special characters
                 tokens = line.split()  # Split at blanks
                 for token in tokens:
                     wordset.add(token)
