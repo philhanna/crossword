@@ -92,15 +92,9 @@ class Puzzle:
         word = self.get_word(seq, direction)
         return word.get_clue()
 
-    def set_clue(self, seq, direction, clue, undo=True):
+    def set_clue(self, seq, direction, clue):
         """ Sets the clue of the word at <seq><direction> """
         word = self.get_word(seq, direction)
-        if undo:
-            new_value = clue
-            old_value = word.get_clue()
-            if old_value != new_value:
-                undoable = ['clue', seq, direction, old_value]
-                self.undo_stack.append(undoable)
         word.set_clue(clue)
 
     def get_title(self):
@@ -109,13 +103,7 @@ class Puzzle:
 
     def set_title(self, title):
         """ Sets the puzzle title """
-        # Undo/redo
-        new_value = title
-        old_value = self.get_title()
-        if old_value != new_value:
-            undoable = ['title', old_value]
-            self.undo_stack.append(undoable)
-        self._title = new_value
+        self._title = title
 
     def get_across_word(self, seq):
         """ Returns the word for <seq> across, or None"""
@@ -206,18 +194,7 @@ class Puzzle:
         undoable = self.redo_stack.pop()
         undo_type = undoable[0]
 
-        if undo_type == "title":
-            # Extract the set title parameters from the undoable
-            undo_title = undoable[1]
-
-            # Push the current title to the undo stack
-            old_title = self.get_title()
-            self.undo_stack.append([undo_type, old_title])
-
-            # and set the title to the popped value
-            self._title = undo_title
-
-        elif undo_type == 'text':
+        if undo_type == 'text':
             # Extract the set text parameters from the undoable
             undo_seq = undoable[1]
             undo_direction = undoable[2]
@@ -229,19 +206,6 @@ class Puzzle:
 
             # and set the text to the popped value
             self.set_text(undo_seq, undo_direction, undo_text, undo=False)
-
-        elif undo_type == 'clue':
-            # Extract the set clue parameters from the undoable
-            undo_seq = undoable[1]
-            undo_direction = undoable[2]
-            undo_clue = undoable[3]
-
-            # Push the current clue for this word to the undo stack
-            old_clue = self.get_clue(undo_seq, undo_direction)
-            self.undo_stack.append([undo_type, undo_seq, undo_direction, old_clue])
-
-            # and set the text to the popped value
-            self.set_clue(undo_seq, undo_direction, undo_clue, undo=False)
 
         pass
 

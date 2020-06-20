@@ -5,132 +5,6 @@ from crossword import Puzzle
 
 class TestPuzzleUndo(TestCase):
 
-    def test_undo_title(self):
-        puzzle = self.create_test_puzzle()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_title("Larry")
-        self.assertEqual("Larry", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None
-                                ]], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_title("Curly")
-        self.assertEqual("Curly", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None],
-                                ['title', 'Larry']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_title("Moe")
-        self.assertEqual("Moe", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None],
-                                ['title', 'Larry'],
-                                ['title', 'Curly']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual("Curly", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None],
-                                ['title', 'Larry']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'Moe']
-                                ], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual("Larry", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None]
-                            ], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'Moe'],
-                                ['title', 'Curly']
-                                ], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'Moe'],
-                                ['title', 'Curly'],
-                                ['title', 'Larry']
-                                ], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'Moe'],
-                                ['title', 'Curly'],
-                                ['title', 'Larry']
-                                ], puzzle.redo_stack)
-
-    def test_redo_title(self):
-        puzzle = self.create_test_puzzle()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_title("Larry")
-        self.assertEqual("Larry", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_title("Curly")
-        self.assertEqual("Curly", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None],
-                                ['title', 'Larry']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_title("Moe")
-        self.assertEqual("Moe", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None],
-                                ['title', 'Larry'],
-                                ['title', 'Curly']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual("Curly", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None],
-                                ['title', 'Larry']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'Moe']
-                                ], puzzle.redo_stack)
-
-        puzzle.redo()
-        self.assertEqual("Moe", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None],
-                                ['title', 'Larry'],
-                                ['title', 'Curly']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.redo()
-        self.assertEqual("Moe", puzzle.get_title())
-        self.assertListEqual([
-                                ['title', None],
-                                ['title', 'Larry'],
-                                ['title', 'Curly']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
     def test_undo_text(self):
         puzzle = self.create_test_puzzle()
         self.assertEqual('RIOT', puzzle.get_text(10, 'A'))
@@ -142,25 +16,25 @@ class TestPuzzleUndo(TestCase):
         self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
         self.assertEqual('EZO ICA ', puzzle.get_text(4, 'D'))
         self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT']
-                                ], puzzle.undo_stack)
+            ['text', 10, 'A', 'RIOT']
+        ], puzzle.undo_stack)
         self.assertListEqual([], puzzle.redo_stack)
 
         puzzle.set_text(10, 'A', 'PLUS')
         self.assertEqual('PLUS', puzzle.get_text(10, 'A'))
         self.assertEqual('EPO ICA ', puzzle.get_text(4, 'D'))
         self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['text', 10, 'A', 'ZOOM']
-                                ], puzzle.undo_stack)
+            ['text', 10, 'A', 'RIOT'],
+            ['text', 10, 'A', 'ZOOM']
+        ], puzzle.undo_stack)
         self.assertListEqual([], puzzle.redo_stack)
 
         puzzle.undo()
         self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
         self.assertEqual('EZO ICA ', puzzle.get_text(4, 'D'))
         self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT']
-                                ], puzzle.undo_stack)
+            ['text', 10, 'A', 'RIOT']
+        ], puzzle.undo_stack)
 
     def test_redo_text(self):
         puzzle = self.create_test_puzzle()
@@ -173,8 +47,8 @@ class TestPuzzleUndo(TestCase):
         self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
         self.assertEqual('EZO ICA ', puzzle.get_text(4, 'D'))
         self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT']
-                                ], puzzle.undo_stack)
+            ['text', 10, 'A', 'RIOT']
+        ], puzzle.undo_stack)
         self.assertListEqual([], puzzle.redo_stack)
 
         puzzle.undo()
@@ -182,152 +56,15 @@ class TestPuzzleUndo(TestCase):
         self.assertEqual('ERO ICA ', puzzle.get_text(4, 'D'))
         self.assertListEqual([], puzzle.undo_stack)
         self.assertListEqual([
-                                ['text', 10, 'A', 'ZOOM']
-                                ], puzzle.redo_stack)
+            ['text', 10, 'A', 'ZOOM']
+        ], puzzle.redo_stack)
 
         puzzle.redo()
         self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
         self.assertEqual('EZO ICA ', puzzle.get_text(4, 'D'))
         self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-    def test_undo_clue(self):
-        puzzle = self.create_test_puzzle()
-        self.assertEqual(None, puzzle.get_clue(12, 'D'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_clue(12, 'D', 'Snake')
-        self.assertEqual('Snake', puzzle.get_clue(12, 'D'))
-        self.assertListEqual([
-                                ['clue', 12, 'D', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual(None, puzzle.get_clue(12, 'D'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['clue', 12, 'D', 'Snake']
-                                ], puzzle.redo_stack)
-
-    def test_redo_clue(self):
-        puzzle = self.create_test_puzzle()
-        self.assertEqual(None, puzzle.get_clue(12, 'D'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_clue(12, 'D', 'Snake')
-        self.assertEqual('Snake', puzzle.get_clue(12, 'D'))
-        self.assertListEqual([
-                                ['clue', 12, 'D', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual(None, puzzle.get_clue(12, 'D'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['clue', 12, 'D', 'Snake']
-                                ], puzzle.redo_stack)
-
-        puzzle.redo()
-        self.assertEqual('Snake', puzzle.get_clue(12, 'D'))
-        self.assertListEqual([
-                                ['clue', 12, 'D', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-    def test_mixture(self):
-        """
-            set 10 across to "ZOOM"
-            set 10 across clue to "Go fast"
-            set title to "My puzzle"
-        """
-        puzzle = self.create_test_puzzle()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('RIOT', puzzle.get_text(10, 'A'))
-        self.assertEqual(None, puzzle.get_clue(10, 'A'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_text(10, 'A', 'ZOOM')
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual(None, puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_clue(10, 'A', 'Go fast')
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('Go fast', puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['clue', 10, 'A', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_title('My puzzle')
-        self.assertEqual('My puzzle', puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('Go fast', puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['clue', 10, 'A', None],
-                                ['title', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('Go fast', puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['clue', 10, 'A', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'My puzzle']
-                                ], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual(None, puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT']
-                                ], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'My puzzle'],
-                                ['clue', 10, 'A', 'Go fast']
-                                ], puzzle.redo_stack)
-
-        puzzle.redo()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('Go fast', puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['clue', 10, 'A', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'My puzzle']
-                                ], puzzle.redo_stack)
-
-        puzzle.redo()
-        self.assertEqual('My puzzle', puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('Go fast', puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['clue', 10, 'A', None],
-                                ['title', None]
-                                ], puzzle.undo_stack)
+            ['text', 10, 'A', 'RIOT']
+        ], puzzle.undo_stack)
         self.assertListEqual([], puzzle.redo_stack)
 
     def test_to_json(self):
@@ -343,46 +80,9 @@ class TestPuzzleUndo(TestCase):
         self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
         self.assertEqual(None, puzzle.get_clue(10, 'A'))
         self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT']
-                                ], puzzle.undo_stack)
+            ['text', 10, 'A', 'RIOT']
+        ], puzzle.undo_stack)
         self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_clue(10, 'A', 'Go fast')
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('Go fast', puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['clue', 10, 'A', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_title('My puzzle')
-        self.assertEqual('My puzzle', puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('Go fast', puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['clue', 10, 'A', None],
-                                ['title', None]
-                                ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        jsonstr = puzzle.to_json()
-        new_puzzle = Puzzle.from_json(jsonstr)
-
-        new_puzzle.undo()
-        self.assertEqual(None, new_puzzle.get_title())
-        self.assertEqual('ZOOM', new_puzzle.get_text(10, 'A'))
-        self.assertEqual('Go fast', new_puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-                                ['text', 10, 'A', 'RIOT'],
-                                ['clue', 10, 'A', None]
-                                ], new_puzzle.undo_stack)
-        self.assertListEqual([
-                                ['title', 'My puzzle']
-                                ], new_puzzle.redo_stack)
-
 
     @staticmethod
     def create_test_puzzle():
