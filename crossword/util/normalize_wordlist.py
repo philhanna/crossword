@@ -3,6 +3,8 @@ import os
 import re
 import sys
 
+sys.path.append("../..")
+
 from crossword import Configuration
 
 
@@ -47,7 +49,7 @@ class NormalizeWordList:
             for line in fp:
                 line = line.strip()
                 line = line.upper()  # Make uppercase
-                line = re.sub('^[A-Z ]', '', line)  # Remove special characters
+                line = re.sub('[^A-Z ]', '', line)  # Remove special characters
                 tokens = line.split()  # Split at blanks
                 for token in tokens:
                     wordset.add(token)
@@ -64,15 +66,18 @@ class NormalizeWordList:
 if __name__ == '__main__':
     import argparse
 
-    description = """
+    description = r"""
 Normalizes a word list:
 - Makes all letters uppercase
 - Strips all non-alphabetic characters (except blanks)
-- Splits into individual words at blank boundarids
+- Splits into individual words at blank boundaries
 - Sorts and removes duplicates
 - Writes to the output directory
 """
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument('filename', help="Input file containing word list")
     parser.add_argument('-o', '--output-dir', help="Output root directory")
     args = parser.parse_args()
