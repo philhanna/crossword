@@ -307,37 +307,14 @@ def edit_word_screen():
     if ' ' in text:
         clue = ""
 
-    # Get the word
+    # Set the word text and clue and save the puzzle in the session again
     puzzle = Puzzle.from_json(session.get('puzzle'))
     puzzle.set_text(seq, direction, text)
     puzzle.set_clue(seq, direction, clue)
     session['puzzle'] = puzzle.to_json()
-    puzzlename = session.get('puzzlename', None)
 
-    # Create the SVG
-    svg = PuzzleToSVG(puzzle)
-    boxsize = svg.boxsize
-    svgstr = svg.generate_xml()
-
-    # Enable the appropriate menu options
-    enabled = {
-        "save_puzzle": True,
-        "save_puzzle_as": True,
-        "puzzle_stats": True,
-        "puzzle_title": True,
-        "undo": True,
-        "redo": True,
-        "close_puzzle": True,
-        "delete_puzzle": True,
-    }
-
-    # Send puzzle.html to the client
-    return render_template('puzzle.html',
-                           enabled=enabled,
-                           puzzlename=puzzlename,
-                           n=puzzle.n,
-                           boxsize=boxsize,
-                           svgstr=svgstr)
+    # Now redirect to puzzle_screen()
+    return redirect(url_for('puzzle_screen'))
 
 
 @app.route('/publish_acrosslite')
