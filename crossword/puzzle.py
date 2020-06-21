@@ -185,16 +185,6 @@ class Puzzle:
 
         pass
 
-    def remove_history(self):
-        """ Clears the undo and redo stacks.
-
-        This is done when the puzzle is saved or opened, since
-        undo/redo really makes sense only in the context
-        of an editing session.
-        """
-        self.undo_stack = []
-        self.redo_stack = []
-
     #   ========================================================
     #   to_json and from_json logic
     #   ========================================================
