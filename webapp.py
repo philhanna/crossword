@@ -155,8 +155,8 @@ def puzzle_screen():
         "puzzle_save_as": True,
         "puzzle_stats": True,
         "puzzle_title": True,
-        "puzzle_undo": True,
-        "puzzle_redo": True,
+        "puzzle_undo": len(puzzle.undo_stack) > 0,
+        "puzzle_redo": len(puzzle.redo_stack) > 0,
         "puzzle_close": True,
         "puzzle_delete": puzzlename is not None,
     }
