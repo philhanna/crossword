@@ -7,23 +7,23 @@
       <button class="w3-button">Grid</button>
       <div class="w3-dropdown-content w3-bar-block w3-card-4">
          <a class="w3-bar-item w3-button
-            {% if not enabled.new_grid %} w3-disabled {% endif %}"
-            {% if enabled.new_grid %}
+            {% if not enabled.grid_new %} w3-disabled {% endif %}"
+            {% if enabled.grid_new %}
             href="#"
-            onclick="do_new_grid()"
+            onclick="do_grid_new()"
             {% endif %}
             >New grid...</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.open_grid %} w3-disabled {% endif %}"
-            {% if enabled.open_grid %}
+            {% if not enabled.grid_open %} w3-disabled {% endif %}"
+            {% if enabled.grid_open %}
             href="#"
-            onclick="do_open_grid()"
+            onclick="do_grid_open()"
             {% endif %}
             >Open grid...</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.save_grid %} w3-disabled {% endif %}"
-            {% if enabled.save_grid %}
-            onclick="do_save_grid(
+            {% if not enabled.grid_save %} w3-disabled {% endif %}"
+            {% if enabled.grid_save %}
+            onclick="do_grid_save(
             {% if gridname %}
             '{{gridname}}'
             {% else %}
@@ -33,21 +33,21 @@
             {% endif %}
             >Save grid</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.save_grid_as %} w3-disabled {% endif %}"
-            {% if enabled.save_grid_as %}
-            onclick="do_save_grid_as()"
+            {% if not enabled.grid_save_as %} w3-disabled {% endif %}"
+            {% if enabled.grid_save_as %}
+            onclick="do_grid_save_as()"
             {% endif %}
             >Save grid as...</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.close_grid %} w3-disabled {% endif %}"
-            {% if enabled.close_grid %}
-            onclick="do_close_grid()"
+            {% if not enabled.grid_close %} w3-disabled {% endif %}"
+            {% if enabled.grid_close %}
+            onclick="do_grid_close()"
             {% endif %}
             >Close grid</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.delete_grid %} w3-disabled {% endif %}"
-            {% if enabled.delete_grid %}
-            onclick="do_delete_grid()"
+            {% if not enabled.grid_delete %} w3-disabled {% endif %}"
+            {% if enabled.grid_delete %}
+            onclick="do_grid_delete()"
             {% endif %}
             >Delete grid</a>
       </div>
@@ -56,23 +56,23 @@
       <button class="w3-button">Puzzle</button>
       <div class="w3-dropdown-content w3-bar-block w3-card-4">
          <a class="w3-bar-item w3-button
-            {% if not enabled.new_puzzle %} w3-disabled {% endif %}"
-            {% if enabled.new_puzzle %}
+            {% if not enabled.puzzle_new %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_new %}
             href="#"
-            onclick="do_new_puzzle()"
+            onclick="do_puzzle_new()"
             {% endif %}
             >New puzzle...</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.open_puzzle %} w3-disabled {% endif %}"
-            {% if enabled.open_puzzle %}
+            {% if not enabled.puzzle_open %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_open %}
             href="#"
-            onclick="do_open_puzzle()"
+            onclick="do_puzzle_open()"
             {% endif %}
             >Open puzzle...</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.save_puzzle %} w3-disabled {% endif %}"
-            {% if enabled.save_puzzle %}
-            onclick="do_save_puzzle(
+            {% if not enabled.puzzle_save %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_save %}
+            onclick="do_puzzle_save(
             {% if puzzlename %}
             '{{puzzlename}}'
             {% else %}
@@ -82,21 +82,21 @@
             {% endif %}
             >Save puzzle</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.save_puzzle_as %} w3-disabled {% endif %}"
-            {% if enabled.save_puzzle_as %}
-            onclick="do_save_puzzle_as()"
+            {% if not enabled.puzzle_save_as %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_save_as%}
+            onclick="do_puzzle_save_as()"
             {% endif %}
             >Save puzzle as...</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.close_puzzle %} w3-disabled {% endif %}"
-            {% if enabled.close_puzzle %}
-            onclick="do_close_puzzle()"
+            {% if not enabled.puzzle_close %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_close %}
+            onclick="do_puzzle_close()"
             {% endif %}
             >Close puzzle</a>
          <a class="w3-bar-item w3-button
-            {% if not enabled.delete_puzzle %} w3-disabled {% endif %}"
-            {% if enabled.delete_puzzle %}
-            onclick="do_delete_puzzle()"
+            {% if not enabled.puzzle_delete %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_delete %}
+            onclick="do_puzzle_delete()"
             {% endif %}
             >Delete puzzle</a>
       </div>
@@ -106,11 +106,11 @@
       <div class="w3-dropdown-content w3-bar-block w3-card-4">
          <a class="w3-bar-item w3-button"
             href="#"
-            onclick="do_publish_nytimes()"
+            onclick="do_puzzle_publish_nytimes()"
             >New York Times format</a>
          <a class="w3-bar-item w3-button"
             href="#"
-            onclick="do_publish_acrosslite()"
+            onclick="do_puzzle_publish_acrosslite()"
             >Across Lite format</a>
       </div>
    </div>

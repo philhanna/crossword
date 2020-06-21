@@ -22,9 +22,9 @@
 
     <!-- Save -->
     <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.save_grid %} w3-disabled {% endif %}"
-            {% if enabled.save_grid %}
-            onclick="do_save_grid(
+            {% if not enabled.grid_save %} w3-disabled {% endif %}"
+            {% if enabled.grid_save %}
+            onclick="do_grid_save(
             {% if gridname %}
             '{{gridname}}'
             {% else %}
@@ -39,9 +39,9 @@
 
     <!-- Close -->
     <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.close_grid %} w3-disabled {% endif %}"
-            {% if enabled.close_grid %}
-            onclick="do_close_grid()"
+            {% if not enabled.grid_close %} w3-disabled {% endif %}"
+            {% if enabled.grid_close %}
+            onclick="do_grid_close()"
             {% endif %}
             >
         <i class="material-icons crosstb-icon">close</i>
@@ -72,11 +72,11 @@
 
     <!-- Delete -->
     <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.delete_grid %} w3-disabled {% endif %}"
-            {% if enabled.delete_grid %}
-            onclick="do_delete_grid()"
+            {% if not enabled.grid_delete %} w3-disabled {% endif %}"
+            {% if enabled.grid_delete %}
+            onclick="do_grid_delete()"
             {% endif %}
-            ">
+            >
         <i class="material-icons crosstb-icon">delete_forever</i>
         <span>Delete</span>
     </a>

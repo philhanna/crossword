@@ -25,9 +25,9 @@
 
     <!-- Save -->
     <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.save_puzzle %} w3-disabled {% endif %}"
-            {% if enabled.save_puzzle %}
-            onclick="do_save_puzzle(
+            {% if not enabled.puzzle_save %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_save %}
+            onclick="do_puzzle_save(
             {% if puzzlename %}
             '{{puzzlename}}'
             {% else %}
@@ -42,9 +42,9 @@
 
     <!-- Close -->
     <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.close_puzzle %} w3-disabled {% endif %}"
-            {% if enabled.close_puzzle %}
-            onclick="do_close_puzzle()"
+            {% if not enabled.puzzle_close %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_close %}
+            onclick="do_puzzle_close()"
             {% endif %}
             >
         <i class="material-icons crosstb-icon">close</i>
@@ -75,9 +75,9 @@
 
     <!-- Undo -->
     <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.undo %} w3-disabled {% endif %}"
-            {% if enabled.undo %}
-            onclick="do_undo()"
+            {% if not enabled.puzzle_undo %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_undo %}
+            onclick="do_puzzle_undo()"
             {% endif %}
             >
         <i class="material-icons crosstb-icon">undo</i>
@@ -86,9 +86,9 @@
 
     <!-- Redo -->
     <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.redo %} w3-disabled {% endif %}"
-            {% if enabled.redo %}
-            onclick="do_redo()"
+            {% if not enabled.puzzle_redo %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_redo %}
+            onclick="do_puzzle_redo()"
             {% endif %}
             >
         <i class="material-icons crosstb-icon">redo</i>
@@ -97,11 +97,11 @@
 
     <!-- Delete -->
     <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.delete_puzzle %} w3-disabled {% endif %}"
-            {% if enabled.delete_puzzle %}
-            onclick="do_delete_puzzle()"
+            {% if not enabled.puzzle_delete %} w3-disabled {% endif %}"
+            {% if enabled.puzzle_delete %}
+            onclick="do_puzzle_delete()"
             {% endif %}
-            ">
+            >
         <i class="material-icons crosstb-icon">delete_forever</i>
         <span>Delete</span>
     </a>
@@ -112,5 +112,5 @@
 <div id="puzzle-svg" class="w3-container" onclick="puzzle_click(event)">
   {{ svgstr|safe }}
 </div>
-{% include 'edit-word.html' %}
+{% include 'word-edit.html' %}
 {% include 'footer.html' %}

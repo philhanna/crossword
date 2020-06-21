@@ -29,13 +29,13 @@ function hideElement(id) {
 //  ============================================================
 
 /***************************************************************
- *  FUNCTION NAME:   do_close_grid
+ *  FUNCTION NAME:   do_grid_close
  *  DESCRIPTION:     Closes the grid screen
  *       1. Asks the server whether the grid has changed
  *       2. If so, opens the grid changed confirmation dialog
  *       3. Otherwise, redirects to main screen
  ***************************************************************/
-function do_close_grid() {
+function do_grid_close() {
    var xhttp = new XMLHttpRequest();
 
    xhttp.onreadystatechange = function() {
@@ -63,31 +63,31 @@ function do_close_grid() {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_delete_grid
+ *  FUNCTION NAME:   do_grid_delete
  *  DESCRIPTION:     Prompts the user for confirmation
  *                   of grid deletion
  ***************************************************************/
-function do_delete_grid() {
+function do_grid_delete() {
   showElement('gd-dialog');
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_new_grid
+ *  FUNCTION NAME:   do_grid_new
  *  DESCRIPTION:     Prompts the user for a grid size
  ***************************************************************/
-function do_new_grid() {
-  showElement('ng-dialog');
+function do_grid_new() {
+  showElement('gn-dialog');
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_open_grid
+ *  FUNCTION NAME:   do_grid_open
  *  DESCRIPTION:     Gets a list of grid files from the server
  *                   and prompts the user to choose one
  ***************************************************************/
-function do_open_grid() {
+function do_grid_open() {
    grid_chooser_ajax(
       function(filename) {
-         return "{{ url_for('open_grid_screen') }}" + "?gridname=" + filename;
+         return "{{ url_for('grid_open') }}" + "?gridname=" + filename;
       }
    );
    showElement('gc-dialog');
@@ -155,10 +155,10 @@ function grid_chooser_ajax(build_url) {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_save_grid
+ *  FUNCTION NAME:   do_grid_save
  *  DESCRIPTION:     Turns on the save grid modal dialog
  ***************************************************************/
-function do_save_grid(gridname) {
+function do_grid_save(gridname) {
     if (gridname == "") {
         showElement('gs-dialog');
     }
@@ -168,10 +168,10 @@ function do_save_grid(gridname) {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_save_grid_as
+ *  FUNCTION NAME:   do_grid_save_as
  *  DESCRIPTION:     Turns on the save grid modal dialog
  ***************************************************************/
-function do_save_grid_as() {
+function do_grid_save_as() {
    showElement('gsa-dialog');
 }
 
@@ -199,6 +199,7 @@ function validateGridNameForSaveAs() {
                 // Duplicate name - prompt for OK
                 document.getElementById('ge-gridname').innerHTML = newgridname;
                 document.getElementById('ge-ok').setAttribute('href', url)
+                hideElement('gsa-dialog');
                 showElement('ge-dialog');
             }
             else {
@@ -462,13 +463,13 @@ function do_statistics(objType, url) {
 //  ============================================================
 
 /***************************************************************
- *  FUNCTION NAME:   do_close_puzzle
+ *  FUNCTION NAME:   do_puzzle_close
  *  DESCRIPTION:     Closes the puzzle screen
  *       1. Asks the server whether the puzzle has changed
  *       2. If so, opens the puzzle changed confirmation dialog
  *       3. Otherwise, redirects to main screen
  ***************************************************************/
-function do_close_puzzle() {
+function do_puzzle_close() {
    var xhttp = new XMLHttpRequest();
    xhttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
@@ -492,46 +493,46 @@ function do_close_puzzle() {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_delete_puzzle
+ *  FUNCTION NAME:   do_puzzle_delete
  *  DESCRIPTION:     Opens the puzzle delete dialog
  ***************************************************************/
-function do_delete_puzzle() {
+function do_puzzle_delete() {
    showElement('pd-dialog');
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_new_puzzle
+ *  FUNCTION NAME:   do_puzzle_new
  *  DESCRIPTION:     Gets a list of grid files from the server
  *                   and prompts the user to choose one
  ***************************************************************/
-function do_new_puzzle() {
+function do_puzzle_new() {
    grid_chooser_ajax(
       function(filename) {
-         return "{{ url_for('new_puzzle_screen') }}" + "?gridname=" + filename;
+         return "{{ url_for('puzzle_new') }}" + "?gridname=" + filename;
       }
    );
    showElement('gc-dialog');
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_open_puzzle
+ *  FUNCTION NAME:   do_puzzle_open
  *  DESCRIPTION:     Gets a list of puzzle files from the server
  *                   and prompts the user to choose one
  ***************************************************************/
-function do_open_puzzle() {
+function do_puzzle_open() {
    puzzle_chooser_ajax(
       function(filename) {
-         return "{{ url_for('open_puzzle_screen') }}" + "?puzzlename=" + filename;
+         return "{{ url_for('puzzle_open') }}" + "?puzzlename=" + filename;
       }
    );
    showElement('pc-dialog');
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_save_puzzle
+ *  FUNCTION NAME:   do_puzzle_save
  *  DESCRIPTION:     Turns on the save puzzle modal dialog
  ***************************************************************/
-function do_save_puzzle(puzzlename) {
+function do_puzzle_save(puzzlename) {
     if (puzzlename == "") {
         showElement('ps-dialog');
     }
@@ -541,10 +542,10 @@ function do_save_puzzle(puzzlename) {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_save_puzzle_as
+ *  FUNCTION NAME:   do_puzzle_save_as
  *  DESCRIPTION:     Turns on the save puzzle as modal dialog
  ***************************************************************/
-function do_save_puzzle_as() {
+function do_puzzle_save_as() {
    showElement('psa-dialog');
 }
 
@@ -572,6 +573,7 @@ function validatePuzzleNameForSaveAs() {
                 // Duplicate name - prompt for OK
                 document.getElementById('pe-puzzlename').innerHTML = newpuzzlename;
                 document.getElementById('pe-ok').setAttribute('href', url)
+                hideElement('psa-dialog');
                 showElement('pe-dialog');
             }
             else {
@@ -619,27 +621,27 @@ function do_word(event, url) {
          var parms = JSON.parse(this.responseText);
 
          // Set the <h3>17 Across</h3> text
-         var elem_h3 = document.getElementById('ew-heading');
+         var elem_h3 = document.getElementById('we-heading');
          var heading = parms.seq + " " + parms.direction + " (" + parms.length + " letters)";
          elem_h3.innerHTML = heading;
 
          // Set the word maxlength and value
-         var elem_word = document.getElementById('ew-word');
+         var elem_word = document.getElementById('we-word');
          elem_word.maxlength = parms.length;
          elem_word.value = parms.text;
 
          // Set the clue
-         var elem_clue = document.getElementById('ew-clue');
+         var elem_clue = document.getElementById('we-clue');
          elem_clue.value = parms.clue;
 
          // Clear any previous select for "suggest" and turn it off
-         var elem_select = document.getElementById('ew-select');
+         var elem_select = document.getElementById('we-select');
          elem_select.innerHTML = "";
-         hideElement('ew-select');
-         hideElement('ew-match');
+         hideElement('we-select');
+         hideElement('we-match');
 
          // Make the modal dialog visible
-         showElement('ew-dialog');
+         showElement('we-dialog');
          elem_word.focus();
       }
    };
@@ -742,32 +744,32 @@ function do_puzzle_title() {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_publish_nytimes
+ *  FUNCTION NAME:   do_puzzle_publish_nytimes
  *  DESCRIPTION:     Gets a list of puzzle files from the server
  *                   and prompts the user to choose one, building
  *                   from it a list of links to the publish
  *                   function for that puzzle
  ***************************************************************/
-function do_publish_nytimes() {
+function do_puzzle_publish_nytimes() {
    puzzle_chooser_ajax(
       function(filename) {
-         return "{{ url_for('publish_nytimes_screen') }}" + "?puzzlename=" + filename;
+         return "{{ url_for('puzzle_publish_nytimes') }}" + "?puzzlename=" + filename;
       }
    );
    showElement('pc-dialog');
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_publish_acrosslite
+ *  FUNCTION NAME:   do_puzzle_publish_acrosslite
  *  DESCRIPTION:     Gets a list of puzzle files from the server
  *                   and prompts the user to choose one, building
  *                   from it a list of links to the publish
  *                   function for that puzzle
  ***************************************************************/
-function do_publish_acrosslite() {
+function do_puzzle_publish_acrosslite() {
    puzzle_chooser_ajax(
       function(filename) {
-         return "{{ url_for('publish_acrosslite_screen') }}" + "?puzzlename=" + filename;
+         return "{{ url_for('puzzle_publish_acrosslite') }}" + "?puzzlename=" + filename;
       }
    );
    showElement('pc-dialog');
@@ -784,7 +786,7 @@ function do_publish_acrosslite() {
 function do_suggest_word() {
 
    // Get the pattern
-   var elem_word = document.getElementById('ew-word');
+   var elem_word = document.getElementById('we-word');
    var pattern = elem_word.value;
 
    // Invoke an AJAX call to get the matching words
@@ -794,16 +796,16 @@ function do_suggest_word() {
          var jsonstr = this.responseText;
          var words = JSON.parse(jsonstr);
 
-         var elem_select = document.getElementById('ew-select');
+         var elem_select = document.getElementById('we-select');
          elem_select.innerHTML = "";
 
-         var elem_match = document.getElementById('ew-match');
+         var elem_match = document.getElementById('we-match');
          elem_match.innerHTML = "";
 
          if (words.length == 0) {
             elem_match.innerHTML = "No matches found";
-            showElement('ew-match');
-            hideElement('ew-select');
+            showElement('we-match');
+            hideElement('we-select');
          }
          else {
             elem_match.innerHTML = words.length + " matches found:";
@@ -814,8 +816,8 @@ function do_suggest_word() {
                elem_option.appendChild(document.createTextNode(word))
                elem_select.appendChild(elem_option);
             }
-            showElement('ew-match');
-            showElement('ew-select')
+            showElement('we-match');
+            showElement('we-select')
          }
       }
    }
@@ -831,19 +833,19 @@ function do_suggest_word() {
  *      the entry selected in the dropdown box
  ***************************************************************/
 function do_select_changed() {
-    elem_select = document.getElementById('ew-select')
+    elem_select = document.getElementById('we-select')
     value = elem_select.value
-    elem_word = document.getElementById('ew-word')
+    elem_word = document.getElementById('we-word')
     elem_word.value = value
 }
 
 /***************************************************************
- *  NAME: do_validate_word()
+ *  NAME: do_word_validate()
  *  DESCRIPTION: Ensures that there are no regexes in the
  *      input word. Raises an alert if so.
  ***************************************************************/
-function do_validate_word() {
-    var text = document.getElementById('ew-word').value;
+function do_word_validate() {
+    var text = document.getElementById('we-word').value;
     for (var i = 0; i < text.length; i++) {
         var ch = text.charAt(i).toUpperCase();
         var p = " ABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(ch);
@@ -856,11 +858,11 @@ function do_validate_word() {
 }
 
 /***************************************************************
- *  NAME: do_reset_word()
+ *  NAME: do_word_reset()
  *  DESCRIPTION: Clears the word in the puzzle except for the
  *      letters that are part of a completed crossing word
  ***************************************************************/
-function do_reset_word() {
+function do_word_reset() {
 
     // Invoke an AJAX call to get the cleared text
     // for the input word
@@ -871,27 +873,27 @@ function do_reset_word() {
           var new_text = JSON.parse(jsonstr);
 
           // Update the input field
-          var elem_word = document.getElementById('ew-word');
+          var elem_word = document.getElementById('we-word');
           elem_word.value = new_text
        }
    }
-   var url = '{{ url_for("reset_word")}}';
+   var url = '{{ url_for("word_reset")}}';
    xhttp.open("GET", url, true);
    xhttp.send();
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_undo
+ *  FUNCTION NAME:   do_puzzle_undo
  *  DESCRIPTION:     Undoes the last change
  ***************************************************************/
-function do_undo() {
-    window.location.href = "{{ url_for('undo') }}";
+function do_puzzle_undo() {
+    window.location.href = "{{ url_for('puzzle_undo') }}";
 }
 
 /***************************************************************
- *  FUNCTION NAME:   do_redo
+ *  FUNCTION NAME:   do_puzzle_redo
  *  DESCRIPTION:     Redoes the last change
  ***************************************************************/
-function do_redo() {
-    window.location.href = "{{ url_for('redo') }}";
+function do_puzzle_redo() {
+    window.location.href = "{{ url_for('puzzle_redo') }}";
 }

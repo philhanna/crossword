@@ -18,11 +18,11 @@ from flask import session
 from flask import url_for
 from flask_session import Session
 
-from crossword import AcrossLiteOutput, Word
+from crossword import PuzzlePublishAcrossLite, Word
 from crossword import Configuration
 from crossword import Grid
 from crossword import GridToSVG, PuzzleToSVG
-from crossword import NYTimesOutput
+from crossword import PuzzlePublishNYTimes
 from crossword import Puzzle
 from crossword import WordList
 
@@ -55,10 +55,10 @@ def main_screen():
         session['_flashes'] = messages
 
     enabled = {
-        "new_grid": True,
-        "open_grid": True,
-        "new_puzzle": True,
-        "open_puzzle": True,
+        "grid_new": True,
+        "grid_open": True,
+        "puzzle_new": True,
+        "puzzle_open": True,
     }
     return render_template('main.html',
                            enabled=enabled)
@@ -67,8 +67,8 @@ def main_screen():
 #   ============================================================
 #   Menu option handlers
 #   ============================================================
-@app.route('/new-grid', methods=['POST'])
-def new_grid_screen():
+@app.route('/grid-new', methods=['POST'])
+def grid_new():
     # Get the grid size from the form
 
     n = int(request.form.get('n'))
@@ -85,8 +85,8 @@ def new_grid_screen():
     return redirect(url_for('grid_screen'))
 
 
-@app.route('/open-grid')
-def open_grid_screen():
+@app.route('/grid-open')
+def grid_open():
     # Get the chosen grid name from the query parameters
     gridname = request.args.get('gridname')
 
@@ -120,7 +120,7 @@ def grid_save_as():
 
 
 @app.route('/grid-delete')
-def grid_delete_screen():
+def grid_delete():
     # Get the name of the grid to be deleted from the session
     # Delete the file
 
@@ -151,14 +151,14 @@ def puzzle_screen():
     svgstr = svg.generate_xml()
 
     enabled = {
-        "save_puzzle": True,
-        "save_puzzle_as": True,
+        "puzzle_save": True,
+        "puzzle_save_as": True,
         "puzzle_stats": True,
         "puzzle_title": True,
-        "undo": True,
-        "redo": True,
-        "close_puzzle": True,
-        "delete_puzzle": puzzlename is not None,
+        "puzzle_undo": True,
+        "puzzle_redo": True,
+        "puzzle_close": True,
+        "puzzle_delete": puzzlename is not None,
     }
 
     # Send puzzle.html to the client
@@ -171,8 +171,8 @@ def puzzle_screen():
                            svgstr=svgstr)
 
 
-@app.route('/new-puzzle')
-def new_puzzle_screen():
+@app.route('/puzzle-new')
+def puzzle_new():
     # Get the chosen grid name from the query parameters
     gridname = request.args.get('gridname')
 
@@ -201,8 +201,8 @@ def new_puzzle_screen():
     pass
 
 
-@app.route('/open-puzzle')
-def open_puzzle_screen():
+@app.route('/puzzle-open')
+def puzzle_open():
     # Get the chosen puzzle name from the query parameters
     puzzlename = request.args.get('puzzlename')
 
@@ -235,7 +235,7 @@ def puzzle_save_as():
 
 
 @app.route('/puzzle-delete')
-def puzzle_delete_screen():
+def puzzle_delete():
     # Get the name of the puzzle to be deleted from the session
     # Delete the file
 
@@ -255,8 +255,8 @@ def puzzle_delete_screen():
     return redirect(url_for('main_screen'))
 
 
-@app.route('/undo', methods=['GET'])
-def undo():
+@app.route('/puzzle-undo', methods=['GET'])
+def puzzle_undo():
     jsonstr = session.get('puzzle', None)
     puzzle = Puzzle.from_json(jsonstr)
     puzzle.undo()
@@ -265,8 +265,8 @@ def undo():
     return redirect(url_for('puzzle_screen'))
 
 
-@app.route('/redo', methods=['GET'])
-def redo():
+@app.route('/puzzle-redo', methods=['GET'])
+def puzzle_redo():
     jsonstr = session.get('puzzle', None)
     puzzle = Puzzle.from_json(jsonstr)
     puzzle.redo()
@@ -285,8 +285,8 @@ def puzzle_click_down():
     return puzzle_click('Down')
 
 
-@app.route('/edit-word', methods=['POST'])
-def edit_word_screen():
+@app.route('/word-edit', methods=['POST'])
+def word_edit():
     # Get the seq, direction, and length from the session
     seq = session.get('seq')
     length = session.get('length')
@@ -317,8 +317,8 @@ def edit_word_screen():
     return redirect(url_for('puzzle_screen'))
 
 
-@app.route('/publish_acrosslite')
-def publish_acrosslite_screen():
+@app.route('/puzzle_publish_acrosslite')
+def puzzle_publish_acrosslite():
     # Get the chosen puzzle name from the query parameters
 
     puzzlename = request.args.get('puzzlename')
@@ -334,7 +334,7 @@ def publish_acrosslite_screen():
 
     # Generate the output
 
-    publisher = AcrossLiteOutput(puzzle, puzzlename)
+    publisher = PuzzlePublishAcrossLite(puzzle, puzzlename)
 
     # Text file
 
@@ -367,8 +367,8 @@ def publish_acrosslite_screen():
     return resp
 
 
-@app.route('/publish_nytimes')
-def publish_nytimes_screen():
+@app.route('/puzzle_publish_nytimes')
+def puzzle_publish_nytimes():
     # Get the chosen puzzle name from the query parameters
 
     puzzlename = request.args.get('puzzlename')
@@ -384,7 +384,7 @@ def publish_nytimes_screen():
 
     # Generate the output
 
-    publisher = NYTimesOutput(puzzle, puzzlename)
+    publisher = PuzzlePublishNYTimes(puzzle, puzzlename)
 
     # SVG
 
@@ -549,8 +549,8 @@ def puzzle_changed():
     return resp
 
 
-@app.route('/reset-word', methods=['GET'])
-def reset_word():
+@app.route('/word-reset', methods=['GET'])
+def word_reset():
     # Get the puzzle, word seq, word direction, and word length from the session
     puzzle = Puzzle.from_json(session['puzzle'])
     seq = session.get('seq')
@@ -641,12 +641,12 @@ def grid_screen():
 
     # Enable menu options
     enabled = {
-        "save_grid": True,
-        "save_grid_as": True,
+        "grid_save": True,
+        "grid_save_as": True,
         "grid_stats": True,
         "grid_rotate": True,
-        "close_grid": True,
-        "delete_grid": gridname is not None,
+        "grid_close": True,
+        "grid_delete": gridname is not None,
     }
 
     # Show the grid.html screen
@@ -745,7 +745,7 @@ def puzzle_click(direction):
     }
     parmstr = json.dumps(parms)
 
-    # Invoke the puzzle edit word
+    # Invoke the puzzle word editor
 
     resp = make_response(parmstr, HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"

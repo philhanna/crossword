@@ -1,23 +1,23 @@
-<!-- edit-word.html -->
-<!-- edit-word-dialog -->
-<div id="ew-dialog" class="w3-modal">
+<!-- word-edit.html -->
+<!-- word-edit-dialog -->
+<div id="we-dialog" class="w3-modal">
 <!-- modal content -->
 <div class="w3-modal-content w3-card-4"
      style="width:50%;position:absolute;top:10%;left:40%"
 >
 
 <header class="w3-container w3-blue-gray">
-<h3 id="ew-heading"></h3>
+<h3 id="we-heading"></h3>
 <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-      onclick="hideElement('ew-dialog');"
+      onclick="hideElement('we-dialog');"
       >&times;</span>
 </header>
 
     <form class="w3-container w3-card-4"
-      name="ew-form"
+      name="we-form"
       method="POST"
-      action="{{ url_for('edit_word_screen') }}"
-      onsubmit="return do_validate_word()"
+      action="{{ url_for('word_edit') }}"
+      onsubmit="return do_word_validate()"
     >
 
 <!-- form section -->
@@ -25,9 +25,9 @@
 
 <div class="w3-bar w3-border w3-blue-gray">
   <div class="w3-bar-item w3-button" onclick="do_suggest_word()">Suggest</div>
-  <div class="w3-bar-item" id="ew-match" style="display:none"></div>
+  <div class="w3-bar-item" id="we-match" style="display:none"></div>
   <select name="words"
-          id="ew-select"
+          id="we-select"
           class="w3-bar-item"
           style="display:none"
           onchange="do_select_changed()"
@@ -39,7 +39,7 @@
 <p style="width:50%">
 <label>Word:</label>
 <input   class="w3-input w3-border"
-         id="ew-word"
+         id="we-word"
          name="text"
          style="font-family: Courier; font-size: large"
          maxlength="{{ length }}"
@@ -52,7 +52,7 @@
 <p style="width:100%">
 <label>Clue:</label>
 <input   class="w3-input w3-border"
-         id="ew-clue"
+         id="we-clue"
          name="clue"
          type="text"
          value="{{ clue }}"
@@ -70,13 +70,13 @@ type="submit"
 <button  class="w3-button w3-border w3-round w3-gray"
 style="width:100px"
 type="button"
-onclick="hideElement('ew-dialog');"
+onclick="hideElement('we-dialog');"
 >Cancel</button>
 
 <button  class="w3-button w3-border w3-round w3-gray"
 style="width:100px"
 type="button"
-onclick="do_reset_word()"
+onclick="do_word_reset()"
 >Reset</button>
 
 </div> <!-- End of button container -->

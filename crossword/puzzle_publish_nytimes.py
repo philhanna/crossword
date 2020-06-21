@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from crossword import Configuration, Puzzle, PuzzleToSVG
 
 
-class NYTimesOutput:
+class PuzzlePublishNYTimes:
     """ Creates an HTML file with the puzzle and clues """
 
     def __init__(self, puzzle: Puzzle, basename: str):

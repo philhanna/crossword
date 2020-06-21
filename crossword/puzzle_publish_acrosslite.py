@@ -15,7 +15,7 @@ def get_author_name():
     return fullname
 
 
-class AcrossLiteOutput:
+class PuzzlePublishAcrossLite:
     """ Creates a text file with the puzzle and clues
 
     Format is documented here:

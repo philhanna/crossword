@@ -1,12 +1,12 @@
 # Crossword model classes
 __all__ = [
-    'AcrossLiteOutput',
+    'PuzzlePublishAcrossLite',
     'ClueExportVisitor',
     'ClueImportVisitor',
     'Configuration',
     'Grid',
     'NumberedCell',
-    'NYTimesOutput',
+    'PuzzlePublishNYTimes',
     'Puzzle',
     'ToSVG', 'GridToSVG', 'PuzzleToSVG',
     'Visitor',
@@ -22,6 +22,6 @@ from .grid import *
 from .word import *
 from .puzzle import *
 from .to_svg import *
-from .acrosslite_output import *
-from .nytimes_output import *
+from .puzzle_publish_acrosslite import *
+from .puzzle_publish_nytimes import *
 from .wordlist import *

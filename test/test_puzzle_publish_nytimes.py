@@ -2,11 +2,11 @@ import os
 import tempfile
 from unittest import TestCase
 
-from crossword import NYTimesOutput
+from crossword import PuzzlePublishNYTimes
 from test.test_puzzle import TestPuzzle
 
 
-class TestNYTimesOutput(TestCase):
+class TestPuzzlePublishNYTimes(TestCase):
 
     ############################################################
     # Unit tests
@@ -33,7 +33,7 @@ class TestNYTimesOutput(TestCase):
 
     @staticmethod
     def runtest(puzzle, basename):
-        app = NYTimesOutput(puzzle, basename)
+        app = PuzzlePublishNYTimes(puzzle, basename)
         tempdir = tempfile.gettempdir()
 
         filename = os.path.join(tempdir, basename + ".html")

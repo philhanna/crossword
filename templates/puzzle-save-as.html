@@ -1,21 +1,23 @@
-<!-- puzzle-close-dialog.html -->
+<!-- puzzle-save-as.html -->
 <div class="w3-container">
-  <div id="px-dialog" class="w3-modal">
+  <div id="psa-dialog" class="w3-modal">
     <div class="w3-modal-content w3-card-4" style="max-width:300px">
       <header class="w3-container w3-blue-gray">
-        <h3>Close puzzle</h3>
+        <h3>Save puzzle as</h3>
         <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-            onclick="hideElement('px-dialog');"
+            onclick="hideElement('psa-dialog');"
             >&times;</span>
       </header>
       <form class="w3-container"
-            name="px-form"
-            action="{{ url_for('main_screen') }}"
+            name="psa-form"
+            action="javascript:validatePuzzleNameForSaveAs()"
       >
         <div class="w3-section">
-          <header class="w3-container">
-            <p>Close puzzle without saving?</p>
-          </header>
+          <label><b>Puzzle name:</b></label>
+          <input class="w3-input w3-border w3-margin-top w3-margin-bottom"
+                 type="text"
+                 name="newpuzzlename"
+                 required/>
           <div class="w3-container">
           <button class="w3-button w3-border w3-round w3-gray"
                   style="width:100px"
@@ -24,7 +26,7 @@
           <button class="w3-button w3-border w3-round w3-gray"
                   style="width:100px"
                   type="button"
-                  onclick="hideElement('px-dialog');"
+                  onclick="hideElement('psa-dialog');"
                   >Cancel</button>
           </div>
         </div>

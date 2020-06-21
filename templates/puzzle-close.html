@@ -1,24 +1,21 @@
-<!-- grid-save-as-dialog.html -->
+<!-- puzzle-close.html -->
 <div class="w3-container">
-  <div id="gsa-dialog" class="w3-modal">
+  <div id="px-dialog" class="w3-modal">
     <div class="w3-modal-content w3-card-4" style="max-width:300px">
       <header class="w3-container w3-blue-gray">
-        <h3>Save grid as</h3>
+        <h3>Close puzzle</h3>
         <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-            onclick="hideElement('gsa-dialog');"
-            title="Close Modal"
+            onclick="hideElement('px-dialog');"
             >&times;</span>
       </header>
       <form class="w3-container"
-            name="gsa-form"
-            action="javascript:validateGridNameForSaveAs()"
+            name="px-form"
+            action="{{ url_for('main_screen') }}"
       >
         <div class="w3-section">
-          <label><b>Grid name:</b></label>
-          <input class="w3-input w3-border w3-margin-top w3-margin-bottom"
-                 type="text"
-                 name="newgridname"
-                 required/>
+          <header class="w3-container">
+            <p>Close puzzle without saving?</p>
+          </header>
           <div class="w3-container">
           <button class="w3-button w3-border w3-round w3-gray"
                   style="width:100px"
@@ -27,7 +24,7 @@
           <button class="w3-button w3-border w3-round w3-gray"
                   style="width:100px"
                   type="button"
-                  onclick="hideElement('gsa-dialog');"
+                  onclick="hideElement('px-dialog');"
                   >Cancel</button>
           </div>
         </div>
