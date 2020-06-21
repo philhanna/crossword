@@ -212,6 +212,9 @@ def puzzle_open():
     filename = os.path.join(rootdir, puzzlename + ".json")
     with open(filename) as fp:
         jsonstr = fp.read()
+    puzzle = Puzzle.from_json(jsonstr)
+    puzzle.remove_history()
+    jsonstr = puzzle.to_json()
 
     # Store the puzzle and puzzle name in the session
     session['puzzle'] = jsonstr
@@ -676,8 +679,9 @@ def puzzle_save_common(puzzlename):
         # Save the file
         rootdir = Configuration.get_puzzles_root()
         filename = os.path.join(rootdir, puzzlename + ".json")
+        puzzle.remove_history()
         with open(filename, "w") as fp:
-            fp.write(jsonstr)
+            fp.write(puzzle.to_json())
 
         # Send message about the save
         flash(f"Puzzle saved as {puzzlename}")

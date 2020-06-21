@@ -5,6 +5,20 @@ from crossword import Puzzle
 
 class TestPuzzleUndo(TestCase):
 
+    def test_remove_history(self):
+        puzzle = self.create_test_puzzle()
+        puzzle.set_text(10, 'A', 'ZOOM')
+        puzzle.set_text(10, 'A', 'PLOT')
+        puzzle.undo()
+        puzzle.set_text(10, 'A', 'STEP')
+        #print(f"undo={puzzle.undo_stack}, redo={puzzle.redo_stack}")
+        self.assertListEqual([['text', 10, 'A', 'RIOT'], ['text', 10, 'A', 'ZOOM']], puzzle.undo_stack)
+        self.assertListEqual([['text', 10, 'A', 'PLOT']], puzzle.redo_stack)
+        puzzle.remove_history()
+        self.assertListEqual([], puzzle.undo_stack)
+        self.assertListEqual([], puzzle.redo_stack)
+
+
     def test_undo_text(self):
         puzzle = self.create_test_puzzle()
         self.assertEqual('RIOT', puzzle.get_text(10, 'A'))
