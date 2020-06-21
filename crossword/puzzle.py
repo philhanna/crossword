@@ -164,7 +164,7 @@ class Puzzle:
         """ Redoes the last change """
 
         if len(self.redo_stack) == 0:
-            return  # Nothing to undo
+            return  # Nothing to redo
 
         # Pop the undoable from the redo stack and get its type
         undoable = self.redo_stack.pop()
