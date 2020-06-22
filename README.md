@@ -9,7 +9,7 @@ crossword puzzles suitable for publication.
     - [Download the code](#download-the-code)
     - [Configuration](#configuration)
         - [Paths to be configured](#paths-to-be-configured)
-        - [`.crosswords_config.ini` file](#crosswords-configini-file)
+        - [`.crossword_config.ini` file](#crossword-configini-file)
 - [Starting the application](#starting-the-application)
 - [User's guide](#users-guide)
 
@@ -68,9 +68,9 @@ and without spaces, numbers, or special characters.
 You can make your own file, or download it from numerous
 places.
 
-#### crosswords_config.ini file
+#### crossword_config.ini file
 You provide this information in a configuration file
-in your home directory named **.crosswords_config.ini**.
+in your home directory named **.crossword_config.ini**.
 You can create this file with any ordinary text editor.
 It *must* be stored in the home directory of the user
 who is running the application.
