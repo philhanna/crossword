@@ -1,7 +1,7 @@
 # Crossword Editor
 
-This application allows the user to create
-crossword puzzles suitable for publication.
+This is a web-based application that allows the user
+to create and edit crossword puzzles.
 
 ## Table of contents
 - [Setup](#setup)
@@ -12,6 +12,7 @@ crossword puzzles suitable for publication.
         - [Paths to be configured](#paths-to-be-configured)
         - [`.crossword_config.ini` file](#crossword-configini-file)
         - [Data directories](#data-directories)
+- [Starting the server](#starting-the-server)
 - [Starting the application](#starting-the-application)
 - [User's guide](#users-guide)
 
@@ -124,9 +125,9 @@ email=jqpuzzlemaker@gmail.com
 The **[author]** section is used by the **publish** features
 of the application.
 
-## Starting the application
+## Starting the server
 
-The application uses the Python `flask` framework for web applications.
+The program uses the Python `flask` framework for web applications.
 The Python program that runs the application is named `webapp.py`.
 It uses Flask to run a small HTTP server that you connect to with
 a web browser.
@@ -144,6 +145,11 @@ Windows:
 C:> cd $HOME\crossword
 C:> python webapp.py
 ```
+
+This runs an HTTP server on port 5000 on your computer.
+You can leave it running or cancel it at any time with Ctrl-C.
+
+## Starting the application
 
 Finally, to start using the application:
 
