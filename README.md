@@ -1,7 +1,7 @@
 # Crossword Editor
 
-This application allows the user to create
-crossword puzzles suitable for publication.
+This is a web-based application that allows the user
+to create and edit crossword puzzles.
 
 ## Table of contents
 - [Setup](#setup)
@@ -9,11 +9,10 @@ crossword puzzles suitable for publication.
     - [Install git](#install-git)
     - [Install the crossword application](#install-the-crossword-application)
     - [Configuration](#configuration)
-        - [Paths to be configured](#paths-to-be-configured)
-        - [`.crossword_config.ini` file](#crossword-configini-file)
         - [Data directories](#data-directories)
+        - [`.crossword_config.ini` file](#crossword-configini-file)
+- [Starting the server](#starting-the-server)
 - [Starting the application](#starting-the-application)
-- [User's guide](#users-guide)
 
 ## Setup
 
@@ -124,9 +123,9 @@ email=jqpuzzlemaker@gmail.com
 The **[author]** section is used by the **publish** features
 of the application.
 
-## Starting the application
+## Starting the server
 
-The application uses the Python `flask` framework for web applications.
+The program uses the Python `flask` framework for web applications.
 The Python program that runs the application is named `webapp.py`.
 It uses Flask to run a small HTTP server that you connect to with
 a web browser.
@@ -145,6 +144,11 @@ C:> cd $HOME\crossword
 C:> python webapp.py
 ```
 
+This runs an HTTP server on port 5000 on your computer.
+You can leave it running or cancel it at any time with Ctrl-C.
+
+## Starting the application
+
 Finally, to start using the application:
 
 1. Open a web browser
@@ -155,9 +159,7 @@ See [issue #8](https://github.com/philhanna/crossword/issues/8)
 in the GitHub repository)_
 2. Go to http://localhost:5000
 
-## User's guide
-
-See details at the
-[github project wiki](https://github.com/philhanna/crossword/wiki).
-You can also access this by clicking the **Help** button
-in the crossword application.
+There is a **Help** button on the far right of the menu bar
+that takes you to the user's guide.
+You can also access this guide directly at the project's
+[github wiki](https://github.com/philhanna/crossword/wiki).
