@@ -159,7 +159,6 @@ class Grid:
         """ Returns the JSON string representation of the Grid """
         image = dict()
         image['n'] = self.n
-        image['cells'] = [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = self.get_black_cells()
         nclist = list()
         for numbered_cell in self.get_numbered_cells():
@@ -167,7 +166,7 @@ class Grid:
             nclist.append(ncdict)
         image['numbered_cells'] = nclist
 
-        jsonstr = json.dumps(image, indent=2)
+        jsonstr = json.dumps(image)
         return jsonstr
 
     @staticmethod

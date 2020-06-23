@@ -193,7 +193,6 @@ class Puzzle:
         image = dict()
         image['n'] = self.n
         image['title'] = self.get_title()
-        image['cells'] = [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = [black_cell for black_cell in self.black_cells]
 
         # Numbered cells
@@ -233,7 +232,7 @@ class Puzzle:
         image['redo_stack'] = self.redo_stack
 
         # Create string in JSON format
-        jsonstr = json.dumps(image, indent=2)
+        jsonstr = json.dumps(image)
 
         return jsonstr
 
