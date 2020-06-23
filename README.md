@@ -135,13 +135,13 @@ To start the HTTP server, run `webapp.py`, as follows:
 MacOS/Linux:
 ```
 cd $HOME/crossword
-python3 webapp.py
+python3 crossword/ui/main.py
 ```
 
 Windows:
 ```bat
 C:> cd $HOME\crossword
-C:> python webapp.py
+C:> python crossword/ui/main.py
 ```
 
 This runs an HTTP server on port 5000 on your computer.
@@ -158,6 +158,7 @@ bug in translating mouse clicks into grid row and column values.
 See [issue #8](https://github.com/philhanna/crossword/issues/8)
 in the GitHub repository)_
 2. Go to http://localhost:5000
+_(Note: Sometimes I have to use http://127.0.0.1:5000 the first time)_
 
 There is a **Help** button on the far right of the menu bar
 that takes you to the user's guide.

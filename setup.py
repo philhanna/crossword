@@ -6,5 +6,5 @@ setup(name='crossword',
       url='http://github.com/philhanna/crossword',
       author='Phil Hanna',
       license='MIT',
-      packages=['crossword', 'crossword.tests', 'crossword.util'],
+      packages=['crossword', 'crossword.ui', 'crossword.tests', 'crossword.util'],
       zip_safe=False)
