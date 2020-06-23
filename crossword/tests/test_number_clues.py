@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from crossword import NumberedCell
-from test.test_puzzle import TestPuzzle
+from crossword.tests import TestPuzzle
 
 
 class TestNumberClues(TestCase):

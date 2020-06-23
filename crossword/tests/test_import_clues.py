@@ -2,7 +2,7 @@ from io import StringIO
 from unittest import TestCase
 
 from crossword import ClueImportVisitor
-from test.test_puzzle import TestPuzzle
+from crossword.tests import TestPuzzle
 
 
 class TestImportClues(TestCase):

@@ -1,7 +1,6 @@
 from unittest import TestCase
 
 from crossword import Grid
-from test.test_puzzle import TestPuzzle
 
 
 class TestGridRotate(TestCase):

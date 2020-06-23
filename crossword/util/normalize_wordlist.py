@@ -3,8 +3,6 @@ import os
 import re
 import sys
 
-sys.path.append("../..")
-
 from crossword import Configuration
 
 

@@ -3,7 +3,7 @@ import tempfile
 from unittest import TestCase
 
 from crossword import ClueExportVisitor
-from test.test_puzzle import TestPuzzle
+from crossword.tests import TestPuzzle
 
 
 class TestExportClues(TestCase):
