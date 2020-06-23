@@ -20,9 +20,5 @@ class WordList:
         pattern = "^" + pattern + "$"
         pattern = re.sub('[ ?]', '.', pattern)
         regexp = re.compile(pattern, re.IGNORECASE)
-        result = []
-        for line in self.words:
-            m = regexp.match(line)
-            if m:
-                result.append(line)
+        result = [line for line in self.words if regexp.match(line)]
         return result
