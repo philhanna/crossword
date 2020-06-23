@@ -13,22 +13,22 @@ class TestPuzzleGetNumberedCell(TestCase):
         # 8 across
         nc = self.puzzle.get_numbered_cell(2, 1)
         self.assertEqual(8, nc.seq)
-        self.assertTrue(nc.across_length > 0)
-        self.assertTrue(nc.down_length == 0)
+        self.assertTrue(nc.a > 0)
+        self.assertTrue(nc.d == 0)
 
     def test_get_down_only(self):
         # 3 down
         nc = self.puzzle.get_numbered_cell(1, 3)
         self.assertEqual(3, nc.seq)
-        self.assertTrue(nc.across_length == 0)
-        self.assertTrue(nc.down_length > 0)
+        self.assertTrue(nc.a == 0)
+        self.assertTrue(nc.d > 0)
 
     def test_get_both(self):
         # 15 across and down
         nc = self.puzzle.get_numbered_cell(6, 2)
         self.assertEqual(15, nc.seq)
-        self.assertTrue(nc.across_length > 0)
-        self.assertTrue(nc.down_length > 0)
+        self.assertTrue(nc.a > 0)
+        self.assertTrue(nc.d > 0)
 
     def test_with_black_cell(self):
         nc = self.puzzle.get_numbered_cell(2, 5)

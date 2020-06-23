@@ -42,11 +42,11 @@ class Puzzle:
         for numbered_cell in self.numbered_cells:
 
             # Yes, this is an across word
-            if numbered_cell.across_length:
+            if numbered_cell.a:
                 self.across_words[numbered_cell.seq] = AcrossWord(self, numbered_cell.seq)
 
             # Yes, this is a down word
-            if numbered_cell.down_length:
+            if numbered_cell.d:
                 self.down_words[numbered_cell.seq] = DownWord(self, numbered_cell.seq)
 
         self.undo_stack = []

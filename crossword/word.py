@@ -72,7 +72,7 @@ class AcrossWord(Word):
 
     def __init__(self, puzzle, seq):
         super().__init__(puzzle, seq)
-        self.length = self.numbered_cell.across_length
+        self.length = self.numbered_cell.a
 
     def cell_iterator(self):
         """ Generator for iterating through the cells of an across word """
@@ -142,7 +142,7 @@ class DownWord(Word):
 
     def __init__(self, puzzle, seq):
         super().__init__(puzzle, seq)
-        self.length = self.numbered_cell.down_length
+        self.length = self.numbered_cell.d
 
     def cell_iterator(self):
         """ Generator for iterating through the cells of a down word """

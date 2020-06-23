@@ -35,8 +35,8 @@ class TestNumberClues(TestCase):
             "seq": 42,
             "r": 9,
             "c": 12,
-            "across_length": 4,
-            "down_length": 0
+            "a": 4,
+            "d": 0
         }
         """
         nc = NumberedCell.from_json(data)
@@ -52,8 +52,8 @@ class TestNumberClues(TestCase):
             "seq": 1,
             "r": 1,
             "c": 1,
-            "across_length": 4,
-            "down_length": 4
+            "a": 4,
+            "d": 4
         }
         """
         nc = NumberedCell.from_json(data)

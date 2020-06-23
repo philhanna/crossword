@@ -79,7 +79,7 @@ class Grid:
 
                 # See if this is the start of an "across" word
 
-                across_length = 0
+                a = 0
                 if c == 1 or self.is_black_cell(r, c - 1):
 
                     # This is the beginning of an "across" word
@@ -88,17 +88,17 @@ class Grid:
 
                     for cprime in range(c + 1, n + 1):
                         if self.is_black_cell(r, cprime):
-                            across_length = cprime - c
+                            a = cprime - c
                             break
                         if cprime == n:
-                            across_length = cprime + 1 - c
+                            a = cprime + 1 - c
                             break
-                if across_length < 2:
-                    across_length = 0
+                if a < 2:
+                    a = 0
 
                 # Same for "down" word
 
-                down_length = 0
+                d = 0
                 if r == 1 or self.is_black_cell(r - 1, c):
 
                     # This is the beginning of a "down" word
@@ -107,17 +107,17 @@ class Grid:
 
                     for rprime in range(r + 1, n + 1):
                         if self.is_black_cell(rprime, c):
-                            down_length = rprime - r
+                            d = rprime - r
                             break
                         if rprime == n:
-                            down_length = rprime + 1 - r
+                            d = rprime + 1 - r
                             break
-                if down_length < 2:
-                    down_length = 0
+                if d < 2:
+                    d = 0
 
-                if across_length or down_length:
+                if a or d:
                     seq = 1 + len(nclist)
-                    numbered_cell = NumberedCell(seq, r, c, a=across_length, d=down_length)
+                    numbered_cell = NumberedCell(seq, r, c, a=a, d=d)
                     nclist.append(numbered_cell)
 
         self.numbered_cells = nclist
@@ -127,9 +127,9 @@ class Grid:
         """ Returns the number of words in the grid """
         count = 0
         for nc in self.get_numbered_cells():
-            if nc.across_length:
+            if nc.a:
                 count += 1
-            if nc.down_length:
+            if nc.d:
                 count += 1
         return count
 
@@ -137,7 +137,7 @@ class Grid:
         """ Returns a list of word lengths and words of that length """
         table = {}
         for nc in self.get_numbered_cells():
-            length = nc.across_length
+            length = nc.a
             if length:
                 if length not in table:
                     table[length] = {
@@ -145,7 +145,7 @@ class Grid:
                         'dlist': [],
                     }
                 table[length]['alist'].append(nc.seq)
-            length = nc.down_length
+            length = nc.d
             if length:
                 if length not in table:
                     table[length] = {
@@ -325,13 +325,13 @@ class Grid:
         for nc in self.get_numbered_cells():
             r = nc.r
             c = nc.c
-            for i in range(nc.across_length):
+            for i in range(nc.a):
                 aset.add((r, c))
                 ncdict[(r, c)] = nc
                 c += 1
             r = nc.r
             c = nc.c
-            for i in range(nc.down_length):
+            for i in range(nc.d):
                 dset.add((r, nc.c))
                 ncdict[(r, c)] = nc
                 r += 1
@@ -359,10 +359,10 @@ class Grid:
         error_list = list()
 
         for nc in self.get_numbered_cells():
-            if 0 < nc.across_length < 3:
-                error_list.append(f"{nc.seq} across is only {nc.across_length} letters long")
-            if 0 < nc.down_length < 3:
-                error_list.append(f"{nc.seq} down is only {nc.down_length} letters long")
+            if 0 < nc.a < 3:
+                error_list.append(f"{nc.seq} across is only {nc.a} letters long")
+            if 0 < nc.d < 3:
+                error_list.append(f"{nc.seq} down is only {nc.d} letters long")
 
         return error_list
 
