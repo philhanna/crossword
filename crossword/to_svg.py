@@ -15,6 +15,9 @@ class ToSVG:
         self.boxsize = ToSVG.BOXSIZE
         self.gridsize = self.boxsize * self.n
 
+        # Save scale argument if present
+        self.scale = kwargs.get('scale', None)
+
         # Figure out where the cell number goes
         self.cell_number_x = 2
         self.cell_number_y = 10
@@ -44,8 +47,14 @@ class ToSVG:
 
     def generate_root(self):
         """ Fills in the attributes of the SVG root element """
-        self.root.set("width", str(self.gridsize))
-        self.root.set("height", str(self.gridsize))
+        # Scale the SVG if requested
+        if self.scale:
+            self.root.set("transform", f"scale({self.scale})")
+            self.root.set("width", str(self.gridsize * self.scale))
+            self.root.set("height", str(self.gridsize * self.scale))
+        else:
+            self.root.set("width", str(self.gridsize))
+            self.root.set("height", str(self.gridsize))
         self.root.set("viewbox", f'0 0 {self.gridsize} {self.gridsize}')
         self.root.set("xmlns", 'http://www.w3.org/2000/svg')
         self.root.set("xmlns:xlink", 'http://www.w3.org/1999/xlink')
