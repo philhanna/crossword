@@ -85,12 +85,19 @@ function do_grid_new() {
  *                   and prompts the user to choose one
  ***************************************************************/
 function do_grid_open() {
-   grid_chooser_ajax(
-      function(filename) {
-         return "{{ url_for('grid_open') }}" + "?gridname=" + filename;
-      }
-   );
-   showElement('gc-dialog');
+    function_list = [];
+
+    function open_anchor(gridname) {
+        var elem_a = document.createElement("a");
+        elem_a.href = "{{ url_for('grid_open') }}" + "?gridname=" + gridname;
+        elem_a.style.textDecoration = "none"; // No underline
+        elem_a.appendChild(document.createTextNode(gridname));
+        return elem_a;
+    };
+    function_list.push(open_anchor);
+
+    grid_chooser_ajax(function_list);
+    showElement('gc-dialog');
 }
 
 /***************************************************************
@@ -114,7 +121,7 @@ function do_grid_rotate() {
  *  DESCRIPTION:     Gets a list of grid files from the server
  *                   and forms a list of links
  ***************************************************************/
-function grid_chooser_ajax(build_url) {
+function grid_chooser_ajax(function_list) {
    var xhttp = new XMLHttpRequest();
    xhttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
@@ -124,8 +131,8 @@ function grid_chooser_ajax(build_url) {
          var grid_list = JSON.parse(jsonstr);
 
          // Clear out the <ul> that will contain the list items
-         var elem_list = document.getElementById('grid-list');
-         elem_list.innerHTML = ""
+         var elem_ul = document.getElementById('grid-list');
+         elem_ul.innerHTML = ""
 
          // Populate the list
          for (var i = 0; i < grid_list.length; i++) {
@@ -133,19 +140,18 @@ function grid_chooser_ajax(build_url) {
             // Get the next file name in the list
             var gridname = grid_list[i];
 
-            // Create an <a> element for the URL
-            // with the full URL that will be used as the link
-            var elem_anchor = document.createElement("a");
-            elem_anchor.href = build_url(gridname);
-            elem_anchor.style.textDecoration = "none"; // No underline
-            elem_anchor.appendChild(document.createTextNode(gridname));
+            // Create a <li> to contain anchors for this grid
+            var elem_li = document.createElement("li");
 
-            // Create a <li> to contain the <a>
-            var elem_list_item = document.createElement("li");
-            elem_list_item.appendChild(elem_anchor);
+            // Add each anchor to the <li>
+            for (var j = 0; j < function_list.length; j++) {
+                fun = function_list[j];
+                elem_anchor = fun(gridname);
+                elem_li.appendChild(elem_anchor);
+            }
 
             // and append the list item to the <ul>
-            elem_list.appendChild(elem_list_item);
+            elem_ul.appendChild(elem_li);
          }
       }
    };
@@ -506,12 +512,19 @@ function do_puzzle_delete() {
  *                   and prompts the user to choose one
  ***************************************************************/
 function do_puzzle_new() {
-   grid_chooser_ajax(
-      function(filename) {
-         return "{{ url_for('puzzle_new') }}" + "?gridname=" + filename;
-      }
-   );
-   showElement('gc-dialog');
+    function_list = [];
+
+    function open_anchor(gridname) {
+        var elem_a = document.createElement("a");
+        elem_a.href = "{{ url_for('puzzle_new') }}" + "?gridname=" + gridname;
+        elem_a.style.textDecoration = "none"; // No underline
+        elem_a.appendChild(document.createTextNode(gridname));
+        return elem_a;
+    };
+    function_list.push(open_anchor);
+
+    grid_chooser_ajax(function_list);
+    showElement('gc-dialog');
 }
 
 /***************************************************************
@@ -695,8 +708,8 @@ function puzzle_chooser_ajax(build_url) {
          var puzzle_list = JSON.parse(jsonstr);
 
          // Clear the <ul> that will contain the list items
-         var elem_list = document.getElementById("puzzle-list");
-         elem_list.innerHTML = ""
+         var elem_ul = document.getElementById("puzzle-list");
+         elem_ul.innerHTML = ""
 
          // Populate the list
          for (var i = 0; i < puzzle_list.length; i++) {
@@ -712,11 +725,11 @@ function puzzle_chooser_ajax(build_url) {
             elem_anchor.appendChild(document.createTextNode(puzzlename));
 
             // Create a <li> to contain the <a>
-            var elem_list_item = document.createElement("li");
-            elem_list_item.appendChild(elem_anchor);
+            var elem_li = document.createElement("li");
+            elem_li.appendChild(elem_anchor);
 
             // and append the list item to the <ul>
-            elem_list.appendChild(elem_list_item);
+            elem_ul.appendChild(elem_li);
          }
       }
    };
