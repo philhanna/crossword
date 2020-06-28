@@ -81,6 +81,22 @@ def grid_open():
     return redirect(url_for('grid_screen'))
 
 
+def grid_preview():
+    """ Creates a grid preview and returns it to ??? """
+
+    # Get the chosen grid name from the query parameters
+    gridname = request.args.get('gridname')
+
+    # Open the corresponding file and read its contents as json
+    # and recreate the grid from it
+    rootdir = Configuration.get_grids_root()
+    filename = os.path.join(rootdir, gridname + ".json")
+    with open(filename) as fp:
+        jsonstr = fp.read()
+    grid = Grid.from_json(jsonstr)
+    svgstr = GridToSVG(grid, scale=0.375).generate_xml()
+    return render_template('grid-preview.html', svgstr=svgstr)
+
 def grid_save():
     """ Saves a grid """
 
