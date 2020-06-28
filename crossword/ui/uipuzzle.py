@@ -114,6 +114,7 @@ def puzzle_preview():
     obj = {
         "puzzlename" : puzzlename,
         "width": width,
+        "wordcount": puzzle.get_word_count(),
         "svgstr": svgstr
     }
     resp = make_response(json.dumps(obj), HTTPStatus.OK)

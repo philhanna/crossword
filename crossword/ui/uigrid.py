@@ -102,6 +102,7 @@ def grid_preview():
 
     obj = {
         "gridname" : gridname,
+        "wordcount" : grid.get_word_count(),
         "width": width,
         "svgstr": svgstr
     }
