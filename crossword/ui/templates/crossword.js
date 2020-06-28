@@ -87,10 +87,24 @@ function do_grid_new() {
 function do_grid_open() {
     function_list = [];
 
+    function preview_anchor(gridname) {
+        var elem_a = document.createElement("a");
+        var elem_i = document.createElement("i");
+        elem_i.setAttribute("class", "material-icons");
+        elem_i.appendChild(document.createTextNode("preview"));
+        elem_a.appendChild(elem_i);
+        var onclick = "do_grid_preview('" + gridname + "')";
+        elem_a.setAttribute("onclick", onclick);
+        elem_a.style.textDecoration = "none"; // No underline
+        return elem_a;
+    };
+    function_list.push(preview_anchor);
+
     function open_anchor(gridname) {
         var elem_a = document.createElement("a");
         elem_a.href = "{{ url_for('grid_open') }}" + "?gridname=" + gridname;
         elem_a.style.textDecoration = "none"; // No underline
+        elem_a.style.verticalAlign = "top";
         elem_a.appendChild(document.createTextNode(gridname));
         return elem_a;
     };
@@ -98,6 +112,26 @@ function do_grid_open() {
 
     grid_chooser_ajax(function_list);
     showElement('gc-dialog');
+}
+
+/***************************************************************
+ *  FUNCTION NAME:   do_grid_preview
+ ***************************************************************/
+function do_grid_preview(gridname) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+     if (this.readyState == 4 && this.status == 200) {
+        var jsonstr = this.responseText;
+        obj = JSON.parse(jsonstr);
+        document.getElementById("gv-gridname").innerHTML = obj.gridname;
+        document.getElementById("gv-container").style.width = obj.width;
+        document.getElementById("gv-svgstr").innerHTML = obj.svgstr;
+        showElement('gv-dialog');
+     }
+  };
+  var url = '{{ url_for("grid_preview") }}' + "?gridname=" + gridname;
+  xhttp.open("GET", url, true);
+  xhttp.send();
 }
 
 /***************************************************************

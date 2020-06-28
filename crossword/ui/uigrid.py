@@ -94,8 +94,21 @@ def grid_preview():
     with open(filename) as fp:
         jsonstr = fp.read()
     grid = Grid.from_json(jsonstr)
-    svgstr = GridToSVG(grid, scale=0.375).generate_xml()
-    return render_template('grid-preview.html', gridname=gridname, svgstr=svgstr)
+
+    scale = 0.75
+    svgobj = GridToSVG(grid, scale=scale)
+    width = (svgobj.boxsize * grid.n + 32) * scale;
+    svgstr = svgobj.generate_xml()
+
+    obj = {
+        "gridname" : gridname,
+        "width": width,
+        "svgstr": svgstr
+    }
+    resp = make_response(json.dumps(obj), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
 
 def grid_save():
     """ Saves a grid """
