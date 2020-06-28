@@ -4,6 +4,7 @@ __all__ = [
     'grid_screen',
     'grid_new',
     'grid_open',
+    'grid_preview',
     'grid_save',
     'grid_save_as',
     'grid_save_common',
