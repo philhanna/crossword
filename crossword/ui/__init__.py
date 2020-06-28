@@ -20,6 +20,7 @@ __all__ = [
     'puzzle_screen',
     'puzzle_new',
     'puzzle_open',
+    'puzzle_preview',
     'puzzle_save',
     'puzzle_save_as',
     'puzzle_save_common',

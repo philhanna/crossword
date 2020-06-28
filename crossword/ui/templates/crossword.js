@@ -104,7 +104,7 @@ function do_grid_open() {
         var elem_a = document.createElement("a");
         elem_a.href = "{{ url_for('grid_open') }}" + "?gridname=" + gridname;
         elem_a.style.textDecoration = "none"; // No underline
-        elem_a.style.verticalAlign = "top";
+        elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(gridname));
         return elem_a;
     };
@@ -569,10 +569,24 @@ function do_puzzle_new() {
 function do_puzzle_open() {
     function_list = [];
 
+    function preview_anchor(puzzlename) {
+        var elem_a = document.createElement("a");
+        var elem_i = document.createElement("i");
+        elem_i.setAttribute("class", "material-icons");
+        elem_i.appendChild(document.createTextNode("preview"));
+        elem_a.appendChild(elem_i);
+        var onclick = "do_puzzle_preview('" + puzzlename + "')";
+        elem_a.setAttribute("onclick", onclick);
+        elem_a.style.textDecoration = "none"; // No underline
+        return elem_a;
+    };
+    function_list.push(preview_anchor);
+
     function open_anchor(puzzlename) {
         var elem_a = document.createElement("a");
         elem_a.href = "{{ url_for('puzzle_open') }}" + "?puzzlename=" + puzzlename;
         elem_a.style.textDecoration = "none"; // No underline
+        elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(puzzlename));
         return elem_a;
     };
@@ -580,6 +594,26 @@ function do_puzzle_open() {
 
     puzzle_chooser_ajax(function_list);
     showElement('pc-dialog');
+}
+
+/***************************************************************
+ *  FUNCTION NAME:   do_puzzle_preview
+ ***************************************************************/
+function do_puzzle_preview(puzzlename) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+     if (this.readyState == 4 && this.status == 200) {
+        var jsonstr = this.responseText;
+        obj = JSON.parse(jsonstr);
+        document.getElementById("pv-puzzlename").innerHTML = obj.puzzlename;
+        document.getElementById("pv-container").style.width = obj.width;
+        document.getElementById("pv-svgstr").innerHTML = obj.svgstr;
+        showElement('pv-dialog');
+     }
+  };
+  var url = '{{ url_for("puzzle_preview") }}' + "?puzzlename=" + puzzlename;
+  xhttp.open("GET", url, true);
+  xhttp.send();
 }
 
 /***************************************************************
@@ -806,10 +840,24 @@ function do_puzzle_title() {
 function do_puzzle_publish_nytimes() {
     function_list = [];
 
+    function preview_anchor(puzzlename) {
+        var elem_a = document.createElement("a");
+        var elem_i = document.createElement("i");
+        elem_i.setAttribute("class", "material-icons");
+        elem_i.appendChild(document.createTextNode("preview"));
+        elem_a.appendChild(elem_i);
+        var onclick = "do_puzzle_preview('" + puzzlename + "')";
+        elem_a.setAttribute("onclick", onclick);
+        elem_a.style.textDecoration = "none"; // No underline
+        return elem_a;
+    };
+    function_list.push(preview_anchor);
+
     function publish_anchor(puzzlename) {
         var elem_a = document.createElement("a");
         elem_a.href = "{{ url_for('puzzle_publish_nytimes') }}" + "?puzzlename=" + puzzlename;
         elem_a.style.textDecoration = "none"; // No underline
+        elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(puzzlename));
         return elem_a;
     };
@@ -829,10 +877,24 @@ function do_puzzle_publish_nytimes() {
 function do_puzzle_publish_acrosslite() {
     function_list = [];
 
+    function preview_anchor(puzzlename) {
+        var elem_a = document.createElement("a");
+        var elem_i = document.createElement("i");
+        elem_i.setAttribute("class", "material-icons");
+        elem_i.appendChild(document.createTextNode("preview"));
+        elem_a.appendChild(elem_i);
+        var onclick = "do_puzzle_preview('" + puzzlename + "')";
+        elem_a.setAttribute("onclick", onclick);
+        elem_a.style.textDecoration = "none"; // No underline
+        return elem_a;
+    };
+    function_list.push(preview_anchor);
+
     function publish_anchor(puzzlename) {
         var elem_a = document.createElement("a");
         elem_a.href = "{{ url_for('puzzle_publish_acrosslite') }}" + "?puzzlename=" + puzzlename;
         elem_a.style.textDecoration = "none"; // No underline
+        elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(puzzlename));
         return elem_a;
     };

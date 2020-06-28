@@ -92,6 +92,35 @@ def puzzle_open():
     return redirect(url_for('puzzle_screen'))
 
 
+def puzzle_preview():
+    """ Creates a puzzle preview and returns it to ??? """
+
+    # Get the chosen puzzle name from the query parameters
+    puzzlename = request.args.get('puzzlename')
+
+    # Open the corresponding file and read its contents as json
+    # and recreate the puzzle from it
+    rootdir = Configuration.get_puzzles_root()
+    filename = os.path.join(rootdir, puzzlename + ".json")
+    with open(filename) as fp:
+        jsonstr = fp.read()
+    puzzle = Puzzle.from_json(jsonstr)
+
+    scale = 0.75
+    svgobj = PuzzleToSVG(puzzle, scale=scale)
+    width = (svgobj.boxsize * puzzle.n + 32) * scale;
+    svgstr = svgobj.generate_xml()
+
+    obj = {
+        "puzzlename" : puzzlename,
+        "width": width,
+        "svgstr": svgstr
+    }
+    resp = make_response(json.dumps(obj), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
 def puzzle_save():
     """ Saves a puzzle """
 
