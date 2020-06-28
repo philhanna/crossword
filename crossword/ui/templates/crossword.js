@@ -533,12 +533,19 @@ function do_puzzle_new() {
  *                   and prompts the user to choose one
  ***************************************************************/
 function do_puzzle_open() {
-   puzzle_chooser_ajax(
-      function(filename) {
-         return "{{ url_for('puzzle_open') }}" + "?puzzlename=" + filename;
-      }
-   );
-   showElement('pc-dialog');
+    function_list = [];
+
+    function open_anchor(puzzlename) {
+        var elem_a = document.createElement("a");
+        elem_a.href = "{{ url_for('puzzle_open') }}" + "?puzzlename=" + puzzlename;
+        elem_a.style.textDecoration = "none"; // No underline
+        elem_a.appendChild(document.createTextNode(puzzlename));
+        return elem_a;
+    };
+    function_list.push(open_anchor);
+
+    puzzle_chooser_ajax(function_list);
+    showElement('pc-dialog');
 }
 
 /***************************************************************
@@ -707,26 +714,25 @@ function puzzle_chooser_ajax(build_url) {
          var jsonstr = this.responseText;
          var puzzle_list = JSON.parse(jsonstr);
 
-         // Clear the <ul> that will contain the list items
-         var elem_ul = document.getElementById("puzzle-list");
+         // Clear out the <ul> that will contain the list items
+         var elem_ul = document.getElementById('puzzle-list');
          elem_ul.innerHTML = ""
 
          // Populate the list
          for (var i = 0; i < puzzle_list.length; i++) {
 
-            // Get the next puzzle name in the list
+            // Get the next file name in the list
             var puzzlename = puzzle_list[i];
 
-            // Create an <a> element for the URL
-            // with the full URL that will be used as the link
-            var elem_anchor = document.createElement("a");
-            elem_anchor.href = build_url(puzzlename);
-            elem_anchor.style.textDecoration = "none"; // No underline
-            elem_anchor.appendChild(document.createTextNode(puzzlename));
-
-            // Create a <li> to contain the <a>
+            // Create a <li> to contain anchors for this puzzle
             var elem_li = document.createElement("li");
-            elem_li.appendChild(elem_anchor);
+
+            // Add each anchor to the <li>
+            for (var j = 0; j < function_list.length; j++) {
+                fun = function_list[j];
+                elem_anchor = fun(puzzlename);
+                elem_li.appendChild(elem_anchor);
+            }
 
             // and append the list item to the <ul>
             elem_ul.appendChild(elem_li);
@@ -764,12 +770,19 @@ function do_puzzle_title() {
  *                   function for that puzzle
  ***************************************************************/
 function do_puzzle_publish_nytimes() {
-   puzzle_chooser_ajax(
-      function(filename) {
-         return "{{ url_for('puzzle_publish_nytimes') }}" + "?puzzlename=" + filename;
-      }
-   );
-   showElement('pc-dialog');
+    function_list = [];
+
+    function publish_anchor(puzzlename) {
+        var elem_a = document.createElement("a");
+        elem_a.href = "{{ url_for('puzzle_publish_nytimes') }}" + "?puzzlename=" + puzzlename;
+        elem_a.style.textDecoration = "none"; // No underline
+        elem_a.appendChild(document.createTextNode(puzzlename));
+        return elem_a;
+    };
+    function_list.push(publish_anchor);
+
+    puzzle_chooser_ajax(function_list);
+    showElement('pc-dialog');
 }
 
 /***************************************************************
@@ -780,12 +793,19 @@ function do_puzzle_publish_nytimes() {
  *                   function for that puzzle
  ***************************************************************/
 function do_puzzle_publish_acrosslite() {
-   puzzle_chooser_ajax(
-      function(filename) {
-         return "{{ url_for('puzzle_publish_acrosslite') }}" + "?puzzlename=" + filename;
-      }
-   );
-   showElement('pc-dialog');
+    function_list = [];
+
+    function publish_anchor(puzzlename) {
+        var elem_a = document.createElement("a");
+        elem_a.href = "{{ url_for('puzzle_publish_acrosslite') }}" + "?puzzlename=" + puzzlename;
+        elem_a.style.textDecoration = "none"; // No underline
+        elem_a.appendChild(document.createTextNode(puzzlename));
+        return elem_a;
+    };
+    function_list.push(publish_anchor);
+
+    puzzle_chooser_ajax(function_list);
+    showElement('pc-dialog');
 }
 
 //  ============================================================
