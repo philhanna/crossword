@@ -549,10 +549,24 @@ function do_puzzle_delete() {
 function do_puzzle_new() {
     function_list = [];
 
+    function preview_anchor(gridname) {
+        var elem_a = document.createElement("a");
+        var elem_i = document.createElement("i");
+        elem_i.setAttribute("class", "material-icons");
+        elem_i.appendChild(document.createTextNode("preview"));
+        elem_a.appendChild(elem_i);
+        var onclick = "do_grid_preview('" + gridname + "')";
+        elem_a.setAttribute("onclick", onclick);
+        elem_a.style.textDecoration = "none"; // No underline
+        return elem_a;
+    };
+    function_list.push(preview_anchor);
+
     function open_anchor(gridname) {
         var elem_a = document.createElement("a");
         elem_a.href = "{{ url_for('puzzle_new') }}" + "?gridname=" + gridname;
         elem_a.style.textDecoration = "none"; // No underline
+        elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(gridname));
         return elem_a;
     };
