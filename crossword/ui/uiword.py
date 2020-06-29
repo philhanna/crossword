@@ -26,9 +26,6 @@ def word_edit():
     if len(text) < length:
         text += " " * length
         text = text[:length]
-    # If the word is not complete, change the clue to blanks
-    if ' ' in text:
-        clue = ""
 
     # Set the word text and clue and save the puzzle in the session again
     puzzle = Puzzle.from_json(session.get('puzzle'))
