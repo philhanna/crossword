@@ -2,7 +2,6 @@
 
 import os
 
-from crossword import ClueExportVisitor
 from crossword import Configuration
 from crossword import Puzzle
 from crossword.util import list_puzzles
