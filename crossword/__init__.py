@@ -1,8 +1,6 @@
 # Crossword model classes
 __all__ = [
     'PuzzlePublishAcrossLite',
-    'ClueExportVisitor',
-    'ClueImportVisitor',
     'Configuration',
     'Grid',
     'NumberedCell',
@@ -16,8 +14,6 @@ __all__ = [
 from .numbered_cell import *
 from .configuration import *
 from .visitor import *
-from .clue_export_visitor import *
-from .clue_import_visitor import *
 from .grid import *
 from .word import *
 from .puzzle import *

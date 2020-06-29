@@ -4,11 +4,9 @@ __all__ = [
     'TestClues',
     'TestConfiguration',
     'TestDownWord',
-    'TestExportClues',
     'TestGetNumberedCells',
     'TestGrid',
     'TestGridRotate',
-    'TestImportClues',
     'TestNumberClues',
     'TestNumberedCell',
     'TestPuzzleGetNumberedCell',
@@ -29,9 +27,7 @@ from .test_get_numbered_cells import *
 from .test_across_word import *
 from .test_clues import *
 from .test_down_word import *
-from .test_export_clues import *
 from .test_grid_rotate import *
-from .test_import_clues import *
 from .test_number_clues import *
 from .test_numbered_cell import *
 from .test_puzzle_get_numbered_cell import *
