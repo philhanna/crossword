@@ -20,11 +20,11 @@ def puzzle_screen():
     # Get the clues
     clues = {
         "across": [
-            {"seq": seq, "text": word.get_clue() or ""}
+            {"seq": seq, "text": word.get_clue() or "\xA0"*100}
             for seq, word in puzzle.across_words.items()
         ],
         "down": [
-            {"seq": seq, "text": word.get_clue() or ""}
+            {"seq": seq, "text": word.get_clue() or "\xA0"*100}
             for seq, word in puzzle.down_words.items()
         ],
     }
