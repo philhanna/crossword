@@ -710,6 +710,52 @@ function getRC(event) {
   return [r, c]
 }
 
+function do_click_across_clue(seq) {
+    url = "{{ url_for('puzzle_click_across') }}?seq=" + seq;
+    do_click_clue(url);
+}
+
+function do_click_down_clue(seq) {
+    url = "{{ url_for('puzzle_click_down') }}?seq=" + seq;
+    do_click_clue(url);
+}
+
+function do_click_clue(url) {
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+         var parmstr = this.responseText;
+         var parms = JSON.parse(this.responseText);
+
+         // Set the <h3>17 Across</h3> text
+         var elem_h3 = document.getElementById('we-heading');
+         var heading = parms.seq + " " + parms.direction + " (" + parms.length + " letters)";
+         elem_h3.innerHTML = heading;
+
+         // Set the word maxlength and value
+         var elem_word = document.getElementById('we-word');
+         elem_word.maxlength = parms.length;
+         elem_word.value = parms.text;
+
+         // Set the clue
+         var elem_clue = document.getElementById('we-clue');
+         elem_clue.value = parms.clue;
+
+         // Clear any previous select for "suggest" and turn it off
+         var elem_select = document.getElementById('we-select');
+         elem_select.innerHTML = "";
+         hideElement('we-select');
+         hideElement('we-match');
+
+         // Make the modal dialog visible
+         showElement('we-dialog');
+         elem_word.focus();
+      }
+   };
+   xhttp.open("GET", url, true);
+   xhttp.send();
+}
+
 /***************************************************************
  *  FUNCTION NAME:   do_word
  *  DESCRIPTION:     Given a mouse click, returns row and column

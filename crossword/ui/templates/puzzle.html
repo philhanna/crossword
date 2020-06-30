@@ -109,8 +109,63 @@
 </div> <!-- End of toolbar -->
 </div>
 
-<div id="puzzle-svg" class="w3-container" onclick="puzzle_click(event)">
-  {{ svgstr|safe }}
-</div>
+<div class="w3-cell-row"> <!-- Three columns: SVG, across clues, down clues -->
+
+    <!-- Image -->
+    <div    id="puzzle-svg"
+            class="w3-container w3-cell"
+            style="width:40%"
+            onclick="puzzle_click(event)">
+      {{ svgstr|safe }}
+    </div>
+
+    <style>
+      .clue-list {
+         overflow:scroll;
+         overflow-x:hidden;
+         height:436px;
+         width:95%;
+         line-height:95%;
+      }
+      .clue-list a {
+         text-decoration:none;
+      }
+      .clue-list li {
+        font-size: 11pt;
+        font-family: Verdana;
+      }
+    </style>
+    <!-- Across clues -->
+    <div class="w3-section w3-cell" style="width:30%">
+        <div class="w3-center w3-margin-bottom"><b>Across</b></div>
+        <ul id="puzzle-across-clues"
+            class="w3-ul w3-card w3-border w3-hoverable w3-pale-yellow clue-list">
+            {% for clue in clues.across %}
+            <li>
+                <a href="javascript:do_click_across_clue( {{ clue.seq }} );">
+                    {{clue.seq}}. {{clue.text}}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Down clues -->
+    <div class="w3-section w3-cell" style="width:30%">
+        <div class="w3-center w3-margin-bottom"><b>Down</b></div>
+        <ul id="puzzle-down-clues"
+            class="w3-ul w3-card w3-border w3-hoverable w3-pale-green clue-list">
+            {% for clue in clues.down %}
+            <li>
+                <a href="javascript:do_click_down_clue( {{ clue.seq }} );">
+                    {{clue.seq}}. {{clue.text}}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div> <!-- End three columns -->
+
 {% include 'word-edit.html' %}
 {% include 'footer.html' %}

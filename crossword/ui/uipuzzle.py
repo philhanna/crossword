@@ -17,6 +17,18 @@ def puzzle_screen():
     puzzle = Puzzle.from_json(session['puzzle'])
     puzzlename = session.get('puzzlename', None)
 
+    # Get the clues
+    clues = {
+        "across": [
+            {"seq": seq, "text": word.get_clue() or ""}
+            for seq, word in puzzle.across_words.items()
+        ],
+        "down": [
+            {"seq": seq, "text": word.get_clue() or ""}
+            for seq, word in puzzle.down_words.items()
+        ],
+    }
+
     # Create the SVG
     svg = PuzzleToSVG(puzzle)
     boxsize = svg.boxsize
@@ -39,6 +51,7 @@ def puzzle_screen():
                            puzzlename=puzzlename,
                            puzzletitle=puzzle.get_title(),
                            n=puzzle.n,
+                           clues=clues,
                            boxsize=boxsize,
                            svgstr=svgstr)
 
@@ -222,37 +235,45 @@ def puzzle_click_down():
 def puzzle_click(direction):
     """ Common REST method used by both puzzle_click_across and puzzle_click_down """
 
-    # Get the row and column clicked from the query parms
-    r = int(request.args.get('r'))
-    c = int(request.args.get('c'))
+    # Get the seq or row and column clicked from the query parms
+
+    r = request.args.get('r', None)
+    c = request.args.get('c', None)
+    seq = request.args.get('seq', None)
 
     # Get the existing puzzle from the session
     puzzle = Puzzle.from_json(session['puzzle'])
 
-    # Get the numbered cell at (r, c)
-    numbered_cell = puzzle.get_numbered_cell(r, c)
-    if not numbered_cell:
-        errmsg = f"({r},{c}) is not a numbered cell"
-        response = make_response(errmsg, HTTPStatus.NOT_FOUND)
-        return response
+    if r is not None and c is not None:
+        r = int(r)
+        c = int(c)
+        # Get the numbered cell at (r, c)
+        numbered_cell = puzzle.get_numbered_cell(r, c)
+        if not numbered_cell:
+            errmsg = f"({r},{c}) is not a numbered cell"
+            response = make_response(errmsg, HTTPStatus.NOT_FOUND)
+            return response
+        seq = numbered_cell.seq
+    elif seq is not None:
+        seq = int(seq)
 
-    # Get the word word at (r, c)
+    # Get the word
     if direction.startswith('A'):
-        word = puzzle.get_across_word(numbered_cell.seq)
+        word = puzzle.get_across_word(seq)
         if not word:
-            errmsg = f"({r},{c}) is not the start of an across word"
+            errmsg = f"(Not the start of an across word"
             response = make_response(errmsg, HTTPStatus.NOT_FOUND)
             return response
     else:
-        word = puzzle.get_down_word(numbered_cell.seq)
+        word = puzzle.get_down_word(seq)
         if not word:
-            errmsg = f"({r},{c}) is not the start of a down word"
+            errmsg = f"(Not the start of a down word"
             response = make_response(errmsg, HTTPStatus.NOT_FOUND)
             return response
         pass
 
     # Save seq, direction, and length in the session
-    session['seq'] = numbered_cell.seq
+    session['seq'] = seq
     session['direction'] = direction
     session['length'] = word.length
 
@@ -266,7 +287,7 @@ def puzzle_click(direction):
 
     # Store parameters in a JSON string
     parms = {
-        "seq": numbered_cell.seq,
+        "seq": seq,
         "direction": direction,
         "text": text,
         "clue": clue,
