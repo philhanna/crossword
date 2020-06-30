@@ -1,8 +1,6 @@
 # Crossword utilities
-
 import os.path
 from datetime import datetime
-
 
 
 def list_puzzles(puzzles_root):
@@ -20,11 +18,15 @@ def list_puzzles(puzzles_root):
         line = f"{mtimestr} {puzzlename}"
         print(line)
 
-
 __all__ = [
-    'list_puzzles'
+    'list_puzzles', 'ClueExportVisitor', 'ClueImportVisitor'
 ]
 from .clue_export import *
+from .clue_export_visitor import *
 from .clue_import import *
+from .clue_import_visitor import *
 from .normalize_wordlist import *
 from .split_wordlist import *
+
+
+

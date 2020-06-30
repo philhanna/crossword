@@ -4,6 +4,7 @@ import os
 
 from crossword import Configuration, Puzzle
 from crossword.util import list_puzzles
+from clue_import_visitor import ClueImportVisitor
 
 
 def main(args):

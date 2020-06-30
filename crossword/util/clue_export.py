@@ -5,6 +5,7 @@ import os
 from crossword import Configuration
 from crossword import Puzzle
 from crossword.util import list_puzzles
+from clue_export_visitor import ClueExportVisitor
 
 
 def main(args):
@@ -62,8 +63,4 @@ if __name__ == '__main__':
                         help="Input JSON file containing puzzle", default=None)
     args = parser.parse_args()
 
-    try:
-        main(args)
-    except Exception as e:
-        print(e)
-        exit(-2)
+    main(args)
