@@ -33,17 +33,37 @@ If you do not already have it installed, see the
 From a command prompt in your **user home directory** (referred to
 below as `$HOME`), do the following:
 ```
+# If this is the first time you have downloaded the software
+# onto this computer, clone it from the GitHub repository
+# like this:
+
 cd $HOME
 git clone https://github.com/philhanna/crossword
-cd crossword
-pip install -r requirements.txt
+
+# If you are upgrading to a newer version, you only need
+# to run "git pull" from the crossword directory
+
+cd $HOME/crossword
+git pull
 ```
-This last step (install requirements.txt) installs the
+
+After this, do the following to install the application:
+```
+pip install -r requirements.txt
+pip install .
+```
+The `pip install -r requirements.txt` step installs the
 following, if required:
 - The [Flask](https://flask.palletsprojects.com/en/1.1.x/) package,
 for running the web application.
 - The [Flask-Session](https://flasksession.readthedocs.io/en/latest/)
 package, which provides support for server-side sessions.
+
+The `pip install .` command (**note the dot!**) actually installs
+the application in your Python system.
+
+**NOTE: If pip warns you that you are using an out of date version,
+it will tell you a command to run to upgrade it.  Do so.**
 
 ### Configuration
 
@@ -74,12 +94,14 @@ to some convenient place, such as the following:
 
 MacOS/Linux:
 ```
-/home/myuserid/.local/share/crossword
+cd $HOME/crossword
+cp -r samples/* ~/.local/share/crossword
 ```
 
 Windows:
 ```
-C:\Users\myuserid\AppData\local\crossword
+cd %USERPROFILE%\crossword
+xcopy samples\* %USERPROFILE%\AppData\Local\crossword /side
 ```
 
 #### crossword_config.ini file
@@ -130,7 +152,7 @@ The Python program that runs the application is named `webapp.py`.
 It uses Flask to run a small HTTP server that you connect to with
 a web browser.
 
-To start the HTTP server, run `webapp.py`, as follows:
+To start the HTTP server, run `main.py`, as follows:
 
 MacOS/Linux:
 ```
@@ -140,7 +162,7 @@ python3 crossword/ui/main.py
 
 Windows:
 ```bat
-C:> cd $HOME\crossword
+C:> cd %USERPROFILE%\crossword
 C:> python crossword/ui/main.py
 ```
 
