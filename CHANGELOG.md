@@ -5,9 +5,57 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Table of contents
+- [Version 2.2.0 - 2020/06/30](#version-220---20200630)
 - [Version 2.1.4 - 2020/06/23](#version-214---20200623)
 - [Version 2.0.0 - 2020/06/21](#version-200---20200621)
 - [Version 1.4.0 - 2020/06/14](#version-140---20200614)
+
+## Version 2.2.0 - 2020/06/30
+
+The main feature of this release is the UI upgrade to the `puzzle.html`
+screen, which now shows the clues on the same screen when the puzzle
+editing is done (see Issue #99).
+
+### Added
+
+- Issue #90: JSON representation of puzzles and grids is no longer indented
+- Added this **CHANGELOG.md**
+- Added ability to scale the SVG (for preview)
+- Added ability to have multiple actions in grid and puzzle choosers
+- Issue #94: Added preview to grid chooser
+- Issue #95: Added preview to puzzle chooser
+- Issue #99: Show clues on puzzle screen
+- Bumped the version number to 2.2.0
+
+### Changed
+
+- Refactored attribute names in `NumberedCell` (Issue #91)
+- Use list comprehension in wordlist.lookup
+- Added word count to preview screens (Issue #96)
+- Moved clue import and export visitors to `util` subdirectory
+
+### Fixed
+
+- Issue #97: Added preview icon to PuzzleNew dialog
+- Issue #98: Do not clear clue if word is blank
+
+7d01c2a - Phil Hanna, 2020-06-30 4 hours ago : Pad empty clues with x'A0' so they are clickable
+262e98f - Phil Hanna, 2020-06-30 6 hours ago : Fix for issue #99
+4e94b38 - Phil Hanna, 2020-06-29 20 hours ago : Added imports for ClueExportVisitor and ClueImportVisitor
+03b8d20 - Phil Hanna, 2020-06-29 21 hours ago : Merge branch 'dev'
+8f27267 - Phil Hanna, 2020-06-29 31 hours ago : Refactored import/export clues
+db6c5b2 - Phil Hanna, 2020-06-29 31 hours ago : Refactored import/export clues
+
+
+
+
+
+
+
+
+
+
+
 
 ## Version 2.1.4 - 2020/06/23
 
