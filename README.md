@@ -49,8 +49,8 @@ git pull
 
 After this, do the following to install the application:
 ```
-pip install -r requirements.txt
-pip install .
+python -m pip install -r requirements.txt
+python -m pip install .
 ```
 The `pip install -r requirements.txt` step installs the
 following, if required:
@@ -61,9 +61,6 @@ package, which provides support for server-side sessions.
 
 The `pip install .` command (**note the dot!**) actually installs
 the application in your Python system.
-
-**NOTE: If pip warns you that you are using an out of date version,
-it will tell you a command to run to upgrade it.  Do so.**
 
 ### Configuration
 
