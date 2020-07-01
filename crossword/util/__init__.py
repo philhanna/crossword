@@ -19,14 +19,13 @@ def list_puzzles(puzzles_root):
         print(line)
 
 __all__ = [
-    'list_puzzles', 'ClueExportVisitor', 'ClueImportVisitor'
+    'list_puzzles', 'ClueExport', 'ClueImport', 'ClueExportVisitor', 'ClueImportVisitor'
 ]
-from .clue_export import *
 from .clue_export_visitor import *
-from .clue_import import *
 from .clue_import_visitor import *
 from .normalize_wordlist import *
 from .split_wordlist import *
-
+from .clue_export import *
+from .clue_import import *
 
 

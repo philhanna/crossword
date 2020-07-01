@@ -9,17 +9,6 @@ class NumberedCell:
     3. Both
     """
 
-    @staticmethod
-    def from_json(jsonstr):
-        obj = json.loads(jsonstr)
-        return NumberedCell(
-            obj['seq'],
-            obj['r'],
-            obj['c'],
-            obj['a'],
-            obj['d']
-        )
-
     def __init__(self, seq, r, c, a=0, d=0):
         self.seq = seq
         self.r = r
@@ -34,6 +23,21 @@ class NumberedCell:
     def contains_down(self, r, c):
         result = c == self.c and r < self.c + self.d
         return result
+
+    @staticmethod
+    def from_json(jsonstr):
+        obj = json.loads(jsonstr)
+        return NumberedCell(
+            obj['seq'],
+            obj['r'],
+            obj['c'],
+            obj.get('a', 0),
+            obj.get('d', 0)
+        )
+
+    def to_json(self):
+        jsonstr = json.dumps(vars(self))
+        return jsonstr
 
     def __eq__(self, other):
         return self.seq == other.seq and \
