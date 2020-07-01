@@ -21,3 +21,6 @@ from .to_svg import *
 from .puzzle_publish_acrosslite import *
 from .puzzle_publish_nytimes import *
 from .wordlist import *
+
+from pkg_resources import get_distribution
+__version__ = get_distribution('crossword').version
