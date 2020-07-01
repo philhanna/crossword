@@ -149,6 +149,11 @@
             {% endfor %}
         </ul>
     </div>
+    {% if scrollTopAcross %}
+    <script>
+        document.getElementById('puzzle-across-clues').scrollTop = {{ scrollTopAcross }};
+    </script>
+    {% endif %}
 
     <!-- Down clues -->
     <div class="w3-section w3-cell">
@@ -164,6 +169,11 @@
             {% endfor %}
         </ul>
     </div>
+    {% if scrollTopDown %}
+    <script>
+        document.getElementById('puzzle-down-clues').scrollTop = {{ scrollTopDown }};
+    </script>
+    {% endif %}
 
 </div> <!-- End three columns -->
 

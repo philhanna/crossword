@@ -52,6 +52,8 @@ def puzzle_screen():
                            puzzletitle=puzzle.get_title(),
                            n=puzzle.n,
                            clues=clues,
+                           scrollTopAcross=session.get('scrollTopAcross', None),
+                           scrollTopDown=session.get('scrollTopDown', None),
                            boxsize=boxsize,
                            svgstr=svgstr)
 
@@ -223,12 +225,16 @@ def puzzle_delete():
 def puzzle_click_across():
     """ Handles a puzzle click across request """
 
+    scrollTop = request.args.get('scrollTop', None)
+    session['scrollTopAcross'] = scrollTop
     return puzzle_click('Across')
 
 
 def puzzle_click_down():
     """ Handles a puzzle click down request """
 
+    scrollTop = request.args.get('scrollTop', None)
+    session['scrollTopDown'] = scrollTop
     return puzzle_click('Down')
 
 

@@ -711,12 +711,16 @@ function getRC(event) {
 }
 
 function do_click_across_clue(seq) {
-    url = "{{ url_for('puzzle_click_across') }}?seq=" + seq;
+    elem_ul = document.getElementById('puzzle-across-clues')
+    v = elem_ul.scrollTop;
+    url = "{{ url_for('puzzle_click_across') }}?seq=" + seq + "&scrollTop=" + v;
     do_click_clue(url);
 }
 
 function do_click_down_clue(seq) {
-    url = "{{ url_for('puzzle_click_down') }}?seq=" + seq;
+    elem_ul = document.getElementById('puzzle-down-clues')
+    v = elem_ul.scrollTop;
+    url = "{{ url_for('puzzle_click_down') }}?seq=" + seq + "&scrollTop=" + v;
     do_click_clue(url);
 }
 
