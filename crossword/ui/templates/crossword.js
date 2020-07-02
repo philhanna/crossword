@@ -980,6 +980,14 @@ function do_puzzle_publish_acrosslite() {
  ***************************************************************/
 function do_suggest_word() {
 
+   var elem_match = document.getElementById('we-match');
+   var state = elem_match.style.display;
+   if (state == 'block') {
+       hideElement('we-match');
+       hideElement('we-select');
+       return;
+   }
+
    // Get the pattern
    var elem_word = document.getElementById('we-word');
    var pattern = elem_word.value;

@@ -23,17 +23,28 @@
 <!-- form section -->
 <div class="w3-section">
 
-<div class="w3-bar w3-border w3-blue-gray">
-  <div class="w3-bar-item w3-button" onclick="do_suggest_word()">Suggest</div>
-  <div class="w3-bar-item" id="we-match" style="display:none"></div>
-  <select name="words"
-          id="we-select"
-          class="w3-bar-item"
-          style="display:none"
-          onchange="do_select_changed()"
-          onclick="do_select_changed()" >
-  </select>
-</div>
+    <div class="w3-bar w3-border"> <!-- Toolbar -->
+        <!-- Suggest -->
+        <a class="w3-bar-item w3-button crosstb" onclick="do_suggest_word()">
+            <i class="material-icons crosstb-icon">search</i>
+            <span>Suggest</span>
+        </a>
+        <div class="w3-bar-item" id="we-match" style="display:none"></div>
+        <select name="words"
+                id="we-select"
+                class="w3-bar-item"
+                style="display:none"
+                onchange="do_select_changed()"
+                onclick="do_select_changed()" >
+        </select>
+
+        <!-- Reset -->
+        <a class="w3-bar-item w3-button crosstb" onclick="do_word_reset()">
+            <i class="material-icons crosstb-icon">cached</i>
+            <span>Reset</span>
+        </a>
+
+    </div> <!-- End of toolbar -->
 
 <!-- Input word -->
 <p style="width:50%">
@@ -72,12 +83,6 @@ style="width:100px"
 type="button"
 onclick="hideElement('we-dialog');"
 >Cancel</button>
-
-<button  class="w3-button w3-border w3-round w3-gray"
-style="width:100px"
-type="button"
-onclick="do_word_reset()"
->Reset</button>
 
 </div> <!-- End of button container -->
 </div> <!-- End of form section -->
