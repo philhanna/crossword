@@ -1,0 +1,29 @@
+/* h1 { text-align: center; } */
+
+/* Used in grid-choose.html and puzzle-choose.html */
+#grid-list, #puzzle-list {
+    overflow:scroll;
+    overflow-x:hidden;
+    height:350px;
+}
+
+/* Used in grid.html and puzzle.html */
+.crosstb {
+    vertical-align: top;
+    font-size: 12px;
+}
+.crosstb-icon { font-size: 15px; }
+  .clue-list {
+     overflow:scroll;
+     overflow-x:hidden;
+     height:436px;
+     width:95%;
+     line-height:95%;
+  }
+  .clue-list a {
+     text-decoration:none;
+  }
+  .clue-list li {
+    font-size: 11pt;
+    font-family: Verdana;
+  }
