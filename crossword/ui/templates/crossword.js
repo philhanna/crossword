@@ -594,6 +594,7 @@ function do_puzzle_open() {
         elem_a.style.textDecoration = "none"; // No underline
         return elem_a;
     }
+
     function_list.push(preview_anchor);
 
     function open_anchor(puzzlename) {
@@ -604,6 +605,7 @@ function do_puzzle_open() {
         elem_a.appendChild(document.createTextNode(puzzlename));
         return elem_a;
     }
+
     function_list.push(open_anchor);
 
     puzzle_chooser_ajax(function_list);
