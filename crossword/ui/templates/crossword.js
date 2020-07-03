@@ -798,7 +798,7 @@ function do_word(event, url) {
             elem_word.focus();
         }
     };
-    url = `${url}?r=${r}&${c}`;
+    url = `${url}?r=${r}&c=${c}`;
     xhttp.open("GET", url, true);
     xhttp.send();
 }
