@@ -16,16 +16,16 @@ class TestWordList(TestCase):
         self.assertEqual(expected, actual)
 
     def test_wildfirst(self):
-        expected = ['ATS', 'ITS']
+        expected = ['ATS', 'ITS', 'QTS', 'STS']
         actual = self.wordlist.lookup(".ts")
         self.assertEqual(expected, actual)
 
     def test_wildfirst_space(self):
-        expected = ['ATS', 'ITS']
+        expected = ['ATS', 'ITS', 'QTS', 'STS']
         actual = self.wordlist.lookup(" ts")
         self.assertEqual(expected, actual)
 
     def test_wildfirst_qmark(self):
-        expected = ['ATS', 'ITS']
+        expected = ['ATS', 'ITS', 'QTS', 'STS']
         actual = self.wordlist.lookup("?ts")
         self.assertEqual(expected, actual)
