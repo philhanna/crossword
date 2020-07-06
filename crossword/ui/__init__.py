@@ -37,7 +37,26 @@ __all__ = [
     'wordlists',
     'word_edit',
     'word_reset',
+    'get_filelist',
 ]
+
+
+def get_filelist(rootdir):
+    """ Returns the list of JSON files in the specified directory.
+
+    :param rootdir the root directory
+    :returns the list of base file names, sorted with most recently updated first
+    """
+    filelist = []
+    for filename in os.listdir(rootdir):
+        if filename.endswith(".json"):
+            fullpath = os.path.join(rootdir, filename)
+            filetime = os.path.getmtime(fullpath)
+            basename = os.path.splitext(filename)[0]
+            filelist.append(f"{filetime}|{basename}")
+    filelist.sort(reverse=True)
+    filelist = [filename.split('|', 2)[1] for filename in filelist]
+    return filelist
 
 from .uigrid import *
 from .uimain import *

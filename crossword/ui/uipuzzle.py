@@ -7,7 +7,8 @@ from http import HTTPStatus
 
 from flask import session, redirect, render_template, request, url_for, flash, make_response
 
-from crossword import Puzzle, PuzzleToSVG, Configuration, Grid
+from crossword import Puzzle, PuzzleToSVG, Configuration, Grid, sha256
+from crossword.ui import get_filelist
 
 
 def puzzle_screen():
@@ -78,7 +79,7 @@ def puzzle_new():
     # Save puzzle in the session
     jsonstr = puzzle.to_json()
     session['puzzle'] = jsonstr
-    session['puzzle.initial'] = jsonstr
+    session['puzzle.initial.sha'] = sha256(jsonstr)
 
     # Remove any leftover puzzle name in the session
     session.pop('puzzlename', None)
@@ -101,7 +102,7 @@ def puzzle_open():
 
     # Store the puzzle and puzzle name in the session
     session['puzzle'] = jsonstr
-    session['puzzle.initial'] = jsonstr
+    session['puzzle.initial.sha'] = sha256(jsonstr)
     session['puzzlename'] = puzzlename
 
     return redirect(url_for('puzzle_screen'))
@@ -127,7 +128,7 @@ def puzzle_preview():
     svgstr = svgobj.generate_xml()
 
     obj = {
-        "puzzlename" : puzzlename,
+        "puzzlename": puzzlename,
         "width": width,
         "wordcount": puzzle.get_word_count(),
         "svgstr": svgstr
@@ -177,10 +178,10 @@ def puzzle_save_common(puzzlename):
         # Send message about the save
         flash(f"Puzzle saved as {puzzlename}")
 
-        # Store the saved version of the puzzle in the session
-        # as 'puzzle.initial' so that we can detect whether
-        # it has been changed since it was last saved
-        session['puzzle.initial'] = jsonstr
+        # Store the sha of the saved version of the puzzle
+        # in the session as 'puzzle.initial.sha' so that we can
+        # detect whether it has been changed since it was last saved
+        session['puzzle.initial.sha'] = sha256(jsonstr)
 
     # Show the puzzle screen
     return redirect(url_for('puzzle_screen'))
@@ -314,9 +315,9 @@ def puzzle_changed():
 
     # Compare the original puzzle loaded to its current values.
     # Return True if they are different, False if they are the same.
-    jsonstr_initial = session.get('puzzle.initial', None)
-    jsonstr_current = session.get('puzzle', None)
-    changed = not (jsonstr_current == jsonstr_initial)
+    jsonstr_initial_sha = session.get('puzzle.initial.sha', sha256(None))
+    jsonstr_current_sha = sha256(session.get('puzzle', None))
+    changed = not (jsonstr_current_sha == jsonstr_initial_sha)
 
     obj = {"changed": changed}
 
@@ -359,21 +360,12 @@ def puzzle_redo():
     return redirect(url_for('puzzle_screen'))
 
 
-
 def puzzles():
     """ REST method to return a list of all puzzles """
 
     # Make a list of all the saved puzzles
-    puzzlelist = []
     rootdir = Configuration.get_puzzles_root()
-    for filename in os.listdir(rootdir):
-        if filename.endswith(".json"):
-            fullpath = os.path.join(rootdir, filename)
-            filetime = os.path.getmtime(fullpath)
-            basename = os.path.splitext(filename)[0]
-            puzzlelist.append(f"{filetime}|{basename}")
-    puzzlelist.sort(reverse=True)
-    puzzlelist = [puzzlename.split('|', 2)[1] for puzzlename in puzzlelist]
+    puzzlelist = get_filelist(rootdir)
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)

@@ -6,7 +6,8 @@ from http import HTTPStatus
 
 from flask import redirect, request, session, url_for, flash, make_response, render_template
 
-from crossword import Configuration, Grid, GridToSVG
+from crossword import Configuration, Grid, GridToSVG, sha256
+from crossword.ui import get_filelist
 
 
 def grid_screen():
@@ -54,7 +55,7 @@ def grid_new():
     grid = Grid(n)
     jsonstr = grid.to_json()
     session['grid'] = jsonstr
-    session['grid.initial'] = jsonstr
+    session['grid.initial.sha'] = sha256(jsonstr)
 
     return redirect(url_for('grid_screen'))
 
@@ -75,7 +76,7 @@ def grid_open():
 
     # Store the grid and grid name in the session
     session['grid'] = jsonstr
-    session['grid.initial'] = jsonstr
+    session['grid.initial.sha'] = sha256(jsonstr)
     session['gridname'] = gridname
 
     return redirect(url_for('grid_screen'))
@@ -152,10 +153,10 @@ def grid_save_common(gridname):
         # Send message about save
         flash(f"Grid saved as {gridname}")
 
-        # Store the saved version of the grid in the session
-        # as 'grid.initial' so that we can detect whether
-        # it has been changed since it was last saved
-        session['grid.initial'] = jsonstr
+        # Store the sha256 of the saved version of the grid
+        # in the session as 'grid.initial.sha' so that we can detect
+        # whether it has been changed since it was last saved
+        session['grid.initial.sha'] = sha256(jsonstr)
 
     # Show the grid screen
     return redirect(url_for('grid_screen'))
@@ -231,9 +232,9 @@ def grid_changed():
 
     # Compare the original grid loaded to its current values.
     # Return True if they are different, False if they are the same.
-    jsonstr_initial = session.get('grid.initial', None)
-    jsonstr_current = session.get('grid', None)
-    changed = not (jsonstr_current == jsonstr_initial)
+    jsonstr_initial_sha = session.get('grid.initial.sha', sha256(None))
+    jsonstr_current_sha = sha256(session.get('grid', None))
+    changed = not (jsonstr_current_sha == jsonstr_initial_sha)
     obj = {"changed": changed}
 
     # Send this back to the client in JSON
@@ -258,16 +259,8 @@ def grids():
     """ REST method to return the list of grids """
 
     # Make a list of all the saved grids
-    gridlist = []
     rootdir = Configuration.get_grids_root()
-    for filename in os.listdir(rootdir):
-        if filename.endswith(".json"):
-            fullpath = os.path.join(rootdir, filename)
-            filetime = os.path.getmtime(fullpath)
-            basename = os.path.splitext(filename)[0]
-            gridlist.append(f"{filetime}|{basename}")
-    gridlist.sort(reverse=True)
-    gridlist = [gridname.split('|', 2)[1] for gridname in gridlist]
+    gridlist = get_filelist(rootdir)
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
