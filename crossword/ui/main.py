@@ -1,12 +1,16 @@
 """ Top-level script for the crossword editor web UI.
 Contains only routing directives to handler functions
 """
+import logging
 from flask import Flask
 from flask_session import Session
 from crossword.ui import *
 
-# Imports of crossword classes
+# Start logging
+logging.basicConfig(level=logging.INFO)
+logging.info("Starting crossword server")
 
+# Create app
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 app.config["DEBUG"] = True
