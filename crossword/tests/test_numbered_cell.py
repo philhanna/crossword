@@ -76,7 +76,6 @@ class TestNumberedCell(TestCase):
         nc2 = NumberedCell.from_json(jsonstr)
         self.assertEqual(nc1, nc2)
 
-    @unittest.skip("Only while debugging")
-    def test_print_json(self):
+    def notest_print_json(self):
         nc = NumberedCell(17, 3, 2, 4, 5)
         print(f"DEBUG: json={nc.to_json()}")

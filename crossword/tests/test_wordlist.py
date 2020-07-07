@@ -7,11 +7,11 @@ class TestWordList(TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        filename = Configuration().get_words_filename()
+        filename = Configuration.get_words_filename()
         self.wordlist = WordList(filename)
 
     def test_wildcards(self):
-        expected = ['DASH', 'DISH', 'DOTH']
+        expected = ['DASH', 'DINH', 'DISH', 'DOTH']
         actual = self.wordlist.lookup("d..h")
         self.assertEqual(expected, actual)
 
