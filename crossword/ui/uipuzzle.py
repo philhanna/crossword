@@ -1,14 +1,16 @@
 """ Handles requests having to do with puzzles
 """
 import json
-import os
+import logging
 import re
+import sqlite3
+from datetime import datetime
 from http import HTTPStatus
 
 from flask import session, redirect, render_template, request, url_for, flash, make_response
 
-from crossword import Puzzle, PuzzleToSVG, Configuration, Grid, sha256
-from crossword.ui import get_filelist
+from crossword import Puzzle, PuzzleToSVG, Grid, sha256, dbfile
+from crossword.ui import puzzle_load_common
 
 
 def puzzle_screen():
@@ -67,10 +69,30 @@ def puzzle_new():
 
     # Open the corresponding file and read its contents as json
     # and recreate the grid from it
-    rootdir = Configuration.get_grids_root()
-    filename = os.path.join(rootdir, gridname + ".json")
-    with open(filename) as fp:
-        jsonstr = fp.read()
+    userid = 1      # TODO replace hard-coded user ID
+    with sqlite3.connect(dbfile()) as con:
+        con.row_factory = sqlite3.Row
+        try:
+            c = con.cursor()
+            c.execute('''
+                SELECT      jsonstr
+                FROM        grids
+                WHERE       userid = ?
+                AND         gridname = ?
+            ''', (userid, gridname))
+            row = c.fetchone()
+            jsonstr = row['jsonstr']
+        except sqlite3.Error as e:
+            msg = (
+                f"Unable to load grid"
+                f", userid={userid}"
+                f", gridname={gridname}"
+                f", error={e}"
+            )
+            logging.warning(msg)
+            flash(msg)
+            jsonstr = None
+
     grid = Grid.from_json(jsonstr)
 
     # Now pass this grid to the Puzzle() constructor
@@ -95,10 +117,8 @@ def puzzle_open():
 
     # Open the corresponding file and read its contents as json
     # and recreate the puzzle from it
-    rootdir = Configuration.get_puzzles_root()
-    filename = os.path.join(rootdir, puzzlename + ".json")
-    with open(filename) as fp:
-        jsonstr = fp.read()
+    userid = 1  # TODO Replace hard coded user id
+    jsonstr = puzzle_load_common(userid, puzzlename)
 
     # Store the puzzle and puzzle name in the session
     session['puzzle'] = jsonstr
@@ -116,15 +136,13 @@ def puzzle_preview():
 
     # Open the corresponding file and read its contents as json
     # and recreate the puzzle from it
-    rootdir = Configuration.get_puzzles_root()
-    filename = os.path.join(rootdir, puzzlename + ".json")
-    with open(filename) as fp:
-        jsonstr = fp.read()
+    userid = 1  # TODO Replace hard coded user id
+    jsonstr = puzzle_load_common(userid, puzzlename)
     puzzle = Puzzle.from_json(jsonstr)
 
     scale = 0.75
     svgobj = PuzzleToSVG(puzzle, scale=scale)
-    width = (svgobj.boxsize * puzzle.n + 32) * scale;
+    width = (svgobj.boxsize * puzzle.n + 32) * scale
     svgstr = svgobj.generate_xml()
 
     obj = {
@@ -170,10 +188,108 @@ def puzzle_save_common(puzzlename):
                     flash("   " + message)
     else:
         # Save the file
-        rootdir = Configuration.get_puzzles_root()
-        filename = os.path.join(rootdir, puzzlename + ".json")
-        with open(filename, "w") as fp:
-            fp.write(jsonstr)
+        userid = 1  # TODO Replace hard coded user id
+        with sqlite3.connect(dbfile()) as con:
+            con.row_factory = sqlite3.Row
+            c = con.cursor()
+
+            # Check whether this will be an insert or an update
+            try:
+                c.execute('''
+                    SELECT  count(*) as count, id
+                    FROM    puzzles
+                    WHERE   userid = ?
+                    AND     puzzlename = ?
+                ''', (userid, puzzlename))
+            except sqlite3.Error as e:
+                msg = (
+                    f"Unable to determine whether puzzle exists"
+                    f", userid={userid}"
+                    f", puzzlename={puzzlename}"
+                    f", error={e}"
+                )
+                logging.warning(msg)
+            finally:
+                pass
+
+            row = c.fetchone()
+            count = row['count']
+            id = row['id']
+            msg = (
+                f"Number of rows in puzzles"
+                f", userid={userid}"
+                f", puzzlename={puzzlename}"
+                f", count={count}"
+            )
+            logging.debug(msg)
+
+            # New record - insert
+            if count == 0:
+                logging.debug(f"Inserting puzzle '{puzzlename}' into puzzles table")
+                created = modified = datetime.now().isoformat()
+                try:
+                    c.execute('''
+                        INSERT INTO puzzles
+                        (userid, puzzlename, created, modified, jsonstr)
+                        VALUES(?, ?, ?, ?, ?)
+                    ''', (userid, puzzlename, created, modified, jsonstr))
+                    con.commit()
+                    id = c.lastrowid
+                    msg = (
+                        f"Inserted puzzle {id} into puzzles"
+                        f", userid={userid}"
+                        f", puzzlename={puzzlename}"
+                    )
+                    logging.debug(msg)
+                except sqlite3.Error as e:
+                    msg = (
+                        f"Unable to insert new puzzle into puzzles"
+                        f", userid={userid}"
+                        f", puzzlename={puzzlename}"
+                        f", error={e}"
+                    )
+                    logging.warning(msg)
+                finally:
+                    pass
+
+            # Existing record - just update
+            elif count == 1:
+                logging.debug(f"Updating puzzle '{puzzlename}'")
+                modified = datetime.now().isoformat()
+                try:
+                    c.execute('''
+                        UPDATE  puzzles
+                        SET     modified = ?, jsonstr = ?
+                        WHERE   userid = ?
+                        AND     puzzlename = ?
+                        ''', (modified, jsonstr, userid, puzzlename))
+                    con.commit()
+                    msg = (
+                        f"Updated puzzle {id}"
+                        f", userid={userid}"
+                        f", puzzlename={puzzlename}"
+                    )
+                    logging.debug(msg)
+                except sqlite3.Error as e:
+                    msg = (
+                        f"Unable to update puzzle"
+                        f", userid={userid}"
+                        f", puzzlename={puzzlename}"
+                        f", error={e}"
+                    )
+                    logging.warning(msg)
+                finally:
+                    pass
+
+            else:
+                msg = (
+                    f"SELECT statement in puzzle_save_common"
+                    f", userid={userid}"
+                    f", puzzlename={puzzlename}"
+                    f", returned {count} rows"
+                )
+                logging.warning(msg)
+                pass
 
         # Send message about the save
         flash(f"Puzzle saved as {puzzlename}")
@@ -210,14 +326,29 @@ def puzzle_delete():
     # Delete the file
     puzzlename = session.get('puzzlename', None)
     if puzzlename:
-        filename = os.path.join(Configuration.get_puzzles_root(), puzzlename + ".json")
-        if os.path.exists(filename):
-            os.remove(filename)
-            flash(f"{puzzlename} puzzle deleted")
-        else:
-            flash(f"{puzzlename} was never saved - no need to delete")
-    else:
-        flash("There is no puzzle to delete")
+        with sqlite3.connect(dbfile()) as con:
+            c = con.cursor()
+            userid = 1  # TODO remove hard-coded userID
+            try:
+                c.execute('''
+                    DELETE
+                    FROM        puzzles
+                    WHERE       userid = ?
+                    AND         puzzlename = ?
+                ''', (userid, puzzlename))
+                con.commit()
+                flash(f"{puzzlename} puzzle deleted")
+            except sqlite3.Error as e:
+                msg = (
+                    f"Unable to delete puzzle"
+                    f", userid={userid}"
+                    f", puzzlename={puzzlename}"
+                    f", error={e}"
+                )
+                logging.warning(msg)
+                flash(msg)
+            finally:
+                c.close()
 
     # Redirect to the main screen
     return redirect(url_for('main_screen'))
@@ -364,10 +495,64 @@ def puzzles():
     """ REST method to return a list of all puzzles """
 
     # Make a list of all the saved puzzles
-    rootdir = Configuration.get_puzzles_root()
-    puzzlelist = get_filelist(rootdir)
+    userid = 1      # TODO replace hard-coded user ID
+    puzzlelist = get_puzzle_list(userid)
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
+
+
+def get_puzzle_list(userid):
+    """ Returns the list of puzzle file names for the specified userid
+
+    :param userID the id of the user who owns these puzzles
+    :returns the list of base file names, sorted with most recently updated first
+    """
+    filelist = []
+    with sqlite3.connect(dbfile()) as con:
+        con.row_factory = sqlite3.Row
+        cursor = con.cursor()
+        try:
+            cursor.execute('''
+                SELECT      puzzlename, modified
+                FROM        puzzles
+                WHERE       userid = ?
+                ORDER BY    modified desc, puzzlename
+                ;
+                ''', (userid,))
+            for row in cursor.fetchall():
+                filelist.append(row['puzzlename'])
+        except sqlite3.Error as e:
+            msg = (
+                f"Unable to get list of puzzles"
+                f", userid={userid}"
+                f", error={e}"
+            )
+            logging.warning(msg)
+    return filelist
+
+
+def puzzle_load_common(userid, puzzlename):
+    """ Loads the JSON string for a puzzle """
+    with sqlite3.connect(dbfile()) as con:
+        try:
+            con.row_factory = sqlite3.Row
+            c = con.cursor()
+            c.execute('''
+                SELECT  jsonstr
+                FROM    puzzles
+                WHERE   userid=?
+                AND     puzzlename=?''', (userid, puzzlename))
+            row = c.fetchone()
+            jsonstr = row['jsonstr']
+        except sqlite3.Error as e:
+            msg = (
+                f"Unable to load puzzle"
+                f", userid={userid}"
+                f", puzzlename={puzzlename}"
+                f", error={e}"
+            )
+            jsonstr = None
+        return jsonstr

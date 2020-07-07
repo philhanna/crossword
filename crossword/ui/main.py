@@ -4,10 +4,18 @@ Contains only routing directives to handler functions
 import logging
 from flask import Flask
 from flask_session import Session
+
+from crossword import config
 from crossword.ui import *
 
 # Start logging
-logging.basicConfig(level=logging.INFO)
+log_level = config['log_level']
+log_level_number = logging.getLevelName(log_level)
+if type(log_level_number) == int:
+    logging.basicConfig(level=log_level_number)
+else:
+    logging.basicConfig(level=logging.INFO)
+    logging.warning("log_level must be CRITICAL, ERROR, WARNING, INFO, DEBUG, or NOTSET")
 logging.info("Starting crossword server")
 
 # Create app
@@ -19,7 +27,6 @@ app.config["DEBUG"] = True
 app.secret_key = b'\x8aws+6\x99\xd9\x87\xf0\xd6\xe8\xad\x9b\xfd\xed\xb9'
 
 # The following is required to add server-side session support
-
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 

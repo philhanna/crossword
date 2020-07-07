@@ -2,6 +2,7 @@
 *.pyc
 *.pyo
 *.db
+!samples.db
 __pycache__
 flask_session
 .idea/*

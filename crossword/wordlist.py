@@ -1,20 +1,32 @@
+import logging
 import re
+import sqlite3
 
-from crossword import Configuration
+from crossword import dbfile
 
 
 class WordList:
     """ Given a regular expression, returns a list of all the words that match the pattern """
 
-    def __init__(self, filename=None):
-        if not filename:
-            filename = Configuration.get_words_filename()
-        self.filename = filename
-        self.words = []
-        with open(filename, "rt") as fp:
-            for line in fp:
-                line = line.strip()
-                self.words.append(line)
+    def __init__(self):
+        words = []
+        with sqlite3.connect(dbfile()) as con:
+            c = con.cursor()
+            try:
+                c.execute('''
+                    SELECT      *
+                    FROM        WORDS
+                ''')
+                for row in c.fetchall():
+                    word = row[0]
+                    words.append(word)
+            except sqlite3.Error as e:
+                msg = (
+                    f"Error loading words:"
+                    f" {e}"
+                )
+                logging.warning(msg)
+        self.words = words
 
     def lookup(self, pattern):
         pattern = "^" + pattern + "$"

@@ -1,6 +1,8 @@
+import logging
+import sqlite3
 from io import StringIO
 
-from crossword import Configuration, Puzzle
+from crossword import Puzzle, dbfile
 
 
 def get_indent():
@@ -10,8 +12,26 @@ def get_indent():
 
 def get_author_name():
     """ Formatted string with author's name and email """
-    name = Configuration.get_author_name()
-    fullname = f"by {name}"
+    fullname = None
+    with sqlite3.connect(dbfile()) as con:
+        try:
+            c = con.cursor()
+            userid = 1      # TODO Replace hard-coded user ID
+            c.execute("""
+                SELECT      author_name
+                FROM        users
+                WHERE       id = ?
+            """, (userid, ))
+            row = c.fetchone()
+            name = row[0]
+            fullname = f"by {name}"
+        except sqlite3.Error as e:
+            msg = (
+                f"Unable to read profile for user {userid}"
+                f", error={e}"
+            )
+            logging.warning(msg)
+        pass
     return fullname
 
 

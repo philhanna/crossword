@@ -1,13 +1,14 @@
 """ Handles requests having to do with grids
 """
 import json
-import os
+import logging
+import sqlite3
+from datetime import datetime
 from http import HTTPStatus
 
 from flask import redirect, request, session, url_for, flash, make_response, render_template
 
-from crossword import Configuration, Grid, GridToSVG, sha256
-from crossword.ui import get_filelist
+from crossword import Grid, GridToSVG, sha256, dbfile
 
 
 def grid_screen():
@@ -60,6 +61,25 @@ def grid_new():
     return redirect(url_for('grid_screen'))
 
 
+def grid_load_common(userid, gridname):
+    """ Loads the JSON string for a grid """
+    with sqlite3.connect(dbfile()) as con:
+        try:
+            con.row_factory = sqlite3.Row
+            c = con.cursor()
+            c.execute('''
+                SELECT  jsonstr
+                FROM    grids
+                WHERE   userid=?
+                AND     gridname=?''', (userid, gridname))
+            row = c.fetchone()
+            jsonstr = row['jsonstr']
+        except sqlite3.Error as e:
+            logging.warning(f"Could not load grid '{gridname}' for userid {userid}")
+            jsonstr = None
+        return jsonstr
+
+
 def grid_open():
     """ Opens a new grid and redirects to grid screen """
 
@@ -68,11 +88,8 @@ def grid_open():
 
     # Open the corresponding file and read its contents as json
     # and recreate the grid from it
-    rootdir = Configuration.get_grids_root()
-    filename = os.path.join(rootdir, gridname + ".json")
-    with open(filename) as fp:
-        jsonstr = fp.read()
-    grid = Grid.from_json(jsonstr)
+    userid = 1  # TODO Replace hard coded user id
+    jsonstr = grid_load_common(userid, gridname)
 
     # Store the grid and grid name in the session
     session['grid'] = jsonstr
@@ -87,23 +104,22 @@ def grid_preview():
 
     # Get the chosen grid name from the query parameters
     gridname = request.args.get('gridname')
+    userid = 1  # TODO Replace hard coded user id
+    jsonstr = grid_load_common(userid, gridname)
 
     # Open the corresponding file and read its contents as json
     # and recreate the grid from it
-    rootdir = Configuration.get_grids_root()
-    filename = os.path.join(rootdir, gridname + ".json")
-    with open(filename) as fp:
-        jsonstr = fp.read()
+
     grid = Grid.from_json(jsonstr)
 
     scale = 0.75
     svgobj = GridToSVG(grid, scale=scale)
-    width = (svgobj.boxsize * grid.n + 32) * scale;
+    width = (svgobj.boxsize * grid.n + 32) * scale
     svgstr = svgobj.generate_xml()
 
     obj = {
-        "gridname" : gridname,
-        "wordcount" : grid.get_word_count(),
+        "gridname": gridname,
+        "wordcount": grid.get_word_count(),
         "width": width,
         "svgstr": svgstr
     }
@@ -114,7 +130,6 @@ def grid_preview():
 
 def grid_save():
     """ Saves a grid """
-
     gridname = session.get('gridname', request.args.get('gridname'))
     session['gridname'] = gridname
     return grid_save_common(gridname)
@@ -122,7 +137,6 @@ def grid_save():
 
 def grid_save_as():
     """ Saves a grid under a new name """
-
     newgridname = request.args.get('newgridname')
     return grid_save_common(newgridname)
 
@@ -145,10 +159,109 @@ def grid_save_common(gridname):
                     flash("   " + message)
     else:
         # Save the file
-        rootdir = Configuration.get_grids_root()
-        filename = os.path.join(rootdir, gridname + ".json")
-        with open(filename, "w") as fp:
-            fp.write(jsonstr)
+        userid = 1  # TODO Replace hard coded user id
+        with sqlite3.connect(dbfile()) as con:
+            con.row_factory = sqlite3.Row
+            c = con.cursor()
+
+            # Check whether this will be an insert or an update
+            try:
+                c.execute('''
+                    SELECT  count(*) as count, id
+                    FROM    grids
+                    WHERE   userid = ?
+                    AND     gridname = ?
+                ''', (userid, gridname))
+            except sqlite3.Error as e:
+                msg = (
+                    f"Unable to determine whether grid exists"
+                    f", userid={userid}"
+                    f", gridname={gridname}"
+                    f", error={e}"
+                )
+                logging.warning(msg)
+            finally:
+                pass
+
+            row = c.fetchone()
+            count = row['count']
+            id = row['id']
+            msg = (
+                f"Number of rows in grids"
+                f", userid={userid}"
+                f", gridname={gridname}"
+                f", count={count}"
+            )
+            logging.debug(msg)
+
+            # New record - insert
+            if count == 0:
+                logging.debug(f"Inserting grid '{gridname}' into grids table")
+                created = modified = datetime.now().isoformat()
+                try:
+                    c.execute('''
+                        INSERT INTO grids
+                        (userid, gridname, created, modified, jsonstr)
+                        VALUES(?, ?, ?, ?, ?)
+                    ''', (userid, gridname, created, modified, jsonstr))
+                    con.commit()
+                    id = c.lastrowid
+                    msg = (
+                        f"Inserted grid {id} into grids"
+                        f", userid={userid}"
+                        f", gridname={gridname}"
+                        f", count={count}"
+                    )
+                    logging.debug(msg)
+                except sqlite3.Error as e:
+                    msg = (
+                        f"Unable to insert new grid into grids"
+                        f", userid={userid}"
+                        f", gridname={gridname}"
+                        f", error={e}"
+                    )
+                    logging.warning(msg)
+                finally:
+                    pass
+
+            # Existing record - just update
+            elif count == 1:
+                logging.debug(f"Updating grid '{gridname}' into grids table")
+                modified = datetime.now().isoformat()
+                try:
+                    c.execute('''
+                        UPDATE  grids
+                        SET     modified = ?, jsonstr = ?
+                        WHERE   userid = ?
+                        AND     gridname = ?
+                        ''', (modified, jsonstr, userid, gridname))
+                    con.commit()
+                    msg = (
+                        f"Updated grid {id}"
+                        f", userid={userid}"
+                        f", gridname={gridname}"
+                    )
+                    logging.debug(msg)
+                except sqlite3.Error as e:
+                    msg = (
+                        f"Unable to update grid"
+                        f", userid={userid}"
+                        f", gridname={gridname}"
+                        f", error={e}"
+                    )
+                    logging.warning(msg)
+                finally:
+                    pass
+
+            else:
+                msg = (
+                    f"SELECT statement in grid_save_common"
+                    f", userid={userid}"
+                    f", gridname={gridname}"
+                    f", returned {count} rows"
+                )
+                logging.warning(msg)
+                pass
 
         # Send message about save
         flash(f"Grid saved as {gridname}")
@@ -169,14 +282,49 @@ def grid_delete():
     # Delete the file
     gridname = session.get('gridname', None)
     if gridname:
-        filename = os.path.join(Configuration.get_grids_root(), gridname + ".json")
-        if os.path.exists(filename):
-            os.remove(filename)
-            flash(f"{gridname} grid deleted")
-        else:
-            flash(f"{gridname} was never saved - no need to delete")
-    else:
-        flash("There is no grid to delete")
+        with sqlite3.connect(dbfile()) as con:
+            con.row_factory = sqlite3.Row
+            c = con.cursor()
+            userid = 1  # TODO remove hard-coded userID
+            try:
+                # Get the ID of the grid to be deleted
+                c.execute('''
+                    SELECT      id
+                    FROM        grids
+                    WHERE       userid = ?
+                    AND         gridname = ?
+                ''', (userid, gridname))
+                row = c.fetchone()
+                gridid = row['id']
+
+                # Delete by grid ID
+                c.execute('''
+                    DELETE
+                    FROM        grids
+                    WHERE       id = ?
+                ''', (gridid, ))
+
+                con.commit()
+                flash(f"{gridname} grid deleted")
+                msg = (
+                    f"Deleted grid"
+                    f", id={gridid}"
+                    f", userid={userid}"
+                    f", gridname={gridname}"
+                )
+
+            except sqlite3.Error as e:
+                msg = (
+                    f"Unable to delete grid"
+                    f", id={gridid}"
+                    f", userid={userid}"
+                    f", gridname={gridname}"
+                    f", error={e}"
+                )
+                logging.warning(msg)
+                flash(msg)
+            finally:
+                c.close()
 
     # Redirect to the main screen
     return redirect(url_for('main_screen'))
@@ -255,12 +403,42 @@ def grid_statistics():
     return resp
 
 
+def get_grid_list(userid):
+    """ Returns the list of grid file names for the specified userid
+
+    :param userID the id of the user who owns these grids
+    :returns the list of base file names, sorted with most recently updated first
+    """
+    filelist = []
+    with sqlite3.connect(dbfile()) as con:
+        con.row_factory = sqlite3.Row
+        cursor = con.cursor()
+        try:
+            cursor.execute('''
+                SELECT      gridname, modified
+                FROM        grids
+                WHERE       userid = ?
+                ORDER BY    modified desc, gridname
+                ;
+                ''', (userid,))
+            for row in cursor.fetchall():
+                filelist.append(row['gridname'])
+        except sqlite3.Error as e:
+            msg = (
+                f"Unable to get list of grids"
+                f", userid={userid}"
+                f", error={e}"
+            )
+            logging.warning(msg)
+    return filelist
+
+
 def grids():
     """ REST method to return the list of grids """
 
     # Make a list of all the saved grids
-    rootdir = Configuration.get_grids_root()
-    gridlist = get_filelist(rootdir)
+    userid = 1  # TODO replace hard-coded user ID
+    gridlist = get_grid_list(userid)
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(gridlist), HTTPStatus.OK)

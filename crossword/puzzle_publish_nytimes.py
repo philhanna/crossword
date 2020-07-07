@@ -1,8 +1,10 @@
+import logging
 import os
 import re
+import sqlite3
 import xml.etree.ElementTree as ET
 
-from crossword import Configuration, Puzzle, PuzzleToSVG
+from crossword import Puzzle, PuzzleToSVG, dbfile
 
 
 class PuzzlePublishNYTimes:
@@ -26,6 +28,54 @@ class PuzzlePublishNYTimes:
 
     def get_svg_height(self):
         return self.svg.gridsize
+
+    @staticmethod
+    def get_author_text():
+        text_list = []
+        with sqlite3.connect(dbfile()) as con:
+            con.row_factory = sqlite3.Row
+            try:
+                c = con.cursor()
+                userid = 1  # TODO Replace hard-coded user ID
+                c.execute("""
+                    SELECT      *
+                    FROM        users
+                    WHERE       id = ?
+                """, (userid,))
+                row = c.fetchone()
+
+                # Author name
+                name = row['author_name']
+                text_list.append(name)
+
+                # Address lines 1 and 2
+                addr1 = row['address_line_1']
+                addr2 = row['address_line_2']
+                addr1 = addr1.strip() if addr1 else ""
+                addr2 = addr2.strip() if addr2 else ""
+                address = f"{addr1} {addr2}".strip()
+                text_list.append(address)
+
+                # City, state, zip
+                city = row['address_city']
+                state = row['address_state']
+                zip = row['address_zip']
+                csz = f"{city}, {state} {zip}"
+                text_list.append(csz)
+
+                # Email
+                email = row['email']
+                text_list.append(email)
+
+            except sqlite3.Error as e:
+                msg = (
+                    f"Unable to read profile for user {userid}"
+                    f", error={e}"
+                )
+                logging.warning(msg)
+            pass
+
+        return text_list
 
     def generate_html(self):
         """ Generates the wrapper HTML """
@@ -56,12 +106,7 @@ tr.ds {
         elem_div.set("style", "font-family: 'sans serif'; font-size: 16pt;")
         elem_table = ET.SubElement(elem_div, "table")
 
-        for author_text in [
-            Configuration.get_author_name(),
-            Configuration.get_author_address(),
-            Configuration.get_author_city_state_zip(),
-            Configuration.get_author_email(),
-        ]:
+        for author_text in self.get_author_text():
             elem_tr = ET.SubElement(elem_table, "tr")
             elem_td = ET.SubElement(elem_tr, "td")
             elem_td.text = author_text

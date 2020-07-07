@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<title>Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<body>
+<div class="w3-container" id="lg-dialog" style="display:block">
+    <script>
+        function do_submit() {
+            console.log("DEBUG: Submitting form");
+        }
+    </script>
+    <form   class="w3-card-4
+                w3-display-middle
+                w3-pale-green
+                w3-margin-left
+                w3-margin-right"
+            id="lg-form"
+            onsubmit="do_submit()"
+            style="display:block"
+            >
+
+        <div class="w3-container">
+
+            <div class="w3-container">
+                <span   class="w3-button w3-xlarge w3-hover-green w3-display-topright"
+                        onclick="hideElement('lg-dialog')"
+                      >&times;</span>
+
+                <h2 class="w3-center">Login</h2>
+            </div>
+
+            <div class="w3-bar-block">
+                <label class="w3-bar-item" for="uname"><b>Username:</b></label>
+                <input class="w3-bar-item w3-border w3-margin-left w3-margin-right"
+                       type="text" placeholder="Enter Username"
+                       name="uname" required
+                       style="width:300px"
+                       >
+            </div>
+
+            <div class="w3-bar-block">
+                <label class="w3-bar-item" for="psw"><b>Password:</b></label>
+                <input class="w3-bar-item w3-border w3-margin-left w3-margin-right"
+                       type="password" placeholder="Enter password"
+                       name="pwd" required
+                       style="width:300px"
+                       >
+            </div>
+
+            <div class="w3-container w3-bar-block w3-center w3-padding-32">
+                <button class="w3-button w3-round-large w3-green">Login</button>
+            </div>
+
+        </div>
+    </form>
+</div>
+</body>
+</html>
