@@ -289,7 +289,7 @@ function grid_click(event) {
  *  DESCRIPTION:     Validates the n parameter for a new grid
  ***************************************************************/
 function validateNewGridForm() {
-    let n = document.forms["ng-form"]["n"].value;
+    let n = document.forms["gn-form"]["n"].value;
     if (isNaN(n)) {
         alert(n + " is not a number");
         return false;
