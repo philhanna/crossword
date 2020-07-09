@@ -1,9 +1,7 @@
 """ Handles requests having to do with publishing a puzzle
 """
-import logging
 import os
 import re
-import sqlite3
 import tempfile
 import xml.etree.ElementTree as ET
 from io import BytesIO, StringIO
@@ -11,7 +9,17 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from flask import request, make_response
 
-from crossword import Puzzle, dbfile, PuzzleToSVG
+from crossword import Puzzle, PuzzleToSVG
+from crossword.ui import DBPuzzle, DBUser
+
+userid = 1  # TODO Replace hard-coded user ID
+
+
+def puzzle_load_common(userid, puzzlename):
+    """ Loads the JSON string for a puzzle """
+    row = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
+    jsonstr = row.jsonstr
+    return jsonstr
 
 
 def puzzle_publish_acrosslite():
@@ -23,26 +31,9 @@ def puzzle_publish_acrosslite():
 
     def get_author_name():
         """ Formatted string with author's name and email """
-        fullname = None
-        with sqlite3.connect(dbfile()) as con:
-            try:
-                c = con.cursor()
-                userid = 1  # TODO Replace hard-coded user ID
-                c.execute("""
-                    SELECT      author_name
-                    FROM        users
-                    WHERE       id = ?
-                """, (userid,))
-                row = c.fetchone()
-                name = row[0]
-                fullname = f"by {name}"
-            except sqlite3.Error as e:
-                msg = (
-                    f"Unable to read profile for user {userid}"
-                    f", error={e}"
-                )
-                logging.warning(msg)
-            pass
+        row = DBUser.query.filter_by(id=userid).first()
+        author_name = row.author_name
+        fullname = f"by {author_name}"
         return fullname
 
     class PuzzlePublishAcrossLite:
@@ -162,7 +153,6 @@ def puzzle_publish_acrosslite():
 
     # Open the corresponding row in the database, read its JSON
     # and recreate the puzzle from it
-    userid = 1      # TODO replace the hard-coded user ID
     jsonstr = puzzle_load_common(userid, puzzlename)
     puzzle = Puzzle.from_json(jsonstr)
 
@@ -224,48 +214,32 @@ def puzzle_publish_nytimes():
         @staticmethod
         def get_author_text():
             text_list = []
-            with sqlite3.connect(dbfile()) as con:
-                con.row_factory = sqlite3.Row
-                try:
-                    c = con.cursor()
-                    userid = 1  # TODO Replace hard-coded user ID
-                    c.execute("""
-                        SELECT      *
-                        FROM        users
-                        WHERE       id = ?
-                    """, (userid,))
-                    row = c.fetchone()
 
-                    # Author name
-                    name = row['author_name']
-                    text_list.append(name)
+            # Query the users table for this userID
+            row = DBUser.query.filter_by(id=userid).first()
 
-                    # Address lines 1 and 2
-                    addr1 = row['address_line_1']
-                    addr2 = row['address_line_2']
-                    addr1 = addr1.strip() if addr1 else ""
-                    addr2 = addr2.strip() if addr2 else ""
-                    address = f"{addr1} {addr2}".strip()
-                    text_list.append(address)
+            # Add author name to text list
+            author_name = row.author_name
+            text_list.append(author_name)
 
-                    # City, state, zip
-                    city = row['address_city']
-                    state = row['address_state']
-                    zip = row['address_zip']
-                    csz = f"{city}, {state} {zip}"
-                    text_list.append(csz)
+            # Add address lines 1 and 2 to text list (as one line)
+            address_line_1 = row.address_line_1
+            address_line_2 = row.address_line_2
+            address_line_1 = address_line_1.strip() if address_line_1 else ""
+            address_line_2 = address_line_2.strip() if address_line_2 else ""
+            address = f"{address_line_1} {address_line_2}".strip()
+            text_list.append(address)
 
-                    # Email
-                    email = row['email']
-                    text_list.append(email)
+            # Add city, state, zip to text list (concatenated)
+            address_city = row.address_city
+            address_state = row.address_state
+            address_zip = row.address_zip
+            csz = f"{address_city}, {address_state} {address_zip}"
+            text_list.append(csz)
 
-                except sqlite3.Error as e:
-                    msg = (
-                        f"Unable to read profile for user {userid}"
-                        f", error={e}"
-                    )
-                    logging.warning(msg)
-                pass
+            # Add email to text list
+            email = row.email
+            text_list.append(email)
 
             return text_list
 
@@ -273,11 +247,9 @@ def puzzle_publish_nytimes():
             """ Generates the wrapper HTML """
 
             # Create the <html> root element
-
             elem_root = ET.Element("html")
 
             # Create the <head> element
-
             elem_head = ET.SubElement(elem_root, "head")
             elem_style = ET.SubElement(elem_head, "style")
             elem_style.text = r'''
@@ -288,11 +260,9 @@ def puzzle_publish_nytimes():
     }
     '''
             # Create the <body> element
-
             elem_body = ET.SubElement(elem_root, "body")
 
             # Write the author name and address block
-
             elem_body.append(ET.Comment(" Name and address "))
             elem_div = ET.SubElement(elem_body, "div")
             elem_div.set("style", "font-family: 'sans serif'; font-size: 16pt;")
@@ -304,7 +274,6 @@ def puzzle_publish_nytimes():
                 elem_td.text = author_text
 
             # Write the SVG calling lines
-
             elem_body.append(ET.Comment(" SVG image of the puzzle "))
             svg_file_name = os.path.basename(self.basename) + '.svg'
             elem_img = ET.SubElement(elem_body, "img")
@@ -313,7 +282,6 @@ def puzzle_publish_nytimes():
             elem_img.set("height", str(self.get_svg_height()))
 
             # Write the across clues
-
             elem_body.append(ET.Comment(" Across clues "))
             elem_div = ET.SubElement(elem_body, "div")
             elem_div.set("style", "page-break-before: always;")
@@ -396,7 +364,6 @@ def puzzle_publish_nytimes():
 
     # Open the corresponding row in the database, read its JSON
     # and recreate the puzzle from it
-    userid = 1      # TODO replace the hard-coded user ID
     jsonstr = puzzle_load_common(userid, puzzlename)
     puzzle = Puzzle.from_json(jsonstr)
 
@@ -435,27 +402,3 @@ def puzzle_publish_nytimes():
     resp.headers['Content-Type'] = "application/zip"
     resp.headers['Content-Disposition'] = f'attachment; filename="{zipfilename}"'
     return resp
-
-
-def puzzle_load_common(userid, puzzlename):
-    """ Loads the JSON string for a puzzle """
-    with sqlite3.connect(dbfile()) as con:
-        try:
-            con.row_factory = sqlite3.Row
-            c = con.cursor()
-            c.execute('''
-                SELECT  jsonstr
-                FROM    puzzles
-                WHERE   userid=?
-                AND     puzzlename=?''', (userid, puzzlename))
-            row = c.fetchone()
-            jsonstr = row['jsonstr']
-        except sqlite3.Error as e:
-            msg = (
-                f"Unable to load puzzle"
-                f", userid={userid}"
-                f", puzzlename={puzzlename}"
-                f", error={e}"
-            )
-            jsonstr = None
-        return jsonstr

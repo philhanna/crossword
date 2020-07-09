@@ -1,32 +1,20 @@
 #! /usr/bin/python3
 import csv
-import sqlite3
 from io import StringIO
 
-from crossword import Puzzle, dbfile
+from sqlalchemy import desc, asc
+
+from crossword import Puzzle
+from crossword.ui import DBPuzzle
 
 
 def list_puzzles(userid):
-    names = []
-    with sqlite3.connect(dbfile()) as con:
-        cursor = con.cursor()
-        try:
-            cursor.execute('''
-                SELECT      puzzlename, modified
-                FROM        puzzles
-                WHERE       userid = ?
-                ORDER BY    2 desc, 1
-            ''', (userid,))
-            row = cursor.fetchone()
-            name = row[0]
-            names.append(name)
-        except sqlite3.Error as e:
-            msg = (
-                f"Unable to get list of puzzles for userid {userid}"
-                f", error={e}"
-            )
-            raise RuntimeError(msg)
-    return names
+    puzzle_list = DBPuzzle.query \
+        .filter_by(userid=userid) \
+        .order_by(desc(DBPuzzle.modified), asc(DBPuzzle.puzzlename)) \
+        .all()
+    for row in puzzle_list:
+        print(f"{row.puzzlename:20s} {row.modified}")
 
 
 def visit_puzzle(puzzle):
@@ -76,25 +64,8 @@ def main(args):
         raise ValueError("No puzzle name specified")
     puzzlename = args.puzzlename
 
-    with sqlite3.connect(dbfile()) as con:
-        cursor = con.cursor()
-        try:
-            cursor.execute("""
-                SELECT      jsonstr
-                FROM        puzzles
-                WHERE       userid = ?
-                AND         puzzlename = ?
-            """, (userid, puzzlename))
-            row = cursor.fetchone()
-            jsonstr = row[0]
-            pass
-        except sqlite3.Error as e:
-            msg = (
-                f"Unable to get load puzzle {puzzlename} for userid {userid}"
-                f", error={e}"
-            )
-            raise RuntimeError(msg)
-
+    row = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
+    jsonstr = row.jsonstr
     puzzle = Puzzle.from_json(jsonstr)
 
     # Create the CSV output

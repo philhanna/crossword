@@ -1,34 +1,22 @@
 #! /usr/bin/python3
 import csv
 import os
-import sqlite3
 from datetime import datetime
 from io import StringIO
 
-from crossword import Puzzle, dbfile
+from sqlalchemy import desc, asc
+
+from crossword import Puzzle
+from crossword.ui import DBPuzzle, db
 
 
 def list_puzzles(userid):
-    names = []
-    with sqlite3.connect(dbfile()) as con:
-        cursor = con.cursor()
-        try:
-            cursor.execute('''
-                SELECT      puzzlename, modified
-                FROM        puzzles
-                WHERE       userid = ?
-                ORDER BY    2 desc, 1
-            ''', (userid,))
-            row = cursor.fetchone()
-            name = row[0]
-            names.append(name)
-        except sqlite3.Error as e:
-            msg = (
-                f"Unable to get list of puzzles for userid {userid}"
-                f", error={e}"
-            )
-            raise RuntimeError(msg)
-    return names
+    puzzle_list = DBPuzzle.query \
+        .filter_by(userid=userid) \
+        .order_by(desc(DBPuzzle.modified), asc(DBPuzzle.puzzlename)) \
+        .all()
+    for row in puzzle_list:
+        print(f"{row.puzzlename:20s} {row.modified}")
 
 
 def visit_puzzle(csvstr, puzzle):
@@ -82,26 +70,11 @@ def main(args):
     if not args.puzzle:
         raise ValueError("No puzzle name specified")
     puzzlename = args.puzzle
-
-    with sqlite3.connect(dbfile()) as con:
-        cursor = con.cursor()
-        try:
-            cursor.execute("""
-                SELECT      jsonstr
-                FROM        puzzles
-                WHERE       userid = ?
-                AND         puzzlename = ?
-            """, (userid, puzzlename))
-            row = cursor.fetchone()
-            jsonstr = row[0]
-            pass
-        except sqlite3.Error as e:
-            msg = (
-                f"Unable to get load puzzle {puzzlename} for userid {userid}"
-                f", error={e}"
-            )
-            raise RuntimeError(msg)
-
+    row = DBPuzzle.query \
+        .filter_by(userid=userid, puzzlename=puzzlename) \
+        .order_by(desc(DBPuzzle.modified), asc(DBPuzzle.puzzlename)) \
+        .first()
+    jsonstr = row.jsonstr
     puzzle = Puzzle.from_json(jsonstr)
 
     # Open the input file and load the CSV it contains.
@@ -119,24 +92,15 @@ def main(args):
     visit_puzzle(csvstr, puzzle)
 
     # Rewrite the puzzle
-    with sqlite3.connect(dbfile()) as con:
-        con.row_factory = sqlite3.Row
-        c = con.cursor
-        modified = datetime.now().isoformat()
-        jsonstr = puzzle.to_json()
-        try:
-            c.execute('''
-                UPDATE      puzzles
-                SET         modified=?, jsonstr=?
-                WHERE       userid=?
-                AND         puzzlename=?
-                ''', (modified, jsonstr, userid))
-        except sqlite3.Error as e:
-            msg = (
-                f"Could not update puzzle {puzzlename} for userid {userid}"
-                f", error={e}"
-            )
-            raise RuntimeError(msg)
+    jsonstr = puzzle.to_json()
+    modified = datetime.now().isoformat()
+    thePuzzle = DBPuzzle \
+        .query \
+        .filter_by(userid=userid, puzzlename=puzzlename) \
+        .first()
+    thePuzzle.jsonstr = jsonstr
+    thePuzzle.modified = modified
+    db.session.commit()
 
 
 #   ============================================================

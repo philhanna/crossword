@@ -1,14 +1,18 @@
 """ Top-level script for the crossword editor web UI.
 Contains only routing directives to handler functions
 """
-import logging
-from flask import Flask
 from flask_session import Session
 
 from crossword import config
-from crossword.ui import *
-
 # Start logging
+from crossword.ui import app
+from .uigrid import *
+from .uimain import *
+from .uipublish import *
+from .uipuzzle import *
+from .uiword import *
+from .uiwordlists import *
+
 log_level = config['log_level']
 log_level_number = logging.getLevelName(log_level)
 if type(log_level_number) == int:
@@ -19,7 +23,6 @@ else:
 logging.info("Starting crossword server")
 
 # Create app
-app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 app.config["DEBUG"] = True
 
@@ -78,6 +81,7 @@ app.add_url_rule('/word-reset', view_func=word_reset)
 
 # Wordlist
 app.add_url_rule('/wordlists', view_func=wordlists)
+
 
 #   ============================================================
 #   Mainline

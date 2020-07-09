@@ -3,8 +3,9 @@ import json
 import re
 from http import HTTPStatus
 
-from crossword import Word, Puzzle
 from flask import session, request, redirect, url_for, make_response
+
+from crossword import Word, Puzzle
 
 
 def word_edit():

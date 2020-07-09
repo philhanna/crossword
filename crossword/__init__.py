@@ -5,7 +5,6 @@ __all__ = [
     'Puzzle',
     'ToSVG', 'GridToSVG', 'PuzzleToSVG',
     'Visitor',
-    'WordList',
     'Word', 'AcrossWord', 'DownWord',
     'dbfile',
     'sha256',
@@ -27,7 +26,7 @@ def init_config():
     if os.path.exists(filename):
         config.read(filename)
     else:
-        msg = f"Using default configuration because .config.ini file was not found.  See README.md"
+        msg = f".config.ini file was not found. Using default configuration. See README.md"
         logging.warning(msg)
     options = {}
     for k, v in config['DEFAULT'].items():
@@ -61,4 +60,3 @@ from .grid import *
 from .word import *
 from .puzzle import *
 from .to_svg import *
-from .wordlist import *
