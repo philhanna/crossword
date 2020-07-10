@@ -4,7 +4,6 @@ __all__ = [
     'NumberedCell',
     'Puzzle',
     'ToSVG', 'GridToSVG', 'PuzzleToSVG',
-    'Visitor',
     'Word', 'AcrossWord', 'DownWord',
     'dbfile',
     'sha256',
@@ -55,7 +54,6 @@ def sha256(s):
 
 
 from .numbered_cell import *
-from .visitor import *
 from .grid import *
 from .word import *
 from .puzzle import *
