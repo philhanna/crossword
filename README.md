@@ -18,7 +18,7 @@ Depending on what is already installed on your computer,
 you may or may not have to do all these steps.
 
 ### Install python
-[Python 3.7 or greater](https://www.python.org/) is required.
+[Python 3.6 or greater](https://www.python.org/) is required.
 If you don't already have it installed, see the
 [Python downloads](https://www.python.org/downloads/release) page.
 
