@@ -92,6 +92,11 @@ class Puzzle:
         word = self.get_word(seq, direction)
         return word.get_clue()
 
+    def set_clue(self, seq, direction, clue):
+        """ Sets the clue of the word at <seq><direction> """
+        word = self.get_word(seq, direction)
+        word.set_clue(clue)
+
     def get_title(self):
         """ Returns the puzzle title """
         return self._title
