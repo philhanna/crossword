@@ -5,10 +5,55 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Table of contents
+- [Version 2.3.0 - 2020/07/10](#version-230---20200710)
 - [Version 2.2.0 - 2020/06/30](#version-220---20200630)
 - [Version 2.1.4 - 2020/06/23](#version-214---20200623)
 - [Version 2.0.0 - 2020/06/21](#version-200---20200621)
 - [Version 1.4.0 - 2020/06/14](#version-140---20200614)
+
+## Version 2.3.0 - 2020/07/10
+
+Starting with this release, grids, puzzles, configuration,
+and words are stored in a database, rather than files in
+the filesystem.  The database is an SQLite database
+`crossword.db`.
+
+The sample grids and puzzles are now distributed in
+the `samples.db` database, which is used by default
+for new installations.
+
+Added a `users` database table, but only with a
+single hard-coded user.  Will be expanded when I
+add authentication and login.
+
+The configuration file is simpler (just two options)
+and renamed `.crossword.ini`.
+
+### Added
+
+- Issue #115: Switch database usage to SQLAlchemy
+- Issue #111: Switch from files to sqlite3 database
+- Issue #104: Scroll to the last used row in clues
+- Issue #103: Added toolbar to word edit screen
+- Enabled logging in the UI classes
+- SHA-1 encoding for JSON strings and passwords
+- Bumped the version number to 2.2.0
+
+### Changed
+
+- Raised test coverage to 93%
+- Refactored imports
+- Moved `<style>` bits into common file
+- Moved classes to more logical packages (issue #114)
+- Removed unused classes
+    - Configuration
+    - crossword/util programs
+- Updated README with better install instructions
+
+### Fixed
+
+- Issue #97: Added preview icon to PuzzleNew dialog
+- Issue #98: Do not clear clue if word is blank
 
 ## Version 2.2.0 - 2020/06/30
 
@@ -38,24 +83,6 @@ editing is done (see Issue #99).
 
 - Issue #97: Added preview icon to PuzzleNew dialog
 - Issue #98: Do not clear clue if word is blank
-
-7d01c2a - Phil Hanna, 2020-06-30 4 hours ago : Pad empty clues with x'A0' so they are clickable
-262e98f - Phil Hanna, 2020-06-30 6 hours ago : Fix for issue #99
-4e94b38 - Phil Hanna, 2020-06-29 20 hours ago : Added imports for ClueExportVisitor and ClueImportVisitor
-03b8d20 - Phil Hanna, 2020-06-29 21 hours ago : Merge branch 'dev'
-8f27267 - Phil Hanna, 2020-06-29 31 hours ago : Refactored import/export clues
-db6c5b2 - Phil Hanna, 2020-06-29 31 hours ago : Refactored import/export clues
-
-
-
-
-
-
-
-
-
-
-
 
 ## Version 2.1.4 - 2020/06/23
 
