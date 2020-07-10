@@ -1,100 +1,42 @@
 from unittest import TestCase
 
-from crossword import Puzzle
+from crossword import Puzzle, Word
 
 
-class TestPuzzleUndo(TestCase):
+class TestPuzzleValidate(TestCase):
 
-    def test_undo_with_empty_stack(self):
+    def test_no_duplicate_words(self):
         puzzle = self.create_test_puzzle()
-        puzzle.undo_stack = []
-        puzzle.undo()
-        self.assertListEqual([], puzzle.undo_stack)
+        errors = puzzle.validate_duplicate_words()
+        self.assertEqual(0, len(errors))
 
-    def test_redo_with_empty_stack(self):
+    def test_duplicate_words(self):
         puzzle = self.create_test_puzzle()
-        puzzle.redo_stack = []
-        puzzle.redo()
-        self.assertListEqual([], puzzle.redo_stack)
+        puzzle.get_word(7, Word.DOWN).set_text("DAB")
+        errors = puzzle.validate_duplicate_words()
+        self.assertEqual(1, len(errors))
+        self.assertTrue("1 across" in errors[0])
+        self.assertTrue("7 down" in errors[0])
 
-    def test_undo_text(self):
+    def test_ok_valid(self):
         puzzle = self.create_test_puzzle()
-        self.assertEqual('RIOT', puzzle.get_text(10, 'A'))
-        self.assertEqual('ERO ICA ', puzzle.get_text(4, 'D'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
+        ok, errors = puzzle.validate()
+        self.assertTrue(ok)
+        self.assertEqual(4, len(errors))
+        self.assertTrue("interlock" in errors)
+        self.assertTrue("unchecked" in errors)
+        self.assertTrue("wordlength" in errors)
+        self.assertTrue("dupwords" in errors)
 
-        puzzle.set_text(10, 'A', 'ZOOM')
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('EZO ICA ', puzzle.get_text(4, 'D'))
-        self.assertListEqual([
-            ['text', 10, 'A', 'RIOT']
-        ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_text(10, 'A', 'PLUS')
-        self.assertEqual('PLUS', puzzle.get_text(10, 'A'))
-        self.assertEqual('EPO ICA ', puzzle.get_text(4, 'D'))
-        self.assertListEqual([
-            ['text', 10, 'A', 'RIOT'],
-            ['text', 10, 'A', 'ZOOM']
-        ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('EZO ICA ', puzzle.get_text(4, 'D'))
-        self.assertListEqual([
-            ['text', 10, 'A', 'RIOT']
-        ], puzzle.undo_stack)
-
-    def test_redo_text(self):
+    def test_ok_invalid(self):
         puzzle = self.create_test_puzzle()
-        self.assertEqual('RIOT', puzzle.get_text(10, 'A'))
-        self.assertEqual('ERO ICA ', puzzle.get_text(4, 'D'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_text(10, 'A', 'ZOOM')
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('EZO ICA ', puzzle.get_text(4, 'D'))
-        self.assertListEqual([
-            ['text', 10, 'A', 'RIOT']
-        ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.undo()
-        self.assertEqual('RIOT', puzzle.get_text(10, 'A'))
-        self.assertEqual('ERO ICA ', puzzle.get_text(4, 'D'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([
-            ['text', 10, 'A', 'ZOOM']
-        ], puzzle.redo_stack)
-
-        puzzle.redo()
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual('EZO ICA ', puzzle.get_text(4, 'D'))
-        self.assertListEqual([
-            ['text', 10, 'A', 'RIOT']
-        ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-    def test_to_json(self):
-        puzzle = self.create_test_puzzle()
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('RIOT', puzzle.get_text(10, 'A'))
-        self.assertEqual(None, puzzle.get_clue(10, 'A'))
-        self.assertListEqual([], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
-
-        puzzle.set_text(10, 'A', 'ZOOM')
-        self.assertEqual(None, puzzle.get_title())
-        self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
-        self.assertEqual(None, puzzle.get_clue(10, 'A'))
-        self.assertListEqual([
-            ['text', 10, 'A', 'RIOT']
-        ], puzzle.undo_stack)
-        self.assertListEqual([], puzzle.redo_stack)
+        ok, errors = puzzle.validate()
+        self.assertTrue(ok)
+        self.assertEqual(4, len(errors))
+        self.assertTrue("interlock" in errors)
+        self.assertTrue("unchecked" in errors)
+        self.assertTrue("wordlength" in errors)
+        self.assertTrue("dupwords" in errors)
 
     @staticmethod
     def create_test_puzzle():
