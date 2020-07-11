@@ -1,6 +1,9 @@
-from flask import session, render_template
+from flask import Blueprint, session, render_template
+
+uimain = Blueprint('uimain', __name__)
 
 
+@uimain.route('/')
 def main_screen():
     """ Handles top-level request """
 

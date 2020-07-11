@@ -1,40 +1,48 @@
 """ Handles requests for word pattern matches
 """
 import json
+import logging
 import re
+from datetime import datetime
 from http import HTTPStatus
 
-from flask import request, make_response
+from flask import Blueprint
+from flask import request
+from flask import make_response
+
+from crossword import get_elapsed_time
 
 from crossword.ui import DBWord
 
+# Register this blueprint
+uiwordlists = Blueprint('uiwordlists', __name__)
 
-class WordList:
-    """ Given a regular expression, returns a list of all the words that match the pattern """
-
-    def __init__(self):
-        self.words = [x.word for x in DBWord.query.all()]
-
-    def lookup(self, pattern):
-        pattern = "^" + pattern + "$"
-        pattern = re.sub('[ ?]', '.', pattern)
-        regexp = re.compile(pattern, re.IGNORECASE)
-        result = [line for line in self.words if regexp.match(line)]
-        return result
+# TODO Got to be a better way to do this, rather than a global variable
+wordlist = None
 
 
-wordlist = WordList()
-
-
+@uiwordlists.route('/wordlists')
 def wordlists():
-    """ REST method to return the list of matches for a regex pattern """
+    """ Returns the list of matches for a regex pattern """
+    global wordlist
+    if not wordlist:
+        logname = __name__
+        stime = datetime.now()
+        logging.info(f"{logname}: loading word list")
+        wordlist = [x.word for x in DBWord.query.all()]
+        etime = datetime.now()
+        seconds = get_elapsed_time(stime, etime)
+        logging.info(f"{logname}: done loading word list")
 
-    # Get the pattern from the query parameters
     pattern = request.args.get('pattern')
-    words = wordlist.lookup(pattern)
-    jsonstr = json.dumps(words)
+    pattern = "^" + pattern + "$"
+    pattern = re.sub('[ ?]', '.', pattern)
 
-    # Send this back to the client in JSON
+    regexp = re.compile(pattern, re.IGNORECASE)
+    words = [line for line in wordlist if regexp.match(line)]
+
+    jsonstr = json.dumps(words)
     resp = make_response(jsonstr, HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
+
     return resp

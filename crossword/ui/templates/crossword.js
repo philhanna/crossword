@@ -50,13 +50,13 @@ function do_grid_close() {
             if (changed) {
                 showElement("gx-dialog");
             } else {
-                window.location.href = "{{ url_for('main_screen') }}";
+                window.location.href = "{{ url_for('uimain.main_screen') }}";
             }
         }
     };
 
     // Ask the server if the grid has changed
-    const url = "{{ url_for('grid_changed')}}";
+    const url = "{{ url_for('uigrid.grid_changed')}}";
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -102,7 +102,7 @@ function do_grid_open() {
 
     function open_anchor(gridname) {
         const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('grid_open') }}" + "?gridname=" + gridname;
+        elem_a.href = "{{ url_for('uigrid.grid_open') }}" + "?gridname=" + gridname;
         elem_a.style.textDecoration = "none"; // No underline
         elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(gridname));
@@ -131,7 +131,7 @@ function do_grid_preview(gridname) {
             showElement("gv-dialog");
         }
     };
-    const url = "{{ url_for('grid_preview') }}" + "?gridname=" + gridname;
+    const url = "{{ url_for('uigrid.grid_preview') }}" + "?gridname=" + gridname;
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -147,7 +147,7 @@ function do_grid_rotate() {
             document.getElementById("grid-svg").innerHTML = this.responseText;
         }
     };
-    const url = "{{ url_for('grid_rotate')}}";
+    const url = "{{ url_for('uigrid.grid_rotate')}}";
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -191,7 +191,7 @@ function grid_chooser_ajax(function_list) {
             }
         }
     };
-    const url = "{{ url_for('grids')}}";
+    const url = "{{ url_for('uigrid.grids')}}";
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -204,7 +204,7 @@ function do_grid_save(gridname) {
     if (gridname == "") {
         showElement("gs-dialog");
     } else {
-        window.location.href = "{{ url_for('grid_save') }}";
+        window.location.href = "{{ url_for('uigrid.grid_save') }}";
     }
 }
 
@@ -226,7 +226,7 @@ function do_grid_save_as() {
  ***************************************************************/
 function validateGridNameForSaveAs() {
     const newgridname = document.forms["gsa-form"]["newgridname"].value;
-    let url = "{{ url_for('grid_save_as') }}" + "?newgridname=" + newgridname;
+    let url = "{{ url_for('uigrid.grid_save_as') }}" + "?newgridname=" + newgridname;
     url = encodeURI(url);
 
     const xhttp = new XMLHttpRequest();
@@ -250,7 +250,7 @@ function validateGridNameForSaveAs() {
     };
 
     // Send AJAX request for existing grid names
-    const ajax_url = "{{ url_for('grids')}}";
+    const ajax_url = "{{ url_for('uigrid.grids')}}";
     xhttp.open("GET", ajax_url, true);
     xhttp.send();
 }
@@ -279,7 +279,7 @@ function grid_click(event) {
             document.getElementById("grid-svg").innerHTML = this.responseText;
         }
     };
-    const url = "{{ url_for('grid_click')}}" + "?r=" + r + "&c=" + c;
+    const url = "{{ url_for('uigrid.grid_click')}}" + "?r=" + r + "&c=" + c;
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -312,7 +312,7 @@ function validateNewGridForm() {
  ***************************************************************/
 function do_grid_stats() {
     const objType = "grid";
-    const url = "{{ url_for('grid_statistics') }}";
+    const url = "{{ url_for('uigrid.grid_statistics') }}";
     do_statistics(objType, url);
 }
 
@@ -520,12 +520,12 @@ function do_puzzle_close() {
             if (changed) {
                 showElement("px-dialog");
             } else {
-                window.location.href = "{{ url_for('main_screen') }}";
+                window.location.href = "{{ url_for('uimain.main_screen') }}";
             }
         }
     }
     // Ask the server if the puzzle has changed
-    const url = "{{ url_for('puzzle_changed')}}";
+    const url = "{{ url_for('uipuzzle.puzzle_changed')}}";
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -562,7 +562,7 @@ function do_puzzle_new() {
 
     function open_anchor(gridname) {
         const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('puzzle_new') }}" + "?gridname=" + gridname;
+        elem_a.href = "{{ url_for('uipuzzle.puzzle_new') }}" + "?gridname=" + gridname;
         elem_a.style.textDecoration = "none"; // No underline
         elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(gridname));
@@ -599,7 +599,7 @@ function do_puzzle_open() {
 
     function open_anchor(puzzlename) {
         const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('puzzle_open') }}" + "?puzzlename=" + puzzlename;
+        elem_a.href = "{{ url_for('uipuzzle.puzzle_open') }}" + "?puzzlename=" + puzzlename;
         elem_a.style.textDecoration = "none"; // No underline
         elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(puzzlename));
@@ -628,7 +628,7 @@ function do_puzzle_preview(puzzlename) {
             showElement("pv-dialog");
         }
     };
-    const url = "{{ url_for('puzzle_preview') }}" + "?puzzlename=" + puzzlename;
+    const url = "{{ url_for('uipuzzle.puzzle_preview') }}" + "?puzzlename=" + puzzlename;
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -641,7 +641,7 @@ function do_puzzle_save(puzzlename) {
     if (puzzlename == "") {
         showElement("ps-dialog");
     } else {
-        window.location.href = "{{ url_for('puzzle_save') }}";
+        window.location.href = "{{ url_for('uipuzzle.puzzle_save') }}";
     }
 }
 
@@ -663,7 +663,7 @@ function do_puzzle_save_as() {
  ***************************************************************/
 function validatePuzzleNameForSaveAs() {
     const newpuzzlename = document.forms["psa-form"]["newpuzzlename"].value;
-    let url = "{{ url_for('puzzle_save_as') }}" + "?newpuzzlename=" + newpuzzlename;
+    let url = "{{ url_for('uipuzzle.puzzle_save_as') }}" + "?newpuzzlename=" + newpuzzlename;
     url = encodeURI(url);
 
     const xhttp = new XMLHttpRequest();
@@ -687,7 +687,7 @@ function validatePuzzleNameForSaveAs() {
     };
 
     // Send AJAX request for existing puzzle names
-    const ajax_url = "{{ url_for('puzzles')}}";
+    const ajax_url = "{{ url_for('uipuzzle.puzzles')}}";
     xhttp.open("GET", ajax_url, true);
     xhttp.send();
 }
@@ -712,14 +712,14 @@ function getRC(event) {
 function do_click_across_clue(seq) {
     const elem_ul = document.getElementById("puzzle-across-clues")
     const v = elem_ul.scrollTop;
-    const url = "{{ url_for('puzzle_click_across') }}?seq=" + seq + "&scrollTop=" + v;
+    const url = "{{ url_for('uipuzzle.puzzle_click_across') }}?seq=" + seq + "&scrollTop=" + v;
     do_click_clue(url);
 }
 
 function do_click_down_clue(seq) {
     const elem_ul = document.getElementById("puzzle-down-clues")
     const v = elem_ul.scrollTop;
-    const url = "{{ url_for('puzzle_click_down') }}?seq=" + seq + "&scrollTop=" + v;
+    const url = "{{ url_for('uipuzzle.puzzle_click_down') }}?seq=" + seq + "&scrollTop=" + v;
     do_click_clue(url);
 }
 
@@ -814,12 +814,12 @@ function puzzle_click(event) {
 
     function single_click() {
         PUZZLE_CLICK_STATE = 0;
-        do_word(CLICK_EVENT, "{{ url_for('puzzle_click_across') }}");
+        do_word(CLICK_EVENT, "{{ url_for('uipuzzle.puzzle_click_across') }}");
     }
 
     function double_click() {
         PUZZLE_CLICK_STATE = 0;
-        do_word(event, "{{ url_for('puzzle_click_down') }}");
+        do_word(event, "{{ url_for('uipuzzle.puzzle_click_down') }}");
     }
 
     if (PUZZLE_CLICK_STATE == 0) {
@@ -871,7 +871,7 @@ function puzzle_chooser_ajax(function_list) {
             }
         }
     };
-    const url = "{{ url_for('puzzles')}}";
+    const url = "{{ url_for('uipuzzle.puzzles')}}";
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -882,7 +882,7 @@ function puzzle_chooser_ajax(function_list) {
  ***************************************************************/
 function do_puzzle_stats() {
     const objType = "puzzle";
-    const url = "{{ url_for('puzzle_statistics') }}";
+    const url = "{{ url_for('uipuzzle.puzzle_statistics') }}";
     do_statistics(objType, url);
 }
 
@@ -920,7 +920,7 @@ function do_puzzle_publish_nytimes() {
 
     function publish_anchor(puzzlename) {
         const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('puzzle_publish_nytimes') }}" + "?puzzlename=" + puzzlename;
+        elem_a.href = "{{ url_for('uipublish.puzzle_publish_nytimes') }}" + "?puzzlename=" + puzzlename;
         elem_a.style.textDecoration = "none"; // No underline
         elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(puzzlename));
@@ -959,7 +959,7 @@ function do_puzzle_publish_acrosslite() {
 
     function publish_anchor(puzzlename) {
         const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('puzzle_publish_acrosslite') }}" + "?puzzlename=" + puzzlename;
+        elem_a.href = "{{ url_for('uipublish.puzzle_publish_acrosslite') }}" + "?puzzlename=" + puzzlename;
         elem_a.style.textDecoration = "none"; // No underline
         elem_a.style.verticalAlign = "top"; // Align with icon
         elem_a.appendChild(document.createTextNode(puzzlename));
@@ -1025,7 +1025,7 @@ function do_suggest_word() {
             }
         }
     }
-    const url = "{{ url_for('wordlists')}}" + "?pattern=" + pattern;
+    const url = "{{ url_for('uiwordlists.wordlists')}}" + "?pattern=" + pattern;
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -1079,7 +1079,7 @@ function do_word_reset() {
             elem_word.value = new_text
         }
     }
-    const url = "{{ url_for('word_reset')}}";
+    const url = "{{ url_for('uiword.word_reset')}}";
     xhttp.open("GET", url, true);
     xhttp.send();
 }
@@ -1089,7 +1089,7 @@ function do_word_reset() {
  *  DESCRIPTION:     Undoes the last change
  ***************************************************************/
 function do_puzzle_undo() {
-    window.location.href = "{{ url_for('puzzle_undo') }}";
+    window.location.href = "{{ url_for('uipuzzle.puzzle_undo') }}";
 }
 
 /***************************************************************
@@ -1097,5 +1097,5 @@ function do_puzzle_undo() {
  *  DESCRIPTION:     Redoes the last change
  ***************************************************************/
 function do_puzzle_redo() {
-    window.location.href = "{{ url_for('puzzle_redo') }}";
+    window.location.href = "{{ url_for('uipuzzle.puzzle_redo') }}";
 }

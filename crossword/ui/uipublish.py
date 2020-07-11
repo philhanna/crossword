@@ -7,21 +7,21 @@ import xml.etree.ElementTree as ET
 from io import BytesIO, StringIO
 from zipfile import ZipFile, ZIP_DEFLATED
 
-from flask import request, make_response
+from flask import Blueprint
+from flask import make_response
+from flask import request
 
-from crossword import Puzzle, PuzzleToSVG
+from crossword import Puzzle
+from crossword import PuzzleToSVG
 from crossword.ui import DBPuzzle, DBUser
 
 userid = 1  # TODO Replace hard-coded user ID
 
-
-def puzzle_load_common(userid, puzzlename):
-    """ Loads the JSON string for a puzzle """
-    row = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
-    jsonstr = row.jsonstr
-    return jsonstr
+# Register this blueprint
+uipublish = Blueprint('uipublish', __name__)
 
 
+@uipublish.route('/puzzle-publish-acrosslite')
 def puzzle_publish_acrosslite():
     """ Publishes a puzzle in across lite form """
 
@@ -186,6 +186,7 @@ def puzzle_publish_acrosslite():
     return resp
 
 
+@uipublish.route('/puzzle-publish-nytimes')
 def puzzle_publish_nytimes():
     """ Publishes a puzzle in New York Times format (PDF) """
 
@@ -402,3 +403,15 @@ def puzzle_publish_nytimes():
     resp.headers['Content-Type'] = "application/zip"
     resp.headers['Content-Disposition'] = f'attachment; filename="{zipfilename}"'
     return resp
+
+
+#   ============================================================
+#   Internal methods
+#   ============================================================
+
+
+def puzzle_load_common(userid, puzzlename):
+    """ Loads the JSON string for a puzzle """
+    row = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
+    jsonstr = row.jsonstr
+    return jsonstr

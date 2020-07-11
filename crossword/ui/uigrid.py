@@ -1,17 +1,32 @@
 """ Handles requests having to do with grids
 """
+
+# System packages
 import json
 import logging
 from datetime import datetime
 from http import HTTPStatus
 
-from flask import redirect, request, session, url_for, flash, make_response, render_template
+# Installed packages
+from flask import Blueprint
+from flask import flash
+from flask import make_response
+from flask import redirect
+from flask import render_template
+from flask import request
+from flask import session
+from flask import url_for
 from sqlalchemy import desc
 
+# My own packages
 from crossword import Grid, GridToSVG, sha256
-from crossword.ui import DBGrid, db
+from crossword.ui import db, DBGrid
+
+# Register this route handler
+uigrid = Blueprint('uigrid', __name__)
 
 
+@uigrid.route('/grid')
 def grid_screen():
     """ Renders the grid screen """
 
@@ -43,6 +58,7 @@ def grid_screen():
                            svgstr=svgstr)
 
 
+@uigrid.route('/grid-new', methods=['POST'])
 def grid_new():
     """ Creates a new grid and redirects to grid screen """
 
@@ -59,18 +75,10 @@ def grid_new():
     session['grid'] = jsonstr
     session['grid.initial.sha'] = sha256(jsonstr)
 
-    return redirect(url_for('grid_screen'))
+    return redirect(url_for('uigrid.grid_screen'))
 
 
-def grid_load_common(userid, gridname):
-    """ Loads the JSON string for a grid """
-    result = DBGrid.query \
-        .filter_by(userid=userid, gridname=gridname) \
-        .first()
-    jsonstr = result.jsonstr
-    return jsonstr
-
-
+@uigrid.route('/grid-open')
 def grid_open():
     """ Opens a new grid and redirects to grid screen """
 
@@ -87,9 +95,10 @@ def grid_open():
     session['grid.initial.sha'] = sha256(jsonstr)
     session['gridname'] = gridname
 
-    return redirect(url_for('grid_screen'))
+    return redirect(url_for('uigrid.grid_screen'))
 
 
+@uigrid.route('/grid-preview')
 def grid_preview():
     """ Creates a grid preview and returns it to ??? """
 
@@ -119,6 +128,7 @@ def grid_preview():
     return resp
 
 
+@uigrid.route('/grid-save')
 def grid_save():
     """ Saves a grid """
     gridname = session.get('gridname', request.args.get('gridname'))
@@ -126,10 +136,147 @@ def grid_save():
     return grid_save_common(gridname)
 
 
+@uigrid.route('/grid_save_as')
 def grid_save_as():
     """ Saves a grid under a new name """
     newgridname = request.args.get('newgridname')
     return grid_save_common(newgridname)
+
+
+@uigrid.route('/grid-delete')
+def grid_delete():
+    """ Deletes a grid and redirects to main screen """
+
+    # Get the name of the grid to be deleted from the session
+    # Delete the file
+    gridname = session.get('gridname', None)
+    if gridname:
+        userid = 1  # TODO remove hard-coded userID
+        query = DBGrid.query.filter_by(userid=userid, gridname=gridname)
+        oldgrid = query.first()
+        if oldgrid:
+            db.session.delete(oldgrid)
+            db.session.commit()
+            flash(f"{gridname} gridname deleted")
+
+    # Redirect to the main screen
+    return redirect(url_for('uimain.main_screen'))
+
+
+@uigrid.route('/grid-click')
+def grid_click():
+    """ Adds or removes a black cell then returns the new SVG """
+
+    # Get the row and column clicked from the query parms
+    r = int(request.args.get('r'))
+    c = int(request.args.get('c'))
+
+    # Get the existing grid from the session
+    jsonstr = session['grid']
+    grid = Grid.from_json(jsonstr)
+
+    # Toggle the black cell status
+    if grid.is_black_cell(r, c):
+        grid.remove_black_cell(r, c)
+    else:
+        grid.add_black_cell(r, c)
+
+    # Save the updated grid in the session
+    session['grid'] = grid.to_json()
+
+    # Send the new SVG data to the client
+    svg = GridToSVG(grid)
+    svgstr = svg.generate_xml()
+    response = make_response(svgstr, HTTPStatus.OK)
+    return response
+
+
+@uigrid.route('/grid-rotate')
+def grid_rotate():
+    """ Rotates the grid 90 degrees left then returns the new SVG """
+
+    # Rotate the grid
+    jsonstr = session.get('grid', None)
+    grid = Grid.from_json(jsonstr)
+    grid.rotate()
+
+    # Save the updated grid in the session
+    session['grid'] = grid.to_json()
+
+    # Send the new SVG data to the client
+    svg = GridToSVG(grid)
+    svgstr = svg.generate_xml()
+    response = make_response(svgstr, HTTPStatus.OK)
+    return response
+
+
+@uigrid.route('/grid-changed')
+def grid_changed():
+    """ REST method to determine whether the grid has changed """
+
+    # Compare the original grid loaded to its current values.
+    # Return True if they are different, False if they are the same.
+    jsonstr_initial_sha = session.get('grid.initial.sha', sha256(None))
+    jsonstr_current_sha = sha256(session.get('grid', None))
+    changed = not (jsonstr_current_sha == jsonstr_initial_sha)
+    obj = {"changed": changed}
+
+    # Send this back to the client in JSON
+    resp = make_response(json.dumps(obj), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
+@uigrid.route('/grid-statistics')
+def grid_statistics():
+    """ REST method to return the grid statistics in a JSON string """
+
+    # Get the grid from the session
+    grid = Grid.from_json(session['grid'])
+    stats = grid.get_statistics()
+    resp = make_response(json.dumps(stats), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
+@uigrid.route('/grids')
+def grids():
+    """ REST method to return the list of grids """
+
+    # Make a list of all the saved grids
+    userid = 1  # TODO replace hard-coded user ID
+    gridlist = get_grid_list(userid)
+
+    # Send this back to the client in JSON
+    resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
+    resp.headers['Content-Type'] = "application/json"
+    return resp
+
+
+#   ============================================================
+#   Internal methods
+#   ============================================================
+
+def get_grid_list(userid):
+    """ Returns the list of grid file names for the specified userid
+
+    :param userID the id of the user who owns these grids
+    :returns the list of base file names, sorted with most recently updated first
+    """
+    query = DBGrid.query \
+        .filter_by(userid=userid) \
+        .order_by(desc(DBGrid.modified), DBGrid.gridname)
+    filelist = [dbgrid.gridname for dbgrid in query.all()]
+    return filelist
+
+
+def grid_load_common(userid, gridname):
+    """ Loads the JSON string for a grid """
+    result = DBGrid.query \
+        .filter_by(userid=userid, gridname=gridname) \
+        .first()
+    jsonstr = result.jsonstr
+    return jsonstr
 
 
 def grid_save_common(gridname):
@@ -181,122 +328,4 @@ def grid_save_common(gridname):
         session['grid.initial.sha'] = sha256(jsonstr)
 
     # Show the grid screen
-    return redirect(url_for('grid_screen'))
-
-
-def grid_delete():
-    """ Deletes a grid and redirects to main screen """
-
-    # Get the name of the grid to be deleted from the session
-    # Delete the file
-    gridname = session.get('gridname', None)
-    if gridname:
-        userid = 1  # TODO remove hard-coded userID
-        query = DBGrid.query.filter_by(userid=userid, gridname=gridname)
-        oldgrid = query.first()
-        if oldgrid:
-            db.session.delete(oldgrid)
-            db.session.commit()
-            flash(f"{gridname} gridname deleted")
-
-    # Redirect to the main screen
-    return redirect(url_for('main_screen'))
-
-
-def grid_click():
-    """ Adds or removes a black cell then returns the new SVG """
-
-    # Get the row and column clicked from the query parms
-    r = int(request.args.get('r'))
-    c = int(request.args.get('c'))
-
-    # Get the existing grid from the session
-    jsonstr = session['grid']
-    grid = Grid.from_json(jsonstr)
-
-    # Toggle the black cell status
-    if grid.is_black_cell(r, c):
-        grid.remove_black_cell(r, c)
-    else:
-        grid.add_black_cell(r, c)
-
-    # Save the updated grid in the session
-    session['grid'] = grid.to_json()
-
-    # Send the new SVG data to the client
-    svg = GridToSVG(grid)
-    svgstr = svg.generate_xml()
-    response = make_response(svgstr, HTTPStatus.OK)
-    return response
-
-
-def grid_rotate():
-    """ Rotates the grid 90 degrees left then returns the new SVG """
-
-    # Rotate the grid
-    jsonstr = session.get('grid', None)
-    grid = Grid.from_json(jsonstr)
-    grid.rotate()
-
-    # Save the updated grid in the session
-    session['grid'] = grid.to_json()
-
-    # Send the new SVG data to the client
-    svg = GridToSVG(grid)
-    svgstr = svg.generate_xml()
-    response = make_response(svgstr, HTTPStatus.OK)
-    return response
-
-
-def grid_changed():
-    """ REST method to determine whether the grid has changed """
-
-    # Compare the original grid loaded to its current values.
-    # Return True if they are different, False if they are the same.
-    jsonstr_initial_sha = session.get('grid.initial.sha', sha256(None))
-    jsonstr_current_sha = sha256(session.get('grid', None))
-    changed = not (jsonstr_current_sha == jsonstr_initial_sha)
-    obj = {"changed": changed}
-
-    # Send this back to the client in JSON
-    resp = make_response(json.dumps(obj), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
-
-
-def grid_statistics():
-    """ REST method to return the grid statistics in a JSON string """
-
-    # Get the grid name and grid from the session
-    gridname = session.get('gridname', '(Untitled)')
-    grid = Grid.from_json(session['grid'])
-    stats = grid.get_statistics()
-    resp = make_response(json.dumps(stats), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
-
-
-def get_grid_list(userid):
-    """ Returns the list of grid file names for the specified userid
-
-    :param userID the id of the user who owns these grids
-    :returns the list of base file names, sorted with most recently updated first
-    """
-    query = DBGrid.query \
-        .filter_by(userid=userid) \
-        .order_by(desc(DBGrid.modified), DBGrid.gridname)
-    filelist = [dbgrid.gridname for dbgrid in query.all()]
-    return filelist
-
-
-def grids():
-    """ REST method to return the list of grids """
-
-    # Make a list of all the saved grids
-    userid = 1  # TODO replace hard-coded user ID
-    gridlist = get_grid_list(userid)
-
-    # Send this back to the client in JSON
-    resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
+    return redirect(url_for('uigrid.grid_screen'))

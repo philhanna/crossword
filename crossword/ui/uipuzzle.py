@@ -1,18 +1,37 @@
 """ Handles requests having to do with puzzles
 """
+# System packages
 import json
 import logging
 import re
 from datetime import datetime
 from http import HTTPStatus
 
-from flask import session, redirect, render_template, request, url_for, flash, make_response
+# Installed packages
+from flask import Blueprint
+from flask import flash
+from flask import make_response
+from flask import redirect
+from flask import render_template
+from flask import request
+from flask import session
+from flask import url_for
 from sqlalchemy import desc
 
-from crossword import Puzzle, PuzzleToSVG, Grid, sha256
-from crossword.ui import puzzle_load_common, DBGrid, DBPuzzle, db
+# My own packages
+from crossword import Grid
+from crossword import Puzzle
+from crossword import PuzzleToSVG
+from crossword import sha256
+from crossword.ui import DBGrid
+from crossword.ui import DBPuzzle
+from crossword.ui import db
+
+# Register this blueprint
+uipuzzle = Blueprint('uipuzzle', __name__)
 
 
+@uipuzzle.route('/puzzle')
 def puzzle_screen():
     """ Renders the puzzle screen """
 
@@ -61,6 +80,7 @@ def puzzle_screen():
                            svgstr=svgstr)
 
 
+@uipuzzle.route('/puzzle-new')
 def puzzle_new():
     """ Creates a new puzzle and redirects to puzzle screen """
 
@@ -69,7 +89,7 @@ def puzzle_new():
 
     # Open the corresponding file and read its contents as json
     # and recreate the grid from it
-    userid = 1      # TODO replace hard-coded user ID
+    userid = 1  # TODO replace hard-coded user ID
     query = DBGrid.query.filter_by(userid=userid, gridname=gridname)
     jsonstr = query.first().jsonstr
     grid = Grid.from_json(jsonstr)
@@ -85,9 +105,10 @@ def puzzle_new():
     # Remove any leftover puzzle name in the session
     session.pop('puzzlename', None)
 
-    return redirect(url_for('puzzle_screen'))
+    return redirect(url_for('uipuzzle.puzzle_screen'))
 
 
+@uipuzzle.route('/puzzle-open')
 def puzzle_open():
     """ Opens a new puzzle and redirects to puzzle screen """
 
@@ -104,9 +125,10 @@ def puzzle_open():
     session['puzzle.initial.sha'] = sha256(jsonstr)
     session['puzzlename'] = puzzlename
 
-    return redirect(url_for('puzzle_screen'))
+    return redirect(url_for('uipuzzle.puzzle_screen'))
 
 
+@uipuzzle.route('/puzzle-preview')
 def puzzle_preview():
     """ Creates a puzzle preview and returns it to ??? """
 
@@ -135,6 +157,7 @@ def puzzle_preview():
     return resp
 
 
+@uipuzzle.route('/puzzle-save')
 def puzzle_save():
     """ Saves a puzzle """
 
@@ -143,63 +166,14 @@ def puzzle_save():
     return puzzle_save_common(puzzlename)
 
 
+@uipuzzle.route('/puzzle-save-as')
 def puzzle_save_as():
     """ Saves a puzzle under a new name """
     newpuzzlename = request.args.get('newpuzzlename')
     return puzzle_save_common(newpuzzlename)
 
 
-def puzzle_save_common(puzzlename):
-    """ Common method used by both puzzle_save and puzzle_save_as """
-
-    # Recreate the puzzle from the JSON in the session
-    # and validate it
-    jsonstr = session.get('puzzle', None)
-    puzzle = Puzzle.from_json(jsonstr)
-    ok, messages = puzzle.validate()
-    if not ok:
-        flash("Puzzle not saved")
-        for message_type in messages:
-            message_list = messages[message_type]
-            if len(message_list) > 0:
-                flash(f"*** {message_type} ***")
-                for message in message_list:
-                    flash("   " + message)
-    else:
-        # Save the file
-        userid = 1  # TODO Replace hard coded user id
-        query = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename)
-        if not query.all():
-            # No puzzle in the database. This is an insert
-            logging.debug(f"Inserting puzzle {puzzlename} into puzzles table")
-            created = modified = datetime.now().isoformat()
-            newpuzzle = DBPuzzle(userid=userid,
-                                 puzzlename=puzzlename,
-                                 created=created,
-                                 modified=modified,
-                                 jsonstr=jsonstr)
-            db.session.add(newpuzzle)
-            db.session.commit()
-        else:
-            # Existing puzzle. This is an update
-            logging.debug(f"Updating puzzle {puzzlename} in puzzles table")
-            oldpuzzle = query.first()
-            oldpuzzle.modified = datetime.now().isoformat()
-            oldpuzzle.jsonstr = jsonstr
-            db.session.commit()
-
-        # Send message about the save
-        flash(f"Puzzle saved as {puzzlename}")
-
-        # Store the sha of the saved version of the puzzle
-        # in the session as 'puzzle.initial.sha' so that we can
-        # detect whether it has been changed since it was last saved
-        session['puzzle.initial.sha'] = sha256(jsonstr)
-
-    # Show the puzzle screen
-    return redirect(url_for('puzzle_screen'))
-
-
+@uipuzzle.route('/puzzle-title', methods=['POST'])
 def puzzle_title():
     """ Changes the puzzle title and redirects back to the puzzle screen """
 
@@ -213,9 +187,10 @@ def puzzle_title():
         flash(f"Puzzle title set to {puzzle.get_title()}")
 
     # Show the puzzle screen
-    return redirect(url_for('puzzle_screen'))
+    return redirect(url_for('uipuzzle.puzzle_screen'))
 
 
+@uipuzzle.route('/puzzle-delete')
 def puzzle_delete():
     """ Deletes a puzzle and redirects to main screen """
 
@@ -232,9 +207,10 @@ def puzzle_delete():
             flash(f"{puzzlename} puzzle deleted")
 
     # Redirect to the main screen
-    return redirect(url_for('main_screen'))
+    return redirect(url_for('uimain.main_screen'))
 
 
+@uipuzzle.route('/puzzle-click-across')
 def puzzle_click_across():
     """ Handles a puzzle click across request """
 
@@ -243,6 +219,7 @@ def puzzle_click_across():
     return puzzle_click('Across')
 
 
+@uipuzzle.route('/puzzle-click-down')
 def puzzle_click_down():
     """ Handles a puzzle click down request """
 
@@ -322,6 +299,7 @@ def puzzle_click(direction):
     return resp
 
 
+@uipuzzle.route('/puzzle-changed')
 def puzzle_changed():
     """ REST method that returns whether the puzzle has changed since it was opened """
 
@@ -339,6 +317,7 @@ def puzzle_changed():
     return resp
 
 
+@uipuzzle.route('/puzzle_statistics')
 def puzzle_statistics():
     """ REST method to return the puzzle statistics in a JSON string """
 
@@ -350,6 +329,7 @@ def puzzle_statistics():
     return resp
 
 
+@uipuzzle.route('/puzzle-undo')
 def puzzle_undo():
     """ Undoes the last puzzle action then redirects to puzzle screen """
 
@@ -358,9 +338,10 @@ def puzzle_undo():
     puzzle.undo()
     jsonstr = puzzle.to_json()
     session['puzzle'] = jsonstr
-    return redirect(url_for('puzzle_screen'))
+    return redirect(url_for('uipuzzle.puzzle_screen'))
 
 
+@uipuzzle.route('/puzzle-redo')
 def puzzle_redo():
     """ Redoes the last puzzle action then redirects to puzzle screen """
 
@@ -369,20 +350,25 @@ def puzzle_redo():
     puzzle.redo()
     jsonstr = puzzle.to_json()
     session['puzzle'] = jsonstr
-    return redirect(url_for('puzzle_screen'))
+    return redirect(url_for('uipuzzle.puzzle_screen'))
 
 
+@uipuzzle.route('/puzzles')
 def puzzles():
     """ REST method to return a list of all puzzles """
 
     # Make a list of all the saved puzzles
-    userid = 1      # TODO replace hard-coded user ID
+    userid = 1  # TODO replace hard-coded user ID
     puzzlelist = get_puzzle_list(userid)
 
     # Send this back to the client in JSON
     resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
+
+#   ============================================================
+#   Internal methods
+#   ============================================================
 
 
 def get_puzzle_list(userid):
@@ -391,14 +377,66 @@ def get_puzzle_list(userid):
     :param userID the id of the user who owns these puzzles
     :returns the list of base file names, sorted with most recently updated first
     """
-    query = DBPuzzle.query\
-        .filter_by(userid=userid)\
-        .order_by(desc(DBPuzzle.modified), DBPuzzle.puzzlename)\
+    query = DBPuzzle.query \
+        .filter_by(userid=userid) \
+        .order_by(desc(DBPuzzle.modified), DBPuzzle.puzzlename) \
         .all()
     filelist = [x.puzzlename for x in query]
     return filelist
 
 
 def puzzle_load_common(userid, puzzlename):
+    """ Common method used to load puzzle from database """
     oldpuzzle = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
     return oldpuzzle.jsonstr
+
+
+def puzzle_save_common(puzzlename):
+    """ Common method used by both puzzle_save and puzzle_save_as """
+
+    # Recreate the puzzle from the JSON in the session
+    # and validate it
+    jsonstr = session.get('puzzle', None)
+    puzzle = Puzzle.from_json(jsonstr)
+    ok, messages = puzzle.validate()
+    if not ok:
+        flash("Puzzle not saved")
+        for message_type in messages:
+            message_list = messages[message_type]
+            if len(message_list) > 0:
+                flash(f"*** {message_type} ***")
+                for message in message_list:
+                    flash("   " + message)
+    else:
+        # Save the file
+        userid = 1  # TODO Replace hard coded user id
+        query = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename)
+        if not query.all():
+            # No puzzle in the database. This is an insert
+            logging.debug(f"Inserting puzzle {puzzlename} into puzzles table")
+            created = modified = datetime.now().isoformat()
+            newpuzzle = DBPuzzle(userid=userid,
+                                 puzzlename=puzzlename,
+                                 created=created,
+                                 modified=modified,
+                                 jsonstr=jsonstr)
+            db.session.add(newpuzzle)
+            db.session.commit()
+        else:
+            # Existing puzzle. This is an update
+            logging.debug(f"Updating puzzle {puzzlename} in puzzles table")
+            oldpuzzle = query.first()
+            oldpuzzle.modified = datetime.now().isoformat()
+            oldpuzzle.jsonstr = jsonstr
+            db.session.commit()
+
+        # Send message about the save
+        flash(f"Puzzle saved as {puzzlename}")
+
+        # Store the sha of the saved version of the puzzle
+        # in the session as 'puzzle.initial.sha' so that we can
+        # detect whether it has been changed since it was last saved
+        session['puzzle.initial.sha'] = sha256(jsonstr)
+
+    # Show the puzzle screen
+    return redirect(url_for('uipuzzle.puzzle_screen'))

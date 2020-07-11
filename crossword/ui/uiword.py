@@ -3,11 +3,21 @@ import json
 import re
 from http import HTTPStatus
 
-from flask import session, request, redirect, url_for, make_response
+from flask import Blueprint
+from flask import make_response
+from flask import redirect
+from flask import request
+from flask import session
+from flask import url_for
 
-from crossword import Word, Puzzle
+from crossword import Puzzle
+from crossword import Word
+
+# Register this blueprint
+uiword = Blueprint('uiword', __name__)
 
 
+@uiword.route('/word-edit', methods=['POST'])
 def word_edit():
     """ Updates the word text and clue, then redirects to puzzle screen """
 
@@ -35,9 +45,10 @@ def word_edit():
     session['puzzle'] = puzzle.to_json()
 
     # Now redirect to puzzle_screen()
-    return redirect(url_for('puzzle_screen'))
+    return redirect(url_for('uipuzzle.puzzle_screen'))
 
 
+@uiword.route('/word-reset')
 def word_reset():
     """ Resets the word then redirects back to the puzzle screen
 
