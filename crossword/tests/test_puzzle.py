@@ -484,3 +484,10 @@ class TestPuzzle(TestCase):
         self.assertEqual("First Title", puzzle.get_title())
         puzzle.set_title(None)
         self.assertIsNone(puzzle.get_title())
+
+    def test_str(self):
+        grid = Grid(3)
+        puzzle = Puzzle(grid)
+        puzzle_string = str(puzzle)
+        self.assertTrue("+-----+" in puzzle_string)
+        self.assertTrue("| | | |" in puzzle_string)

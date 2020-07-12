@@ -295,3 +295,9 @@ class TestGrid(TestCase):
     """
         grid = Grid.from_json(jsonstr)
         return grid
+
+    def test_str(self):
+        grid = Grid(3)
+        grid_string = str(grid)
+        self.assertTrue("+-----+" in grid_string)
+        self.assertTrue("| | | |" in grid_string)
