@@ -112,45 +112,51 @@
       {{ svgstr|safe }}
     </div>
 
-    <!-- Across clues -->
     <div class="w3-section w3-cell">
-        <div class="w3-center w3-margin-bottom"><b>Across</b></div>
-        <ul id="puzzle-across-clues"
-            class="w3-ul w3-card w3-border w3-hoverable w3-pale-yellow clue-list">
-            {% for clue in clues.across %}
-            <li>
-                <a href="javascript:do_click_across_clue( {{ clue.seq }} );">
-                    {{clue.seq}}. {{clue.text}}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% if scrollTopAcross %}
-    <script>
-        document.getElementById('puzzle-across-clues').scrollTop = {{ scrollTopAcross }};
-    </script>
-    {% endif %}
+        <div class="w3-section w3-cell-row">
+        <!-- Across clues -->
+        <div class="w3-section w3-cell" style="width:50%">
+            <div class="w3-center w3-margin-bottom"><b>Across</b></div>
+            <ul id="puzzle-across-clues"
+                class="w3-ul w3-card w3-border w3-hoverable w3-pale-yellow clue-list">
+                {% for clue in clues.across %}
+                <li>
+                    <a href="javascript:do_click_across_clue( {{ clue.seq }} );">
+                        {{clue.seq}}. {{clue.text}}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if scrollTopAcross %}
+        <script>
+            document.getElementById('puzzle-across-clues').scrollTop = {{ scrollTopAcross }};
+        </script>
+        {% endif %}
 
-    <!-- Down clues -->
-    <div class="w3-section w3-cell">
-        <div class="w3-center w3-margin-bottom"><b>Down</b></div>
-        <ul id="puzzle-down-clues"
-            class="w3-ul w3-card w3-border w3-hoverable w3-pale-green clue-list">
-            {% for clue in clues.down %}
-            <li>
-                <a href="javascript:do_click_down_clue( {{ clue.seq }} );">
-                    {{clue.seq}}. {{clue.text}}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
+        <!-- Down clues -->
+        <div class="w3-section w3-cell" style="width:50%">
+            <div class="w3-center w3-margin-bottom"><b>Down</b></div>
+            <ul id="puzzle-down-clues"
+                class="w3-ul w3-card w3-border w3-hoverable w3-pale-green clue-list">
+                {% for clue in clues.down %}
+                <li>
+                    <a href="javascript:do_click_down_clue( {{ clue.seq }} );">
+                        {{clue.seq}}. {{clue.text}}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if scrollTopDown %}
+        <script>
+            document.getElementById('puzzle-down-clues').scrollTop = {{ scrollTopDown }};
+        </script>
+        {% endif %}
+
+        </div>
+
     </div>
-    {% if scrollTopDown %}
-    <script>
-        document.getElementById('puzzle-down-clues').scrollTop = {{ scrollTopDown }};
-    </script>
-    {% endif %}
 
 </div> <!-- End three columns -->
 
