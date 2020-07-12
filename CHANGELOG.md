@@ -5,13 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Table of contents
-- [Version 2.3.0 - 2020/07/10](#version-230---20200710)
+- [Version 2.3.0 - 2020/07/12](#version-230---20200712)
 - [Version 2.2.0 - 2020/06/30](#version-220---20200630)
 - [Version 2.1.4 - 2020/06/23](#version-214---20200623)
 - [Version 2.0.0 - 2020/06/21](#version-200---20200621)
 - [Version 1.4.0 - 2020/06/14](#version-140---20200614)
 
-## Version 2.3.0 - 2020/07/10
+## Version 2.3.0 - 2020/07/12
 
 Starting with this release, grids, puzzles, configuration,
 and words are stored in a database, rather than files in
