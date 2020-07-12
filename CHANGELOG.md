@@ -31,13 +31,16 @@ and renamed `.crossword.ini`.
 
 ### Added
 
-- Issue #115: Switch database usage to SQLAlchemy
-- Issue #111: Switch from files to sqlite3 database
-- Issue #104: Scroll to the last used row in clues
 - Issue #103: Added toolbar to word edit screen
+- Issue #104: Scroll to the last used row in clues
+- Issue #108: Switched to tabbed view in word edit screen
+- Issue #111: Switch from files to sqlite3 database
+- Issue #115: Switch database usage to SQLAlchemy
+- Issue #116: Moved Flask secret key into environment variable
+- Issue #117: Refactored app routing into blueprint classes
 - Enabled logging in the UI classes
 - SHA-1 encoding for JSON strings and passwords
-- Bumped the version number to 2.2.0
+- Bumped the version number to 2.3.0
 
 ### Changed
 
