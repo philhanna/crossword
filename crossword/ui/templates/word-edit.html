@@ -3,7 +3,7 @@
 <div id="we-dialog" class="w3-modal">
 <!-- modal content -->
 <div class="w3-modal-content w3-card-4"
-     style="position:absolute; top:10%; left:40%; width:50%;"
+     style="position:absolute; top:10%; left:40%; height:90%; width:50%;"
 >
 
 <header class="w3-container w3-blue-gray">
@@ -17,7 +17,7 @@
       name="we-form"
       method="POST"
       action="{{ url_for('uiword.word_edit') }}"
-      onsubmit="return do_word_validate()"
+      onsubmit="open_word_edit_tab('we-tab-suggest'); return do_word_validate()"
     >
 
 <!-- form section -->
@@ -33,11 +33,6 @@
         elem_tab.style.display = "block";
     }
 </script>
-<style>
-    .we-tab {
-        height: 200px;
-    }
-</style>
     <!-- Tab bar -->
     <div class="w3-bar w3-blue-gray">
         <button class="w3-bar-item w3-button"
@@ -71,11 +66,15 @@
     </div>
 
     <!-- Tab 2: Constraints -->
-    <div id="we-tab-constraints" class="w3-bar w3-margin-top we-tab" style="display:none">
-        <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_constraints()">
+    <div id="we-tab-constraints"
+         class="w3-bar w3-margin-top we-tab"
+         style="overflow:auto;overflow-x:hidden;display:none">
+        <a class="w3-button w3-small w3-round w3-light-gray crosstb"
+           onclick="do_word_constraints()">
             <i class="material-icons crosstb-icon">assignment</i>
             <span>Find constraints imposed by crossing words</span>
         </a>
+        <div id="we-constraints-table"></div>
     </div>
 
     <!-- Tab 3: Reset -->
@@ -121,7 +120,7 @@ type="submit"
 <button  class="w3-button w3-border w3-round w3-gray"
 style="width:100px"
 type="button"
-onclick="hideElement('we-dialog');"
+onclick="open_word_edit_tab('we-constraints-table'); hideElement('we-dialog');"
 >Cancel</button>
 
 </div> <!-- End of button container -->

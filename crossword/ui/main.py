@@ -1,5 +1,3 @@
-import logging
-
 from crossword.ui import create_app
 
 from crossword.ui.uimain import uimain

@@ -23,7 +23,7 @@ class TestDownWord(TestCase):
         # 46 across, 50 across, 54 across
         expected = [46, 50, 54]
         down_word = puzzle.get_down_word(47)
-        actual = down_word.get_crossing_words()
+        actual = [nc.seq for nc in down_word.get_crossing_words()]
         self.assertListEqual(expected, actual)
 
     def test_get_clear_word(self):

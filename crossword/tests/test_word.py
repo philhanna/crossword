@@ -20,6 +20,17 @@ class TestWord(TestCase):
         self.assertEqual("A", Word.ACROSS)
         self.assertEqual("D", Word.DOWN)
 
+    def test_get_crossing_words(self):
+        puzzle = self.create_puzzle()
+        word = puzzle.get_across_word(17)
+        self.assertEqual("NINE", word.get_text())
+        cw = word.get_crossing_words()
+        self.assertEqual(4, len(cw))
+        #self.assertEqual(puzzle.get_down_word(1).get_text(), cw[0])
+        #self.assertEqual(puzzle.get_down_word(2).get_text(), cw[1])
+        #self.assertEqual(puzzle.get_down_word(3).get_text(), cw[2])
+        #self.assertEqual(puzzle.get_down_word(4).get_text(), cw[3])
+
     @staticmethod
     def create_puzzle():
         jsonstr = r'''{

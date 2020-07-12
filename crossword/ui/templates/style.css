@@ -4,7 +4,10 @@
 #grid-list, #puzzle-list {
     overflow:scroll;
     overflow-x:hidden;
-    height:350px;
+    height:300px;
+}
+.we-tab {
+    height: 275px;
 }
 
 /* Used in grid.html and puzzle.html */

@@ -21,9 +21,7 @@ uiwordlists = Blueprint('uiwordlists', __name__)
 wordlist = None
 
 
-@uiwordlists.route('/wordlists')
-def wordlists():
-    """ Returns the list of matches for a regex pattern """
+def get_wordlist():
     global wordlist
     if not wordlist:
         logname = __name__
@@ -33,13 +31,25 @@ def wordlists():
         etime = datetime.now()
         seconds = get_elapsed_time(stime, etime)
         logging.info(f"{logname}: done loading word list")
+        logging.info(f"{logname}: {len(wordlist)} words in the list")
+        logging.info(f"{logname}: elapsed time {seconds} seconds")
+    return wordlist
+
+
+def get_matching_words(pattern):
+    wordlist = get_wordlist()
+    regexp = re.compile(pattern, re.IGNORECASE)
+    return [line for line in wordlist if regexp.match(line)]
+
+
+@uiwordlists.route('/wordlists')
+def wordlists():
+    """ Returns the list of matches for a regex pattern """
 
     pattern = request.args.get('pattern')
     pattern = "^" + pattern + "$"
     pattern = re.sub('[ ?]', '.', pattern)
-
-    regexp = re.compile(pattern, re.IGNORECASE)
-    words = [line for line in wordlist if regexp.match(line)]
+    words = get_matching_words(pattern)
 
     jsonstr = json.dumps(words)
     resp = make_response(jsonstr, HTTPStatus.OK)

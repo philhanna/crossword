@@ -21,7 +21,7 @@ class TestAcrossWord(TestCase):
         # 3 down, 14 down, 21 down, 4 down, and 5 down
         expected = [3, 14, 21, 4, 5]
         across_word = puzzle.get_across_word(20)
-        actual = across_word.get_crossing_words()
+        actual = [word.seq for word in across_word.get_crossing_words()]
         self.assertListEqual(expected, actual)
 
     def test_get_clear_word(self):
