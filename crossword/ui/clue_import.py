@@ -7,7 +7,7 @@ from io import StringIO
 from sqlalchemy import desc, asc
 
 from crossword import Puzzle
-from crossword.ui import DBPuzzle, db
+from crossword.ui import create_app, db, DBPuzzle
 
 
 def list_puzzles(userid):
@@ -56,6 +56,10 @@ def visit_puzzle(csvstr, puzzle):
 
 
 def main(args):
+
+    app = create_app()
+    app.app_context().push()
+
     userid = 1  # TODO replace hard-coded user id
 
     # If the --list option was specified, just show the
