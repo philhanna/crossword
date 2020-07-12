@@ -3,7 +3,7 @@
 <div id="we-dialog" class="w3-modal">
 <!-- modal content -->
 <div class="w3-modal-content w3-card-4"
-     style="width:50%;position:absolute;top:10%;left:40%"
+     style="position:absolute; top:10%; left:40%; width:50%;"
 >
 
 <header class="w3-container w3-blue-gray">
@@ -23,11 +23,42 @@
 <!-- form section -->
 <div class="w3-section">
 
-    <div class="w3-bar w3-border"> <!-- Toolbar -->
-        <!-- Suggest -->
-        <a class="w3-bar-item w3-button crosstb" onclick="do_suggest_word()">
+<script>
+    function open_word_edit_tab(tabname) {
+        const elem_tabs = document.getElementsByClassName("we-tab");
+        for (let i = 0; i < elem_tabs.length; i++) {
+            elem_tabs[i].style.display = "none";
+        }
+        const elem_tab = document.getElementById(tabname);
+        elem_tab.style.display = "block";
+    }
+</script>
+<style>
+    .we-tab {
+        height: 200px;
+    }
+</style>
+    <!-- Tab bar -->
+    <div class="w3-bar w3-blue-gray">
+        <button class="w3-bar-item w3-button"
+                type="button"
+                onclick="open_word_edit_tab('we-tab-suggest'); return false;">
+            Suggest</button>
+        <button class="w3-bar-item w3-button"
+                type="button"
+                onclick="open_word_edit_tab('we-tab-constraints'); return false">
+            Constraints</button>
+        <button class="w3-bar-item w3-button"
+                type="button"
+                onclick="open_word_edit_tab('we-tab-reset'); return false">
+            Reset</button>
+    </div>
+
+    <!-- Tab 1: Suggest -->
+    <div id="we-tab-suggest" class="w3-bar w3-margin-top we-tab">
+        <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_suggest()">
             <i class="material-icons crosstb-icon">search</i>
-            <span>Suggest</span>
+            <span>Suggest words that match pattern</span>
         </a>
         <div class="w3-bar-item" id="we-match" style="display:none"></div>
         <select name="words"
@@ -37,14 +68,20 @@
                 onchange="do_select_changed()"
                 onclick="do_select_changed()" >
         </select>
+    </div>
 
-        <!-- Reset -->
-        <a class="w3-bar-item w3-button crosstb" onclick="do_word_reset()">
+    <!-- Tab 2: Constraints -->
+    <div id="we-tab-constraints" class="w3-bar w3-margin-top we-tab" style="display:none">
+        <span class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb">(New section)</span>
+    </div>
+
+    <!-- Tab 3: Reset -->
+    <div id="we-tab-reset" class="w3-bar w3-margin-top we-tab" style="display:none">
+        <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_reset()">
             <i class="material-icons crosstb-icon">cached</i>
-            <span>Reset</span>
+            <span>Clear letters not shared with full words</span>
         </a>
-
-    </div> <!-- End of toolbar -->
+    </div>
 
 <!-- Input word -->
 <p style="width:50%">

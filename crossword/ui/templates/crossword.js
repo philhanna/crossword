@@ -977,10 +977,10 @@ function do_puzzle_publish_acrosslite() {
 //  ============================================================
 
 /***************************************************************
- *  NAME: do_suggest_word()
+ *  NAME: do_word_suggest()
  *  DESCRIPTION: Suggest a word that matches the pattern
  ***************************************************************/
-function do_suggest_word() {
+function do_word_suggest() {
 
     const elem_match = document.getElementById("we-match");
     const state = elem_match.style.display;
