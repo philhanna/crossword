@@ -128,6 +128,10 @@ class Puzzle:
         """ Returns the number of words in the puzzle """
         return self.grid.get_word_count()
 
+    def get_word_lengths(self):
+        """ Returns a list of word lengths and words of that length """
+        return self.grid.get_word_lengths()
+
     #   ========================================================
     #   undo / redo logic
     #   ========================================================

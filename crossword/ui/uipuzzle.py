@@ -131,15 +131,32 @@ def puzzle_open():
 @uipuzzle.route('/puzzle-preview')
 def puzzle_preview():
     """ Creates a puzzle preview and returns it to ??? """
+    userid = 1  # TODO Replace hard coded user id
 
     # Get the chosen puzzle name from the query parameters
     puzzlename = request.args.get('puzzlename')
 
     # Open the corresponding file and read its contents as json
     # and recreate the puzzle from it
-    userid = 1  # TODO Replace hard coded user id
     jsonstr = puzzle_load_common(userid, puzzlename)
     puzzle = Puzzle.from_json(jsonstr)
+
+    # Get the top two word lengths
+    heading_list = [
+        f"{puzzle.get_word_count()} words"
+    ]
+    wlens = puzzle.get_word_lengths()
+    wlenkeys = sorted(wlens.keys(), reverse=True)
+    wlenkeys = wlenkeys[:min(2, len(wlenkeys))]
+    for wlen in wlenkeys:
+        entry = wlens[wlen]
+        total = 0
+        if entry["alist"]:
+            total += len(entry["alist"])
+        if entry["dlist"]:
+            total += len(entry["dlist"])
+        heading_list.append(f"{wlen}-letter: {total}")
+    heading = f'{puzzlename}({", ".join(heading_list)})'
 
     scale = 0.75
     svgobj = PuzzleToSVG(puzzle, scale=scale)
@@ -148,8 +165,8 @@ def puzzle_preview():
 
     obj = {
         "puzzlename": puzzlename,
+        "heading": heading,
         "width": width,
-        "wordcount": puzzle.get_word_count(),
         "svgstr": svgstr
     }
     resp = make_response(json.dumps(obj), HTTPStatus.OK)

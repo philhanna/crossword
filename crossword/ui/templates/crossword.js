@@ -124,9 +124,8 @@ function do_grid_preview(gridname) {
         if (this.readyState == 4 && this.status == 200) {
             const jsonstr = this.responseText;
             const obj = JSON.parse(jsonstr);
-            document.getElementById("gv-gridname").innerHTML = obj.gridname;
             document.getElementById("gv-container").style.width = obj.width;
-            document.getElementById("gv-wordcount").innerHTML = obj.wordcount;
+            document.getElementById("gv-heading").innerHTML = obj.heading;
             document.getElementById("gv-svgstr").innerHTML = obj.svgstr;
             showElement("gv-dialog");
         }
@@ -621,9 +620,8 @@ function do_puzzle_preview(puzzlename) {
         if (this.readyState == 4 && this.status == 200) {
             const jsonstr = this.responseText;
             const obj = JSON.parse(jsonstr);
-            document.getElementById("pv-puzzlename").innerHTML = obj.puzzlename;
             document.getElementById("pv-container").style.width = obj.width;
-            document.getElementById("pv-wordcount").innerHTML = obj.wordcount;
+            document.getElementById("pv-heading").innerHTML = obj.heading;
             document.getElementById("pv-svgstr").innerHTML = obj.svgstr;
             showElement("pv-dialog");
         }

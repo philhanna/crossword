@@ -101,16 +101,32 @@ def grid_open():
 @uigrid.route('/grid-preview')
 def grid_preview():
     """ Creates a grid preview and returns it to ??? """
+    userid = 1  # TODO Replace hard coded user id
 
     # Get the chosen grid name from the query parameters
     gridname = request.args.get('gridname')
-    userid = 1  # TODO Replace hard coded user id
-    jsonstr = grid_load_common(userid, gridname)
 
     # Open the corresponding file and read its contents as json
     # and recreate the grid from it
-
+    jsonstr = grid_load_common(userid, gridname)
     grid = Grid.from_json(jsonstr)
+
+    # Get the top two word lengths
+    heading_list = [
+        f"{grid.get_word_count()} words"
+    ]
+    wlens = grid.get_word_lengths()
+    wlenkeys = sorted(wlens.keys(), reverse=True)
+    wlenkeys = wlenkeys[:min(2, len(wlenkeys))]
+    for wlen in wlenkeys:
+        entry = wlens[wlen]
+        total = 0
+        if entry["alist"]:
+            total += len(entry["alist"])
+        if entry["dlist"]:
+            total += len(entry["dlist"])
+        heading_list.append(f"{wlen}-letter: {total}")
+    heading = f'{gridname}({", ".join(heading_list)})'
 
     scale = 0.75
     svgobj = GridToSVG(grid, scale=scale)
@@ -119,7 +135,7 @@ def grid_preview():
 
     obj = {
         "gridname": gridname,
-        "wordcount": grid.get_word_count(),
+        "heading": heading,
         "width": width,
         "svgstr": svgstr
     }
