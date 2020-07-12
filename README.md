@@ -29,6 +29,7 @@ If you do not already have it installed, see the
 
 ### Install the crossword application
 
+#### Installing for the first time
 If this is the first time you have downloaded the software
 onto this computer, clone it from the GitHub repository,
 like this:
@@ -45,6 +46,7 @@ cd $HOME
 git clone https://github.com/philhanna/crossword
 ```
 
+#### Upgrading to a newer version
 If you are upgrading to a newer version, you only need
 to run "git pull" from the crossword directory:
 
@@ -60,6 +62,7 @@ cd $HOME/crossword
 git pull
 ```
 
+#### Creating a virtual environment and installing the application
 Then install the application in a Python virtual environment:
 
 **On Windows:**
