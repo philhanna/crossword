@@ -135,7 +135,7 @@ To start the HTTP server, run `main.py`, as follows:
 
 **On Windows:**
 ```bat
-cd %USERPROFILE%
+cd %USERPROFILE%\crossword
 venv\Scripts\activate.bat
 python -m crossword.ui.main
 ```
