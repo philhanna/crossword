@@ -2,8 +2,6 @@
 import csv
 from io import StringIO
 
-from sqlalchemy import desc, asc
-
 from crossword import Puzzle
 from crossword.ui import DBPuzzle, create_app, list_puzzles
 
