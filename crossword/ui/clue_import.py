@@ -7,16 +7,7 @@ from io import StringIO
 from sqlalchemy import desc, asc
 
 from crossword import Puzzle
-from crossword.ui import create_app, db, DBPuzzle
-
-
-def list_puzzles(userid):
-    puzzle_list = DBPuzzle.query \
-        .filter_by(userid=userid) \
-        .order_by(desc(DBPuzzle.modified), asc(DBPuzzle.puzzlename)) \
-        .all()
-    for row in puzzle_list:
-        print(f"{row.puzzlename:20s} {row.modified}")
+from crossword.ui import create_app, db, DBPuzzle, list_puzzles
 
 
 def visit_puzzle(csvstr, puzzle):

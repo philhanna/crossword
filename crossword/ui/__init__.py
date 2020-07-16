@@ -2,6 +2,7 @@
 
 __all__ = [
     'create_app',
+    'list_puzzles',
     'db',
     'DBGrid',
     'DBPuzzle',
@@ -11,6 +12,7 @@ __all__ = [
 from flask import Flask
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import desc, asc
 
 from crossword import dbfile, config
 
@@ -61,6 +63,15 @@ def create_app():
     logging.info(f"{logname}: SQLAlchemy init_app called")
 
     return app
+
+
+def list_puzzles(userid):
+    puzzle_list = DBPuzzle.query \
+        .filter_by(userid=userid) \
+        .order_by(desc(DBPuzzle.modified), asc(DBPuzzle.puzzlename)) \
+        .all()
+    for row in puzzle_list:
+        print(f"{row.modified:32s} {row.puzzlename}")
 
 
 class DBUser(db.Model):
