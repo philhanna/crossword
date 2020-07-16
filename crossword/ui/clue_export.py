@@ -58,6 +58,9 @@ def main(args):
     puzzlename = args.puzzlename
 
     row = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
+    if not row:
+        errmsg = f"Puzzle '{puzzlename}' not found"
+        raise RuntimeError(errmsg)
     jsonstr = row.jsonstr
     puzzle = Puzzle.from_json(jsonstr)
 

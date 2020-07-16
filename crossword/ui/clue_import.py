@@ -69,6 +69,10 @@ def main(args):
         .filter_by(userid=userid, puzzlename=puzzlename) \
         .order_by(desc(DBPuzzle.modified), asc(DBPuzzle.puzzlename)) \
         .first()
+    if not row:
+        errmsg = f"Puzzle '{puzzlename}' not found"
+        raise RuntimeError(errmsg)
+
     jsonstr = row.jsonstr
     puzzle = Puzzle.from_json(jsonstr)
 

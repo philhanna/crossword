@@ -194,6 +194,7 @@ class Puzzle:
         image = dict()
         image['n'] = self.n
         image['title'] = self.get_title()
+        image['cells'] = [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = [black_cell for black_cell in self.black_cells]
 
         # Numbered cells
