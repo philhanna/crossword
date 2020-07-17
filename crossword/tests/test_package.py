@@ -18,5 +18,6 @@ class TestPackage(unittest.TestCase):
         self.assertAlmostEqual(expected, actual, delta=0.05)
 
     def test_dbfile(self):
-        db = dbfile()
-        self.assertTrue(os.path.exists(db))
+        db = os.path.abspath(dbfile())
+        errmsg = f"{db} file not found"
+        self.assertTrue(os.path.exists(db), errmsg)

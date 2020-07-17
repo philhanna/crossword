@@ -35,9 +35,16 @@ def init_config():
     else:
         msg = f".config.ini file was not found. Using default configuration. See README.md"
         logging.warning(msg)
+        # Adjust dbfile for correct path, relative to the package
+        this_dir = os.path.dirname(__file__)
+        project_root_dir = os.path.dirname(this_dir)
+        v = config['DEFAULT']['dbfile']
+        dbfile = os.path.join(project_root_dir, v)
+        config['DEFAULT']['dbfile'] = dbfile
     options = {}
     for k, v in config['DEFAULT'].items():
         options[k] = v
+    logging.warning(f"Using database at {options['dbfile']}")
     return options
 
 
