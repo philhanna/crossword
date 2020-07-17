@@ -44,7 +44,7 @@ def init_config():
     options = {}
     for k, v in config['DEFAULT'].items():
         options[k] = v
-    logging.warning(f"Using database at {options['dbfile']}")
+    logging.info(f"Using database at {options['dbfile']}")
     return options
 
 
