@@ -3,26 +3,6 @@
 //  ============================================================
 
 const BOXSIZE = 32;
-let CLICK_EVENT;
-let PUZZLE_CLICK_STATE = 0;
-let TIMEOUT_VAR;
-
-/***************************************************************
- * FUNCTION NAME:   showElement
- * DESCRIPTION:     Turns on the display of a dialog
- ***************************************************************/
-
-function showElement(id) {
-    document.getElementById(id).style.display = "block";
-}
-
-/***************************************************************
- *  FUNCTION NAME:   hideElement
- *  DESCRIPTION:     Turns off the display of a dialog
- ***************************************************************/
-function hideElement(id) {
-    document.getElementById(id).style.display = "none";
-}
 
 //  ============================================================
 //  Grid functions
@@ -68,14 +48,6 @@ function do_grid_close() {
  ***************************************************************/
 function do_grid_delete() {
     showElement("gd-dialog");
-}
-
-/***************************************************************
- *  FUNCTION NAME:   do_grid_new
- *  DESCRIPTION:     Prompts the user for a grid size
- ***************************************************************/
-function do_grid_new() {
-    showElement("gn-dialog");
 }
 
 /***************************************************************
@@ -501,43 +473,6 @@ function do_statistics(objType, url) {
 //  ============================================================
 
 /***************************************************************
- *  FUNCTION NAME:   do_puzzle_close
- *  DESCRIPTION:     Closes the puzzle screen
- *       1. Asks the server whether the puzzle has changed
- *       2. If so, opens the puzzle changed confirmation dialog
- *       3. Otherwise, redirects to main screen
- ***************************************************************/
-function do_puzzle_close() {
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            // Get the server's answer about whether the puzzle has changed
-            const jsonstr = this.responseText;
-            const obj = JSON.parse(jsonstr);
-            const changed = obj.changed;
-            // If it has changed, open the puzzle changed dialog
-            if (changed) {
-                showElement("px-dialog");
-            } else {
-                window.location.href = "{{ url_for('uimain.main_screen') }}";
-            }
-        }
-    }
-    // Ask the server if the puzzle has changed
-    const url = "{{ url_for('uipuzzle.puzzle_changed')}}";
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
-
-/***************************************************************
- *  FUNCTION NAME:   do_puzzle_delete
- *  DESCRIPTION:     Opens the puzzle delete dialog
- ***************************************************************/
-function do_puzzle_delete() {
-    showElement("pd-dialog");
-}
-
-/***************************************************************
  *  FUNCTION NAME:   do_puzzle_new
  *  DESCRIPTION:     Gets a list of grid files from the server
  *                   and prompts the user to choose one
@@ -572,43 +507,6 @@ function do_puzzle_new() {
 
     grid_chooser_ajax(function_list);
     showElement("gc-dialog");
-}
-
-/***************************************************************
- *  FUNCTION NAME:   do_puzzle_open
- *  DESCRIPTION:     Gets a list of puzzle files from the server
- *                   and prompts the user to choose one
- ***************************************************************/
-function do_puzzle_open() {
-    const function_list = [];
-
-    function preview_anchor(puzzlename) {
-        const elem_a = document.createElement("a");
-        const elem_i = document.createElement("i");
-        elem_i.setAttribute("class", "material-icons");
-        elem_i.appendChild(document.createTextNode("preview"));
-        elem_a.appendChild(elem_i);
-        const onclick = "do_puzzle_preview('" + puzzlename + "')";
-        elem_a.setAttribute("onclick", onclick);
-        elem_a.style.textDecoration = "none"; // No underline
-        return elem_a;
-    }
-
-    function_list.push(preview_anchor);
-
-    function open_anchor(puzzlename) {
-        const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('uipuzzle.puzzle_open') }}" + "?puzzlename=" + puzzlename;
-        elem_a.style.textDecoration = "none"; // No underline
-        elem_a.style.verticalAlign = "top"; // Align with icon
-        elem_a.appendChild(document.createTextNode(puzzlename));
-        return elem_a;
-    }
-
-    function_list.push(open_anchor);
-
-    puzzle_chooser_ajax(function_list);
-    showElement("pc-dialog");
 }
 
 /***************************************************************
@@ -707,56 +605,6 @@ function getRC(event) {
     return [r, c]
 }
 
-function do_click_across_clue(seq) {
-    const elem_ul = document.getElementById("puzzle-across-clues")
-    const v = elem_ul.scrollTop;
-    const url = "{{ url_for('uipuzzle.puzzle_click_across') }}?seq=" + seq + "&scrollTop=" + v;
-    do_click_clue(url);
-}
-
-function do_click_down_clue(seq) {
-    const elem_ul = document.getElementById("puzzle-down-clues")
-    const v = elem_ul.scrollTop;
-    const url = "{{ url_for('uipuzzle.puzzle_click_down') }}?seq=" + seq + "&scrollTop=" + v;
-    do_click_clue(url);
-}
-
-function do_click_clue(url) {
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            const parmstr = this.responseText;
-            const parms = JSON.parse(this.responseText);
-
-            // Set the <h3>17 Across</h3> text
-            const elem_h3 = document.getElementById("we-heading");
-            const heading = `${parms.seq} ${parms.direction} (${parms.length} letters)`;
-            elem_h3.innerHTML = heading;
-
-            // Set the word maxlength and value
-            const elem_word = document.getElementById("we-word");
-            elem_word.maxlength = parms.length;
-            elem_word.value = parms.text;
-
-            // Set the clue
-            const elem_clue = document.getElementById("we-clue");
-            elem_clue.value = parms.clue;
-
-            // Clear any previous select for "suggest" and turn it off
-            const elem_select = document.getElementById("we-select");
-            elem_select.innerHTML = "";
-            hideElement("we-select");
-            hideElement("we-match");
-
-            // Make the modal dialog visible
-            showElement("we-dialog");
-            elem_word.focus();
-        }
-    };
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
-
 /***************************************************************
  *  FUNCTION NAME:   do_word
  *  DESCRIPTION:     Given a mouse click, returns row and column
@@ -805,30 +653,7 @@ function do_word(event, url) {
  *  FUNCTION NAME:   puzzle_click
  *  DESCRIPTION:     Distinguishes between single and double clicks
  ***************************************************************/
-function puzzle_click(event) {
 
-    const TIMEOUT_MS = 300;
-    CLICK_EVENT = event;
-
-    function single_click() {
-        PUZZLE_CLICK_STATE = 0;
-        do_word(CLICK_EVENT, "{{ url_for('uipuzzle.puzzle_click_across') }}");
-    }
-
-    function double_click() {
-        PUZZLE_CLICK_STATE = 0;
-        do_word(event, "{{ url_for('uipuzzle.puzzle_click_down') }}");
-    }
-
-    if (PUZZLE_CLICK_STATE == 0) {
-        PUZZLE_CLICK_STATE = 1;
-        TIMEOUT_VAR = setTimeout(single_click, TIMEOUT_MS);
-    } else if (PUZZLE_CLICK_STATE == 1) {
-        PUZZLE_CLICK_STATE = 0;
-        clearTimeout(TIMEOUT_VAR);
-        double_click(CLICK_EVENT);
-    }
-}
 
 /***************************************************************
  *  FUNCTION NAME:   puzzle_chooser_ajax
@@ -892,84 +717,6 @@ function do_puzzle_title() {
     showElement("pt-dialog")
 }
 
-/***************************************************************
- *  FUNCTION NAME:   do_puzzle_publish_nytimes
- *  DESCRIPTION:     Gets a list of puzzle files from the server
- *                   and prompts the user to choose one, building
- *                   from it a list of links to the publish
- *                   function for that puzzle
- ***************************************************************/
-function do_puzzle_publish_nytimes() {
-    const function_list = [];
-
-    function preview_anchor(puzzlename) {
-        const elem_a = document.createElement("a");
-        const elem_i = document.createElement("i");
-        elem_i.setAttribute("class", "material-icons");
-        elem_i.appendChild(document.createTextNode("preview"));
-        elem_a.appendChild(elem_i);
-        const onclick = "do_puzzle_preview('" + puzzlename + "')";
-        elem_a.setAttribute("onclick", onclick);
-        elem_a.style.textDecoration = "none"; // No underline
-        return elem_a;
-    }
-
-    function_list.push(preview_anchor);
-
-    function publish_anchor(puzzlename) {
-        const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('uipublish.puzzle_publish_nytimes') }}" + "?puzzlename=" + puzzlename;
-        elem_a.style.textDecoration = "none"; // No underline
-        elem_a.style.verticalAlign = "top"; // Align with icon
-        elem_a.appendChild(document.createTextNode(puzzlename));
-        return elem_a;
-    }
-
-    function_list.push(publish_anchor);
-
-    puzzle_chooser_ajax(function_list);
-    showElement("pc-dialog");
-}
-
-/***************************************************************
- *  FUNCTION NAME:   do_puzzle_publish_acrosslite
- *  DESCRIPTION:     Gets a list of puzzle files from the server
- *                   and prompts the user to choose one, building
- *                   from it a list of links to the publish
- *                   function for that puzzle
- ***************************************************************/
-function do_puzzle_publish_acrosslite() {
-    const function_list = [];
-
-    function preview_anchor(puzzlename) {
-        const elem_a = document.createElement("a");
-        const elem_i = document.createElement("i");
-        elem_i.setAttribute("class", "material-icons");
-        elem_i.appendChild(document.createTextNode("preview"));
-        elem_a.appendChild(elem_i);
-        const onclick = "do_puzzle_preview('" + puzzlename + "')";
-        elem_a.setAttribute("onclick", onclick);
-        elem_a.style.textDecoration = "none"; // No underline
-        return elem_a;
-    }
-
-    function_list.push(preview_anchor);
-
-    function publish_anchor(puzzlename) {
-        const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('uipublish.puzzle_publish_acrosslite') }}" + "?puzzlename=" + puzzlename;
-        elem_a.style.textDecoration = "none"; // No underline
-        elem_a.style.verticalAlign = "top"; // Align with icon
-        elem_a.appendChild(document.createTextNode(puzzlename));
-        return elem_a;
-    }
-
-    function_list.push(publish_anchor);
-
-    puzzle_chooser_ajax(function_list);
-    showElement("pc-dialog");
-}
-
 //  ============================================================
 //  Edit word functions
 //  ============================================================
@@ -978,66 +725,6 @@ function do_puzzle_publish_acrosslite() {
  *  NAME: do_word_suggest()
  *  DESCRIPTION: Suggest a word that matches the pattern
  ***************************************************************/
-function do_word_suggest() {
-
-    const elem_match = document.getElementById("we-match");
-    const state = elem_match.style.display;
-    if (state == "block") {
-        hideElement("we-match");
-        hideElement("we-select");
-        return;
-    }
-
-    // Get the pattern
-    const elem_word = document.getElementById("we-word");
-    const pattern = elem_word.value;
-
-    // Invoke an AJAX call to get the matching words
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            const jsonstr = this.responseText;
-            const words = JSON.parse(jsonstr);
-
-            const elem_select = document.getElementById("we-select");
-            elem_select.innerHTML = "";
-
-            const elem_match = document.getElementById("we-match");
-            elem_match.innerHTML = "";
-
-            if (words.length == 0) {
-                elem_match.innerHTML = "No matches found";
-                showElement("we-match");
-                hideElement("we-select");
-            } else {
-                elem_match.innerHTML = words.length + " matches found:";
-                for (let i = 0; i < words.length; i++) {
-                    const word = words[i];
-                    const elem_option = document.createElement("option");
-                    elem_option.value = word;
-                    elem_option.appendChild(document.createTextNode(word))
-                    elem_select.appendChild(elem_option);
-                }
-                showElement("we-match");
-                showElement("we-select")
-            }
-        }
-    }
-    const url = "{{ url_for('uiwordlists.wordlists')}}" + "?pattern=" + pattern;
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
-
-/***************************************************************
- *  NAME: do_select_changed()
- *  DESCRIPTION: Updates the text in the input field to match
- *      the entry selected in the dropdown box
- ***************************************************************/
-function do_select_changed() {
-    const elem_select = document.getElementById("we-select")
-    const elem_word = document.getElementById("we-word")
-    elem_word.value = elem_select.value
-}
 
 /***************************************************************
  *  NAME: do_word_validate()
@@ -1056,112 +743,6 @@ function do_word_validate() {
     }
     return true;
 }
-
-/***************************************************************
- *  NAME: do_word_constraints()
- *  DESCRIPTION: Find the constraints for the word
- ***************************************************************/
-function do_word_constraints() {
-    // Invoke an AJAX call to get the cleared text
-    // for the input word
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-
-            // Get the constraints data from the server
-            const jsonstr = this.responseText;
-            const constraints = JSON.parse(jsonstr);
-            // Start building the constraints UI section
-            const elem_ui = document.getElementById("we-constraints-table");
-            elem_ui.innerHTML = "";
-
-            // Heading shows overall pattern
-            const elem_div = document.createElement("div");
-            elem_ui.appendChild(elem_div);
-            elem_div.setAttribute("class", "w3-padding w3-center");
-            const elem_b = document.createElement("b");
-            elem_div.appendChild(elem_b);
-            elem_b.appendChild(document.createTextNode("Overall pattern:"));
-            const elem_input = document.createElement("input");
-            elem_div.appendChild(elem_input);
-            elem_input.setAttribute("class", "w3-border");
-            elem_input.setAttribute("value", constraints["pattern"]);
-
-            // Fill in the table
-
-            const elem_table = document.createElement("table");
-            elem_ui.appendChild(elem_table);
-            elem_table.setAttribute("class", "w3-table w3-small w3-bordered");
-            let elem_tr, elem_th, elem_td;
-
-            elem_tr = document.createElement("tr");
-            elem_table.appendChild(elem_tr);
-
-            let column_names = ["Pos", "Letter", "Location", "Text",
-                                "Index", "Regexp", "Choices"];
-            for (let i = 0; i < column_names.length; i++) {
-                const name = column_names[i];
-                elem_th = document.createElement("th");
-                elem_tr.appendChild(elem_th);
-                elem_th.appendChild(document.createTextNode(name));
-            }
-            const crossers = constraints["crossers"];
-            for (let i = 0; i < crossers.length; i++) {
-                const crosser = crossers[i];
-                const attrnames = ["pos", "letter", "location", "text",
-                                    "index", "regexp", "choices"];
-                elem_tr = document.createElement("tr");
-                elem_table.appendChild(elem_tr);
-                for (let j = 0; j < attrnames.length; j++) {
-                    elem_td = document.createElement("td");
-                    elem_tr.appendChild(elem_td);
-                    const attrName = attrnames[j];
-                    const attrValue = crosser[attrName];
-                    elem_td.appendChild(document.createTextNode(attrValue));
-                }
-            }
-
-            // Copy the suggested pattern to the input word
-            const elem_word = document.getElementById("we-word");
-            const before = elem_word.value();
-            elem_word.setAttribute("value", constraints["pattern"]);
-            const after = elem_word.value();
-
-            // Make the section visible
-
-            showElement("we-constraints-table");
-        }
-    }
-    const url = "{{ url_for('uiword.word_constraints')}}";
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
-
-/***************************************************************
- *  NAME: do_word_reset()
- *  DESCRIPTION: Clears the word in the puzzle except for the
- *      letters that are part of a completed crossing word
- ***************************************************************/
-function do_word_reset() {
-
-    // Invoke an AJAX call to get the cleared text
-    // for the input word
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            const jsonstr = this.responseText;
-            const new_text = JSON.parse(jsonstr);
-
-            // Update the input field
-            const elem_word = document.getElementById("we-word");
-            elem_word.value = new_text
-        }
-    }
-    const url = "{{ url_for('uiword.word_reset')}}";
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
-
 /***************************************************************
  *  FUNCTION NAME:   do_puzzle_undo
  *  DESCRIPTION:     Undoes the last change

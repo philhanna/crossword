@@ -1,164 +1,217 @@
-<!-- puzzle.html -->
-{% include 'header.html' %}
+{% extends "main.html" %}
+{% block header %}
+<script>
+    // Global variables
+    let PUZZLE_CLICK_STATE = 0;
+    let CLICK_EVENT;
+    function puzzle_click(event) {
+
+        const TIMEOUT_MS = 300;
+        CLICK_EVENT = event;
+
+        function single_click() {
+            PUZZLE_CLICK_STATE = 0;
+            do_word(CLICK_EVENT, "{{ url_for('uipuzzle.puzzle_click_across') }}");
+        }
+
+        function double_click() {
+            PUZZLE_CLICK_STATE = 0;
+            do_word(event, "{{ url_for('uipuzzle.puzzle_click_down') }}");
+        }
+
+        if (PUZZLE_CLICK_STATE == 0) {
+            PUZZLE_CLICK_STATE = 1;
+            TIMEOUT_VAR = setTimeout(single_click, TIMEOUT_MS);
+        } else if (PUZZLE_CLICK_STATE == 1) {
+            PUZZLE_CLICK_STATE = 0;
+            clearTimeout(TIMEOUT_VAR);
+            double_click(CLICK_EVENT);
+        }
+    }
+    function do_click_across_clue(seq) {
+        const elem_ul = document.getElementById("puzzle-across-clues")
+        const v = elem_ul.scrollTop;
+        const url = "{{ url_for('uipuzzle.puzzle_click_across') }}?seq=" + seq + "&scrollTop=" + v;
+        window.location.href = url;
+    }
+    function do_click_down_clue(seq) {
+        const elem_ul = document.getElementById("puzzle-down-clues")
+        const v = elem_ul.scrollTop;
+        const url = "{{ url_for('uipuzzle.puzzle_click_down') }}?seq=" + seq + "&scrollTop=" + v;
+        window.location.href = url;
+    }
+    function do_puzzle_close() {
+        const xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                // Get the server's answer about whether the puzzle has changed
+                const jsonstr = this.responseText;
+                const obj = JSON.parse(jsonstr);
+                const changed = obj.changed;
+                // If it has changed, open the puzzle changed dialog
+                if (changed) {
+                    document.getElementById("mb-title").innerHTML = "Close puzzle"
+                    document.getElementById("mb-prompt").innerHTML = `Close puzzle without saving?`;
+                    document.getElementById("mb-ok").href = "{{ url_for('uimain.main_screen') }}";
+                    showElement("mb")
+                } else {
+                    window.location.href = "{{ url_for('uimain.main_screen') }}";
+                }
+            }
+        }
+        // Ask the server if the puzzle has changed
+        const url = "{{ url_for('uipuzzle.puzzle_changed')}}";
+        xhttp.open("GET", url, true);
+        xhttp.send();
+    }
+    function do_puzzle_delete(puzzlename) {
+        document.getElementById("mb-title").innerHTML = "Delete puzzle";
+        document.getElementById("mb-prompt").innerHTML = `Are you sure you want to delete puzzle <b>'${puzzlename}'</b>?`;
+        document.getElementById("mb-ok").href = "{{ url_for('uipuzzle.puzzle_delete') }}";
+        showElement("mb")
+    }
+</script>
+
 <div class="w3-container">
     <h3>Editing puzzle
-        {% if puzzlename %}
-        <b>{{ puzzlename }}</b>
-        {% else %}
-        (untitled)
-        {% endif %}
-        {% if puzzletitle %}
-        : "{{ puzzletitle }}"
-        {% endif %}
+        {% if puzzlename %}<b>{{ puzzlename }}</b>{% else %}(untitled){% endif %}
+        {% if puzzletitle %}: "{{ puzzletitle }}" {% endif %}
     </h3>
 </div>
 
-<div class="w3-container w3-margin-bottom" style="width:700;height:36">
-<div class="w3-bar w3-border"> <!-- Toolbar -->
+<div class="w3-container w3-margin-bottom" style="width:700px;height:36px">
+    <div class="w3-bar w3-border"> <!-- Toolbar -->
 
-    <!-- Save -->
-    <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.puzzle_save %} w3-disabled {% endif %}"
-            {% if enabled.puzzle_save %}
-            onclick="do_puzzle_save(
-            {% if puzzlename %}
-            '{{puzzlename}}'
-            {% else %}
-            ''
-            {% endif %}
-            )"
-            {% endif %}
-            >
-        <i class="material-icons crosstb-icon">save</i>
-        <span>Save</span>
-    </a>
+        <!-- Save -->
+        <a class="w3-bar-item w3-button crosstb
+                {% if not enabled.puzzle_save %} w3-disabled {% endif %}"
+           {% if enabled.puzzle_save %}
+           onclick="do_puzzle_save({% if puzzlename %}'{{puzzlename}}'{% else %}''{% endif %})"
+           {% endif %}
+        >
+            <i class="material-icons crosstb-icon">save</i>
+            <span>Save</span>
+        </a>
 
-    <!-- Close -->
-    <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.puzzle_close %} w3-disabled {% endif %}"
-            {% if enabled.puzzle_close %}
-            onclick="do_puzzle_close()"
-            {% endif %}
-            >
-        <i class="material-icons crosstb-icon">close</i>
-        <span>Close</span>
-    </a>
+        <!-- Close -->
+        <a class="w3-bar-item w3-button crosstb
+                {% if not enabled.puzzle_close %} w3-disabled {% endif %}"
+           {% if enabled.puzzle_close %}
+           onclick="do_puzzle_close()"
+           {% endif %}
+        >
+            <i class="material-icons crosstb-icon">close</i>
+            <span>Close</span>
+        </a>
 
-    <!-- Stats -->
-    <a class="crosstb w3-bar-item w3-button crosstb
-            {% if not enabled.puzzle_stats %} w3-disabled {% endif %}"
-            {% if enabled.puzzle_stats %}
-            onclick="do_puzzle_stats()"
-            {% endif %}
-            >
-        <i class="material-icons crosstb-icon">info</i>
-        <span>Info</span>
-    </a>
+        <!-- Stats -->
+        <a class="crosstb w3-bar-item w3-button crosstb
+                {% if not enabled.puzzle_stats %} w3-disabled {% endif %}"
+           {% if enabled.puzzle_stats %}
+           onclick="do_puzzle_stats()"
+           {% endif %}
+        >
+            <i class="material-icons crosstb-icon">info</i>
+            <span>Info</span>
+        </a>
 
-    <!-- Set title -->
-    <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.puzzle_title %} w3-disabled {% endif %}"
-            {% if enabled.puzzle_title %}
-            onclick="do_puzzle_title()"
-            {% endif %}
-            >
-        <i class="material-icons crosstb-icon">title</i>
-        <span>Title</span>
-    </a>
+        <!-- Set title -->
+        <a class="w3-bar-item w3-button crosstb
+                {% if not enabled.puzzle_title %} w3-disabled {% endif %}"
+           {% if enabled.puzzle_title %}
+           onclick="do_puzzle_title()"
+           {% endif %}
+        >
+            <i class="material-icons crosstb-icon">title</i>
+            <span>Title</span>
+        </a>
 
-    <!-- Undo -->
-    <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.puzzle_undo %} w3-disabled {% endif %}"
-            {% if enabled.puzzle_undo %}
-            onclick="do_puzzle_undo()"
-            {% endif %}
-            >
-        <i class="material-icons crosstb-icon">undo</i>
-        <span>Undo</span>
-    </a>
+        <!-- Undo -->
+        <a class="w3-bar-item w3-button crosstb
+                {% if not enabled.puzzle_undo %} w3-disabled {% endif %}"
+           {% if enabled.puzzle_undo %}
+           onclick="do_puzzle_undo()"
+           {% endif %}
+        >
+            <i class="material-icons crosstb-icon">undo</i>
+            <span>Undo</span>
+        </a>
 
-    <!-- Redo -->
-    <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.puzzle_redo %} w3-disabled {% endif %}"
-            {% if enabled.puzzle_redo %}
-            onclick="do_puzzle_redo()"
-            {% endif %}
-            >
-        <i class="material-icons crosstb-icon">redo</i>
-        <span>Redo</span>
-    </a>
+        <!-- Redo -->
+        <a class="w3-bar-item w3-button crosstb
+                {% if not enabled.puzzle_redo %} w3-disabled {% endif %}"
+           {% if enabled.puzzle_redo %}
+           onclick="do_puzzle_redo()"
+           {% endif %}
+        >
+            <i class="material-icons crosstb-icon">redo</i>
+            <span>Redo</span>
+        </a>
 
-    <!-- Delete -->
-    <a class="w3-bar-item w3-button crosstb
-            {% if not enabled.puzzle_delete %} w3-disabled {% endif %}"
-            {% if enabled.puzzle_delete %}
-            onclick="do_puzzle_delete()"
-            {% endif %}
-            >
-        <i class="material-icons crosstb-icon">delete_forever</i>
-        <span>Delete</span>
-    </a>
+        <!-- Delete -->
+        <a class="w3-bar-item w3-button crosstb
+                {% if not enabled.puzzle_delete %} w3-disabled {% endif %}"
+           {% if enabled.puzzle_delete %}
+           onclick="do_puzzle_delete('{{ puzzlename }}')"
+           {% endif %}
+        >
+            <i class="material-icons crosstb-icon">delete_forever</i>
+            <span>Delete</span>
+        </a>
 
-</div> <!-- End of toolbar -->
+    </div> <!-- End of toolbar -->
 </div>
+{% endblock header %}
 
-<div class="w3-cell-row"> <!-- Three columns: SVG, across clues, down clues -->
+{% block LHS %}
+<!-- Image -->
+<div id="puzzle-svg" class="w3-container" style="width:40%" onclick="puzzle_click(event)">
+    {{ svgstr|safe }}
+</div>
+{% endblock LHS %}
 
-    <!-- Image -->
-    <div    id="puzzle-svg"
-            class="w3-container w3-cell"
-            style="width:40%"
-            onclick="puzzle_click(event)">
-      {{ svgstr|safe }}
+{% block RHS %}
+<div class="w3-cell-row">
+
+    <!-- Across clues -->
+    <div class="w3-cell" style="width:50%">
+        <div class="w3-center w3-margin-bottom"><b>Across</b></div>
+        <ul id="puzzle-across-clues"
+            class="w3-ul w3-card w3-border w3-hoverable w3-pale-yellow clue-list">
+            {% for clue in clues.across %}
+            <li>
+                <a href="javascript:do_click_across_clue( {{ clue.seq }} )">
+                    {{clue.seq}}. {{clue.text}}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
     </div>
+    {% if scrollTopAcross %}
+    <script>
+        document.getElementById('puzzle-across-clues').scrollTop = {{scrollTopAcross}}
+    </script>
+    {% endif %}
 
-    <div class="w3-section w3-cell">
-        <div class="w3-section w3-cell-row">
-        <!-- Across clues -->
-        <div class="w3-section w3-cell" style="width:50%">
-            <div class="w3-center w3-margin-bottom"><b>Across</b></div>
-            <ul id="puzzle-across-clues"
-                class="w3-ul w3-card w3-border w3-hoverable w3-pale-yellow clue-list">
-                {% for clue in clues.across %}
-                <li>
-                    <a href="javascript:do_click_across_clue( {{ clue.seq }} );">
-                        {{clue.seq}}. {{clue.text}}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% if scrollTopAcross %}
-        <script>
-            document.getElementById('puzzle-across-clues').scrollTop = {{ scrollTopAcross }};
-        </script>
-        {% endif %}
-
-        <!-- Down clues -->
-        <div class="w3-section w3-cell" style="width:50%">
-            <div class="w3-center w3-margin-bottom"><b>Down</b></div>
-            <ul id="puzzle-down-clues"
-                class="w3-ul w3-card w3-border w3-hoverable w3-pale-green clue-list">
-                {% for clue in clues.down %}
-                <li>
-                    <a href="javascript:do_click_down_clue( {{ clue.seq }} );">
-                        {{clue.seq}}. {{clue.text}}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% if scrollTopDown %}
-        <script>
-            document.getElementById('puzzle-down-clues').scrollTop = {{ scrollTopDown }};
-        </script>
-        {% endif %}
-
-        </div>
-
+    <!-- Down clues -->
+    <div class="w3-cell" style="width:50%">
+        <div class="w3-center w3-margin-bottom"><b>Down</b></div>
+        <ul id="puzzle-down-clues"
+            class="w3-ul w3-card w3-border w3-hoverable w3-pale-green clue-list">
+            {% for clue in clues.down %}
+            <li>
+                <a href="javascript:do_click_down_clue( {{ clue.seq }} )">
+                    {{clue.seq}}. {{clue.text}}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
     </div>
+    {% if scrollTopDown %}
+    <script>
+        document.getElementById('puzzle-down-clues').scrollTop = {{scrollTopDown}}
+    </script>
+    {% endif %}
 
-</div> <!-- End three columns -->
-
-{% include 'word-edit.html' %}
-{% include 'footer.html' %}
+</div>
+{% endblock RHS %}

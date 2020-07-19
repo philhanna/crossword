@@ -1,0 +1,35 @@
+{% extends "main.html" %}
+{% block LHS %}
+<script>
+    function cancel_dialog() {
+        window.location.href = "{{ url_for('uimain.main_screen')}}";
+    }
+</script>
+<div class="w3-container w3-margin-top">
+    <div class="w3-display-container">
+        <div class="w3-blue-gray w3-center">
+        <h3>{% block title %}{% endblock title%}</h3>
+        <span class="w3-button w3-display-topright w3-hover-red w3-small" onclick="cancel_dialog()">&times;</span>
+        </div>
+        <div class="w3-container">
+            <p>{% block prompt %}{% endblock prompt%}</p>
+            <div class="w3-section">
+                <ul class="w3-ul w3-card-2 chooser-list">
+                    {% for obj in objectlist %}
+                    <li>
+                        <a class="w3-button"
+                           onclick="{% block fname%}{% endblock fname%}('{{obj}}')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="{% block url %}{% endblock url %}{{obj|urlencode()}}">
+                            <span>{{obj}}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock LHS %}

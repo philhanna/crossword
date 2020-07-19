@@ -20,10 +20,26 @@ from sqlalchemy import desc
 
 # My own packages
 from crossword import Grid, GridToSVG, sha256
-from crossword.ui import db, DBGrid
+from crossword.ui import db, DBGrid, UIState
 
 # Register this route handler
+
 uigrid = Blueprint('uigrid', __name__)
+
+
+@uigrid.route('/grid-chooser')
+def grid_chooser():
+    """ Redirects to grid chooser dialog """
+
+    # Make a list of all the saved grids
+    userid = 1  # TODO replace hard-coded user ID
+    gridlist = get_grid_list(userid)
+
+    # Set the state to grid chooser
+    session['uistate'] = UIState.GRID_CHOOSER
+    enabled = UIState.GRID_CHOOSER.get_enabled()
+
+    return render_template("grid-chooser.html", enabled=enabled, objectlist=gridlist)
 
 
 @uigrid.route('/grid')

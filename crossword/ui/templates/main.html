@@ -1,3 +1,152 @@
-<!-- main.html -->
-{% include 'header.html' %}
-{% include 'footer.html' %}
+<html>
+<!--- ================ header ================ -->
+<head>
+<title>Crossword Puzzle Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+{% include 'style.css' %}
+</style>
+<script>
+    function not_yet(fname) {
+        alert(`${fname} is not yet implemented...`);
+    }
+    function do_grid_new() {
+        not_yet("do_grid_new");
+    }
+    function showElement(id) {
+        document.getElementById(id).style.display = "block";
+    }
+    function hideElement(id) {
+        document.getElementById(id).style.display = "none";
+    }
+</script>
+</head>
+
+<body>
+<div class="w3-container"><h1>Crossword Puzzle Editor</h1></div>
+
+<!--- ================ menu ================ -->
+{% macro menuitem(enabled, label, href, onclick, arg, argvalue) -%}
+<a class="w3-bar-item w3-button{% if not enabled %} w3-disabled{% endif %}" {% if enabled %} {% if href %} href="{{ href }}" {% endif %} {% if onclick %} onclick="{{ onclick }}( {% if arg %} '{{ argvalue }}' {% endif %})" {% endif %} {% endif %}>{{label}}</a>
+{%- endmacro %}
+<div class="w3-bar w3-blue-gray">
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Grid</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+{{ menuitem(enabled=enabled.grid_new,
+            label='New grid...',
+            onclick='do_grid_new'
+            )}}
+{{ menuitem(enabled=enabled.grid_open,
+            label='Open grid...',
+            href=url_for('uigrid.grid_chooser')
+            )}}
+{{ menuitem(enabled=enabled.grid_save,
+            label='Save grid',
+            onclick='do_grid_save',
+            arg='gridname', argvalue=gridname
+            )}}
+{{ menuitem(enabled=enabled.grid_save_as,
+            label='Save grid as...',
+            onclick='do_grid_save_as'
+            )}}
+{{ menuitem(enabled=enabled.grid_close,
+            label='Close grid',
+            onclick='do_grid_close'
+            )}}
+{{ menuitem(enabled=enabled.grid_delete,
+            label='Delete grid',
+            onclick='do_grid_delete'
+            )}}
+      </div>
+   </div>
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Puzzle</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+{{ menuitem(enabled=enabled.puzzle_new,
+            label='New puzzle...',
+            onclick='do_puzzle_new'
+            )}}
+{{ menuitem(enabled=enabled.puzzle_open,
+            label='Open puzzle...',
+            href=url_for('uipuzzle.puzzle_chooser', nexturl=url_for('uipuzzle.puzzle_open'))
+            )}}
+{{ menuitem(enabled=enabled.puzzle_save,
+            label='Save puzzle',
+            onclick='do_puzzle_save',
+            arg='puzzlename',
+            argvalue=puzzlename
+            )}}
+{{ menuitem(enabled=enabled.puzzle_save_as,
+            label='Save puzzle as...',
+            onclick='do_puzzle_save_as'
+            )}}
+{{ menuitem(enabled=enabled.puzzle_close,
+            label='Close puzzle',
+            onclick='do_puzzle_close'
+            )}}
+{{ menuitem(enabled=enabled.puzzle_delete,
+            label='Delete puzzle',
+            onclick='do_puzzle_delete'
+            )}}
+      </div>
+   </div>
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Publish</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+{{ menuitem(enabled=True,
+            label='Across Lite format',
+            href=url_for('uipuzzle.puzzle_chooser', nexturl=url_for('uipublish.puzzle_publish_acrosslite'))
+            )}}
+{{ menuitem(enabled=True,
+            label='Crossword Compiler format',
+            href=url_for('uipuzzle.puzzle_chooser', nexturl=url_for('uipublish.puzzle_publish_cwcompiler'))
+            )}}
+{{ menuitem(enabled=True,
+            label='New York Times format',
+            href=url_for('uipuzzle.puzzle_chooser', nexturl=url_for('uipublish.puzzle_publish_nytimes'))
+            )}}
+      </div>
+   </div>
+   <a class="w3-bar-item w3-button w3-right"
+      href="https://github.com/philhanna/crossword/wiki"
+   >Help</a>
+</div>
+
+<!-- ================ header block ================ -->
+{% block header %}
+{% endblock header %}
+
+<div class="w3-cell-row">
+   <!-- ================ LHS block ================ -->
+   <div class="w3-cell" style="width:50%">
+   {% block LHS %}
+   {% endblock LHS %}
+   </div>
+   <!-- ================ RHS block ================ -->
+   <div class="w3-cell" style="width:50%">
+   {% block RHS %}
+   {% endblock RHS %}
+   </div>
+</div>
+<!--- ================ footer ================ -->
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div id="messages" class="w3-display-container">
+<span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
+      onclick="hideElement('messages')"
+      >&times;</span>
+   <div class="w3-panel w3-pale-yellow w3-leftbar w3-border-yellow">
+      <div class="w3-container">
+         {% for message in messages %}
+         <p>{{ message }}</p>
+         {% endfor %}
+      </div>
+   </div>
+</div>
+{% endif %}
+{% endwith %}
+{% include "message-box.html" %}
+</body>

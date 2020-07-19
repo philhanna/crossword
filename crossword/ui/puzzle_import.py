@@ -1,94 +1,172 @@
-import logging
+import csv
+import json
 import os
 from datetime import datetime
+from io import StringIO
 
-from crossword.ui import list_puzzles, create_app, DBPuzzle, db
-
-userid = 1  # TODO Replace hard-coded userID
+from crossword import Puzzle
+from crossword.ui import DBPuzzle, PuzzleToXML, create_app, DBUser, PuzzleFromXML, db
 
 
 class PuzzleImport:
-    """ Updates a puzzle database with data from a JSON file """
+    """ Imports a puzzle from one of three formats:
 
-    def __init__(self, args):
-        """ Creates a new PuzzleImport object"""
-        self.list = args.get('list', None)
-        self.filename = args.get('filename', None)
-        self.puzzlename = args.get('puzzle', None)
+    json    - The JSON stored in the database
+    xml     - XML in the format used by Crossword Compiler
+    csv     - Just the clues, for use in a spreadsheet
+    """
+
+    def __init__(self, user, puzzlename, filename, filetype=None):
+        """ Creates a PuzzleImport object
+
+        :param user a DBUser
+        :param puzzlename the name of the puzzle to be imported
+        :param filename the input file name
+        :param filetype one of 'json', 'xml', or 'csv' (optional)
+        """
+        self.user = user
+        self.puzzlename = puzzlename
+        self.filename = filename
+        if not filetype:
+            base, ext = os.path.splitext(filename)
+            if not ext:
+                errmsg = "Unable to determine file type from extension"
+                raise ValueError(errmsg)
+            filetype = ext
+        filetype = filetype.upper()
+        if filetype.startswith("."):
+            filetype = filetype[1:]
+        if filetype not in ['JSON', 'XML', 'CSV']:
+            errmsg = f"File type must be JSON, XML, or CSV, not {filetype}"
+            raise ValueError(errmsg)
+        self.filetype = filetype
+
+        # Load the data
+        with open(filename) as fp:
+            self.data = fp.read()
 
     def run(self):
-        """ Runs the import """
-
-        app = create_app()
-        app.app_context().push()
-
-        # If the --list option was specified, just list
-        # the existing puzzles and exit
-        if self.list:
-            list_puzzles(userid)
-            exit(0)
-
-        # Make sure a file name and puzzle name were specified on the command line
-        if not self.filename:
-            raise ValueError("No file name specified")
-        if not self.puzzlename:
-            raise ValueError("No puzzle name specified")
-
-        # Load the JSON from the file
-        filename = os.path.expanduser(self.filename)
-        if not filename.endswith(".json"):
-            filename = filename + ".json"
-        filename = os.path.abspath(filename)
-        logging.info(f"Loading JSON from {filename}")
-        with open(filename) as fp:
-            jsonstr = fp.read()
-
-        # See if the puzzle exists in the database
-        dbpuzzle = DBPuzzle.query.filter_by(userid=userid, puzzlename=self.puzzlename).first()
-        if dbpuzzle:
-            # Existing puzzle. This is an update
-            logging.info(f"Updating {self.puzzlename} puzzle with id={dbpuzzle.id}")
-            dbpuzzle.modified = datetime.now().isoformat()
-            dbpuzzle.jsonstr = jsonstr
-            db.session.commit()
+        """ Runs the import for the specified type """
+        if self.filetype == 'JSON':
+            puzzle = self.run_json()
+        elif self.filetype == 'XML':
+            puzzle = self.run_xml()
+        elif self.filetype == 'CSV':
+            puzzle = self.run_csv()
         else:
-            # New puzzle. This is an add
-            logging.info(f"Adding {self.puzzlename} puzzle")
+            errmsg = f"Unknown file type {self.filetype}"
+            raise ValueError(errmsg)
+
+        # Rewrite the puzzle
+        jsonstr = puzzle.to_json()
+        puzzle = DBPuzzle.query.filter_by(userid=self.user.id, puzzlename=self.puzzlename).first()
+        if not puzzle:
             created = modified = datetime.now().isoformat()
-            dbpuzzle = DBPuzzle(userid=userid,
-                                puzzlename=self.puzzlename,
-                                created=created,
-                                modified=modified,
-                                jsonstr=jsonstr)
-            db.session.add(dbpuzzle)
-            db.session.commit()
+            puzzle = DBPuzzle(
+                userid = self.user.id,
+                puzzlename = self.puzzlename,
+                created = created,
+                modified = modified,
+                jsonstr = jsonstr
+            )
+            db.session.add(puzzle)
             pass
-        logging.info("Done")
+        else:
+            modified = datetime.now().isoformat()
+            puzzle.jsonstr = jsonstr
+            puzzle.modified = modified
+            pass
+        db.session.commit()
+        pass
+
+    def run_json(self):
+        """ Creates puzzle from JSON input """
+        return Puzzle.from_json(self.data)
+
+    def run_xml(self):
+        """ Creates puzzle from XML input """
+        return PuzzleFromXML(self.data).puzzle
+
+    def run_csv(self):
+        """ Uploads puzzle clues from CSV input """
+        csvstr = self.data
+        user = self.user
+        userid = user.id
+        puzzlename = self.puzzlename
+        puzzle = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
+        if not puzzle:
+            errmsg = f"Puzzle '{puzzlename}' does not exist"
+            raise ValueError(errmsg)
+        jsonstr = puzzle.jsonstr
+        puzzle = Puzzle.from_json(jsonstr)
+
+        with StringIO(csvstr) as fp:
+            cfp = csv.reader(fp)
+            next(cfp)  # Skip column headings
+            for row in cfp:
+                seq = int(row[0])
+                direction = row[1]
+                text = row[2]
+                clue_text = row[3]
+                if direction == 'across':
+                    word = puzzle.get_across_word(seq)
+                    if not word:
+                        errmsg = f'{seq} across is not defined'
+                        raise RuntimeError(errmsg)
+                    previous_text = word.get_text()
+                    if text != previous_text:
+                        errmsg = f'Word at {seq} across should be "{previous_text}", not "{text}"'
+                        raise RuntimeError(errmsg)
+                    word.set_clue(clue_text)
+                elif direction == 'down':
+                    word = puzzle.get_down_word(seq)
+                    if not word:
+                        errmsg = f'{seq} down is not defined'
+                        raise RuntimeError(errmsg)
+                    previous_text = word.get_text()
+                    if text != previous_text:
+                        errmsg = f'Word at {seq} down should be "{previous_text}", not "{text}"'
+                        raise RuntimeError(errmsg)
+                    word.set_clue(clue_text)
+                else:
+                    errmsg = f'Direction is "{direction}", not "across" or "down"'
+                    raise RuntimeError(errmsg)
+
+        return puzzle
+
 
 #   ============================================================
 #   Mainline
 #   ============================================================
 if __name__ == '__main__':
+    app = create_app()
+    app.app_context().push()
+
     import argparse
 
-    description = """\
-Imports data from a JSON file created by puzzle_export.
-It may either be for an existing puzzle (SQL UPDATE) or
-a new one (SQL INSERT).  In the latter case, the JSON
-was likely created by another user.
+    description = r"""
+Imports a puzzle from one of three formats:
+
+json    - The JSON stored in the database
+xml     - XML in the format used by Crossword Compiler
+csv     - Just the clues, for use in a spreadsheet
     """
+
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("-l", "--list", action="store_true",
-                        help="List puzzles in the puzzle directory")
-    parser.add_argument("filename", nargs="?",
-                        help="Input JSON file", default=None)
-    parser.add_argument("puzzle", nargs="?",
-                        help="Puzzle name")
+    parser.add_argument("-u", "--userid", default="1",
+                        help="User ID (default = 1)")
+    parser.add_argument("puzzlename",
+                        help="Name of puzzle in the database")
+    parser.add_argument("filename",
+                        help="Input file containing puzzle in the specified format")
+    parser.add_argument("filetype", nargs="?",
+                        help="one of JSON, XML, or CSV")
     args = parser.parse_args()
 
-    try:
-        importer = PuzzleImport(vars(args))
-        importer.run()
-    except Exception as e:
-        print(f"Puzzle import failed: {e}")
-        exit(-2)
+    user = DBUser.query.filter_by(id=args.userid).first()
+    puzzlename = args.puzzlename
+    filename = args.filename
+    filetype = args.filetype
+
+    app = PuzzleImport(user, puzzlename, filename, filetype)
+    app.run()

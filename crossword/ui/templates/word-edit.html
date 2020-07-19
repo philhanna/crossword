@@ -1,130 +1,295 @@
-<!-- word-edit.html -->
-<!-- word-edit-dialog -->
-<div id="we-dialog" class="w3-modal">
-<!-- modal content -->
-<div class="w3-modal-content w3-card-4"
-     style="position:absolute; top:10%; left:40%; height:90%; width:50%;"
->
-
-<header class="w3-container w3-blue-gray">
-<h3 id="we-heading"></h3>
-<span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-      onclick="hideElement('we-dialog');"
-      >&times;</span>
-</header>
-
-    <form class="w3-container w3-card-4"
-      name="we-form"
-      method="POST"
-      action="{{ url_for('uiword.word_edit') }}"
-      onsubmit="open_word_edit_tab('we-tab-suggest'); return do_word_validate()"
-    >
-
-<!-- form section -->
-<div class="w3-section">
-
-<script>
-    function open_word_edit_tab(tabname) {
-        const elem_tabs = document.getElementsByClassName("we-tab");
-        for (let i = 0; i < elem_tabs.length; i++) {
-            elem_tabs[i].style.display = "none";
+{% extends "puzzle.html" %}
+{% block RHS %}
+<div id="we-dialog" class="w3-display-container w3-margin-right">
+    <!-- Javascript functions used in this dialog --->
+    <script>
+        function cancel_dialog() {
+            window.location.href = "{{ url_for('uipuzzle.puzzle_screen') }}";
         }
-        const elem_tab = document.getElementById(tabname);
-        elem_tab.style.display = "block";
+
+        function do_select_changed() {
+            const elem_select = document.getElementById("we-select");
+            const elem_word = document.getElementById("we-word");
+            elem_word.value = elem_select.value;
+        }
+
+        function open_word_edit_tab(tabname) {
+            const elem_tabs = document.getElementsByClassName("we-tab");
+            for (let i = 0; i < elem_tabs.length; i++) {
+                elem_tabs[i].style.display = "none";
+            }
+            const elem_tab = document.getElementById(tabname);
+            elem_tab.style.display = "block";
+        }
+
+        function do_word_suggest() {
+
+            const elem_match = document.getElementById("we-match");
+            const state = elem_match.style.display;
+            if (state == "block") {
+                hideElement("we-match");
+                hideElement("we-select");
+                return;
+            }
+
+            // Get the pattern
+            const elem_word = document.getElementById("we-word");
+            const pattern = elem_word.value;
+
+            // Invoke an AJAX call to get the matching words
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    const jsonstr = this.responseText;
+                    const words = JSON.parse(jsonstr);
+
+                    const elem_select = document.getElementById("we-select");
+                    elem_select.innerHTML = "";
+
+                    const elem_match = document.getElementById("we-match");
+                    elem_match.innerHTML = "";
+
+                    if (words.length == 0) {
+                        elem_match.innerHTML = "No matches found";
+                        showElement("we-match");
+                        hideElement("we-select");
+                    } else {
+                        elem_match.innerHTML = words.length + " matches found:";
+                        for (let i = 0; i < words.length; i++) {
+                            const word = words[i];
+                            const elem_option = document.createElement("option");
+                            elem_option.value = word;
+                            elem_option.appendChild(document.createTextNode(word))
+                            elem_select.appendChild(elem_option);
+                        }
+                        showElement("we-match");
+                        showElement("we-select")
+                    }
+                }
+            }
+            const url = "{{ url_for('uiwordlists.wordlists')}}" + "?pattern=" + pattern;
+            xhttp.open("GET", url, true);
+            xhttp.send();
+        }
+        function do_word_constraints() {
+            // Invoke an AJAX call to get the cleared text
+            // for the input word
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+
+                    // Get the constraints data from the server
+                    const jsonstr = this.responseText;
+                    const constraints = JSON.parse(jsonstr);
+                    // Start building the constraints UI section
+                    const elem_ui = document.getElementById("we-constraints-table");
+                    elem_ui.innerHTML = "";
+
+                    // Heading shows overall pattern
+                    const elem_div = document.createElement("div");
+                    elem_ui.appendChild(elem_div);
+                    elem_div.setAttribute("class", "w3-padding w3-center");
+                    const elem_b = document.createElement("b");
+                    elem_div.appendChild(elem_b);
+                    elem_b.appendChild(document.createTextNode("Overall pattern:"));
+                    const elem_input = document.createElement("input");
+                    elem_div.appendChild(elem_input);
+                    elem_input.setAttribute("class", "w3-border");
+                    elem_input.setAttribute("value", constraints["pattern"]);
+
+                    // Fill in the table
+
+                    const elem_table = document.createElement("table");
+                    elem_ui.appendChild(elem_table);
+                    elem_table.setAttribute("class", "w3-table w3-small w3-bordered");
+                    let elem_tr, elem_th, elem_td;
+
+                    elem_tr = document.createElement("tr");
+                    elem_table.appendChild(elem_tr);
+
+                    let column_names = ["Pos", "Letter", "Location", "Text",
+                                        "Index", "Regexp", "Choices"];
+                    for (let i = 0; i < column_names.length; i++) {
+                        const name = column_names[i];
+                        elem_th = document.createElement("th");
+                        elem_tr.appendChild(elem_th);
+                        elem_th.appendChild(document.createTextNode(name));
+                    }
+                    const crossers = constraints["crossers"];
+                    for (let i = 0; i < crossers.length; i++) {
+                        const crosser = crossers[i];
+                        const attrnames = ["pos", "letter", "location", "text",
+                                            "index", "regexp", "choices"];
+                        elem_tr = document.createElement("tr");
+                        elem_table.appendChild(elem_tr);
+                        for (let j = 0; j < attrnames.length; j++) {
+                            elem_td = document.createElement("td");
+                            elem_tr.appendChild(elem_td);
+                            const attrName = attrnames[j];
+                            const attrValue = crosser[attrName];
+                            elem_td.appendChild(document.createTextNode(attrValue));
+                        }
+                    }
+
+                    // Copy the suggested pattern to the input word
+                    const elem_word = document.getElementById("we-word");
+                    const before = elem_word.value();
+                    elem_word.setAttribute("value", constraints["pattern"]);
+                    const after = elem_word.value();
+
+                    // Make the section visible
+
+                    showElement("we-constraints-table");
+                }
+            }
+            const url = "{{ url_for('uiword.word_constraints')}}";
+            xhttp.open("GET", url, true);
+            xhttp.send();
+        }
+        function do_word_reset() {
+
+    // Invoke an AJAX call to get the cleared text
+    // for the input word
+    const xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            const jsonstr = this.responseText;
+            const new_text = JSON.parse(jsonstr);
+
+            // Update the input field
+            const elem_word = document.getElementById("we-word");
+            elem_word.value = new_text
+        }
     }
-</script>
-    <!-- Tab bar -->
-    <div class="w3-bar w3-blue-gray">
-        <button class="w3-bar-item w3-button"
-                type="button"
-                onclick="open_word_edit_tab('we-tab-suggest'); return false;">
-            Suggest</button>
-        <button class="w3-bar-item w3-button"
-                type="button"
-                onclick="open_word_edit_tab('we-tab-constraints'); return false">
-            Constraints</button>
-        <button class="w3-bar-item w3-button"
-                type="button"
-                onclick="open_word_edit_tab('we-tab-reset'); return false">
-            Reset</button>
-    </div>
+    const url = "{{ url_for('uiword.word_reset')}}";
+    xhttp.open("GET", url, true);
+    xhttp.send();
+}
 
-    <!-- Tab 1: Suggest -->
-    <div id="we-tab-suggest" class="w3-bar w3-margin-top we-tab">
-        <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_suggest()">
-            <i class="material-icons crosstb-icon">search</i>
-            <span>Suggest words that match pattern</span>
-        </a>
-        <div class="w3-bar-item" id="we-match" style="display:none"></div>
-        <select name="words"
-                id="we-select"
-                class="w3-bar-item"
-                style="display:none"
-                onchange="do_select_changed()"
-                onclick="do_select_changed()" >
-        </select>
-    </div>
+    </script>
 
-    <!-- Tab 2: Constraints -->
-    <div id="we-tab-constraints"
-         class="w3-bar w3-margin-top we-tab"
-         style="overflow:auto;overflow-x:hidden;display:none">
-        <a class="w3-button w3-small w3-round w3-light-gray crosstb"
-           onclick="do_word_constraints()">
-            <i class="material-icons crosstb-icon">assignment</i>
-            <span>Find constraints imposed by crossing words</span>
-        </a>
-        <div id="we-constraints-table"></div>
-    </div>
+    <!-- Word edit dialog -->
+    <div class="w3-section">
 
-    <!-- Tab 3: Reset -->
-    <div id="we-tab-reset" class="w3-bar w3-margin-top we-tab" style="display:none">
-        <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_reset()">
-            <i class="material-icons crosstb-icon">cached</i>
-            <span>Clear letters not shared with full words</span>
-        </a>
-    </div>
+        <header class="w3-container w3-blue-gray">
+            <h3 id="we-heading">
+                <span>{{ seq }} {{ direction }} ({{ length }} letters)</span>
+            </h3>
+            <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
+                  onclick="cancel_dialog()"
+            >&times;</span>
+        </header>
 
-<!-- Input word -->
-<p style="width:50%">
-<label>Word:</label>
-<input   class="w3-input w3-border"
-         id="we-word"
-         name="text"
-         style="font-family: Courier; font-size: large"
-         maxlength="{{ length }}"
-         type="text"
-         value="{{ text }}"
-/>
-</p> <!-- End of input word -->
+        <form class="w3-container w3-card-4"
+              name="we-form"
+              method="POST"
+              action="{{ url_for('uiword.word_edit') }}"
+              onsubmit="open_word_edit_tab('we-tab-suggest'); return do_word_validate()"
+        >
 
-<!-- Input clue -->
-<p style="width:100%">
-<label>Clue:</label>
-<input   class="w3-input w3-border"
-         id="we-clue"
-         name="clue"
-         type="text"
-         value="{{ clue }}"
-/>
-</p> <!-- End of input clue -->
+            <!-- form section -->
+            <div class="w3-section">
 
-<!-- Button container -->
-<div class="w3-container">
+                <script>
+                </script>
+                <!-- Tab bar -->
+                <div class="w3-bar w3-blue-gray">
+                    <button class="w3-bar-item w3-button"
+                            type="button"
+                            onclick="open_word_edit_tab('we-tab-suggest'); return false;">
+                        Suggest
+                    </button>
+                    <button class="w3-bar-item w3-button"
+                            type="button"
+                            onclick="open_word_edit_tab('we-tab-constraints'); return false">
+                        Constraints
+                    </button>
+                    <button class="w3-bar-item w3-button"
+                            type="button"
+                            onclick="open_word_edit_tab('we-tab-reset'); return false">
+                        Reset
+                    </button>
+                </div>
 
-<button  class="w3-button w3-border w3-round w3-gray"
-style="width:100px"
-type="submit"
->OK</button>
+                <!-- Tab 1: Suggest -->
+                <div id="we-tab-suggest" class="w3-bar w3-margin-top we-tab">
+                    <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb"
+                       onclick="do_word_suggest()">
+                        <i class="material-icons crosstb-icon">search</i>
+                        <span>Suggest words that match pattern</span>
+                    </a>
+                    <div class="w3-bar-item" id="we-match" style="display:none"></div>
+                    <select name="words"
+                            id="we-select"
+                            class="w3-bar-item"
+                            style="display:none"
+                            onchange="do_select_changed()"
+                            onclick="do_select_changed()">
+                    </select>
+                </div>
 
-<button  class="w3-button w3-border w3-round w3-gray"
-style="width:100px"
-type="button"
-onclick="open_word_edit_tab('we-constraints-table'); hideElement('we-dialog');"
->Cancel</button>
+                <!-- Tab 2: Constraints -->
+                <div id="we-tab-constraints"
+                     class="w3-bar w3-margin-top we-tab"
+                     style="overflow:auto;overflow-x:hidden;display:none">
+                    <a class="w3-button w3-small w3-round w3-light-gray crosstb"
+                       onclick="do_word_constraints()">
+                        <i class="material-icons crosstb-icon">assignment</i>
+                        <span>Find constraints imposed by crossing words</span>
+                    </a>
+                    <div id="we-constraints-table"></div>
+                </div>
 
-</div> <!-- End of button container -->
-</div> <!-- End of form section -->
-</form>
-</div> <!-- End of modal content -->
+                <!-- Tab 3: Reset -->
+                <div id="we-tab-reset" class="w3-bar w3-margin-top we-tab" style="display:none">
+                    <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_reset()">
+                        <i class="material-icons crosstb-icon">cached</i>
+                        <span>Clear letters not shared with full words</span>
+                    </a>
+                </div>
+
+                <!-- Input word -->
+                <p style="width:50%">
+                    <label>Word:</label>
+                    <input class="w3-input w3-border"
+                           id="we-word"
+                           name="text"
+                           style="font-family: Courier; font-size: large"
+                           type="text"
+                           value="{{ text }}"
+                    />
+                </p> <!-- End of input word -->
+
+                <!-- Input clue -->
+                <p style="width:100%">
+                    <label>Clue:</label>
+                    <input class="w3-input w3-border"
+                           id="we-clue"
+                           name="clue"
+                           type="text"
+                           value="{{ clue }}"
+                    />
+                </p> <!-- End of input clue -->
+
+                <!-- Button container -->
+                <div class="w3-container">
+
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            style="width:100px"
+                            type="submit"
+                    >OK
+                    </button>
+
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            style="width:100px"
+                            type="button"
+                            onclick="cancel_dialog()"
+                    >Cancel
+                    </button>
+
+                </div> <!-- End of button container -->
+            </div> <!-- End of form section -->
+        </form>
+    </div> <!-- End of modal content -->
 </div> <!-- End of edit-word-dialog -->
+{% endblock RHS %}

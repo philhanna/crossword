@@ -117,12 +117,30 @@ class Puzzle:
         return (r, c) in self.black_cells
 
     def get_numbered_cell(self, r, c):
+        """ Returns the numbered cell that starts at this (r, c), or None """
         result = None
         for nc in self.numbered_cells:
             if nc.r == r and nc.c == c:
                 result = nc
                 break
         return result
+
+    def get_numbered_cell_across(self, r, c):
+        for nc in self.numbered_cells:
+            if nc.r == r:
+                for i in range(nc.a):
+                    if c == nc.c + i:
+                        return nc
+        return None
+
+    def get_numbered_cell_down(self, r, c):
+        for nc in self.numbered_cells:
+            if nc.c == c:
+                for i in range(nc.d):
+                    if r == nc.r + i:
+                        return nc
+        return None
+
 
     def get_word_count(self):
         """ Returns the number of words in the puzzle """

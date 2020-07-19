@@ -1,6 +1,5 @@
 """ Handles requests having to do with words """
 import json
-import logging
 import re
 from http import HTTPStatus
 
@@ -13,7 +12,6 @@ from flask import url_for
 
 from crossword import Puzzle, LetterList
 from crossword import Word
-
 from .uiwordlists import get_matching_words
 
 # Register this blueprint
