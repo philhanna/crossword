@@ -970,6 +970,45 @@ function do_puzzle_publish_acrosslite() {
     showElement("pc-dialog");
 }
 
+/***************************************************************
+ *  FUNCTION NAME:   do_puzzle_publish_cwcompiler
+ *  DESCRIPTION:     Gets a list of puzzle files from the server
+ *                   and prompts the user to choose one, building
+ *                   from it a list of links to the publish
+ *                   function for that puzzle
+ ***************************************************************/
+function do_puzzle_publish_cwcompiler() {
+    const function_list = [];
+
+    function preview_anchor(puzzlename) {
+        const elem_a = document.createElement("a");
+        const elem_i = document.createElement("i");
+        elem_i.setAttribute("class", "material-icons");
+        elem_i.appendChild(document.createTextNode("preview"));
+        elem_a.appendChild(elem_i);
+        const onclick = "do_puzzle_preview('" + puzzlename + "')";
+        elem_a.setAttribute("onclick", onclick);
+        elem_a.style.textDecoration = "none"; // No underline
+        return elem_a;
+    }
+
+    function_list.push(preview_anchor);
+
+    function publish_anchor(puzzlename) {
+        const elem_a = document.createElement("a");
+        elem_a.href = "{{ url_for('uipublish.puzzle_publish_cwcompiler') }}" + "?puzzlename=" + puzzlename;
+        elem_a.style.textDecoration = "none"; // No underline
+        elem_a.style.verticalAlign = "top"; // Align with icon
+        elem_a.appendChild(document.createTextNode(puzzlename));
+        return elem_a;
+    }
+
+    function_list.push(publish_anchor);
+
+    puzzle_chooser_ajax(function_list);
+    showElement("pc-dialog");
+}
+
 //  ============================================================
 //  Edit word functions
 //  ============================================================

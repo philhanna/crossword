@@ -201,7 +201,7 @@ class TestPuzzle(TestCase):
 
     @staticmethod
     def create_nyt_daily():
-        """ Tuesday, September 20, 2016 """
+        """ from https://www.nytimes.com/crosswords/game/daily/2016/09/20 """
         grid = Grid(15)
         for r, c in [
             (1, 5), (1, 11),
@@ -221,7 +221,7 @@ class TestPuzzle(TestCase):
             (1, "ACTS"),
             (5, "PLASM"),
             (10, "EDGY"),
-            (14, "SHIM"),
+            (14, "SHIV"),
             (15, "RUCHE"),
             (16, "VALE"),
             (17, "NINE"),
@@ -298,7 +298,7 @@ class TestPuzzle(TestCase):
             (70, "Lauder of cosmetics"),
             (71, "\"Phooey!\""),
         ]:
-            puzzle.get_across_word(seq).get_clue()
+            puzzle.get_across_word(seq).set_clue(clue)
 
         for seq, clue in [
             (1, "Ed of \"Up\""),
@@ -345,7 +345,13 @@ class TestPuzzle(TestCase):
         return puzzle
 
     def test_nyt_daily(self):
+        import json
         puzzle = TestPuzzle.create_nyt_daily()
+        jsonstr = puzzle.to_json()
+        obj = json.loads(jsonstr)
+        jsonstr = json.dumps(obj, indent=2)
+        with open("/tmp/nyt_daily.json", "w") as fp:
+            fp.write(jsonstr)
 
     def test_cell_type(self):
         puzzle = TestPuzzle.create_puzzle()

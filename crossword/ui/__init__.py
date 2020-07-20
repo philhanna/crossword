@@ -8,7 +8,11 @@ __all__ = [
     'DBPuzzle',
     'DBUser',
     'DBWord',
+    'PuzzlePublishAcrossLite',
+    'PuzzlePublishNYTimes',
+    'PuzzleToXML'
 ]
+
 from flask import Flask
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -20,7 +24,6 @@ db = SQLAlchemy()
 
 
 def create_app():
-
     import logging
     import os
 
@@ -114,3 +117,8 @@ class DBPuzzle(db.Model):
 class DBWord(db.Model):
     __tablename__ = "words"
     word = db.Column(db.String, primary_key=True)
+
+
+from .puzzle_publish_acrosslite import PuzzlePublishAcrossLite
+from .puzzle_publish_nytimes import PuzzlePublishNYTimes
+from .puzzle_to_xml import PuzzleToXML
