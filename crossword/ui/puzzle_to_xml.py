@@ -1,12 +1,11 @@
 import re
 import xml.etree.ElementTree as ET
-from io import StringIO
 
 from crossword import Word
 
 
 class PuzzleToXML:
-    """ Creates an XML file from a puzzle.
+    """ Creates an XML string from a puzzle.
 
     :param user a DBUser object (or a mock, for testing)
     :param puzzle the puzzle being published
@@ -96,7 +95,6 @@ class PuzzleToXML:
 
     def create_elem_clues(self, elem_crossword):
         """ Creates the <clues> element"""
-        puzzle = self.puzzle
         elem_clues = ET.SubElement(elem_crossword, "clues")
         elem_clues.set("ordering", "normal")
         puzzle = self.puzzle
@@ -113,6 +111,9 @@ class PuzzleToXML:
             elem_clue.set("number", str(nc.seq))
             elem_clue.text = puzzle.get_clue(nc.seq, Word.ACROSS)
         pass
+
+        elem_clues = ET.SubElement(elem_crossword, "clues")
+        elem_clues.set("ordering", "normal")
 
         # Down clues
         elem_title = ET.SubElement(elem_clues, "title")

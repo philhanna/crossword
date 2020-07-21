@@ -10,7 +10,8 @@ __all__ = [
     'DBWord',
     'PuzzlePublishAcrossLite',
     'PuzzlePublishNYTimes',
-    'PuzzleToXML'
+    'PuzzleToXML',
+    'PuzzleFromXML',
 ]
 
 from flask import Flask
@@ -122,3 +123,4 @@ class DBWord(db.Model):
 from .puzzle_publish_acrosslite import PuzzlePublishAcrossLite
 from .puzzle_publish_nytimes import PuzzlePublishNYTimes
 from .puzzle_to_xml import PuzzleToXML
+from .puzzle_from_xml import PuzzleFromXML
