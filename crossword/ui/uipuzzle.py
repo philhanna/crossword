@@ -405,7 +405,11 @@ def get_puzzle_list(userid):
 def puzzle_load_common(userid, puzzlename):
     """ Common method used to load puzzle from database """
     oldpuzzle = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
-    return oldpuzzle.jsonstr
+    puzzle = Puzzle.from_json(oldpuzzle.jsonstr)
+    puzzle.undo_stack = []
+    puzzle.redo_stack = []
+    jsonstr = puzzle.to_json()
+    return jsonstr
 
 
 def puzzle_save_common(puzzlename):
@@ -415,6 +419,9 @@ def puzzle_save_common(puzzlename):
     # and validate it
     jsonstr = session.get('puzzle', None)
     puzzle = Puzzle.from_json(jsonstr)
+    puzzle.undo_stack = []
+    puzzle.redo_stack = []
+    jsonstr = puzzle.to_json()
     ok, messages = puzzle.validate()
     if not ok:
         flash("Puzzle not saved")
