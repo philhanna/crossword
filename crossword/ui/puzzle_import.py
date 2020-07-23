@@ -147,12 +147,13 @@ if __name__ == '__main__':
     description = r"""
 Imports a puzzle from one of three formats:
 
-json    - The JSON stored in the database
-xml     - XML in the format used by Crossword Compiler
-csv     - Just the clues, for use in a spreadsheet
-    """
+JSON    - The JSON stored in the database
+XML     - XML in the format used by Crossword Compiler
+CSV     - Just the clues, for use in a spreadsheet
+"""
 
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     description=description)
     parser.add_argument("-u", "--userid", default="1",
                         help="User ID (default = 1)")
     parser.add_argument("puzzlename",
