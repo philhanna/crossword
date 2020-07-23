@@ -70,6 +70,16 @@
         const ok = "{{ url_for('uipuzzle.puzzle_delete') }}";
         messageBox(title, prompt, ok);
     }
+    function do_puzzle_save(puzzlename) {
+        const title = "Save puzzle";
+        const prompt = "";
+        const label = "Puzzle name:"
+        // const value = puzzlename;
+        const value = "This is the name";
+        // const ok = "{{ url_for('uipuzzle.puzzle_save') }}";
+        const ok = "#";
+        inputBox(title, prompt, label, value, ok);
+    }
 </script>
 
 <div class="w3-container">

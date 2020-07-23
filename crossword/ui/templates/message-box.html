@@ -1,12 +1,15 @@
+<script>
+    function messageBox(title, prompt, ok) {
+        document.getElementById("mb-title").innerHTML = title;
+        document.getElementById("mb-prompt").innerHTML = prompt;
+        document.getElementById("mb-ok").href = ok;
+        showElement("mb")
+    }
+</script>
 <div id="mb" class="w3-modal" style="display:none">
-    <script>
-        function cancelDialog() {
-            document.getElementById('mb').style.display = 'none';
-        }
-    </script>
-    <div class="w3-modal-content w3-card-4" style="width:35%">
+    <div class="w3-modal-content w3-card-4" style="width:30%">
         <div class="w3-blue-gray w3-center">
-            <span class="w3-button w3-display-topright" onclick="cancelDialog()">&times;</span>
+            <span class="w3-button w3-display-topright" onclick="hideElement('mb')">&times;</span>
             <h3 id="mb-title"></h3>
         </div>
         <div class="w3-container">
@@ -21,7 +24,7 @@
                    style="width:100px">OK</a>
                 <!-- Cancel button -->
                 <button class="w3-button w3-border w3-round w3-gray"
-                        onclick="cancelDialog()"
+                        onclick="hideElement('mb')"
                         style="width:100px">Cancel</button>
             </div>
         </div>
