@@ -1,13 +1,3 @@
-//  ============================================================
-//  Global variables and functions
-//  ============================================================
-
-const BOXSIZE = 32;
-
-//  ============================================================
-//  Grid functions
-//  ============================================================
-
 /***************************************************************
  *  FUNCTION NAME:   do_grid_close
  *  DESCRIPTION:     Closes the grid screen
@@ -650,56 +640,6 @@ function do_word(event, url) {
 }
 
 /***************************************************************
- *  FUNCTION NAME:   puzzle_click
- *  DESCRIPTION:     Distinguishes between single and double clicks
- ***************************************************************/
-
-
-/***************************************************************
- *  FUNCTION NAME:   puzzle_chooser_ajax
- *  DESCRIPTION:     Gets a list of puzzle files from the server
- *                   and forms a list of links
- ***************************************************************/
-function puzzle_chooser_ajax(function_list) {
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-
-            // Get the JSON array of puzzle names returned by the AJAX call
-            const jsonstr = this.responseText;
-            const puzzle_list = JSON.parse(jsonstr);
-
-            // Clear out the <ul> that will contain the list items
-            const elem_ul = document.getElementById("puzzle-list");
-            elem_ul.innerHTML = ""
-
-            // Populate the list
-            for (let i = 0; i < puzzle_list.length; i++) {
-
-                // Get the next file name in the list
-                const puzzlename = puzzle_list[i];
-
-                // Create a <li> to contain anchors for this puzzle
-                const elem_li = document.createElement("li");
-
-                // Add each anchor to the <li>
-                for (let j = 0; j < function_list.length; j++) {
-                    const fun = function_list[j];
-                    const elem_anchor = fun(puzzlename);
-                    elem_li.appendChild(elem_anchor);
-                }
-
-                // and append the list item to the <ul>
-                elem_ul.appendChild(elem_li);
-            }
-        }
-    };
-    const url = "{{ url_for('uipuzzle.puzzles')}}";
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
-
-/***************************************************************
  *  FUNCTION NAME:   do_puzzle_statistics
  *  DESCRIPTION:     Assembles puzzle statistics and shows results
  ***************************************************************/
@@ -720,12 +660,6 @@ function do_puzzle_title() {
 //  ============================================================
 //  Edit word functions
 //  ============================================================
-
-/***************************************************************
- *  NAME: do_word_suggest()
- *  DESCRIPTION: Suggest a word that matches the pattern
- ***************************************************************/
-
 /***************************************************************
  *  NAME: do_word_validate()
  *  DESCRIPTION: Ensures that there are no regexes in the

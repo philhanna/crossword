@@ -376,6 +376,8 @@ class Puzzle:
             row = "|"
             for c in range(1, self.n + 1):
                 cell = self.get_cell(r, c)
+                if not cell:
+                    cell = " "
                 if c > 1:
                     row += "|"
                 row += cell
