@@ -50,10 +50,10 @@
                 const changed = obj.changed;
                 // If it has changed, open the puzzle changed dialog
                 if (changed) {
-                    document.getElementById("mb-title").innerHTML = "Close puzzle"
-                    document.getElementById("mb-prompt").innerHTML = `Close puzzle without saving?`;
-                    document.getElementById("mb-ok").href = "{{ url_for('uimain.main_screen') }}";
-                    showElement("mb")
+                    const title = "Close puzzle";
+                    const prompt = "Close puzzle without saving?";
+                    const ok = "{{ url_for('uimain.main_screen') }}";
+                    messageBox(title, prompt, ok);
                 } else {
                     window.location.href = "{{ url_for('uimain.main_screen') }}";
                 }
@@ -65,10 +65,10 @@
         xhttp.send();
     }
     function do_puzzle_delete(puzzlename) {
-        document.getElementById("mb-title").innerHTML = "Delete puzzle";
-        document.getElementById("mb-prompt").innerHTML = `Are you sure you want to delete puzzle <b>'${puzzlename}'</b>?`;
-        document.getElementById("mb-ok").href = "{{ url_for('uipuzzle.puzzle_delete') }}";
-        showElement("mb")
+        const title = "Delete puzzle";
+        const prompt = `Are you sure you want to delete puzzle <b>'${puzzlename}'</b>?`;
+        const ok = "{{ url_for('uipuzzle.puzzle_delete') }}";
+        messageBox(title, prompt, ok);
     }
 </script>
 

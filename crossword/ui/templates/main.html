@@ -22,6 +22,12 @@
     function hideElement(id) {
         document.getElementById(id).style.display = "none";
     }
+    function messageBox(title, prompt, ok) {
+        document.getElementById("mb-title").innerHTML = title;
+        document.getElementById("mb-prompt").innerHTML = prompt;
+        document.getElementById("mb-ok").href = ok;
+        showElement("mb")
+    }
 </script>
 </head>
 
