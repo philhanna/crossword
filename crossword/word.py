@@ -95,6 +95,8 @@ class Word:
         text = ""
         for r, c in self.cell_iterator():
             letter = self.puzzle.get_cell(r, c)
+            if not letter:
+                letter = " "
             text += letter
         return text
 
