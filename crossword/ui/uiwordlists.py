@@ -21,9 +21,13 @@ uiwordlists = Blueprint('uiwordlists', __name__)
 wordlist = None
 
 
+def is_loaded():
+    return wordlist is not None
+
+
 def get_wordlist():
     global wordlist
-    if not wordlist:
+    if not is_loaded():
         logname = __name__
         stime = datetime.now()
         logging.info(f"{logname}: loading word list")

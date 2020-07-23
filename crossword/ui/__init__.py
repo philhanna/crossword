@@ -12,7 +12,12 @@ __all__ = [
     'PuzzlePublishNYTimes',
     'PuzzleToXML',
     'PuzzleFromXML',
+    'is_loaded',
+    'get_wordlist',
+    'lock',
 ]
+
+from threading import Lock
 
 from flask import Flask
 from flask_session import Session
@@ -22,7 +27,7 @@ from sqlalchemy import desc, asc
 from crossword import dbfile, config
 
 db = SQLAlchemy()
-
+lock = Lock()
 
 def create_app():
     import logging
@@ -124,3 +129,4 @@ from .puzzle_publish_acrosslite import PuzzlePublishAcrossLite
 from .puzzle_publish_nytimes import PuzzlePublishNYTimes
 from .puzzle_to_xml import PuzzleToXML
 from .puzzle_from_xml import PuzzleFromXML
+from .uiwordlists import is_loaded, get_wordlist
