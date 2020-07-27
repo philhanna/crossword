@@ -2,8 +2,8 @@
     function messageBox(title, prompt, ok) {
         document.getElementById("mb-title").innerHTML = title;
         document.getElementById("mb-prompt").innerHTML = prompt;
-        document.getElementById("mb-ok").href = ok;
-        showElement("mb")
+        document.getElementById("mb-ok").setAttribute("href", ok);
+        document.getElementById("mb").style.display = "block";
     }
 </script>
 <div id="mb" class="w3-modal" style="display:none">

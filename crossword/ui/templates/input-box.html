@@ -4,8 +4,8 @@ function inputBox(title, prompt, label, value, submit_function) {
     document.getElementById("ib-prompt").innerHTML = prompt;
     document.getElementById("ib-label").innerHTML = label;
     document.getElementById("ib-input").value = value;
-    document.getElementById("ib-form").onsubmit = submit_function;
-    showElement("ib")
+    document.getElementById("ib-form").setAttribute("action", submit_function);
+    document.getElementById("ib").style.display = "block";
 }
 function inputBoxSubmit() {
     alert("DEBUG: submit_function not specified");
@@ -20,16 +20,17 @@ function inputBoxSubmit() {
         <div class="w3-section">
             <span id="ib-prompt"></span>
         </div>
-        <form id="ib-form" class="w3-container" onsubmit="inputBoxSubmit()">
+        <form id="ib-form" name="ib-form" class="w3-container">
             <div class="w3-section">
                 <label><b id="ib-label"></b></label>
-                <input type="text" id="ib-input" name="ib-input" required></input>
+                <input type="text" id="ib-input" name="ib-input" value="" required></input>
                 <div class="w3-section w3-center">
                     <!-- OK button -->
                     <button class="w3-button w3-border w3-round w3-gray"
-                       id="ib-ok"
-                       type="submit"
-                       style="width:100px">OK</button>
+                            id="ib-ok"
+                            type="submit"
+                            value="OK"
+                            style="width:100px">OK</button>
                     <!-- Cancel button -->
                     <button class="w3-button w3-border w3-round w3-gray"
                             onclick="hideElement('ib')"
