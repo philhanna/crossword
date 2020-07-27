@@ -1,14 +1,14 @@
 <script>
-function inputBox(title, prompt, label, value, ok) {
+function inputBox(title, prompt, label, value, submit_function) {
     document.getElementById("ib-title").innerHTML = title;
     document.getElementById("ib-prompt").innerHTML = prompt;
     document.getElementById("ib-label").innerHTML = label;
     document.getElementById("ib-input").value = value;
-    document.getElementById("ib-ok").href = ok;
+    document.getElementById("ib-form").onsubmit = submit_function;
     showElement("ib")
 }
 function inputBoxSubmit() {
-
+    alert("DEBUG: submit_function not specified");
 }
 </script>
 <div id="ib" class="w3-modal" style="display:none">
@@ -20,16 +20,16 @@ function inputBoxSubmit() {
         <div class="w3-section">
             <span id="ib-prompt"></span>
         </div>
-        <form class="w3-container" onsubmit="inputBoxSubmit()">
+        <form id="ib-form" class="w3-container" onsubmit="inputBoxSubmit()">
             <div class="w3-section">
                 <label><b id="ib-label"></b></label>
-                <input type="text" id="ib-input" name="ib-input" value="" required></input>
+                <input type="text" id="ib-input" name="ib-input" required></input>
                 <div class="w3-section w3-center">
                     <!-- OK button -->
-                    <a class="w3-button w3-border w3-round w3-gray"
+                    <button class="w3-button w3-border w3-round w3-gray"
                        id="ib-ok"
-                       href="#"
-                       style="width:100px">OK</a>
+                       type="submit"
+                       style="width:100px">OK</button>
                     <!-- Cancel button -->
                     <button class="w3-button w3-border w3-round w3-gray"
                             onclick="hideElement('ib')"

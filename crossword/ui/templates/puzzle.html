@@ -71,14 +71,22 @@
         messageBox(title, prompt, ok);
     }
     function do_puzzle_save(puzzlename) {
-        const title = "Save puzzle";
-        const prompt = "";
-        const label = "Puzzle name:"
-        // const value = puzzlename;
-        const value = "This is the name";
-        // const ok = "{{ url_for('uipuzzle.puzzle_save') }}";
-        const ok = "#";
-        inputBox(title, prompt, label, value, ok);
+        if (puzzlename != "") {
+            window.location.href = "{{ url_for('uipuzzle.puzzle_save') }}";
+        }
+        else {
+            const title = "Save puzzle";
+            const prompt = "";
+            const label = "Puzzle name:"
+            const value = "";
+            const submit_function = "do_puzzle_save_with_name()";
+            inputBox(title, prompt, label, value, submit_function);
+        }
+    }
+    function do_puzzle_save_with_name() {
+        const name = encodeURIComponent(document.getElementById("ib-input").value);
+        const url = "{{ url_for('uipuzzle.puzzle_save') }}" + "?puzzlename=" + name;
+        window.location.href = url;
     }
 </script>
 
