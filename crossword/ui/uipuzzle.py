@@ -100,7 +100,7 @@ def puzzle_new():
     # Save puzzle in the session
     jsonstr = puzzle.to_json()
     session['puzzle'] = jsonstr
-    session['puzzle.initial.sha'] = sha256(jsonstr)
+    session['puzzle.initial.sha'] = sha256(puzzle_with_no_undo_redo(puzzle).to_json())
 
     # Remove any leftover puzzle name in the session
     session.pop('puzzlename', None)
@@ -119,10 +119,11 @@ def puzzle_open():
     # and recreate the puzzle from it
     userid = 1  # TODO Replace hard coded user id
     jsonstr = puzzle_load_common(userid, puzzlename)
+    puzzle = Puzzle.from_json(jsonstr)
 
     # Store the puzzle and puzzle name in the session
     session['puzzle'] = jsonstr
-    session['puzzle.initial.sha'] = sha256(jsonstr)
+    session['puzzle.initial.sha'] = sha256(puzzle_with_no_undo_redo(puzzle).to_json())
     session['puzzlename'] = puzzlename
 
     return redirect(url_for('uipuzzle.puzzle_screen'))
@@ -320,11 +321,15 @@ def puzzle_click(direction):
 def puzzle_changed():
     """ REST method that returns whether the puzzle has changed since it was opened """
 
-    # Compare the original puzzle loaded to its current values.
-    # Return True if they are different, False if they are the same.
-    jsonstr_initial_sha = session.get('puzzle.initial.sha', sha256(None))
-    jsonstr_current_sha = sha256(session.get('puzzle', None))
-    changed = not (jsonstr_current_sha == jsonstr_initial_sha)
+    current_puzzle_json = session.get('puzzle', None)
+    if current_puzzle_json:
+        current_puzzle = Puzzle.from_json(current_puzzle_json)
+        current_puzzle = puzzle_with_no_undo_redo(current_puzzle)
+        jsonstr_initial_sha = session.get('puzzle.initial.sha', sha256(None))
+        jsonstr_current_sha = sha256(current_puzzle.to_json())
+        changed = not (jsonstr_current_sha == jsonstr_initial_sha)
+    else:
+        changed = False
 
     obj = {"changed": changed}
 
@@ -387,6 +392,12 @@ def puzzles():
 #   Internal methods
 #   ============================================================
 
+
+def puzzle_with_no_undo_redo(puzzle):
+    newpuzzle = Puzzle.from_json(puzzle.to_json())
+    newpuzzle.undo_stack = []
+    newpuzzle.redo_stack = []
+    return newpuzzle
 
 def get_puzzle_list(userid):
     """ Returns the list of puzzle file names for the specified userid
@@ -460,7 +471,7 @@ def puzzle_save_common(puzzlename):
         # Store the sha of the saved version of the puzzle
         # in the session as 'puzzle.initial.sha' so that we can
         # detect whether it has been changed since it was last saved
-        session['puzzle.initial.sha'] = sha256(jsonstr)
+        session['puzzle.initial.sha'] = sha256(puzzle_with_no_undo_redo(puzzle).to_json())
 
     # Show the puzzle screen
     return redirect(url_for('uipuzzle.puzzle_screen'))
