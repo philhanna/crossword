@@ -42,7 +42,7 @@
             )}}
 {{ menuitem(enabled=enabled.grid_open,
             label='Open grid...',
-            href=url_for('uigrid.grid_chooser')
+            href=url_for('uigrid.grid_chooser', nexturl=url_for('uigrid.grid_open'))
             )}}
 {{ menuitem(enabled=enabled.grid_save,
             label='Save grid',
@@ -68,7 +68,7 @@
       <div class="w3-dropdown-content w3-bar-block w3-card-4">
 {{ menuitem(enabled=enabled.puzzle_new,
             label='New puzzle...',
-            onclick='do_puzzle_new'
+            href=url_for('uigrid.grid_chooser', nexturl=url_for('uipuzzle.puzzle_new'))
             )}}
 {{ menuitem(enabled=enabled.puzzle_open,
             label='Open puzzle...',

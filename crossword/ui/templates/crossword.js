@@ -463,43 +463,6 @@ function do_statistics(objType, url) {
 //  ============================================================
 
 /***************************************************************
- *  FUNCTION NAME:   do_puzzle_new
- *  DESCRIPTION:     Gets a list of grid files from the server
- *                   and prompts the user to choose one
- ***************************************************************/
-function do_puzzle_new() {
-    const function_list = [];
-
-    function preview_anchor(gridname) {
-        const elem_a = document.createElement("a");
-        const elem_i = document.createElement("i");
-        elem_i.setAttribute("class", "material-icons");
-        elem_i.appendChild(document.createTextNode("preview"));
-        elem_a.appendChild(elem_i);
-        const onclick = "do_grid_preview('" + gridname + "')";
-        elem_a.setAttribute("onclick", onclick);
-        elem_a.style.textDecoration = "none"; // No underline
-        return elem_a;
-    }
-
-    function_list.push(preview_anchor);
-
-    function open_anchor(gridname) {
-        const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('uipuzzle.puzzle_new') }}" + "?gridname=" + gridname;
-        elem_a.style.textDecoration = "none"; // No underline
-        elem_a.style.verticalAlign = "top"; // Align with icon
-        elem_a.appendChild(document.createTextNode(gridname));
-        return elem_a;
-    }
-
-    function_list.push(open_anchor);
-
-    grid_chooser_ajax(function_list);
-    showElement("gc-dialog");
-}
-
-/***************************************************************
  *  FUNCTION NAME:   do_puzzle_preview
  ***************************************************************/
 function do_puzzle_preview(puzzlename) {

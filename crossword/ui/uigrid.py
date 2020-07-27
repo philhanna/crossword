@@ -27,8 +27,8 @@ from crossword.ui import db, DBGrid, UIState
 uigrid = Blueprint('uigrid', __name__)
 
 
-@uigrid.route('/grid-chooser')
-def grid_chooser():
+@uigrid.route('/grid-chooser/<path:nexturl>')
+def grid_chooser(nexturl):
     """ Redirects to grid chooser dialog """
 
     # Make a list of all the saved grids
@@ -39,7 +39,10 @@ def grid_chooser():
     session['uistate'] = UIState.GRID_CHOOSER
     enabled = UIState.GRID_CHOOSER.get_enabled()
 
-    return render_template("grid-chooser.html", enabled=enabled, objectlist=gridlist)
+    return render_template("grid-chooser.html",
+                           enabled=enabled,
+                           objectlist=gridlist,
+                           nexturl=nexturl)
 
 
 @uigrid.route('/grid')
