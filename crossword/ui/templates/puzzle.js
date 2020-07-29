@@ -1,7 +1,6 @@
 // Global variables
 let PUZZLE_CLICK_STATE = 0;
 let CLICK_EVENT;
-const BOXSIZE = 32;
 
 function puzzle_click(event) {
 

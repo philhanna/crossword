@@ -58,6 +58,11 @@ def grid_screen():
     boxsize = svg.boxsize
     svgstr = svg.generate_xml()
 
+    # Set the state to editing grid
+    session['uistate'] = UIState.EDITING_GRID
+    enabled = session['uistate'].get_enabled()
+    enabled["grid_delete"] = gridname is not None
+
     # Enable menu options
     enabled = {
         "grid_save": True,

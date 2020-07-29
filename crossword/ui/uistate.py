@@ -7,16 +7,19 @@ class UIState(Enum):
     PUZZLE_CHOOSER = 2
     GRID_CHOOSER = 3
     PROMPT_FOR_GRID_SIZE = 4
-    EDITING_PUZZLE = 5
-    EDITING_WORD = 6
+    EDITING_GRID = 5
+    EDITING_PUZZLE = 6
+    EDITING_WORD = 7
 
     def get_enabled(self):
         enabled = {
             "grid_new": self in [UIState.MAIN_MENU],
             "grid_open": self in [UIState.MAIN_MENU],
-            "grid_save": self in [],
-            "grid_save_as": self in [],
-            "grid_close": self in [],
+            "grid_save": self in [UIState.EDITING_GRID],
+            "grid_save_as": self in [UIState.EDITING_GRID],
+            "grid_close": self in [UIState.EDITING_GRID],
+            "grid_stats": self in [UIState.EDITING_GRID],
+            "grid_rotate": self in [UIState.EDITING_GRID],
             "grid_delete": self in [],
             "puzzle_new": self in [UIState.MAIN_MENU],
             "puzzle_open": self in [UIState.MAIN_MENU],
