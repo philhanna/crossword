@@ -148,23 +148,23 @@
         }
         function do_word_reset() {
 
-    // Invoke an AJAX call to get the cleared text
-    // for the input word
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            const jsonstr = this.responseText;
-            const new_text = JSON.parse(jsonstr);
+            // Invoke an AJAX call to get the cleared text
+            // for the input word
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    const jsonstr = this.responseText;
+                    const new_text = JSON.parse(jsonstr);
 
-            // Update the input field
-            const elem_word = document.getElementById("we-word");
-            elem_word.value = new_text
+                    // Update the input field
+                    const elem_word = document.getElementById("we-word");
+                    elem_word.value = new_text
+                }
+            }
+            const url = "{{ url_for('uiword.word_reset')}}";
+            xhttp.open("GET", url, true);
+            xhttp.send();
         }
-    }
-    const url = "{{ url_for('uiword.word_reset')}}";
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
 
     </script>
 
