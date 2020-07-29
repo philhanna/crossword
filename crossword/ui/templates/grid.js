@@ -11,7 +11,10 @@ function do_grid_close() {
 
             // If it has changed, open the grid changed dialog
             if (changed) {
-                showElement("gx-dialog");
+                const title = "Close grid";
+                const prompt = "Close grid without saving?";
+                const ok = "{{ url_for('uimain.main_screen') }}";
+                messageBox(title, prompt, ok);
             } else {
                 window.location.href = "{{ url_for('uimain.main_screen') }}";
             }
