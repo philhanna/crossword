@@ -1,7 +1,3 @@
-// Global variables
-let PUZZLE_CLICK_STATE = 0;
-let CLICK_EVENT;
-
 function puzzle_click(event) {
 
     const TIMEOUT_MS = 300;
