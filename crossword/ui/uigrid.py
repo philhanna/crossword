@@ -82,13 +82,13 @@ def grid_screen():
                            svgstr=svgstr)
 
 
-@uigrid.route('/grid-new', methods=['POST'])
+@uigrid.route('/grid-new', methods=['GET'])
 def grid_new():
     """ Creates a new grid and redirects to grid screen """
 
     # Get the grid size from the form
 
-    n = int(request.form.get('n'))
+    n = int(request.args.get('n'))
 
     # Remove any leftover grid name in the session
     session.pop('gridname', None)

@@ -9,23 +9,7 @@
 {% include 'style.css' %}
 </style>
 <script>
-    // Global variables
-    let PUZZLE_CLICK_STATE = 0;
-    let CLICK_EVENT;
-    const BOXSIZE = 32;
-
-    function not_yet(fname) {
-        alert(`${fname} is not yet implemented...`);
-    }
-    function do_grid_new() {
-        not_yet("do_grid_new");
-    }
-    function showElement(id) {
-        document.getElementById(id).style.display = "block";
-    }
-    function hideElement(id) {
-        document.getElementById(id).style.display = "none";
-    }
+{% include "main.js" %}
 </script>
 </head>
 
@@ -34,7 +18,7 @@
 
 <!--- ================ menu ================ -->
 {% macro menuitem(enabled, label, href, onclick, arg, argvalue) -%}
-<a class="w3-bar-item w3-button{% if not enabled %} w3-disabled{% endif %}" {% if enabled %} {% if href %} href="{{ href }}" {% endif %} {% if onclick %} onclick="{{ onclick }}( {% if arg %} '{{ argvalue }}' {% endif %})" {% endif %} {% endif %}>{{label}}</a>
+<a class="w3-bar-item w3-button{% if not enabled %} w3-disabled{% endif %}" {% if enabled %} {% if href %} href="{{ href }}" {% endif %} {% if onclick %} onclick="{{ onclick }}({% if arg %} '{{ argvalue }}' {% endif %})" {% endif %} {% endif %}>{{label}}</a>
 {%- endmacro %}
 <div class="w3-bar w3-blue-gray">
    <div class="w3-dropdown-hover w3-blue-gray">
