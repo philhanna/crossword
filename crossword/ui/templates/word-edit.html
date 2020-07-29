@@ -166,6 +166,20 @@
             xhttp.send();
         }
 
+        function do_word_validate() {
+            const text = document.getElementById("we-word").value;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text.charAt(i).toUpperCase();
+                const p = " ABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(ch);
+                if (p < 0) {
+                    alert(`${text} contains non-alphabetic characters`);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
     </script>
 
     <!-- Word edit dialog -->

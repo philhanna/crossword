@@ -546,27 +546,6 @@ function do_puzzle_stats() {
     const url = "{{ url_for('uipuzzle.puzzle_statistics') }}";
     do_statistics(objType, url);
 }
-
-//  ============================================================
-//  Edit word functions
-//  ============================================================
-/***************************************************************
- *  NAME: do_word_validate()
- *  DESCRIPTION: Ensures that there are no regexes in the
- *      input word. Raises an alert if so.
- ***************************************************************/
-function do_word_validate() {
-    const text = document.getElementById("we-word").value;
-    for (let i = 0; i < text.length; i++) {
-        const ch = text.charAt(i).toUpperCase();
-        const p = " ABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(ch);
-        if (p < 0) {
-            alert(text + " contains non-alphabetic characters");
-            return false;
-        }
-    }
-    return true;
-}
 /***************************************************************
  *  FUNCTION NAME:   do_puzzle_undo
  *  DESCRIPTION:     Undoes the last change
