@@ -481,61 +481,6 @@ function do_puzzle_preview(puzzlename) {
     xhttp.open("GET", url, true);
     xhttp.send();
 }
-/***************************************************************
- *  FUNCTION NAME:   getRC
- *  DESCRIPTION:     Given a mouse click, returns row and column
- ***************************************************************/
-function getRC(event) {
-    const x = event.offsetX;
-    const y = event.offsetY;
-    const r = Math.floor(1 + y / BOXSIZE);
-    const c = Math.floor(1 + x / BOXSIZE);
-    return [r, c]
-}
-
-/***************************************************************
- *  FUNCTION NAME:   do_word
- *  DESCRIPTION:     Given a mouse click, returns row and column
- ***************************************************************/
-function do_word(event, url) {
-    let r;
-    let c;
-    [r, c] = getRC(event);
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            const parmstr = this.responseText;
-            const parms = JSON.parse(this.responseText);
-
-            // Set the <h3>17 Across</h3> text
-            const elem_h3 = document.getElementById("we-heading");
-            const heading = `${parms.seq} ${parms.direction} (${parms.length} letters)`;
-            elem_h3.innerHTML = heading;
-
-            // Set the word maxlength and value
-            const elem_word = document.getElementById("we-word");
-            elem_word.maxlength = parms.length;
-            elem_word.value = parms.text;
-
-            // Set the clue
-            const elem_clue = document.getElementById("we-clue");
-            elem_clue.value = parms.clue;
-
-            // Clear any previous select for "suggest" and turn it off
-            const elem_select = document.getElementById("we-select");
-            elem_select.innerHTML = "";
-            hideElement("we-select");
-            hideElement("we-match");
-
-            // Make the modal dialog visible
-            showElement("we-dialog");
-            elem_word.focus();
-        }
-    };
-    url = `${url}?r=${r}&c=${c}`;
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
 
 /***************************************************************
  *  FUNCTION NAME:   do_puzzle_statistics

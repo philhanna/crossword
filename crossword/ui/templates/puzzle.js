@@ -1,6 +1,8 @@
 // Global variables
 let PUZZLE_CLICK_STATE = 0;
 let CLICK_EVENT;
+const BOXSIZE = 32;
+
 function puzzle_click(event) {
 
     const TIMEOUT_MS = 300;
@@ -26,13 +28,13 @@ function puzzle_click(event) {
     }
 }
 function do_click_across_clue(seq) {
-    const elem_ul = document.getElementById("puzzle-across-clues")
+    const elem_ul = document.getElementById("puzzle-across-clues");
     const v = elem_ul.scrollTop;
     const url = "{{ url_for('uipuzzle.puzzle_click_across') }}?seq=" + seq + "&scrollTop=" + v;
     window.location.href = url;
 }
 function do_click_down_clue(seq) {
-    const elem_ul = document.getElementById("puzzle-down-clues")
+    const elem_ul = document.getElementById("puzzle-down-clues");
     const v = elem_ul.scrollTop;
     const url = "{{ url_for('uipuzzle.puzzle_click_down') }}?seq=" + seq + "&scrollTop=" + v;
     window.location.href = url;
@@ -55,7 +57,7 @@ function do_puzzle_close() {
                 window.location.href = "{{ url_for('uimain.main_screen') }}";
             }
         }
-    }
+    };
     // Ask the server if the puzzle has changed
     const url = "{{ url_for('uipuzzle.puzzle_changed')}}";
     xhttp.open("GET", url, true);
@@ -73,7 +75,7 @@ function do_puzzle_save(puzzlename) {
     }
     else {
         const title = "Save puzzle";
-        const label = "Puzzle name:"
+        const label = "Puzzle name:";
         const value = "";
         const action = "javascript:do_puzzle_save_with_name()";
         const method = "";
@@ -126,8 +128,16 @@ function validatePuzzleNameForSaveAs() {
 function do_puzzle_title() {
     const title = "Puzzle title";
     const label = "<b>Puzzle title:</b>";
-    const value = "{{ puzzletitle }}"
+    const value = "{{ puzzletitle }}";
     const action = "{{ url_for('uipuzzle.puzzle_title') }}";
     const method = "POST";
     inputBox(title, label, value, action, method);
+}
+function do_word(event, url) {
+    const x = event.offsetX;
+    const y = event.offsetY;
+    const r = Math.floor(1 + y / BOXSIZE);
+    const c = Math.floor(1 + x / BOXSIZE);
+    url = `${url}?r=${r}&c=${c}`;
+    window.location.href = url;
 }
