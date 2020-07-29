@@ -547,14 +547,6 @@ function do_puzzle_stats() {
     do_statistics(objType, url);
 }
 
-/***************************************************************
- *  FUNCTION NAME:   do_puzzle_title
- *  DESCRIPTION:     Lets user set the puzzle title
- ***************************************************************/
-function do_puzzle_title() {
-    showElement("pt-dialog")
-}
-
 //  ============================================================
 //  Edit word functions
 //  ============================================================

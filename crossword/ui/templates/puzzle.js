@@ -73,11 +73,11 @@ function do_puzzle_save(puzzlename) {
     }
     else {
         const title = "Save puzzle";
-        const prompt = "";
         const label = "Puzzle name:"
         const value = "";
-        const submit_function = "do_puzzle_save_with_name()";
-        inputBox(title, prompt, label, value, submit_function);
+        const action = "javascript:do_puzzle_save_with_name()";
+        const method = "";
+        inputBox(title, label, value, action, method);
     }
 }
 function do_puzzle_save_with_name() {
@@ -87,11 +87,11 @@ function do_puzzle_save_with_name() {
 }
 function do_puzzle_save_as() {
     const title = "Save puzzle as";
-    const prompt = "";
     const label = "Puzzle name:";
     const value = "";
     const action = "javascript:validatePuzzleNameForSaveAs()";
-    inputBox(title, prompt, label, value, action);
+    const method = "";
+    inputBox(title, label, value, action, method);
 }
 function validatePuzzleNameForSaveAs() {
     const newpuzzlename = document.forms["ib-form"]["ib-input"].value;
@@ -122,4 +122,12 @@ function validatePuzzleNameForSaveAs() {
     const ajax_url = "{{ url_for('uipuzzle.puzzles')}}";
     xhttp.open("GET", ajax_url, true);
     xhttp.send();
+}
+function do_puzzle_title() {
+    const title = "Puzzle title";
+    const label = "<b>Puzzle title:</b>";
+    const value = "{{ puzzletitle }}"
+    const action = "{{ url_for('uipuzzle.puzzle_title') }}";
+    const method = "POST";
+    inputBox(title, label, value, action, method);
 }

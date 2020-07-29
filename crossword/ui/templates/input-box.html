@@ -1,10 +1,12 @@
 <script>
-function inputBox(title, prompt, label, value, submit_function) {
+function inputBox(title, label, value, action, method) {
     document.getElementById("ib-title").innerHTML = title;
-    document.getElementById("ib-prompt").innerHTML = prompt;
     document.getElementById("ib-label").innerHTML = label;
     document.getElementById("ib-input").value = value;
-    document.getElementById("ib-form").setAttribute("action", submit_function);
+    document.getElementById("ib-form").setAttribute("action", action);
+    if (method != "") {
+        document.getElementById("ib-form").method = method;
+    }
     document.getElementById("ib").style.display = "block";
 }
 function inputBoxSubmit() {

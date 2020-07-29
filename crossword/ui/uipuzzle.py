@@ -210,7 +210,7 @@ def puzzle_save_as():
 def puzzle_title():
     """ Changes the puzzle title and redirects back to the puzzle screen """
 
-    title = request.form.get('title', None)
+    title = request.form.get('ib-input', None)
     if title:
         jsonstr = session['puzzle']
         puzzle = Puzzle.from_json(jsonstr)
