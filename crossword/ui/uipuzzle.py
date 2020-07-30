@@ -358,14 +358,17 @@ def puzzle_changed():
 
 @uipuzzle.route('/puzzle_statistics')
 def puzzle_statistics():
-    """ REST method to return the puzzle statistics in a JSON string """
+    """ Return the grid statistics in a JSON string """
 
-    jsonstr = session['puzzle']
-    puzzle = Puzzle.from_json(jsonstr)
+    # Get the grid from the session
+    puzzle = Puzzle.from_json(session['puzzle'])
     stats = puzzle.get_statistics()
-    resp = make_response(json.dumps(stats), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
+    enabled = {}
+
+    svgstr = PuzzleToSVG(puzzle).generate_xml()
+
+    # Render with puzzle statistics template
+    return render_template("puzzle-statistics.html", enabled=enabled, svgstr=svgstr, stats=stats);
 
 
 @uipuzzle.route('/puzzle-undo')

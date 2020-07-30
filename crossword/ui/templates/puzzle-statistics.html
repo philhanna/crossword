@@ -1,0 +1,8 @@
+{% extends "statistics.html" %}
+{% block LHS %}
+<div id="puzzle-svg" class="w3-container" style="padding-top:109px">
+{{ svgstr|safe }}
+</div>
+{% endblock LHS %}
+{% set nexturl = url_for('uipuzzle.puzzle_screen') %}
+{% block title %}Puzzle statistics{% endblock title %}

@@ -1,34 +1,102 @@
-<!-- statistics.html -->
-<div class="w3-container">
-    <div id="st-dialog" class="w3-modal" style="display:none">
-        <div class="w3-modal-content" style="width:60%;">
-            <header class="w3-container w3-blue-gray">
-                <h3 id="st-title"></h3>
-                <span class="w3-button w3-display-topright w3-hover-red w3-large"
-                      onclick="hideElement('st-dialog');"
-                      >&times;</span>
-            </header>
-            <div class="w3-container">
-                <div class="w3-section w3-cell-row">
-                    <div class="w3-cell" style="width:15%"><b>Valid:</b></div>
-                    <div id="st-valid" class="w3-cell"></div>
+{% extends "main.html" %}
+<!--
+Example value to render:
+{
+    "valid": true,
+    "errors": {
+        "interlock": [],
+        "unchecked": [],
+        "wordlength": []
+    },
+    "size": "15 x 15",
+    "wordcount": 74,
+    "wordlengths": {
+        "3": {
+            "alist": [1, 4, 7, 24, 25, 42, 44, 62, 63, 64],
+            "dlist": [22, 23, 26, 27, 28, 29, 31, 32, 33, 34, 38, 41]
+        },
+        "4": {
+            "alist": [10, 14, 15, 17, 18, 20, 35, 36, 52, 54, 56, 58, 59, 61],
+            "dlist": [1, 9, 11, 14, 47, 49, 52, 55]
+        },
+        "5": {
+            "alist": [12, 16, 19, 53, 57, 60],
+            "dlist": [2, 3, 5, 7, 8, 45, 46, 48, 50, 51]
+        },
+        "6": {
+            "alist": [26, 30, 37, 40],
+            "dlist": [4, 6, 12, 13, 39, 40, 43, 44]
+        },
+        "13": {
+            "alist": [21, 45],
+            "dlist": []
+        }
+    }
+}
+-->
+{% block RHS %}
+    <div class="w3-display-container">
+        <header class="w3-container w3-blue-gray" style="padding-top: 5px">
+            <h3>{% block title %}{% endblock title %}</h3>
+            <span class="w3-button w3-display-topright w3-hover-red w3-large"
+                  onclick="window.location.href='{{ nexturl }}'"
+            >&times;</span>
+        </header>
+        <div class="w3-container">
+            <div class="w3-section w3-cell-row">
+                <div class="w3-cell" style="width:15%"><b>Valid:</b></div>
+                <div class="w3-cell">{{ stats.valid }}</div>
+            </div>
+            <div class="w3-section w3-cell-row">
+                <div class="w3-cell" style="width:15%"><b>Errors:</b></div>
+                <div class="w3-cell">
+                    {% if stats.valid %}
+                        <span>None</span>
+                    {% else %}
+                        <ul style="list-style-type: none; line-height: 30%;">
+                            {% for error_type in stats.errors %}
+                                {% for errmsg in stats.errors[error_type] %}
+                                    <li><p style="color:#ff0000">{{ errmsg }}</p></li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                 </div>
-                <div class="w3-section w3-cell-row">
-                    <div class="w3-cell" style="width:15%"><b>Errors:</b></div>
-                    <div id="st-errors" class="w3-cell"></div>
-                </div>
-                <div class="w3-section w3-cell-row">
-                    <div class="w3-cell" style="width:15%"><b>Size:</b></div>
-                    <div id="st-size" class="w3-cell"></div>
-                </div>
-                <div class="w3-section w3-cell-row">
-                    <div class="w3-cell" style="width:15%"><b>Word count:</b></div>
-                    <div id="st-wordcount" class="w3-cell"></div>
-                </div>
-                <div class="w3-section w3-cell-row">
-                    <div id="st-wordlengths" class="w3-cell"></div>
+            </div>
+            <div class="w3-section w3-cell-row">
+                <div class="w3-cell" style="width:15%"><b>Size:</b></div>
+                <div class="w3-cell">{{ stats.size }}</div>
+            </div>
+            <div class="w3-section w3-cell-row">
+                <div class="w3-cell" style="width:15%"><b>Word count:</b></div>
+                <div class="w3-cell">{{ stats.wordcount }}</div>
+            </div>
+            <div class="w3-section w3-cell-row">
+                <div class="w3-cell">
+                    <table class="w3-table" style="border-width:thin;border-style:solid;border-color:black;border-collapse:collapse">
+                        <tr>
+                            <th style="width:15%">Word length</th>
+                            <th style="width:40%">Across</th>
+                            <th style="width:40%">Down</th>
+                        </tr>
+                        {% for wlens, wordlengths in stats.wordlengths.items() %}
+                            <tr>
+                                <td style="border:1px solid black">{{ wlens }}</td>
+                                <td style="border:1px solid black">
+                                    <p style="word-break: break-word">
+                                    {% for x in wordlengths.alist %}{% if x != wordlengths.alist[0] %}, {% endif %}{{ x }}{% endfor %}
+                                    </p>
+                                </td>
+                                <td style="border:1px solid black">
+                                    <p style="word-break: break-word">
+                                    {% for x in wordlengths.dlist %}{% if x != wordlengths.dlist[0] %}, {% endif %}{{ x }}{% endfor %}
+                                    </p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
                 </div>
             </div>
         </div>
     </div>
-</div>
+{% endblock RHS %}

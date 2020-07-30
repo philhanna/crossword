@@ -269,14 +269,17 @@ def grid_changed():
 
 @uigrid.route('/grid-statistics')
 def grid_statistics():
-    """ REST method to return the grid statistics in a JSON string """
+    """ Return the grid statistics in a JSON string """
 
     # Get the grid from the session
     grid = Grid.from_json(session['grid'])
     stats = grid.get_statistics()
-    resp = make_response(json.dumps(stats), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
+    enabled = {}
+
+    svgstr = GridToSVG(grid).generate_xml()
+
+    # Render with grid statistics template
+    return render_template("grid-statistics.html", enabled=enabled, svgstr=svgstr, stats=stats);
 
 
 @uigrid.route('/grids')

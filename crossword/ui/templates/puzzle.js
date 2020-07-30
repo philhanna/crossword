@@ -136,3 +136,7 @@ function do_word(event, url) {
     url = `${url}?r=${r}&c=${c}`;
     window.location.href = url;
 }
+function do_puzzle_stats() {
+    const url = "{{ url_for('uipuzzle.puzzle_statistics') }}";
+    window.location.href = url;
+}

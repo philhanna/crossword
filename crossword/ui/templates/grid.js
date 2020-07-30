@@ -181,3 +181,7 @@ function grid_click(event) {
     xhttp.open("GET", url, true);
     xhttp.send();
 }
+function do_grid_stats() {
+    const url = "{{ url_for('uigrid.grid_statistics') }}";
+    window.location.href = url;
+}

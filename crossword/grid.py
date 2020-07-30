@@ -200,7 +200,7 @@ class Grid:
         # 1. Crosswords must have black square symmetry, which typically comes
         # in the form of 180-degree rotational symmetry
         # 2. Crosswords must have all-over interlock;
-        # 3. Crosswords must not have unchecked squares 
+        # 3. Crosswords must not have unchecked square;
         # (i.e., all letters must be found in both Across and Down answers);
         # 4. All answers must be at least 3 letters long;
         # 5. Black squares should be used in moderation.

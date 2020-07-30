@@ -365,7 +365,7 @@ class Puzzle:
         stats['errors'] = errors
         stats['size'] = f"{self.n} x {self.n}"
         stats['wordcount'] = self.get_word_count()
-        stats['wordlengths'] = self.grid.get_word_lengths()
+        stats['wordlengths'] = self.get_word_lengths()
         return stats
 
     def __str__(self):
