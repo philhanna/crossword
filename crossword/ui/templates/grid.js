@@ -129,37 +129,53 @@ function grid_chooser_ajax(function_list) {
     xhttp.send();
 }
 function do_grid_save(gridname) {
-    if (gridname == "") {
-        showElement("gs-dialog");
-    } else {
+    if (gridname != "") {
         window.location.href = "{{ url_for('uigrid.grid_save') }}";
     }
+    else {
+        const title = "Save grid";
+        const label = "Grid name:";
+        const value = "";
+        const action = "javascript:do_grid_save_with_name()";
+        const method = "";
+        inputBox(title, label, value, action, method);
+    }
+}
+function do_grid_save_with_name() {
+    const name = encodeURIComponent(document.getElementById("ib-input").value);
+    const url = "{{ url_for('uigrid.grid_save') }}" + "?gridname=" + name;
+    window.location.href = url;
 }
 function do_grid_save_as() {
-    showElement("gsa-dialog");
+    const title = "Save grid as";
+    const label = "Grid name:";
+    const value = "";
+    const action = "javascript:validateGridNameForSaveAs()";
+    const method = "";
+    inputBox(title, label, value, action, method);
 }
 function validateGridNameForSaveAs() {
-    const newgridname = document.forms["gsa-form"]["newgridname"].value;
-    let url = "{{ url_for('uigrid.grid_save_as') }}" + "?newgridname=" + newgridname;
-    url = encodeURI(url);
-
+    const newgridname = document.forms["ib-form"]["ib-input"].value;
     const xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
 
             const jsonstr = this.responseText;
             const grid_list = JSON.parse(jsonstr);
+            let url = "{{ url_for('uigrid.grid_save_as') }}" + "?newgridname=" + newgridname;
+            url = encodeURI(url);
 
             if (grid_list.includes(newgridname)) {
-                // Duplicate name - prompt for OK
-                document.getElementById("ge-gridname").innerHTML = newgridname;
-                document.getElementById("ge-ok").setAttribute("href", url)
-                hideElement("gsa-dialog");
-                showElement("ge-dialog");
+                const title = "Overwrite grid";
+                const prompt = `<p>Grid "${newgridname}" already exists.  Overwrite it?</p>`;
+                const ok = url;
+                hideElement("ib");
+                messageBox(title, prompt, ok);
             } else {
                 // No duplicate - proceed
                 window.location.href = url;
             }
+            return true;
         }
     };
 
