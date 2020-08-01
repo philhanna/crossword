@@ -67,7 +67,7 @@
     <a class="w3-bar-item w3-button crosstb
             {% if not enabled.grid_delete %} w3-disabled {% endif %}"
             {% if enabled.grid_delete %}
-            onclick="do_grid_delete()"
+            onclick="do_grid_delete('{{ gridname }}')"
             {% endif %}
             >
         <i class="material-icons crosstb-icon">delete_forever</i>

@@ -197,7 +197,7 @@ def grid_delete():
         if oldgrid:
             db.session.delete(oldgrid)
             db.session.commit()
-            flash(f"{gridname} gridname deleted")
+            flash(f"{gridname} grid deleted")
 
     # Redirect to the main screen
     return redirect(url_for('uimain.main_screen'))
