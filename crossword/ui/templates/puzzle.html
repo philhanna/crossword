@@ -1,5 +1,5 @@
 {% extends "main.html" %}
-{% block header %}
+{% block LHS %}
 <script>
 {% include "puzzle.js" %}
 </script>
@@ -93,9 +93,6 @@
 
     </div> <!-- End of toolbar -->
 </div>
-{% endblock header %}
-
-{% block LHS %}
 <!-- Image -->
 <div id="puzzle-svg" class="w3-container" style="width:40%;padding-top:0px" onclick="puzzle_click(event)">
     {{ svgstr|safe }}
