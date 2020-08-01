@@ -26,8 +26,11 @@ function do_grid_close() {
     xhttp.open("GET", url, true);
     xhttp.send();
 }
-function do_grid_delete() {
-    showElement("gd-dialog");
+function do_grid_delete(gridname) {
+    const title = "Delete grid";
+    const prompt = `Are you sure you want to delete grid <b>'${gridname}'</b>?`;
+    const ok = "{{ url_for('uigrid.grid_delete') }}";
+    messageBox(title, prompt, ok);
 }
 function do_grid_open() {
     let function_list = [];
