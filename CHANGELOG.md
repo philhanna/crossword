@@ -5,11 +5,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Table of contents
+- [Version 2.4.0 - 2020/08/01](#version-240---20200801)
 - [Version 2.3.0 - 2020/07/12](#version-230---20200712)
 - [Version 2.2.0 - 2020/06/30](#version-220---20200630)
 - [Version 2.1.4 - 2020/06/23](#version-214---20200623)
 - [Version 2.0.0 - 2020/06/21](#version-200---20200621)
 - [Version 1.4.0 - 2020/06/14](#version-140---20200614)
+
+## Version 2.4.0 - 2020/08/01
+
+Major overhaul of HTML files.  Now using templates with inheritance.
+Made two common modal dialogs to replace all the individual ones.
 
 ## Version 2.3.0 - 2020/07/12
 
