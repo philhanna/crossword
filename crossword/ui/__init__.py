@@ -18,6 +18,8 @@ __all__ = [
     'UIState',
 ]
 
+from threading import Lock
+
 from flask import Flask
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -27,6 +29,7 @@ from crossword import dbfile, config
 
 db = SQLAlchemy()
 lock = Lock()
+
 
 def create_app():
     import logging

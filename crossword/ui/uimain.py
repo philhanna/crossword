@@ -1,5 +1,3 @@
-from threading import Thread
-
 from flask import Blueprint, session, render_template
 
 from crossword.ui import is_loaded, get_wordlist, lock, UIState
