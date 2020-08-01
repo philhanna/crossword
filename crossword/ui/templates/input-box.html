@@ -1,0 +1,44 @@
+<script>
+function inputBox(title, label, value, action, method) {
+    document.getElementById("ib-title").innerHTML = title;
+    document.getElementById("ib-label").innerHTML = label;
+    document.getElementById("ib-input").value = value;
+    document.getElementById("ib-form").setAttribute("action", action);
+    if (method != "") {
+        document.getElementById("ib-form").method = method;
+    }
+    document.getElementById("ib").style.display = "block";
+}
+function inputBoxSubmit() {
+    alert("DEBUG: submit_function not specified");
+}
+</script>
+<div id="ib" class="w3-modal" style="display:none">
+    <div class="w3-modal-content w3-card-4" style="width:30%">
+        <div class="w3-blue-gray w3-center">
+            <span class="w3-button w3-display-topright" onclick="hideElement('ib')">&times;</span>
+            <h3 id="ib-title"></h3>
+        </div>
+        <div class="w3-section">
+            <span id="ib-prompt"></span>
+        </div>
+        <form id="ib-form" name="ib-form" class="w3-container">
+            <div class="w3-section">
+                <label id="ib-label"></label>
+                <input type="text" id="ib-input" name="ib-input" value="" required></input>
+                <div class="w3-section w3-center">
+                    <!-- OK button -->
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            id="ib-ok"
+                            type="submit"
+                            value="OK"
+                            style="width:100px">OK</button>
+                    <!-- Cancel button -->
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            onclick="hideElement('ib')"
+                            style="width:100px">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

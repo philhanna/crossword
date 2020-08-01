@@ -20,10 +20,29 @@ from sqlalchemy import desc
 
 # My own packages
 from crossword import Grid, GridToSVG, sha256
-from crossword.ui import db, DBGrid
+from crossword.ui import db, DBGrid, UIState
 
 # Register this route handler
+
 uigrid = Blueprint('uigrid', __name__)
+
+
+@uigrid.route('/grid-chooser/<path:nexturl>')
+def grid_chooser(nexturl):
+    """ Redirects to grid chooser dialog """
+
+    # Make a list of all the saved grids
+    userid = 1  # TODO replace hard-coded user ID
+    gridlist = get_grid_list(userid)
+
+    # Set the state to grid chooser
+    session['uistate'] = UIState.GRID_CHOOSER
+    enabled = UIState.GRID_CHOOSER.get_enabled()
+
+    return render_template("grid-chooser.html",
+                           enabled=enabled,
+                           objectlist=gridlist,
+                           nexturl=nexturl)
 
 
 @uigrid.route('/grid')
@@ -38,6 +57,11 @@ def grid_screen():
     svg = GridToSVG(grid)
     boxsize = svg.boxsize
     svgstr = svg.generate_xml()
+
+    # Set the state to editing grid
+    session['uistate'] = UIState.EDITING_GRID
+    enabled = session['uistate'].get_enabled()
+    enabled["grid_delete"] = gridname is not None
 
     # Enable menu options
     enabled = {
@@ -58,13 +82,13 @@ def grid_screen():
                            svgstr=svgstr)
 
 
-@uigrid.route('/grid-new', methods=['POST'])
+@uigrid.route('/grid-new', methods=['GET'])
 def grid_new():
     """ Creates a new grid and redirects to grid screen """
 
     # Get the grid size from the form
 
-    n = int(request.form.get('n'))
+    n = int(request.args.get('n'))
 
     # Remove any leftover grid name in the session
     session.pop('gridname', None)
@@ -126,7 +150,7 @@ def grid_preview():
         if entry["dlist"]:
             total += len(entry["dlist"])
         heading_list.append(f"{wlen}-letter: {total}")
-    heading = f'{gridname}({", ".join(heading_list)})'
+    heading = f'Grid {gridname}({", ".join(heading_list)})'
 
     scale = 0.75
     svgobj = GridToSVG(grid, scale=scale)
@@ -173,7 +197,7 @@ def grid_delete():
         if oldgrid:
             db.session.delete(oldgrid)
             db.session.commit()
-            flash(f"{gridname} gridname deleted")
+            flash(f"{gridname} grid deleted")
 
     # Redirect to the main screen
     return redirect(url_for('uimain.main_screen'))
@@ -245,14 +269,17 @@ def grid_changed():
 
 @uigrid.route('/grid-statistics')
 def grid_statistics():
-    """ REST method to return the grid statistics in a JSON string """
+    """ Return the grid statistics in a JSON string """
 
     # Get the grid from the session
     grid = Grid.from_json(session['grid'])
     stats = grid.get_statistics()
-    resp = make_response(json.dumps(stats), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
+    enabled = {}
+
+    svgstr = GridToSVG(grid).generate_xml()
+
+    # Render with grid statistics template
+    return render_template("grid-statistics.html", enabled=enabled, svgstr=svgstr, stats=stats);
 
 
 @uigrid.route('/grids')

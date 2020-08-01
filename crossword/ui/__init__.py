@@ -15,9 +15,8 @@ __all__ = [
     'is_loaded',
     'get_wordlist',
     'lock',
+    'UIState',
 ]
-
-from threading import Lock
 
 from flask import Flask
 from flask_session import Session
@@ -130,3 +129,4 @@ from .puzzle_publish_nytimes import PuzzlePublishNYTimes
 from .puzzle_to_xml import PuzzleToXML
 from .puzzle_from_xml import PuzzleFromXML
 from .uiwordlists import is_loaded, get_wordlist
+from .uistate import UIState

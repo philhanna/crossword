@@ -25,10 +25,30 @@ from crossword import PuzzleToSVG
 from crossword import sha256
 from crossword.ui import DBGrid
 from crossword.ui import DBPuzzle
+from crossword.ui import UIState
 from crossword.ui import db
 
 # Register this blueprint
+
 uipuzzle = Blueprint('uipuzzle', __name__)
+
+
+@uipuzzle.route('/puzzle-chooser/<path:nexturl>')
+def puzzle_chooser(nexturl):
+    """ Redirects to puzzle chooser dialog """
+
+    # Make a list of all the saved puzzles
+    userid = 1  # TODO replace hard-coded user ID
+    puzzlelist = get_puzzle_list(userid)
+
+    # Set the state to puzzle chooser
+    session['uistate'] = UIState.PUZZLE_CHOOSER
+    enabled = session['uistate'].get_enabled()
+
+    return render_template("puzzle-chooser.html",
+                           enabled=enabled,
+                           objectlist=puzzlelist,
+                           nexturl=nexturl)
 
 
 @uipuzzle.route('/puzzle')
@@ -56,16 +76,12 @@ def puzzle_screen():
     boxsize = svg.boxsize
     svgstr = svg.generate_xml()
 
-    enabled = {
-        "puzzle_save": True,
-        "puzzle_save_as": True,
-        "puzzle_stats": True,
-        "puzzle_title": True,
-        "puzzle_undo": len(puzzle.undo_stack) > 0,
-        "puzzle_redo": len(puzzle.redo_stack) > 0,
-        "puzzle_close": True,
-        "puzzle_delete": puzzlename is not None,
-    }
+    # Set the state to editing puzzle
+    session['uistate'] = UIState.EDITING_PUZZLE
+    enabled = session['uistate'].get_enabled()
+    enabled["puzzle_undo"] = len(puzzle.undo_stack) > 0
+    enabled["puzzle_redo"] = len(puzzle.redo_stack) > 0
+    enabled["puzzle_delete"] = puzzlename is not None
 
     # Send puzzle.html to the client
     return render_template('puzzle.html',
@@ -157,7 +173,7 @@ def puzzle_preview():
         if entry["dlist"]:
             total += len(entry["dlist"])
         heading_list.append(f"{wlen}-letter: {total}")
-    heading = f'{puzzlename}({", ".join(heading_list)})'
+    heading = f'Puzzle {puzzlename}({", ".join(heading_list)})'
 
     scale = 0.75
     svgobj = PuzzleToSVG(puzzle, scale=scale)
@@ -195,7 +211,7 @@ def puzzle_save_as():
 def puzzle_title():
     """ Changes the puzzle title and redirects back to the puzzle screen """
 
-    title = request.form.get('title', None)
+    title = request.form.get('ib-input', None)
     if title:
         jsonstr = session['puzzle']
         puzzle = Puzzle.from_json(jsonstr)
@@ -247,7 +263,7 @@ def puzzle_click_down():
 
 
 def puzzle_click(direction):
-    """ Common REST method used by both puzzle_click_across and puzzle_click_down """
+    """ Common method used by both puzzle_click_across and puzzle_click_down """
 
     # Get the seq or row and column clicked from the query parms
 
@@ -257,6 +273,8 @@ def puzzle_click(direction):
 
     # Get the existing puzzle from the session
     puzzle = Puzzle.from_json(session['puzzle'])
+    puzzlename = session.get('puzzlename', None)
+    puzzletitle = puzzle.get_title()
 
     if r is not None and c is not None:
         r = int(r)
@@ -286,10 +304,12 @@ def puzzle_click(direction):
             return response
         pass
 
+    length = word.length
+
     # Save seq, direction, and length in the session
     session['seq'] = seq
     session['direction'] = direction
-    session['length'] = word.length
+    session['length'] = length
 
     # Get the existing text and clue from this word
     # and replace blanks with "."
@@ -299,22 +319,24 @@ def puzzle_click(direction):
     if not clue:
         clue = ""
 
-    # Store parameters in a JSON string
-    parms = {
-        "seq": seq,
-        "direction": direction,
-        "text": text,
-        "clue": clue,
-        "length": word.length
-    }
-    parmstr = json.dumps(parms)
+    # Create the SVG
+    svg = PuzzleToSVG(puzzle)
+    svgstr = svg.generate_xml()
 
     # Invoke the puzzle word editor
+    session['uistate'] = UIState.EDITING_WORD
+    enabled = session['uistate'].get_enabled()
 
-    resp = make_response(parmstr, HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-
-    return resp
+    return render_template("word-edit.html",
+                           enabled=enabled,
+                           puzzlename=puzzlename,
+                           puzzletitle=puzzletitle,
+                           svgstr=svgstr,
+                           seq=seq,
+                           direction=direction,
+                           text=text,
+                           clue=clue,
+                           length=length)
 
 
 @uipuzzle.route('/puzzle-changed')
@@ -341,14 +363,17 @@ def puzzle_changed():
 
 @uipuzzle.route('/puzzle_statistics')
 def puzzle_statistics():
-    """ REST method to return the puzzle statistics in a JSON string """
+    """ Return the grid statistics in a JSON string """
 
-    jsonstr = session['puzzle']
-    puzzle = Puzzle.from_json(jsonstr)
+    # Get the grid from the session
+    puzzle = Puzzle.from_json(session['puzzle'])
     stats = puzzle.get_statistics()
-    resp = make_response(json.dumps(stats), HTTPStatus.OK)
-    resp.headers['Content-Type'] = "application/json"
-    return resp
+    enabled = {}
+
+    svgstr = PuzzleToSVG(puzzle).generate_xml()
+
+    # Render with puzzle statistics template
+    return render_template("puzzle-statistics.html", enabled=enabled, svgstr=svgstr, stats=stats);
 
 
 @uipuzzle.route('/puzzle-undo')
@@ -387,6 +412,7 @@ def puzzles():
     resp = make_response(json.dumps(puzzlelist), HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
+
 
 #   ============================================================
 #   Internal methods

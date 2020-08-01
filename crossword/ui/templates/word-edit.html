@@ -1,130 +1,146 @@
-<!-- word-edit.html -->
-<!-- word-edit-dialog -->
-<div id="we-dialog" class="w3-modal">
-<!-- modal content -->
-<div class="w3-modal-content w3-card-4"
-     style="position:absolute; top:10%; left:40%; height:90%; width:50%;"
->
+{% extends "puzzle.html" %}
+{% block LHS %}
+<div class="w3-panel">
+    <h3 style="padding-top:0px">Editing puzzle
+        {% if puzzlename %}<b>{{ puzzlename }}</b>{% else %}(untitled){% endif %}
+        {% if puzzletitle %}: "{{ puzzletitle }}" {% endif %}
+    </h3>
+</div>
 
-<header class="w3-container w3-blue-gray">
-<h3 id="we-heading"></h3>
-<span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
-      onclick="hideElement('we-dialog');"
-      >&times;</span>
-</header>
+<div id="puzzle-svg" class="w3-container" style="width:40%;padding-top:29px">
+    {{ svgstr|safe }}
+</div>
 
-    <form class="w3-container w3-card-4"
-      name="we-form"
-      method="POST"
-      action="{{ url_for('uiword.word_edit') }}"
-      onsubmit="open_word_edit_tab('we-tab-suggest'); return do_word_validate()"
-    >
-
-<!-- form section -->
-<div class="w3-section">
-
+{% endblock %}
+{% block RHS %}
 <script>
-    function open_word_edit_tab(tabname) {
-        const elem_tabs = document.getElementsByClassName("we-tab");
-        for (let i = 0; i < elem_tabs.length; i++) {
-            elem_tabs[i].style.display = "none";
-        }
-        const elem_tab = document.getElementById(tabname);
-        elem_tab.style.display = "block";
-    }
+    {% include "word-edit.js" %}
 </script>
-    <!-- Tab bar -->
-    <div class="w3-bar w3-blue-gray">
-        <button class="w3-bar-item w3-button"
-                type="button"
-                onclick="open_word_edit_tab('we-tab-suggest'); return false;">
-            Suggest</button>
-        <button class="w3-bar-item w3-button"
-                type="button"
-                onclick="open_word_edit_tab('we-tab-constraints'); return false">
-            Constraints</button>
-        <button class="w3-bar-item w3-button"
-                type="button"
-                onclick="open_word_edit_tab('we-tab-reset'); return false">
-            Reset</button>
-    </div>
+<div id="we-dialog" class="w3-display-container w3-margin-right">
+    <!-- Javascript functions used in this dialog --->
 
-    <!-- Tab 1: Suggest -->
-    <div id="we-tab-suggest" class="w3-bar w3-margin-top we-tab">
-        <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_suggest()">
-            <i class="material-icons crosstb-icon">search</i>
-            <span>Suggest words that match pattern</span>
-        </a>
-        <div class="w3-bar-item" id="we-match" style="display:none"></div>
-        <select name="words"
-                id="we-select"
-                class="w3-bar-item"
-                style="display:none"
-                onchange="do_select_changed()"
-                onclick="do_select_changed()" >
-        </select>
-    </div>
+    <!-- Word edit dialog -->
+    <div class="w3-section">
 
-    <!-- Tab 2: Constraints -->
-    <div id="we-tab-constraints"
-         class="w3-bar w3-margin-top we-tab"
-         style="overflow:auto;overflow-x:hidden;display:none">
-        <a class="w3-button w3-small w3-round w3-light-gray crosstb"
-           onclick="do_word_constraints()">
-            <i class="material-icons crosstb-icon">assignment</i>
-            <span>Find constraints imposed by crossing words</span>
-        </a>
-        <div id="we-constraints-table"></div>
-    </div>
+        <header class="w3-container w3-blue-gray" style="padding: 7px">
+            <h3 id="we-heading">
+                <span>{{ seq }} {{ direction }} ({{ length }} letters)</span>
+            </h3>
+            <span class="w3-button w3-xlarge w3-hover-red w3-display-topright"
+                  onclick="cancel_dialog()"
+            >&times;</span>
+        </header>
 
-    <!-- Tab 3: Reset -->
-    <div id="we-tab-reset" class="w3-bar w3-margin-top we-tab" style="display:none">
-        <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_reset()">
-            <i class="material-icons crosstb-icon">cached</i>
-            <span>Clear letters not shared with full words</span>
-        </a>
-    </div>
+        <form class="w3-container w3-card-4"
+              name="we-form"
+              method="POST"
+              action="{{ url_for('uiword.word_edit') }}"
+              onsubmit="open_word_edit_tab('we-tab-suggest'); return do_word_validate()"
+        >
 
-<!-- Input word -->
-<p style="width:50%">
-<label>Word:</label>
-<input   class="w3-input w3-border"
-         id="we-word"
-         name="text"
-         style="font-family: Courier; font-size: large"
-         maxlength="{{ length }}"
-         type="text"
-         value="{{ text }}"
-/>
-</p> <!-- End of input word -->
+            <!-- form section -->
+            <div class="w3-section">
 
-<!-- Input clue -->
-<p style="width:100%">
-<label>Clue:</label>
-<input   class="w3-input w3-border"
-         id="we-clue"
-         name="clue"
-         type="text"
-         value="{{ clue }}"
-/>
-</p> <!-- End of input clue -->
+                <script>
+                </script>
+                <!-- Tab bar -->
+                <div class="w3-bar w3-blue-gray">
+                    <button class="w3-bar-item w3-button"
+                            type="button"
+                            onclick="open_word_edit_tab('we-tab-suggest'); return false;">
+                        Suggest
+                    </button>
+                    <button class="w3-bar-item w3-button"
+                            type="button"
+                            onclick="open_word_edit_tab('we-tab-constraints'); return false">
+                        Constraints
+                    </button>
+                    <button class="w3-bar-item w3-button"
+                            type="button"
+                            onclick="open_word_edit_tab('we-tab-reset'); return false">
+                        Reset
+                    </button>
+                </div>
 
-<!-- Button container -->
-<div class="w3-container">
+                <!-- Tab 1: Suggest -->
+                <div id="we-tab-suggest" class="w3-bar w3-margin-top we-tab">
+                    <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb"
+                       onclick="do_word_suggest()">
+                        <i class="material-icons crosstb-icon">search</i>
+                        <span>Suggest words that match pattern</span>
+                    </a>
+                    <div class="w3-bar-item" id="we-match" style="display:none"></div>
+                    <select name="words"
+                            id="we-select"
+                            class="w3-bar-item"
+                            style="display:none"
+                            onchange="do_select_changed()"
+                            onclick="do_select_changed()">
+                    </select>
+                </div>
 
-<button  class="w3-button w3-border w3-round w3-gray"
-style="width:100px"
-type="submit"
->OK</button>
+                <!-- Tab 2: Constraints -->
+                <div id="we-tab-constraints"
+                     class="w3-bar w3-margin-top we-tab"
+                     style="overflow:auto;overflow-x:hidden;display:none">
+                    <a class="w3-button w3-small w3-round w3-light-gray crosstb"
+                       onclick="do_word_constraints()">
+                        <i class="material-icons crosstb-icon">assignment</i>
+                        <span>Find constraints imposed by crossing words</span>
+                    </a>
+                    <div id="we-constraints-table"></div>
+                </div>
 
-<button  class="w3-button w3-border w3-round w3-gray"
-style="width:100px"
-type="button"
-onclick="open_word_edit_tab('we-constraints-table'); hideElement('we-dialog');"
->Cancel</button>
+                <!-- Tab 3: Reset -->
+                <div id="we-tab-reset" class="w3-bar w3-margin-top we-tab" style="display:none">
+                    <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb" onclick="do_word_reset()">
+                        <i class="material-icons crosstb-icon">cached</i>
+                        <span>Clear letters not shared with full words</span>
+                    </a>
+                </div>
 
-</div> <!-- End of button container -->
-</div> <!-- End of form section -->
-</form>
-</div> <!-- End of modal content -->
+                <!-- Input word -->
+                <p style="width:50%">
+                    <label>Word:</label>
+                    <input class="w3-input w3-border"
+                           id="we-word"
+                           name="text"
+                           style="font-family: Courier; font-size: large"
+                           type="text"
+                           value="{{ text }}"
+                    />
+                </p> <!-- End of input word -->
+
+                <!-- Input clue -->
+                <p style="width:100%">
+                    <label>Clue:</label>
+                    <input class="w3-input w3-border"
+                           id="we-clue"
+                           name="clue"
+                           type="text"
+                           value="{{ clue }}"
+                    />
+                </p> <!-- End of input clue -->
+
+                <!-- Button container -->
+                <div class="w3-container">
+
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            style="width:100px"
+                            type="submit"
+                    >OK
+                    </button>
+
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            style="width:100px"
+                            type="button"
+                            onclick="cancel_dialog()"
+                    >Cancel
+                    </button>
+
+                </div> <!-- End of button container -->
+            </div> <!-- End of form section -->
+        </form>
+    </div> <!-- End of modal content -->
 </div> <!-- End of edit-word-dialog -->
+{% endblock RHS %}

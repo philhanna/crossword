@@ -1,0 +1,8 @@
+{% extends "statistics.html" %}
+{% block LHS %}
+<div id="grid-svg" class="w3-container" style="padding-top: 115px">
+{{ svgstr|safe }}
+</div>
+{% endblock LHS %}
+{% set nexturl = url_for('uigrid.grid_screen') %}
+{% block title %}Grid statistics{% endblock title %}

@@ -1,12 +1,12 @@
-<!-- grid.html -->
-{% include 'header.html' %}
+{% extends "main.html" %}
+{% block header %}
+<script>
+{% include "grid.js" %}
+</script>
+
 <div class="w3-container">
     <h3>Editing grid
-        {% if gridname %}
-        {{ gridname }}
-        {% else %}
-        (untitled)
-        {% endif %}
+        {% if gridname %} {{ gridname }} {% else %} (untitled) {% endif %}
     </h3>
 </div>
 
@@ -67,7 +67,7 @@
     <a class="w3-bar-item w3-button crosstb
             {% if not enabled.grid_delete %} w3-disabled {% endif %}"
             {% if enabled.grid_delete %}
-            onclick="do_grid_delete()"
+            onclick="do_grid_delete('{{ gridname }}')"
             {% endif %}
             >
         <i class="material-icons crosstb-icon">delete_forever</i>
@@ -76,10 +76,11 @@
 
 </div> <!-- End of toolbar -->
 </div>
+{% endblock header %}
 
-
+{% block LHS %}
 <div class="w3-container">Click grid to set up black cells</div>
 <div id="grid-svg" class="w3-container" onclick="grid_click(event)">
   {{ svgstr|safe }}
 </div>
-{% include 'footer.html' %}
+{% endblock LHS %}

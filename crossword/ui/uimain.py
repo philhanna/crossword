@@ -2,7 +2,7 @@ from threading import Thread
 
 from flask import Blueprint, session, render_template
 
-from crossword.ui import is_loaded, get_wordlist, lock
+from crossword.ui import is_loaded, get_wordlist, lock, UIState
 
 uimain = Blueprint('uimain', __name__)
 
@@ -17,16 +17,12 @@ def main_screen():
             get_wordlist()
 
     # Clear any existing session (except messages)
-    messages = session.get('_flashes')
+    messages = session.get('_flashes', None)
     session.clear()
     if messages:
         session['_flashes'] = messages
 
-    enabled = {
-        "grid_new": True,
-        "grid_open": True,
-        "puzzle_new": True,
-        "puzzle_open": True,
-    }
-    return render_template('main.html',
-                           enabled=enabled)
+    session['uistate'] = UIState.MAIN_MENU
+    enabled = session['uistate'].get_enabled()
+
+    return render_template('main.html', enabled=enabled)
