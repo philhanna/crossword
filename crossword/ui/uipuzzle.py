@@ -283,8 +283,8 @@ def puzzle_click(direction):
         numbered_cell = puzzle.get_numbered_cell(r, c)
         if not numbered_cell:
             errmsg = f"({r},{c}) is not a numbered cell"
-            response = make_response(errmsg, HTTPStatus.NOT_FOUND)
-            return response
+            flash(errmsg)
+            return redirect(url_for('uipuzzle.puzzle_screen'))
         seq = numbered_cell.seq
     elif seq is not None:
         seq = int(seq)
@@ -293,15 +293,15 @@ def puzzle_click(direction):
     if direction.startswith('A'):
         word = puzzle.get_across_word(seq)
         if not word:
-            errmsg = f"(Not the start of an across word"
-            response = make_response(errmsg, HTTPStatus.NOT_FOUND)
-            return response
+            errmsg = f"Not the start of an across word"
+            flash(errmsg)
+            return redirect(url_for('uipuzzle.puzzle_screen'))
     else:
         word = puzzle.get_down_word(seq)
         if not word:
-            errmsg = f"(Not the start of a down word"
-            response = make_response(errmsg, HTTPStatus.NOT_FOUND)
-            return response
+            errmsg = f"Not the start of a down word"
+            flash(errmsg)
+            return redirect(url_for('uipuzzle.puzzle_screen'))
         pass
 
     length = word.length
