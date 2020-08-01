@@ -150,7 +150,7 @@ def grid_preview():
         if entry["dlist"]:
             total += len(entry["dlist"])
         heading_list.append(f"{wlen}-letter: {total}")
-    heading = f'{gridname}({", ".join(heading_list)})'
+    heading = f'Grid {gridname}({", ".join(heading_list)})'
 
     scale = 0.75
     svgobj = GridToSVG(grid, scale=scale)

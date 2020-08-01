@@ -172,7 +172,7 @@ def puzzle_preview():
         if entry["dlist"]:
             total += len(entry["dlist"])
         heading_list.append(f"{wlen}-letter: {total}")
-    heading = f'{puzzlename}({", ".join(heading_list)})'
+    heading = f'Puzzle {puzzlename}({", ".join(heading_list)})'
 
     scale = 0.75
     svgobj = PuzzleToSVG(puzzle, scale=scale)

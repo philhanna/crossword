@@ -63,22 +63,6 @@ function do_grid_open() {
     grid_chooser_ajax(function_list);
     showElement("gc-dialog");
 }
-function do_grid_preview(gridname) {
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            const jsonstr = this.responseText;
-            const obj = JSON.parse(jsonstr);
-            document.getElementById("gv-container").style.width = obj.width;
-            document.getElementById("gv-heading").innerHTML = obj.heading;
-            document.getElementById("gv-svgstr").innerHTML = obj.svgstr;
-            showElement("gv-dialog");
-        }
-    };
-    const url = "{{ url_for('uigrid.grid_preview') }}" + "?gridname=" + gridname;
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
 function do_grid_rotate() {
     const xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function () {
