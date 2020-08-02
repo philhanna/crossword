@@ -126,14 +126,8 @@
                         }
                     }
 
-                    // Copy the suggested pattern to the input word
-                    const elem_word = document.getElementById("we-word");
-                    const before = elem_word.value();
-                    elem_word.setAttribute("value", constraints["pattern"]);
-                    const after = elem_word.value();
 
                     // Make the section visible
-
                     showElement("we-constraints-table");
                 }
             }
