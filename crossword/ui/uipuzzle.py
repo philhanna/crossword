@@ -116,7 +116,7 @@ def puzzle_new():
     # Save puzzle in the session
     jsonstr = puzzle.to_json()
     session['puzzle'] = jsonstr
-    session['puzzle.initial.sha'] = sha256(puzzle_with_no_undo_redo(puzzle).to_json())
+    session['puzzle.initial.sha'] = sha256(jsonstr)
 
     # Remove any leftover puzzle name in the session
     session.pop('puzzlename', None)
@@ -139,7 +139,7 @@ def puzzle_open():
 
     # Store the puzzle and puzzle name in the session
     session['puzzle'] = jsonstr
-    session['puzzle.initial.sha'] = sha256(puzzle_with_no_undo_redo(puzzle).to_json())
+    session['puzzle.initial.sha'] = sha256(jsonstr)
     session['puzzlename'] = puzzlename
 
     return redirect(url_for('uipuzzle.puzzle_screen'))
@@ -346,7 +346,6 @@ def puzzle_changed():
     current_puzzle_json = session.get('puzzle', None)
     if current_puzzle_json:
         current_puzzle = Puzzle.from_json(current_puzzle_json)
-        current_puzzle = puzzle_with_no_undo_redo(current_puzzle)
         jsonstr_initial_sha = session.get('puzzle.initial.sha', sha256(None))
         jsonstr_current_sha = sha256(current_puzzle.to_json())
         changed = not (jsonstr_current_sha == jsonstr_initial_sha)
@@ -373,7 +372,7 @@ def puzzle_statistics():
     svgstr = PuzzleToSVG(puzzle).generate_xml()
 
     # Render with puzzle statistics template
-    return render_template("puzzle-statistics.html", enabled=enabled, svgstr=svgstr, stats=stats);
+    return render_template("puzzle-statistics.html", enabled=enabled, svgstr=svgstr, stats=stats)
 
 
 @uipuzzle.route('/puzzle-undo')
@@ -418,13 +417,6 @@ def puzzles():
 #   Internal methods
 #   ============================================================
 
-
-def puzzle_with_no_undo_redo(puzzle):
-    newpuzzle = Puzzle.from_json(puzzle.to_json())
-    newpuzzle.undo_stack = []
-    newpuzzle.redo_stack = []
-    return newpuzzle
-
 def get_puzzle_list(userid):
     """ Returns the list of puzzle file names for the specified userid
 
@@ -441,11 +433,8 @@ def get_puzzle_list(userid):
 
 def puzzle_load_common(userid, puzzlename):
     """ Common method used to load puzzle from database """
-    oldpuzzle = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
-    puzzle = Puzzle.from_json(oldpuzzle.jsonstr)
-    puzzle.undo_stack = []
-    puzzle.redo_stack = []
-    jsonstr = puzzle.to_json()
+    dbpuzzle = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename).first()
+    jsonstr = dbpuzzle.jsonstr
     return jsonstr
 
 
@@ -456,8 +445,6 @@ def puzzle_save_common(puzzlename):
     # and validate it
     jsonstr = session.get('puzzle', None)
     puzzle = Puzzle.from_json(jsonstr)
-    puzzle.undo_stack = []
-    puzzle.redo_stack = []
     jsonstr = puzzle.to_json()
     ok, messages = puzzle.validate()
     if not ok:
@@ -497,7 +484,7 @@ def puzzle_save_common(puzzlename):
         # Store the sha of the saved version of the puzzle
         # in the session as 'puzzle.initial.sha' so that we can
         # detect whether it has been changed since it was last saved
-        session['puzzle.initial.sha'] = sha256(puzzle_with_no_undo_redo(puzzle).to_json())
+        session['puzzle.initial.sha'] = sha256(puzzle.to_json())
 
     # Show the puzzle screen
     return redirect(url_for('uipuzzle.puzzle_screen'))
