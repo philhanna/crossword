@@ -32,37 +32,6 @@ function do_grid_delete(gridname) {
     const ok = "{{ url_for('uigrid.grid_delete') }}";
     messageBox(title, prompt, ok);
 }
-function do_grid_open() {
-    let function_list = [];
-
-    function preview_anchor(gridname) {
-        const elem_a = document.createElement("a");
-        const elem_i = document.createElement("i");
-        elem_i.setAttribute("class", "material-icons");
-        elem_i.appendChild(document.createTextNode("preview"));
-        elem_a.appendChild(elem_i);
-        const onclick = "do_grid_preview('" + gridname + "')";
-        elem_a.setAttribute("onclick", onclick);
-        elem_a.style.textDecoration = "none"; // No underline
-        return elem_a;
-    }
-
-    function_list.push(preview_anchor);
-
-    function open_anchor(gridname) {
-        const elem_a = document.createElement("a");
-        elem_a.href = "{{ url_for('uigrid.grid_open') }}" + "?gridname=" + gridname;
-        elem_a.style.textDecoration = "none"; // No underline
-        elem_a.style.verticalAlign = "top"; // Align with icon
-        elem_a.appendChild(document.createTextNode(gridname));
-        return elem_a;
-    }
-
-    function_list.push(open_anchor);
-
-    grid_chooser_ajax(function_list);
-    showElement("gc-dialog");
-}
 function do_grid_rotate() {
     const xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function () {
@@ -71,44 +40,6 @@ function do_grid_rotate() {
         }
     };
     const url = "{{ url_for('uigrid.grid_rotate')}}";
-    xhttp.open("GET", url, true);
-    xhttp.send();
-}
-function grid_chooser_ajax(function_list) {
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-
-            // Get the JSON array of grid names returned by the AJAX call
-            const jsonstr = this.responseText;
-            const grid_list = JSON.parse(jsonstr);
-
-            // Clear out the <ul> that will contain the list items
-            const elem_ul = document.getElementById("grid-list");
-            elem_ul.innerHTML = "";
-
-            // Populate the list
-            for (let i = 0; i < grid_list.length; i++) {
-
-                // Get the next file name in the list
-                const gridname = grid_list[i];
-
-                // Create a <li> to contain anchors for this grid
-                const elem_li = document.createElement("li");
-
-                // Add each anchor to the <li>
-                for (let j = 0; j < function_list.length; j++) {
-                    const fun = function_list[j];
-                    const elem_anchor = fun(gridname);
-                    elem_li.appendChild(elem_anchor);
-                }
-
-                // and append the list item to the <ul>
-                elem_ul.appendChild(elem_li);
-            }
-        }
-    };
-    const url = "{{ url_for('uigrid.grids')}}";
     xhttp.open("GET", url, true);
     xhttp.send();
 }

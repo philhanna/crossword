@@ -28,6 +28,10 @@
             label='New grid...',
             onclick='do_grid_new'
             )}}
+{{ menuitem(enabled=enabled.grid_new,
+            label='New grid from puzzle...',
+            href=url_for('uipuzzle.puzzle_chooser', nexturl=url_for('uigrid.grid_new_from_puzzle'))
+            )}}
 {{ menuitem(enabled=enabled.grid_open,
             label='Open grid...',
             href=url_for('uigrid.grid_chooser', nexturl=url_for('uigrid.grid_open'))

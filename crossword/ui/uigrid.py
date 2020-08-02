@@ -20,7 +20,7 @@ from sqlalchemy import desc
 
 # My own packages
 from crossword import Grid, GridToSVG, sha256
-from crossword.ui import db, DBGrid, UIState
+from crossword.ui import db, DBGrid, UIState, DBPuzzle
 
 # Register this route handler
 
@@ -79,7 +79,6 @@ def grid_new():
     """ Creates a new grid and redirects to grid screen """
 
     # Get the grid size from the form
-
     n = int(request.args.get('n'))
 
     # Remove any leftover grid name in the session
@@ -90,6 +89,29 @@ def grid_new():
     jsonstr = grid.to_json()
     session['grid'] = jsonstr
     session['grid.initial.sha'] = sha256(jsonstr)
+
+    return redirect(url_for('uigrid.grid_screen'))
+
+
+@uigrid.route('/grid-new-from-puzzle')
+def grid_new_from_puzzle():
+    """ Creates a new grid from the specified puzzle """
+
+    puzzlename = request.args.get('puzzlename')
+    userid = 1  # TODO replace hard-coded user ID
+    query = DBPuzzle.query.filter_by(userid=userid, puzzlename=puzzlename)
+    jsonstr = query.first().jsonstr
+    grid = Grid.from_json(jsonstr)
+    grid.undo_stack = []
+    grid.redo_stack = []
+    jsonstr = grid.to_json()
+
+    # Save grid in the session
+    session['grid'] = jsonstr
+    session['grid.initial.sha'] = sha256(jsonstr)
+
+    # Remove any leftover grid name in the session
+    session.pop('gridname', None)
 
     return redirect(url_for('uigrid.grid_screen'))
 

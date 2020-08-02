@@ -12,7 +12,6 @@ function showElement(id) {
 function hideElement(id) {
     document.getElementById(id).style.display = "none";
 }
-
 function do_grid_new() {
     const title = "New grid";
     const label = "<b>Grid size:</b> <em>(a single odd positive integer)</em>";
@@ -20,6 +19,9 @@ function do_grid_new() {
     const action = "javascript:validateNewGridFormAndSubmit()";
     const method = "";
     inputBox(title, label, value, action, method);
+}
+function do_grid_new_from_puzzle() {
+
 }
 function validateNewGridFormAndSubmit() {
     let n = document.forms["ib-form"]["ib-input"].value;

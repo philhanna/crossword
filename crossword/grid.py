@@ -28,6 +28,7 @@ class Grid:
 
     def rotate_stack(self, stack):
         n = self.n
+        print(f"DEBUG: stack contents = {stack}")
         for i in range(len(stack)):
             r, c = stack[i]
             stack[i] = self.rotate_coordinates(r, c)
