@@ -282,13 +282,14 @@ def grid_statistics():
 
     # Get the grid from the session
     grid = Grid.from_json(session['grid'])
+    gridname = session.get('gridname', None)
     stats = grid.get_statistics()
     enabled = {}
 
     svgstr = GridToSVG(grid).generate_xml()
 
     # Render with grid statistics template
-    return render_template("grid-statistics.html", enabled=enabled, svgstr=svgstr, stats=stats);
+    return render_template("grid-statistics.html", enabled=enabled, gridname=gridname, svgstr=svgstr, stats=stats);
 
 
 @uigrid.route('/grids')

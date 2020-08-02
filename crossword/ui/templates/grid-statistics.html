@@ -1,6 +1,13 @@
 {% extends "statistics.html" %}
 {% block LHS %}
-<div id="grid-svg" class="w3-container" style="padding-top: 115px">
+
+<div class="w3-container">
+    <h3>Editing grid
+        {% if gridname %} {{ gridname }} {% else %} (untitled) {% endif %}
+    </h3>
+</div>
+
+<div id="grid-svg" class="w3-container" style="padding-top: 69px">
 {{ svgstr|safe }}
 </div>
 {% endblock LHS %}

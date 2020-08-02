@@ -1,5 +1,5 @@
 {% extends "main.html" %}
-{% block header %}
+{% block LHS %}
 <script>
 {% include "grid.js" %}
 </script>
@@ -98,9 +98,6 @@
 
 </div> <!-- End of toolbar -->
 </div>
-{% endblock header %}
-
-{% block LHS %}
 <div class="w3-container">Click grid to set up black cells</div>
 <div id="grid-svg" class="w3-container" onclick="grid_click(event)">
   {{ svgstr|safe }}

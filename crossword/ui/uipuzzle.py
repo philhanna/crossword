@@ -362,13 +362,20 @@ def puzzle_statistics():
 
     # Get the grid from the session
     puzzle = Puzzle.from_json(session['puzzle'])
+    puzzlename = session.get('puzzlename', None)
+    puzzletitle = session.get('puzzletitle', None)
     stats = puzzle.get_statistics()
     enabled = {}
 
     svgstr = PuzzleToSVG(puzzle).generate_xml()
 
     # Render with puzzle statistics template
-    return render_template("puzzle-statistics.html", enabled=enabled, svgstr=svgstr, stats=stats)
+    return render_template("puzzle-statistics.html",
+                           enabled=enabled,
+                           puzzlename=puzzlename,
+                           puzzletitle=puzzletitle,
+                           svgstr=svgstr,
+                           stats=stats)
 
 
 @uipuzzle.route('/puzzle-undo')

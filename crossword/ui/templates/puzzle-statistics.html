@@ -1,6 +1,12 @@
 {% extends "statistics.html" %}
 {% block LHS %}
-<div id="puzzle-svg" class="w3-container" style="padding-top:109px">
+<div class="w3-container">
+    <h3>Editing puzzle
+        {% if puzzlename %}<b>{{ puzzlename }}</b>{% else %}(untitled){% endif %}
+        {% if puzzletitle %}: "{{ puzzletitle }}" {% endif %}
+    </h3>
+</div>
+<div id="puzzle-svg" class="w3-container" style="padding-top:63px">
 {{ svgstr|safe }}
 </div>
 {% endblock LHS %}
