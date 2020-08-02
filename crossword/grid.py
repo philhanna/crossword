@@ -1,4 +1,5 @@
 import json
+from collections import OrderedDict
 
 from crossword import NumberedCell
 
@@ -175,7 +176,10 @@ class Grid:
                         'dlist': [],
                     }
                 table[length]['dlist'].append(nc.seq)
-        return table
+        sorted_table = OrderedDict()
+        for length in sorted(table.keys()):
+            sorted_table[length] = table[length]
+        return sorted_table
 
     #   ========================================================
     #   undo / redo logic
