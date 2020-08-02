@@ -18,7 +18,6 @@
         }
 
         function do_word_suggest() {
-
             const elem_match = document.getElementById("we-match");
             const state = elem_match.style.display;
             if (state == "block") {
@@ -66,6 +65,14 @@
             xhttp.open("GET", url, true);
             xhttp.send();
         }
+        function do_fastpath(text) {
+            if (text != " ") {
+                const elem_word = document.getElementById("we-word");
+                elem_word.setAttribute("value", text);
+                open_word_edit_tab("we-tab-suggest");
+                do_word_suggest();
+            }
+        }
         function do_word_constraints() {
             // Invoke an AJAX call to get the cleared text
             // for the input word
@@ -84,13 +91,23 @@
                     const elem_div = document.createElement("div");
                     elem_ui.appendChild(elem_div);
                     elem_div.setAttribute("class", "w3-padding w3-center");
+
                     const elem_b = document.createElement("b");
                     elem_div.appendChild(elem_b);
                     elem_b.appendChild(document.createTextNode("Overall pattern:"));
+
                     const elem_input = document.createElement("input");
                     elem_div.appendChild(elem_input);
                     elem_input.setAttribute("class", "w3-border");
                     elem_input.setAttribute("value", constraints["pattern"]);
+
+                    const elem_button = document.createElement("button");
+                    elem_div.appendChild(elem_button);
+                    elem_button.setAttribute("class", "w3-margin-left")
+                    elem_button.setAttribute("type", "button");
+                    elem_button.innerText = "Suggest";
+                    const text = constraints["pattern"]
+                    elem_button.setAttribute("onclick", `do_fastpath('${text}')`);
 
                     // Fill in the table
 
