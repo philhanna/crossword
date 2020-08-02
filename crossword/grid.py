@@ -17,15 +17,15 @@ class Grid:
 
     def rotate(self):
         """ Rotates the grid 90 degrees counterclockwise """
+        self.rotate_stack(self.undo_stack)
+        self.rotate_stack(self.redo_stack)
         old_black_cells = self.black_cells.copy()
         self.black_cells = set()
         n = self.n
         for r, c in old_black_cells:
             rprime, cprime = self.rotate_coordinates(r, c)
-            self.add_black_cell(rprime, cprime)
+            self.add_black_cell(rprime, cprime, undo=False)
         self.numbered_cells = None
-        self.rotate_stack(self.undo_stack)
-        self.rotate_stack(self.redo_stack)
 
     def rotate_stack(self, stack):
         n = self.n
@@ -47,13 +47,14 @@ class Grid:
         cprime = self.n + 1 - c
         return rprime, cprime
 
-    def add_black_cell(self, r, c):
+    def add_black_cell(self, r, c, undo=True):
         """ Marks cell (r, c) as black (also its symmetric cell) """
         if self.is_black_cell(r, c):
             return
 
         self.black_cells.add((r, c))
-        self.undo_stack.append((r, c))
+        if undo:
+            self.undo_stack.append((r, c))
 
         rprime, cprime = self.symmetric_point(r, c)
         self.black_cells.add((rprime, cprime))
