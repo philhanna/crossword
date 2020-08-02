@@ -61,17 +61,9 @@ def grid_screen():
     # Set the state to editing grid
     session['uistate'] = UIState.EDITING_GRID
     enabled = session['uistate'].get_enabled()
+    enabled["grid_undo"] = len(grid.undo_stack) > 0
+    enabled["grid_redo"] = len(grid.redo_stack) > 0
     enabled["grid_delete"] = gridname is not None
-
-    # Enable menu options
-    enabled = {
-        "grid_save": True,
-        "grid_save_as": True,
-        "grid_stats": True,
-        "grid_rotate": True,
-        "grid_close": True,
-        "grid_delete": gridname is not None,
-    }
 
     # Show the grid.html screen
     return render_template('grid.html',
@@ -224,12 +216,7 @@ def grid_click():
     # Save the updated grid in the session
     session['grid'] = grid.to_json()
 
-    # Send the new SVG data to the client
-    svg = GridToSVG(grid)
-    svgstr = svg.generate_xml()
-    response = make_response(svgstr, HTTPStatus.OK)
-    return response
-
+    return redirect(url_for('uigrid.grid_screen'))
 
 @uigrid.route('/grid-rotate')
 def grid_rotate():
@@ -294,6 +281,28 @@ def grids():
     resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
+@uigrid.route('/grid-undo')
+def grid_undo():
+    """ Undoes the last grid action then redirects to grid screen """
+
+    jsonstr = session.get('grid', None)
+    grid = Grid.from_json(jsonstr)
+    grid.undo()
+    jsonstr = grid.to_json()
+    session['grid'] = jsonstr
+    return redirect(url_for('uigrid.grid_screen'))
+
+
+@uigrid.route('/grid-redo')
+def grid_redo():
+    """ Redoes the last grid action then redirects to grid screen """
+
+    jsonstr = session.get('grid', None)
+    grid = Grid.from_json(jsonstr)
+    grid.redo()
+    jsonstr = grid.to_json()
+    session['grid'] = jsonstr
+    return redirect(url_for('uigrid.grid_screen'))
 
 
 #   ============================================================

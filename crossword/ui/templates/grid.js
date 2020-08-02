@@ -173,18 +173,16 @@ function grid_click(event) {
     const y = event.offsetY;
     const r = Math.floor(1 + y / BOXSIZE); // Boxsize is a global var
     const c = Math.floor(1 + x / BOXSIZE);
-
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            document.getElementById("grid-svg").innerHTML = this.responseText;
-        }
-    };
     const url = "{{ url_for('uigrid.grid_click')}}" + "?r=" + r + "&c=" + c;
-    xhttp.open("GET", url, true);
-    xhttp.send();
+    window.location.href = url;
 }
 function do_grid_stats() {
     const url = "{{ url_for('uigrid.grid_statistics') }}";
     window.location.href = url;
+}
+function do_grid_undo() {
+    window.location.href = "{{ url_for('uigrid.grid_undo') }}";
+}
+function do_grid_redo() {
+    window.location.href = "{{ url_for('uigrid.grid_redo') }}";
 }

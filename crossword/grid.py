@@ -11,6 +11,8 @@ class Grid:
         self.n = n
         self.black_cells = set()
         self.numbered_cells = None  # Use lazy instantiation
+        self.undo_stack = []
+        self.redo_stack = []
 
     def rotate(self):
         """ Rotates the grid 90 degrees counterclockwise """
@@ -18,10 +20,23 @@ class Grid:
         self.black_cells = set()
         n = self.n
         for r, c in old_black_cells:
-            cprime = r
-            rprime = n + 1 - c
+            rprime, cprime = self.rotate_coordinates(r, c)
             self.add_black_cell(rprime, cprime)
         self.numbered_cells = None
+        self.rotate_stack(self.undo_stack)
+        self.rotate_stack(self.redo_stack)
+
+    def rotate_stack(self, stack):
+        n = self.n
+        for i in range(len(stack)):
+            r, c = stack[i]
+            stack[i] = self.rotate_coordinates(r, c)
+
+    def rotate_coordinates(self, r, c):
+        n = self.n
+        cprime = r
+        rprime = n + 1 - c
+        return rprime, cprime
 
     def symmetric_point(self, r, c):
         """ Returns the (r, c) of the cell at 180 degrees rotation """
@@ -33,14 +48,28 @@ class Grid:
 
     def add_black_cell(self, r, c):
         """ Marks cell (r, c) as black (also its symmetric cell) """
+        if self.is_black_cell(r, c):
+            return
+
         self.black_cells.add((r, c))
-        self.black_cells.add(self.symmetric_point(r, c))
+        self.undo_stack.append((r, c))
+
+        rprime, cprime = self.symmetric_point(r, c)
+        self.black_cells.add((rprime, cprime))
+
         self.numbered_cells = None
 
     def remove_black_cell(self, r, c):
         """ Marks cell (r, c) as not black (also its symmetric cell) """
+        if not self.is_black_cell(r, c):
+            return
+
         self.black_cells.discard((r, c))
-        self.black_cells.discard(self.symmetric_point(r, c))
+        self.undo_stack.append((r, c))
+
+        rprime, cprime = self.symmetric_point(r, c)
+        self.black_cells.discard((rprime, cprime))
+
         self.numbered_cells = None
 
     def is_black_cell(self, r, c):
@@ -61,31 +90,26 @@ class Grid:
         """ Finds list of all cells that start a word """
 
         # If already calculated, return that (lazy instantiation)
-
         if self.numbered_cells:
             return self.numbered_cells
 
         # Otherwise calculate and store
-
         n = self.n
         nclist = []
         for r in range(1, n + 1):
             for c in range(1, n + 1):
 
                 # Ignore black cells
-
                 if self.is_black_cell(r, c):
                     continue
 
                 # See if this is the start of an "across" word
-
                 a = 0
                 if c == 1 or self.is_black_cell(r, c - 1):
 
                     # This is the beginning of an "across" word
                     # Find the (r, c) of the stopping point, which is either
                     # the next black cell, or the edge of the puzzle
-
                     for cprime in range(c + 1, n + 1):
                         if self.is_black_cell(r, cprime):
                             a = cprime - c
@@ -97,14 +121,12 @@ class Grid:
                     a = 0
 
                 # Same for "down" word
-
                 d = 0
                 if r == 1 or self.is_black_cell(r - 1, c):
 
                     # This is the beginning of a "down" word
                     # Find the (r, c) of the stopping point, which is either
                     # the next black cell, or the edge of the puzzle
-
                     for rprime in range(r + 1, n + 1):
                         if self.is_black_cell(rprime, c):
                             d = rprime - r
@@ -155,6 +177,38 @@ class Grid:
                 table[length]['dlist'].append(nc.seq)
         return table
 
+    #   ========================================================
+    #   undo / redo logic
+    #   ========================================================
+
+    def undo(self):
+        self.undoredo(self.undo_stack, self.redo_stack)
+
+    def redo(self):
+        self.undoredo(self.redo_stack, self.undo_stack)
+
+    def undoredo(self, stackfrom, stackto):
+
+        if len(stackfrom) == 0:
+            return  # Nothing to do
+
+        frame = stackfrom.pop()
+        stackto.append(frame)
+
+        r = frame[0]
+        c = frame[1]
+
+        if self.is_black_cell(r, c):
+            self.black_cells.discard((r, c))
+            self.black_cells.discard(self.symmetric_point(r, c))
+        else:
+            self.black_cells.add((r, c))
+            self.black_cells.add(self.symmetric_point(r, c))
+
+    #   ========================================================
+    #   to_json and from_json logic
+    #   ========================================================
+
     def to_json(self):
         """ Returns the JSON string representation of the Grid """
         image = dict()
@@ -165,6 +219,8 @@ class Grid:
             ncdict = vars(numbered_cell)
             nclist.append(ncdict)
         image['numbered_cells'] = nclist
+        image['undo_stack'] = self.undo_stack
+        image['redo_stack'] = self.redo_stack
 
         jsonstr = json.dumps(image)
         return jsonstr
@@ -177,10 +233,9 @@ class Grid:
         grid = Grid(n)
         for r, c in image['black_cells']:
             grid.add_black_cell(r, c)
-
-        # Add the numbered cells
-
         grid.get_numbered_cells()
+        grid.undo_stack = image.get('undo_stack', [])
+        grid.redo_stack = image.get('redo_stack', [])
         return grid
 
     def get_statistics(self):

@@ -63,6 +63,28 @@
         <span>Rotate</span>
     </a>
 
+    <!-- Undo -->
+    <a class="w3-bar-item w3-button crosstb
+            {% if not enabled.grid_undo %} w3-disabled {% endif %}"
+       {% if enabled.grid_undo %}
+       onclick="do_grid_undo()"
+       {% endif %}
+    >
+        <i class="material-icons crosstb-icon">undo</i>
+        <span>Undo</span>
+    </a>
+
+    <!-- Redo -->
+    <a class="w3-bar-item w3-button crosstb
+            {% if not enabled.grid_redo %} w3-disabled {% endif %}"
+       {% if enabled.grid_redo %}
+       onclick="do_grid_redo()"
+       {% endif %}
+    >
+        <i class="material-icons crosstb-icon">redo</i>
+        <span>Redo</span>
+    </a>
+
     <!-- Delete -->
     <a class="w3-bar-item w3-button crosstb
             {% if not enabled.grid_delete %} w3-disabled {% endif %}"
