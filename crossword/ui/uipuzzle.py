@@ -266,7 +266,6 @@ def puzzle_click(direction):
     """ Common method used by both puzzle_click_across and puzzle_click_down """
 
     # Get the seq or row and column clicked from the query parms
-
     r = request.args.get('r', None)
     c = request.args.get('c', None)
     seq = request.args.get('seq', None)
@@ -283,7 +282,6 @@ def puzzle_click(direction):
         numbered_cell = puzzle.get_numbered_cell(r, c)
         if not numbered_cell:
             errmsg = f"({r},{c}) is not a numbered cell"
-            flash(errmsg)
             return redirect(url_for('uipuzzle.puzzle_screen'))
         seq = numbered_cell.seq
     elif seq is not None:
@@ -294,13 +292,11 @@ def puzzle_click(direction):
         word = puzzle.get_across_word(seq)
         if not word:
             errmsg = f"Not the start of an across word"
-            flash(errmsg)
             return redirect(url_for('uipuzzle.puzzle_screen'))
     else:
         word = puzzle.get_down_word(seq)
         if not word:
             errmsg = f"Not the start of a down word"
-            flash(errmsg)
             return redirect(url_for('uipuzzle.puzzle_screen'))
         pass
 
