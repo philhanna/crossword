@@ -18,9 +18,13 @@ class TestGridRotate(TestCase):
 
     def test_rotate_twice(self):
         grid = self.get_good_grid()
+        grid.undo_stack = []
+        grid.redo_stack = []
         oldjson = grid.to_json()
         grid.rotate()
         grid.rotate()
+        grid.undo_stack = []
+        grid.redo_stack = []
         newjson = grid.to_json()
         self.assertEqual(oldjson, newjson)
 
