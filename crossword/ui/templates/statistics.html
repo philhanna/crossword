@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 {% block RHS %}
-    <div class="w3-display-container">
+    <div class="w3-display-container" onclick="window.location.href='{{ nexturl }}'">
         <header class="w3-container w3-blue-gray" style="padding-top: 5px">
             <h3>{% block title %}{% endblock title %}</h3>
             <span class="w3-button w3-display-topright w3-hover-red w3-large"
