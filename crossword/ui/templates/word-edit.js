@@ -69,6 +69,8 @@
             if (text != " ") {
                 const elem_word = document.getElementById("we-word");
                 elem_word.setAttribute("value", text);
+                hideElement('we-select');
+                hideElement('we-match');
                 open_word_edit_tab("we-tab-suggest");
                 do_word_suggest();
             }
