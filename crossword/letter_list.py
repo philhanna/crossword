@@ -1,7 +1,10 @@
+import string
+
+
 class LetterList:
     """ Utility class that forms a regular expression from a list of letters """
 
-    ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    ALPHABET = string.ascii_uppercase
 
     @staticmethod
     def regexp(letters):
