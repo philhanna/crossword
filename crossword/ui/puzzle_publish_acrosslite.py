@@ -47,7 +47,7 @@ class PuzzlePublishAcrossLite:
 
     def get_title(self):
         """ Returns the puzzle title or blank """
-        title = self.puzzle.get_title()
+        title = self.puzzle.title
         if not title:
             title = ""
         return title

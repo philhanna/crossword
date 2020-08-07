@@ -45,6 +45,26 @@ def grid_chooser(nexturl):
                            nexturl=nexturl)
 
 
+@uigrid.route('/grid-chooser-from-replace/<path:nexturl>')
+def grid_chooser_from_replace(nexturl):
+    """ Redirects to grid chooser dialog """
+
+    # Make a list of all the saved grids
+    userid = 1  # TODO replace hard-coded user ID
+    gridlist = get_grid_list(userid)
+
+    # Set the state to grid chooser
+    session['uistate'] = UIState.GRID_CHOOSER
+    enabled = UIState.GRID_CHOOSER.get_enabled()
+    cancel_url = url_for('uipuzzle.puzzle_screen')
+
+    return render_template("grid-chooser.html",
+                           enabled=enabled,
+                           objectlist=gridlist,
+                           nexturl=nexturl,
+                           cancel_url=cancel_url)
+
+
 @uigrid.route('/grid')
 def grid_screen():
     """ Renders the grid screen """

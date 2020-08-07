@@ -48,7 +48,7 @@ class PuzzleToXML:
         """ Adds <metadata> """
         elem_metadata = ET.SubElement(elem_rect, "metadata")
         elem_title = ET.SubElement(elem_metadata, "title")
-        elem_title.text = self.puzzle.get_title()
+        elem_title.text = self.puzzle.title
         elem_creator = ET.SubElement(elem_metadata, "creator")
         elem_creator.text = self.get_creator()
         elem_copyright = ET.SubElement(elem_metadata, "copyright")

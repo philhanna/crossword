@@ -81,14 +81,14 @@ class TestPuzzleUndo(TestCase):
 
     def test_to_json(self):
         puzzle = self.create_test_puzzle()
-        self.assertEqual(None, puzzle.get_title())
+        self.assertIsNone(puzzle.title)
         self.assertEqual('RIOT', puzzle.get_text(10, 'A'))
         self.assertEqual(None, puzzle.get_clue(10, 'A'))
         self.assertListEqual([], puzzle.undo_stack)
         self.assertListEqual([], puzzle.redo_stack)
 
         puzzle.set_text(10, 'A', 'ZOOM')
-        self.assertEqual(None, puzzle.get_title())
+        self.assertIsNone(puzzle.title)
         self.assertEqual('ZOOM', puzzle.get_text(10, 'A'))
         self.assertEqual(None, puzzle.get_clue(10, 'A'))
         self.assertListEqual([

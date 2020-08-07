@@ -2,7 +2,13 @@
 {% block LHS %}
 <script>
 function cancel_dialog() {
-    window.location.href = "{{ url_for('uimain.main_screen')}}";
+    let url;
+    {% if cancel_url %}
+    url = "{{ cancel_url }}";
+    {% else %}
+    url = "{{ url_for('uimain.main_screen') }}";
+    {% endif %}
+    window.location.href = url;
 }
 function do_grid_preview(gridname) {
     const xhttp = new XMLHttpRequest();

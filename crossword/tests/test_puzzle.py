@@ -56,7 +56,7 @@ class TestPuzzle(TestCase):
         ]:
             grid.add_black_cell(r, c)
         puzzle = Puzzle(grid)
-        puzzle.set_title('My Atlantic Theme')
+        puzzle.title = 'My Atlantic Theme'
         return puzzle
 
     @staticmethod
@@ -470,36 +470,6 @@ class TestPuzzle(TestCase):
         expected = 26
         actual = puzzle.get_word_count()
         self.assertEqual(expected, actual)
-
-    def test_title_not_set(self):
-        grid = Grid(11)
-        puzzle = Puzzle(grid)
-        self.assertIsNone(puzzle.get_title())
-
-    def test_title_is_set(self):
-        grid = Grid(11)
-        puzzle = Puzzle(grid, "My Title")
-        self.assertEqual("My Title", puzzle.get_title())
-
-    def test_title_set_later(self):
-        grid = Grid(11)
-        puzzle = Puzzle(grid)
-        puzzle.set_title("Later")
-        self.assertEqual("Later", puzzle.get_title())
-
-    def test_title_changed(self):
-        grid = Grid(11)
-        puzzle = Puzzle(grid, "First Title")
-        self.assertEqual("First Title", puzzle.get_title())
-        puzzle.set_title("Second Title")
-        self.assertEqual("Second Title", puzzle.get_title())
-
-    def test_title_set_back_to_none(self):
-        grid = Grid(11)
-        puzzle = Puzzle(grid, "First Title")
-        self.assertEqual("First Title", puzzle.get_title())
-        puzzle.set_title(None)
-        self.assertIsNone(puzzle.get_title())
 
     def test_str(self):
         grid = Grid(3)

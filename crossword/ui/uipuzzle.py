@@ -87,7 +87,7 @@ def puzzle_screen():
     return render_template('puzzle.html',
                            enabled=enabled,
                            puzzlename=puzzlename,
-                           puzzletitle=puzzle.get_title(),
+                           puzzletitle=puzzle.title,
                            n=puzzle.n,
                            clues=clues,
                            scrollTopAcross=session.get('scrollTopAcross', None),
@@ -215,10 +215,10 @@ def puzzle_title():
     if title:
         jsonstr = session['puzzle']
         puzzle = Puzzle.from_json(jsonstr)
-        puzzle.set_title(title)
+        puzzle.title(title)
         jsonstr = puzzle.to_json()
         session['puzzle'] = jsonstr
-        flash(f"Puzzle title set to {puzzle.get_title()}")
+        flash(f"Puzzle title set to {puzzle.title}")
 
     # Show the puzzle screen
     return redirect(url_for('uipuzzle.puzzle_screen'))
@@ -273,7 +273,7 @@ def puzzle_click(direction):
     # Get the existing puzzle from the session
     puzzle = Puzzle.from_json(session['puzzle'])
     puzzlename = session.get('puzzlename', None)
-    puzzletitle = puzzle.get_title()
+    puzzletitle = puzzle.title
 
     if r is not None and c is not None:
         r = int(r)
@@ -401,6 +401,31 @@ def puzzle_redo():
     session['puzzle'] = jsonstr
     return redirect(url_for('uipuzzle.puzzle_screen'))
 
+
+@uipuzzle.route('/puzzle-replace-grid')
+def puzzle_replace_grid():
+
+    # Get the chosen grid name from the query parameters
+    gridname = request.args.get('gridname')
+    if not gridname:
+        return redirect(url_for('uipuzzle.puzzle_screen'))
+
+    # Create the grid
+    userid = 1  # TODO replace hard-coded user ID
+    query = DBGrid.query.filter_by(userid=userid, gridname=gridname)
+    jsonstr = query.first().jsonstr
+    grid = Grid.from_json(jsonstr)
+
+    # Get the current puzzle
+    puzzle = Puzzle.from_json(session['puzzle'])
+
+    # and replace its grid
+    puzzle.replace_grid(grid)
+
+    # Save in the session
+    session['puzzle'] = puzzle.to_json()
+
+    return redirect(url_for('uipuzzle.puzzle_screen'))
 
 @uipuzzle.route('/puzzles')
 def puzzles():

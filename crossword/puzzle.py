@@ -22,20 +22,59 @@ class Puzzle:
         self.numbered_cells = grid.get_numbered_cells()
         self.across_words = None
         self.down_words = None
-
-        cells = {}
-        self.cells = cells
+        self.undo_stack = None
+        self.redo_stack = None
+        self.cells = {}
         self._title = title
 
         # All cells are initially empty
         for r in range(1, self.n + 1):
             for c in range(1, self.n + 1):
-                cells[(r, c)] = Puzzle.WHITE
+                self.cells[(r, c)] = Puzzle.WHITE
 
         # Except for black cells
         for bc in self.black_cells:
-            cells[bc] = Puzzle.BLACK
+            self.cells[bc] = Puzzle.BLACK
 
+        self.initialize_words()
+
+    def replace_grid(self, newgrid):
+        if newgrid.n != self.n:
+            raise ValueError("Incompatible grid sizes")
+        # Save the JSON image so that clues can be reconstructed
+        oldjson = self.to_json()
+
+        self.grid = newgrid
+        for bc in self.black_cells:
+            self.cells[bc] = Puzzle.WHITE
+        self.black_cells = newgrid.get_black_cells()
+        self.numbered_cells = newgrid.get_numbered_cells()
+        for bc in self.black_cells:
+            self.cells[bc] = Puzzle.BLACK
+        self.initialize_words()
+
+        # Now set the clues for words that have not changed
+        obj = json.loads(oldjson)
+
+        across_clues = {x['text']:x['clue'] for x in obj['across_words']}
+        down_clues = {x['text']:x['clue'] for x in obj['down_words']}
+        cluemap = {**across_clues, **down_clues}
+
+        for word in self.across_words.values():
+            text = word.get_text()
+            clue = cluemap.get(text, None)
+            if clue:
+                word.set_clue(clue)
+
+        for word in self.down_words.values():
+            text = word.get_text()
+            clue = cluemap.get(text, None)
+            if clue:
+                word.set_clue(clue)
+
+        pass  # TODO replace the clues
+
+    def initialize_words(self):
         # Now populate the across and down words
         self.across_words = {}
         self.down_words = {}
@@ -106,11 +145,13 @@ class Puzzle:
         word = self.get_word(seq, direction)
         word.set_clue(clue)
 
-    def get_title(self):
+    @property
+    def title(self):
         """ Returns the puzzle title """
         return self._title
 
-    def set_title(self, title):
+    @title.setter
+    def title(self, title):
         """ Sets the puzzle title """
         self._title = title
 
@@ -220,7 +261,7 @@ class Puzzle:
     def to_json(self):
         image = dict()
         image['n'] = self.n
-        image['title'] = self.get_title()
+        image['title'] = self.title
         image['cells'] = [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = [black_cell for black_cell in self.black_cells]
 

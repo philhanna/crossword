@@ -40,6 +40,8 @@ class NumberedCell:
         return jsonstr
 
     def __eq__(self, other):
+        if type(other) != NumberedCell:
+            return False
         return self.seq == other.seq and \
                 self.r == other.r and \
                 self.c == other.c and \

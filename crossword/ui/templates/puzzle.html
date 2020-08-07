@@ -80,6 +80,17 @@
             <span>Redo</span>
         </a>
 
+        <!-- Replace grid -->
+        <a class="w3-bar-item w3-button crosstb
+                {% if not enabled.puzzle_stats %} w3-disabled {% endif %}"
+           {% if enabled.puzzle_stats %}
+           href="{{ url_for('uigrid.grid_chooser_from_replace', nexturl=url_for('uipuzzle.puzzle_replace_grid')) }}"
+           {% endif %}
+        >
+            <i class="material-icons crosstb-icon">view_module</i>
+            <span>Replace grid</span>
+        </a>
+
         <!-- Delete -->
         <a class="w3-bar-item w3-button crosstb
                 {% if not enabled.puzzle_delete %} w3-disabled {% endif %}"

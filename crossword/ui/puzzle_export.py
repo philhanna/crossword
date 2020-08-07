@@ -71,7 +71,7 @@ class PuzzleExport:
             fp.write('{\n')
             fp.write(f'  "puzzlename": "{puzzlename}",\n')
             fp.write(f'  "n": {puzzle.n},\n')
-            title = '"' + puzzle.get_title() + '"' if puzzle.get_title() else "null"
+            title = '"' + puzzle.title() + '"' if puzzle.title() else "null"
             fp.write(f'  "title": {title},\n')
             fp.write(f'  "cells": [\n')
             cellrows = str(puzzle).split('\n')
