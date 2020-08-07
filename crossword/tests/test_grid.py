@@ -6,6 +6,16 @@ from crossword.tests import TestPuzzle
 
 class TestGrid(TestCase):
 
+    def test_equals(self):
+        grid1 = self.get_good_grid()
+        grid2 = self.get_good_grid()
+        self.assertEqual(grid1, grid2)
+
+    def test_hash(self):
+        grid1 = self.get_good_grid()
+        grid2 = self.get_good_grid()
+        self.assertEqual(hash(grid1), hash(grid2))
+
     def test_symmetric_point(self):
         grid = Grid(9)
         expected = (8, 5)

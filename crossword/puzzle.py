@@ -52,6 +52,15 @@ class Puzzle:
         self.undo_stack = []
         self.redo_stack = []
 
+    def __eq__(self, other):
+        return self.to_json() == other.to_json()
+
+    def __id__(self):
+        return id(self.to_json())
+
+    def __hash__(self):
+        return hash(self.to_json())
+
     #   ========================================================
     #   Getters and setters
     #   ========================================================

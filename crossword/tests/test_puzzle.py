@@ -353,6 +353,16 @@ class TestPuzzle(TestCase):
         with open("/tmp/nyt_daily.json", "w") as fp:
             fp.write(jsonstr)
 
+    def test_equals(self):
+        puzzle1 = self.create_solved_atlantic_puzzle()
+        puzzle2 = self.create_solved_atlantic_puzzle()
+        self.assertEqual(puzzle1, puzzle2)
+
+    def test_hash(self):
+        puzzle1 = self.create_solved_atlantic_puzzle()
+        puzzle2 = self.create_solved_atlantic_puzzle()
+        self.assertEqual(hash(puzzle1), hash(puzzle2))
+
     def test_cell_type(self):
         puzzle = TestPuzzle.create_puzzle()
         cell = puzzle.get_cell(1, 1)

@@ -443,3 +443,12 @@ class Grid:
         sb += "\n"
         sb += f'+{"-" * (self.n * 2 - 1)}+'
         return sb
+
+    def __eq__(self, other):
+        return self.to_json() == other.to_json()
+
+    def __id__(self):
+        return id(self.to_json())
+
+    def __hash__(self):
+        return hash(self.to_json())
