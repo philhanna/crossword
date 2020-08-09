@@ -215,7 +215,7 @@ def puzzle_title():
     if title:
         jsonstr = session['puzzle']
         puzzle = Puzzle.from_json(jsonstr)
-        puzzle.title(title)
+        puzzle.title = title
         jsonstr = puzzle.to_json()
         session['puzzle'] = jsonstr
         flash(f"Puzzle title set to {puzzle.title}")
