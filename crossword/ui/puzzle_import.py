@@ -6,12 +6,14 @@ from io import StringIO
 
 from crossword import Puzzle
 from crossword.ui import DBPuzzle, PuzzleToXML, create_app, DBUser, PuzzleFromXML, db
+from crossword.ui.puzzle_from_acrosslite import PuzzleFromAcrossLite
 
 
 class PuzzleImport:
     """ Imports a puzzle from one of three formats:
 
     json    - The JSON stored in the database
+    puz     - An AcrossLite puzzle
     xml     - XML in the format used by Crossword Compiler
     csv     - Just the clues, for use in a spreadsheet
     """
@@ -22,7 +24,7 @@ class PuzzleImport:
         :param user a DBUser
         :param puzzlename the name of the puzzle to be imported
         :param filename the input file name
-        :param filetype one of 'json', 'xml', or 'csv' (optional)
+        :param filetype one of 'json', 'puz', 'xml', or 'csv' (optional)
         """
         self.user = user
         self.puzzlename = puzzlename
@@ -36,19 +38,22 @@ class PuzzleImport:
         filetype = filetype.upper()
         if filetype.startswith("."):
             filetype = filetype[1:]
-        if filetype not in ['JSON', 'XML', 'CSV']:
-            errmsg = f"File type must be JSON, XML, or CSV, not {filetype}"
+        if filetype not in ['JSON', 'PUZ', 'XML', 'CSV']:
+            errmsg = f"File type must be JSON, PUZ, XML, or CSV, not {filetype}"
             raise ValueError(errmsg)
         self.filetype = filetype
 
         # Load the data
-        with open(filename) as fp:
+        opentype = 'rb' if filetype == 'PUZ' else 'rt'
+        with open(filename, opentype) as fp:
             self.data = fp.read()
 
     def run(self):
         """ Runs the import for the specified type """
         if self.filetype == 'JSON':
             puzzle = self.run_json()
+        elif self.filetype == 'PUZ':
+            puzzle = self.run_puz()
         elif self.filetype == 'XML':
             puzzle = self.run_xml()
         elif self.filetype == 'CSV':
@@ -82,6 +87,10 @@ class PuzzleImport:
     def run_json(self):
         """ Creates puzzle from JSON input """
         return Puzzle.from_json(self.data)
+
+    def run_puz(self):
+        """ Creates the puzzle from an AcrossLite file """
+        return PuzzleFromAcrossLite(self.data).puzzle
 
     def run_xml(self):
         """ Creates puzzle from XML input """
@@ -148,6 +157,7 @@ if __name__ == '__main__':
 Imports a puzzle from one of three formats:
 
 JSON    - The JSON stored in the database
+PUZ     - An AcrossLite puzzle file
 XML     - XML in the format used by Crossword Compiler
 CSV     - Just the clues, for use in a spreadsheet
 """
@@ -161,7 +171,7 @@ CSV     - Just the clues, for use in a spreadsheet
     parser.add_argument("filename",
                         help="Input file containing puzzle in the specified format")
     parser.add_argument("filetype", nargs="?",
-                        help="one of JSON, XML, or CSV")
+                        help="one of JSON, PUZ, XML, or CSV")
     args = parser.parse_args()
 
     user = DBUser.query.filter_by(id=args.userid).first()
