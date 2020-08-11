@@ -10,7 +10,7 @@ from crossword.ui.puzzle_from_acrosslite import PuzzleFromAcrossLite
 
 
 class PuzzleImport:
-    """ Imports a puzzle from one of three formats:
+    """ Imports a puzzle from one of four formats:
 
     json    - The JSON stored in the database
     puz     - An AcrossLite puzzle
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     import argparse
 
     description = r"""
-Imports a puzzle from one of three formats:
+Imports a puzzle from one of four formats:
 
 JSON    - The JSON stored in the database
 PUZ     - An AcrossLite puzzle file
