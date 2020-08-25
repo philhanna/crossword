@@ -416,6 +416,7 @@ class Puzzle:
         stats['size'] = f"{self.n} x {self.n}"
         stats['wordcount'] = self.get_word_count()
         stats['wordlengths'] = self.get_word_lengths()
+        stats['blockcount'] = len(self.black_cells)
         return stats
 
     def __str__(self):
