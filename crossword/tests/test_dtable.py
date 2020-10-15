@@ -1,7 +1,8 @@
 import os.path
 import tempfile
 from unittest import TestCase
-from dtable import DTable
+
+from crossword.dtable import DTable
 
 
 class TestDTable(TestCase):
