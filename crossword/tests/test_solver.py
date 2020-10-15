@@ -18,11 +18,18 @@ class TestSolver(TestCase):
             sql = r'''SELECT jsonstr FROM puzzles WHERE puzzlename=?'''
             result = c.execute(sql, (PUZZLENAME,))
             row = result.fetchone()
-            jsonstr = row[0]
-            self.puzzle = Puzzle.from_json(jsonstr)
-            pass
+            self.jsonstr = row[0]
+
+    def setUp(self):
+        self.puzzle = Puzzle.from_json(self.jsonstr)
+        self.solver = Solver(self.puzzle)
 
     def test_get_all_words(self):
-        solver = Solver(self.puzzle)
-        for word in solver.all_words:
-            print(word)
+        solver = self.solver
+        self.assertEqual(140, len(solver.all_words))
+
+    def test_most_constrained(self):
+        solver = self.solver
+        word = solver.most_constrained()
+        self.assertIsNotNone(word)
+        self.assertEqual("PR ", word.get_text())

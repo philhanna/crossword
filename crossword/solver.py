@@ -15,5 +15,12 @@ class Solver:
         self.all_words = acrosswords + downwords
 
     def most_constrained(self):
-        """ Finds the non-complete word with the fewest blanks """
-        pass
+        max_word = None
+        max_blanks = 1000000
+        for word in self.all_words:
+            text = word.get_text()
+            nblanks = text.count(' ')
+            if 0 < nblanks < max_blanks:
+                max_word = word
+                max_blanks = nblanks
+        return max_word
