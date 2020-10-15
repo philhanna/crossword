@@ -10,13 +10,22 @@ FREQ = "ESIARNTOLCDUGMPHBYFKWVZXJQ"
 class DTable:
     """ A pre-processed version of the dictionary
 
-    The key to the table is (word length, position within word, letter)
+    For an n-letter word, there will be n entries in the table,
+    one for each letter per position with '.' in all the other
+    positions.  For example, the word "DASH" would create entries
+    for the keys "D...", ".A..", "..S.", and "...H".
     and the value in the table is a list of indices within the master
     word list of that length that have that letter at that position.
 
-    This makes it easy to combine multiple constraints on a word by simply
-    taking the set intersection of the word indices, which is generally
-    a fast operation.
+    So in the list of indices for "D...", there would be the indices
+    corresponding to "DATA", "DAMP", "DOZE", etc.
+
+    Looking up possible matches for a word with multiple filled-in
+    letters like "D.SH" would amount to looking up the lists for
+    "D...", "..S.", and "...H" and taking the intersection.  It also
+    makes it possible to do this only once in solving a puzzle and
+    then adding an entry to the table with the key "D.SH" pointing
+    to the intersection thus obtained.
     """
 
     def __init__(self, infile=INFILE, outfile=OUTFILE):
