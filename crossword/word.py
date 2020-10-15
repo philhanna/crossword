@@ -119,6 +119,11 @@ class Word:
                 return False
         return True
 
+    def __str__(self):
+        text = self.get_text().replace(' ', '.')
+        sb = f"{self.location} {self.length} letters '{text}'"
+        return sb
+
 
 class AcrossWord(Word):
     """ An across word """
