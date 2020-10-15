@@ -44,13 +44,19 @@ class DTable:
                 word = line.strip()
                 words.append(word)
                 length = len(word)
-                for pos in range(length):
-                    letter = word[pos]
-                    key = (length, pos, letter)
+                for i in range(length):
+                    key = ""
+                    for j in range(length):
+                        if i == j:
+                            key += word[i]
+                        else:
+                            key += '.'
                     table[key].add(windex)
-        with open(self.outfile, 'wb') as fp:
-            pickle.dump((words, table), fp)
 
     def load(self):
         with open(self.outfile, "rb") as fp:
             self.words, self.table = pickle.load(fp)
+
+    def save(self):
+        with open(self.outfile, "wb") as fp:
+            pickle.dump((self.words, self.table), fp)

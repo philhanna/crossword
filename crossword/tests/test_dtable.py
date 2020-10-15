@@ -7,13 +7,20 @@ from crossword.dtable import DTable
 
 class TestDTable(TestCase):
 
-    def test_create(self):
+    def no_test_create(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
         dtable = DTable(outfile=outfile)
         dtable.create()
+        for i, k in enumerate(dtable.table.keys()):
+            if i > 100:
+                break
+            v = dtable.table[k]
+            words = [dtable.words[windex] for windex in v]
+            print(f"DEBUG: {i}, {k}, {len(words)}, {','.join(words)}")
 
     def test_load(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
         dtable = DTable(outfile=outfile)
         dtable.create()
-        table = dtable.load()
+        dtable.save()
+        dtable.load()
