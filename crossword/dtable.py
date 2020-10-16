@@ -93,6 +93,7 @@ class DTable:
             return sum([FREQ.index(letter) for letter in word])
 
         # If there is an exact match, return the set of indices it points to
+        pattern = pattern.replace(' ', '.')
         if pattern in table:
             word_list = [words[windex] for windex in table[pattern]]
             word_list.sort(key=freq)
