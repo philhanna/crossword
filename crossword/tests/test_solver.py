@@ -2,7 +2,7 @@ import os
 import sqlite3
 from unittest import TestCase
 
-from crossword import Puzzle, Word
+from crossword import Puzzle, Word, AcrossWord, DownWord
 from crossword.solver import Solver
 
 DBFILE = os.path.expanduser("~/crossword.db")
@@ -37,6 +37,13 @@ class TestSolver(TestCase):
     def test_get_crossing_words(self):
         puzzle = self.puzzle
         word = puzzle.get_word(4, Word.DOWN)
-        for crosser in self.solver.get_crossing_words(word):
-            print(crosser)
-        pass
+        crossers = self.solver.get_crossing_words(word)
+        self.assertIn(puzzle.get_word(1, Word.ACROSS), crossers)
+        self.assertIn(puzzle.get_word(18, Word.ACROSS), crossers)
+        self.assertIn(puzzle.get_word(23, Word.ACROSS), crossers)
+        self.assertIn(puzzle.get_word(38, Word.ACROSS), crossers)
+        self.assertIn(puzzle.get_word(41, Word.ACROSS), crossers)
+        self.assertIn(puzzle.get_word(50, Word.ACROSS), crossers)
+        self.assertNotIn(puzzle.get_word(26, Word.ACROSS), crossers)
+        self.assertNotIn(puzzle.get_word(31, Word.ACROSS), crossers)
+        self.assertNotIn(puzzle.get_word(4, Word.DOWN), crossers)

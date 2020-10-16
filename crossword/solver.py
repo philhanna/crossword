@@ -7,13 +7,12 @@ class Solver:
     def __init__(self, puzzle):
         """ Constructor """
         self.puzzle = puzzle
-        acrosswords = [
-            AcrossWord(puzzle, nc.seq) for nc in puzzle.numbered_cells if nc.a
-        ]
-        downwords = [
-            DownWord(puzzle, nc.seq) for nc in puzzle.numbered_cells if nc.d
-        ]
-        self.all_words = acrosswords + downwords
+        self.all_words = all_words = []
+        for nc in puzzle.numbered_cells:
+            if nc.a:
+                all_words.append(AcrossWord(puzzle, nc.seq))
+            if nc.d:
+                all_words.append(DownWord(puzzle, nc.seq))
 
     def most_constrained(self):
         """ Returns the non-complete word with the fewest blanks """
