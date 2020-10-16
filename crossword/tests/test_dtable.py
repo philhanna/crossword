@@ -34,6 +34,24 @@ class TestDTable(TestCase):
         self.assertIn("DOSH", word_list)
         self.assertNotIn("Puppies", word_list)
 
+    def test_cached_lookup(self):
+        outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
+        dtable = DTable(outfile=outfile)
+        if not os.path.exists(outfile):
+            dtable.create()
+            dtable.save()
+        else:
+            dtable.load()
+
+        word_list = dtable.lookup("PR.")
+        self.assertEqual(3, len(word_list))
+        self.assertIn("PRE", word_list)
+        self.assertIn("PRY", word_list)
+        self.assertIn("PRO", word_list)
+
+        # Now see if the pattern was cached
+        self.assertIn("PR.", dtable.table.keys())
+
     def test_keymaker(self):
         pattern = "D.SH"
         actual = DTable.keymaker(pattern)
