@@ -28,13 +28,6 @@ class DTable:
     to the intersection thus obtained.
     """
 
-    def __init__(self, infile=INFILE, outfile=OUTFILE):
-        """ Constructor, with defauls for infile and outfile """
-        self.table = None
-        self.words = None
-        self.infile = infile
-        self.outfile = outfile
-
     @staticmethod
     def keymaker(pattern):
         """ Given a pattern, returns the list of keys
@@ -55,6 +48,13 @@ class DTable:
                 keylist.append(key)
         return keylist if keylist else None
 
+    def __init__(self, infile=INFILE, outfile=OUTFILE):
+        """ Constructor, with defauls for infile and outfile """
+        self.table = None
+        self.words = None
+        self.infile = infile
+        self.outfile = outfile
+
     def create(self):
         """ Precompiles word list into the table format """
         self.table = table = defaultdict(set)
@@ -63,23 +63,24 @@ class DTable:
             for windex, line in enumerate(fp):
                 word = line.strip()
                 words.append(word)
-                length = len(word)
-                for i in range(length):
-                    key = ""
-                    for j in range(length):
-                        key += "." if i == j else word[i]
-                    table[key].add(windex)
+                keylist = DTable.keymaker(word)
+                if keylist:
+                    for key in keylist:
+                        table[key].add(windex)
 
     def load(self):
+        """ Loads the table from the outfile """
         with open(self.outfile, "rb") as fp:
             self.words, self.table = pickle.load(fp)
 
     def save(self):
+        """ Saves the table in the outfile """
         with open(self.outfile, "wb") as fp:
             pickle.dump((self.words, self.table), fp)
 
     def lookup(self, pattern):
-        """ Returns all the words that match this key """
+        """ Returns the set of indices to words that match
+        this pattern """
 
         table = self.table
 
@@ -87,4 +88,22 @@ class DTable:
         if pattern in table:
             return table[pattern]
 
-        # Otherwise, break down the pattern into
+        # Otherwise, break down the pattern into keys
+        keylist = DTable.keymaker(pattern)
+        if not keylist:
+            # This will be the case where the pattern is all blanks
+            return None
+
+        all_sets = set()
+        for i, key in enumerate(keylist):
+            if key in table:
+                this_set = table[key]
+                if i == 0:
+                    all_sets = this_set
+                else:
+                    all_sets = all_sets.intersection(this_set)
+
+        # Cache the resulting intersection mapped to the pattern
+        table[pattern] = all_sets
+
+        return all_sets

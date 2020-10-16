@@ -5,7 +5,8 @@ from unittest import TestCase
 from crossword.dtable import DTable
 
 
-class TestDTable(TestCase):
+class q\
+            (TestCase):
 
     def no_test_create(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
@@ -16,7 +17,7 @@ class TestDTable(TestCase):
                 break
             v = dtable.table[k]
             words = [dtable.words[windex] for windex in v]
-            print(f"DEBUG: {i}, {k}, {len(words)}, {','.join(words)}")
+            print(f"DEBUG: {i}, {k}, {len(k)}, {len(words)}, {','.join(words)}")
 
     def test_load(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
@@ -28,11 +29,15 @@ class TestDTable(TestCase):
     def test_lookup(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
         dtable = DTable(outfile=outfile)
-        dtable.load()
-        set1 = dtable.lookup("P..")
-        set2 = dtable.lookup(".R.")
-        set3 = set1.intersection(set2)
-        self.assertEqual(3, len(set3))
+        if not os.path.exists(outfile):
+            dtable.create()
+        else:
+            dtable.load()
+
+        word_set = dtable.lookup("PR.")
+        self.assertEqual(3, len(word_set))
+        word_list = [dtable.words[windex] for windex in word_set]
+        print(word_list)
 
     def test_keymaker(self):
         pattern = "D.SH"
@@ -41,3 +46,8 @@ class TestDTable(TestCase):
             'D...', '..S.', '...H'
         ]
         self.assertListEqual(expected, actual)
+
+    def test_keymaker_with_all_blanks(self):
+        pattern = "......"
+        actual = DTable.keymaker(pattern)
+        self.assertIsNone(actual)
