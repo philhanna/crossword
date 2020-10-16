@@ -7,10 +7,13 @@ from crossword.dtable import DTable
 
 class TestDTable(TestCase):
 
+    def setUp(self):
+        outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
+        self.dtable = DTable(outfile=outfile)
+
     @skip("Print first 100 entries in tale")
     def test_create(self):
-        outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
-        dtable = DTable(outfile=outfile)
+        dtable = self.dtable
         for i, k in enumerate(dtable.table.keys()):
             if i > 100:
                 break
@@ -19,8 +22,7 @@ class TestDTable(TestCase):
             print(f"DEBUG: {i}, {k}, {len(k)}, {len(words)}, {','.join(words)}")
 
     def test_lookup(self):
-        outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
-        dtable = DTable(outfile=outfile)
+        dtable = self.dtable
 
         word_list = dtable.lookup("D.SH")
         self.assertEqual(3, len(word_list))
@@ -30,8 +32,7 @@ class TestDTable(TestCase):
         self.assertNotIn("Puppies", word_list)
 
     def test_cached_lookup(self):
-        outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
-        dtable = DTable(outfile=outfile)
+        dtable = self.dtable
 
         word_list = dtable.lookup("PR.")
         self.assertEqual(3, len(word_list))
@@ -42,15 +43,10 @@ class TestDTable(TestCase):
         # Now see if the pattern was cached
         self.assertIn("PR.", dtable.table.keys())
 
-    def test_keymaker(self):
-        pattern = "D.SH"
-        actual = DTable.keymaker(pattern)
-        expected = [
-            'D...', '..S.', '...H'
-        ]
-        self.assertListEqual(expected, actual)
+    def test_find_candidates(self):
+        dtable = self.dtable
 
-    def test_keymaker_with_all_blanks(self):
-        pattern = "......"
-        actual = DTable.keymaker(pattern)
-        self.assertIsNone(actual)
+        pattern = "...C."
+        word_list = dtable.lookup(pattern)
+        self.assertGreater(len(word_list), 200)
+        #print(word_list)
