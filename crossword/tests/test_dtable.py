@@ -1,16 +1,16 @@
 import os.path
 import tempfile
-from unittest import TestCase
+from unittest import TestCase, skip
 
 from crossword.dtable import DTable
 
 
 class TestDTable(TestCase):
 
-    def no_test_create(self):
+    @skip("Print first 100 entries in tale")
+    def test_create(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
         dtable = DTable(outfile=outfile)
-        dtable.create()
         for i, k in enumerate(dtable.table.keys()):
             if i > 100:
                 break
@@ -21,11 +21,6 @@ class TestDTable(TestCase):
     def test_lookup(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
         dtable = DTable(outfile=outfile)
-        if not os.path.exists(outfile):
-            dtable.create()
-            dtable.save()
-        else:
-            dtable.load()
 
         word_list = dtable.lookup("D.SH")
         self.assertEqual(3, len(word_list))
@@ -37,11 +32,6 @@ class TestDTable(TestCase):
     def test_cached_lookup(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
         dtable = DTable(outfile=outfile)
-        if not os.path.exists(outfile):
-            dtable.create()
-            dtable.save()
-        else:
-            dtable.load()
 
         word_list = dtable.lookup("PR.")
         self.assertEqual(3, len(word_list))

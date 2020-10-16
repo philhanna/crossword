@@ -54,6 +54,11 @@ class DTable:
         self.words = None
         self.infile = infile
         self.outfile = outfile
+        if os.path.exists(outfile):
+            self.load()
+        else:
+            self.create()
+            self.save()
 
     def create(self):
         """ Precompiles word list into the table format """
