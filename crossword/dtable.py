@@ -79,14 +79,19 @@ class DTable:
             pickle.dump((self.words, self.table), fp)
 
     def lookup(self, pattern):
-        """ Returns the set of indices to words that match
-        this pattern """
+        """ Returns the set of words that match this pattern """
 
         table = self.table
+        words = self.words
+
+        def freq(word):
+            return sum([FREQ.index(letter) for letter in word])
 
         # If there is an exact match, return the set of indices it points to
         if pattern in table:
-            return table[pattern]
+            word_list = [words[windex] for windex in table[pattern]]
+            word_list.sort(key=freq)
+            return word_list
 
         # Otherwise, break down the pattern into keys
         keylist = DTable.keymaker(pattern)
@@ -106,4 +111,6 @@ class DTable:
         # Cache the resulting intersection mapped to the pattern
         table[pattern] = all_sets
 
-        return all_sets
+        word_list = [words[windex] for windex in all_sets]
+        word_list.sort(key=freq)
+        return word_list

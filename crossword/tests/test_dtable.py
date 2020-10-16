@@ -5,8 +5,7 @@ from unittest import TestCase
 from crossword.dtable import DTable
 
 
-class q\
-            (TestCase):
+class TestDTable(TestCase):
 
     def no_test_create(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
@@ -19,25 +18,21 @@ class q\
             words = [dtable.words[windex] for windex in v]
             print(f"DEBUG: {i}, {k}, {len(k)}, {len(words)}, {','.join(words)}")
 
-    def test_load(self):
-        outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
-        dtable = DTable(outfile=outfile)
-        dtable.create()
-        dtable.save()
-        dtable.load()
-
     def test_lookup(self):
         outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
         dtable = DTable(outfile=outfile)
         if not os.path.exists(outfile):
             dtable.create()
+            dtable.save()
         else:
             dtable.load()
 
-        word_set = dtable.lookup("PR.")
-        self.assertEqual(3, len(word_set))
-        word_list = [dtable.words[windex] for windex in word_set]
-        print(word_list)
+        word_list = dtable.lookup("D.SH")
+        self.assertEqual(3, len(word_list))
+        self.assertIn("DISH", word_list)
+        self.assertIn("DASH", word_list)
+        self.assertIn("DOSH", word_list)
+        self.assertNotIn("Puppies", word_list)
 
     def test_keymaker(self):
         pattern = "D.SH"
