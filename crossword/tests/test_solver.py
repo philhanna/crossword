@@ -2,7 +2,7 @@ import os
 import sqlite3
 from unittest import TestCase
 
-from crossword import Puzzle
+from crossword import Puzzle, Word
 from crossword.solver import Solver
 
 DBFILE = os.path.expanduser("~/crossword.db")
@@ -33,3 +33,10 @@ class TestSolver(TestCase):
         word = solver.most_constrained()
         self.assertIsNotNone(word)
         self.assertEqual("PR ", word.get_text())
+
+    def test_get_crossing_words(self):
+        puzzle = self.puzzle
+        word = puzzle.get_word(4, Word.DOWN)
+        for crosser in self.solver.get_crossing_words(word):
+            print(crosser)
+        pass

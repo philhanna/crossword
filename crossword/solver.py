@@ -3,6 +3,7 @@ from crossword import AcrossWord, DownWord
 
 class Solver:
     """ Solves the puzzle, if possible """
+
     def __init__(self, puzzle):
         """ Constructor """
         self.puzzle = puzzle
@@ -25,3 +26,8 @@ class Solver:
                 max_word = word
                 max_blanks = nblanks
         return max_word
+
+    def get_crossing_words(self, word):
+        return [crosser
+                for crosser in word.get_crossing_words()
+                if not crosser.is_complete()]
