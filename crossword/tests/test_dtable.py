@@ -24,3 +24,20 @@ class TestDTable(TestCase):
         dtable.create()
         dtable.save()
         dtable.load()
+
+    def test_lookup(self):
+        outfile = os.path.join(tempfile.gettempdir(), "dtable.bin")
+        dtable = DTable(outfile=outfile)
+        dtable.load()
+        set1 = dtable.lookup("P..")
+        set2 = dtable.lookup(".R.")
+        set3 = set1.intersection(set2)
+        self.assertEqual(3, len(set3))
+
+    def test_keymaker(self):
+        pattern = "D.SH"
+        actual = DTable.keymaker(pattern)
+        expected = [
+            'D...', '..S.', '...H'
+        ]
+        self.assertListEqual(expected, actual)
