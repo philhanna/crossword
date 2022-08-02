@@ -33,7 +33,7 @@ def init_config():
     if os.path.exists(filename):
         config.read(filename)
     else:
-        msg = f".config.ini file was not found. Using default configuration. See README.md"
+        msg = f".crossword.ini file was not found. Using default configuration. See README.md"
         logging.warning(msg)
         # Adjust dbfile for correct path, relative to the package
         this_dir = os.path.dirname(__file__)
