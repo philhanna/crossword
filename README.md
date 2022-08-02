@@ -100,7 +100,7 @@ The application uses the following default configuration:
 - A logging level of `INFO`
 
 You can change the configuration by creating a text file
-named `.config.ini` in your user HOME directory.  This
+named `.crossword.ini` in your user HOME directory.  This
 file has the format:
 ```ini
 [DEFAULT]
