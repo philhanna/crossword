@@ -1,23 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
  
-The format is based on [Keep a Changelog](http://keepachangelog.com/)
-and this project adheres to [Semantic Versioning](http://semver.org/).
+This project adheres to [Semantic Versioning](http://semver.org/),
+and the format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## Table of contents
-- [Version 2.4.0 - 2020/08/01](#version-240---20200801)
-- [Version 2.3.0 - 2020/07/12](#version-230---20200712)
-- [Version 2.2.0 - 2020/06/30](#version-220---20200630)
-- [Version 2.1.4 - 2020/06/23](#version-214---20200623)
-- [Version 2.0.0 - 2020/06/21](#version-200---20200621)
-- [Version 1.4.0 - 2020/06/14](#version-140---20200614)
-
-## Version 2.4.0 - 2020/08/01
+## [2.4.0] - 2020-08-01
 
 Major overhaul of HTML files.  Now using templates with inheritance.
 Made two common modal dialogs to replace all the individual ones.
 
-## Version 2.3.0 - 2020/07/12
+## [2.3.0] - 2020-07-12
 
 Starting with this release, grids, puzzles, configuration,
 and words are stored in a database, rather than files in
@@ -64,7 +56,7 @@ and renamed `.crossword.ini`.
 - Issue #97: Added preview icon to PuzzleNew dialog
 - Issue #98: Do not clear clue if word is blank
 
-## Version 2.2.0 - 2020/06/30
+## [2.2.0] - 2020-06-30
 
 The main feature of this release is the UI upgrade to the `puzzle.html`
 screen, which now shows the clues on the same screen when the puzzle
@@ -93,7 +85,7 @@ editing is done (see Issue #99).
 - Issue #97: Added preview icon to PuzzleNew dialog
 - Issue #98: Do not clear clue if word is blank
 
-## Version 2.1.4 - 2020/06/23
+## [2.1.4] - 2020-06-23
 
 ### Added
 
@@ -109,7 +101,7 @@ editing is done (see Issue #99).
 - Fix for issue #88
 - Fix for issue #87
 
-## Version 2.0.0 - 2020/06/21
+## [2.0.0] - 2020-06-21
 
 ### Added
 
@@ -158,7 +150,7 @@ editing is done (see Issue #99).
 - Issue #82: Limit undo/redo to word text, not clues and titles
  
 
-## Version 1.4.0 - 2020/06/14
+## [1.4.0] - 2020-06-14
 
 ### Added
 
@@ -175,3 +167,10 @@ editing is done (see Issue #99).
 
 - Issue #47: Doubled display of statistics
 - Issue #50: Double-click vs single-click broken
+
+[2.4.0]: https://github.com/philhanna/crossword/compare/2.3.0..2.4.0
+[2.3.0]: https://github.com/philhanna/crossword/compare/2.2.0..2.3.0
+[2.2.0]: https://github.com/philhanna/crossword/compare/2.1.4..2.2.0
+[2.1.4]: https://github.com/philhanna/crossword/compare/2.0.0..2.1.4
+[2.0.0]: https://github.com/philhanna/crossword/compare/1.4.0..2.0.0
+[1.4.0]: https://github.com/philhanna/crossword/compare/3508c1..1.4.0
