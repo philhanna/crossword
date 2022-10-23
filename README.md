@@ -169,3 +169,7 @@ There is a **Help** button on the far right of the menu bar
 that takes you to the user's guide.
 You can also access this guide directly at the project's
 [github wiki](https://github.com/philhanna/crossword/wiki).
+
+## References
+
+- [Github repository](https://github.com/philhanna/crossword)

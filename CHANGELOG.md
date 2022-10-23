@@ -1,8 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
  
-This project adheres to [Semantic Versioning](http://semver.org/),
-and the format is based on [Keep a Changelog](http://keepachangelog.com/).
+This project adheres to [Semantic Versioning],
+and the format is based on [Keep a Changelog].
+
+## [Unreleased]
+
+- Reformatted CHANGELOG.md to match the format in [Keep a Changelog].
+- Reformatted README.md to include a link to the Github repository.
 
 ## [2.4.0] - 2020-08-01
 
@@ -168,6 +173,9 @@ editing is done (see Issue #99).
 - Issue #47: Doubled display of statistics
 - Issue #50: Double-click vs single-click broken
 
+[Semantic Versioning]: https://semver.org/
+[Keep a Changelog]: https://keepachangelog.com/
+[Unreleased]: https://github.com/philhanna/crossword/compare/2.4.0..HEAD
 [2.4.0]: https://github.com/philhanna/crossword/compare/2.3.0..2.4.0
 [2.3.0]: https://github.com/philhanna/crossword/compare/2.2.0..2.3.0
 [2.2.0]: https://github.com/philhanna/crossword/compare/2.1.4..2.2.0
