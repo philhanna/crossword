@@ -6,8 +6,16 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Added
+
+- Issue #155: Added database migration scripts that use `pickle` instead of `json`
+
+
+### Changed
+
 - Reformatted CHANGELOG.md to match the format in [Keep a Changelog].
 - Reformatted README.md to include a link to the Github repository.
+
 
 ## [2.4.0] - 2020-08-01
 
