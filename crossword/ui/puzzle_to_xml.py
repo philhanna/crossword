@@ -1,7 +1,7 @@
 import re
 import xml.etree.ElementTree as ET
 
-from crossword import Word
+from crossword.words import Word
 
 
 class PuzzleToXML:

@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 
-from crossword import Grid, Puzzle
+from crossword.grids import Grid
+from crossword.puzzles import Puzzle
 
 
 class PuzzleFromXML:

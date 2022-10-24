@@ -19,10 +19,10 @@ from flask import url_for
 from sqlalchemy import desc
 
 # My own packages
-from crossword import Grid
-from crossword import Puzzle
-from crossword import PuzzleToSVG
-from crossword import sha256
+from crossword.grids import Grid
+from crossword.puzzles import Puzzle
+from crossword.util import PuzzleToSVG
+from crossword.util import sha256
 from crossword.ui import DBGrid
 from crossword.ui import DBPuzzle
 from crossword.ui import UIState

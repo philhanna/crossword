@@ -9,7 +9,7 @@ from flask import Blueprint
 from flask import make_response
 from flask import request
 
-from crossword import Puzzle
+from crossword.puzzles import Puzzle
 from crossword.ui import DBPuzzle, DBUser, PuzzlePublishAcrossLite, PuzzlePublishNYTimes, PuzzleToXML
 
 userid = 1  # TODO Replace hard-coded user ID

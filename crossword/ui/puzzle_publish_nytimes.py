@@ -1,7 +1,8 @@
 import os
 import re
 import xml.etree.ElementTree as ET
-from crossword import PuzzleToSVG, Puzzle
+from crossword.puzzles import Puzzle
+from crossword.util import PuzzleToSVG
 from crossword.ui import DBUser
 
 userid = 1  # TODO Replace hard-coded user ID

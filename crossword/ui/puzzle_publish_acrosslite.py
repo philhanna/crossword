@@ -1,6 +1,6 @@
 from io import StringIO
 
-from crossword import Puzzle
+from crossword.puzzles import Puzzle
 
 userid = 1  # TODO Replace hard-coded user ID
 

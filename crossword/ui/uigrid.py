@@ -19,11 +19,11 @@ from flask import url_for
 from sqlalchemy import desc
 
 # My own packages
-from crossword import Grid, GridToSVG, sha256
+from crossword.grids import Grid
 from crossword.ui import db, DBGrid, UIState, DBPuzzle
+from crossword.util import GridToSVG, sha256
 
 # Register this route handler
-
 uigrid = Blueprint('uigrid', __name__)
 
 
@@ -260,6 +260,7 @@ def grid_click():
 
     return redirect(url_for('uigrid.grid_screen'))
 
+
 @uigrid.route('/grid-rotate')
 def grid_rotate():
     """ Rotates the grid 90 degrees left then returns the new SVG """
@@ -309,7 +310,7 @@ def grid_statistics():
     svgstr = GridToSVG(grid).generate_xml()
 
     # Render with grid statistics template
-    return render_template("grid-statistics.html", enabled=enabled, gridname=gridname, svgstr=svgstr, stats=stats);
+    return render_template("grid-statistics.html", enabled=enabled, gridname=gridname, svgstr=svgstr, stats=stats)
 
 
 @uigrid.route('/grids')
@@ -324,6 +325,8 @@ def grids():
     resp = make_response(json.dumps(gridlist), HTTPStatus.OK)
     resp.headers['Content-Type'] = "application/json"
     return resp
+
+
 @uigrid.route('/grid-undo')
 def grid_undo():
     """ Undoes the last grid action then redirects to grid screen """
@@ -355,7 +358,7 @@ def grid_redo():
 def get_grid_list(userid):
     """ Returns the list of grid file names for the specified userid
 
-    :param userID the id of the user who owns these grids
+    :param userid the id of the user who owns these grids
     :returns the list of base file names, sorted with most recently updated first
     """
     query = DBGrid.query \

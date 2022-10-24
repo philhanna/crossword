@@ -10,11 +10,15 @@ from flask import request
 from flask import session
 from flask import url_for
 
-from crossword import Puzzle, LetterList
-from crossword import Word
+
+from crossword.puzzles import Puzzle
+from crossword.words import Word
+from crossword.util import LetterList
+
 from .uiwordlists import get_matching_words
 
 # Register this blueprint
+
 uiword = Blueprint('uiword', __name__)
 
 

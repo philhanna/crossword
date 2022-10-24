@@ -10,7 +10,7 @@ from flask import Blueprint
 from flask import make_response
 from flask import request
 
-from crossword import get_elapsed_time
+from crossword.util import get_elapsed_time
 from crossword.ui import DBWord
 
 # Register this blueprint

@@ -1,6 +1,8 @@
 import struct
 
-from crossword import Grid, Puzzle, Word
+from crossword import Puzzle
+from crossword.grids import Grid
+from crossword.words import Word
 
 
 class PuzzleFromAcrossLite:

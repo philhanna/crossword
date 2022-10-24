@@ -1,22 +1,8 @@
 # Crossword model classes
 __all__ = [
-    'get_elapsed_time',
-    'Grid',
-    'NumberedCell',
-    'Puzzle',
-    'ToSVG', 'GridToSVG', 'PuzzleToSVG',
-    'LetterList',
-    'Word', 'AcrossWord', 'DownWord',
     'dbfile',
-    'sha256',
     'config',
 ]
-
-
-def get_elapsed_time(stime, etime):
-    diff = etime - stime
-    seconds = diff.seconds + diff.microseconds / 1000000
-    return seconds
 
 
 def init_config():
@@ -54,23 +40,3 @@ config = init_config()
 def dbfile():
     return config['dbfile']
 
-
-def sha256(s):
-    """ Computes a sha256 checksum for a string """
-    if s is None:
-        s = ""
-    elif type(s) != str:
-        s = str(s)
-    import hashlib
-    m = hashlib.sha256()
-    m.update(bytes(s, 'utf-8'))
-    value = m.digest()
-    return value
-
-
-from .numbered_cell import *
-from .letter_list import LetterList
-from .grid import *
-from .word import *
-from .puzzle import *
-from .to_svg import *
