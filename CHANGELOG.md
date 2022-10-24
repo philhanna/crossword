@@ -8,6 +8,7 @@ and the format is based on [Keep a Changelog].
 
 ### Added
 
+- Issue #154: Refactored to more granular package structure
 - Issue #155: Added database migration scripts that use `pickle` instead of `json`
 
 
