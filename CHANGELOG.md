@@ -8,7 +8,6 @@ and the format is based on [Keep a Changelog].
 
 ### Added
 
-- Issue #154: Refactored to more granular package structure
 - Issue #155: Added database migration scripts that use `pickle` instead of `json`
 
 
@@ -16,6 +15,7 @@ and the format is based on [Keep a Changelog].
 
 - Reformatted CHANGELOG.md to match the format in [Keep a Changelog].
 - Reformatted README.md to include a link to the Github repository.
+- Issue #154: Refactored to more granular package structure
 
 
 ## [2.4.0] - 2020-08-01
