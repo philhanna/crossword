@@ -2,7 +2,8 @@ import pickle
 from pathlib import Path
 import sqlite3
 
-from crossword import Grid, Puzzle
+from crossword.grids import Grid
+from crossword.puzzles import Puzzle
 
 dboutfile = Path.home().joinpath("crossword_backup.db")
 if dboutfile.exists():
