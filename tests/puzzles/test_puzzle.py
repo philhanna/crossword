@@ -4,14 +4,14 @@ from unittest import TestCase
 
 from crossword.grids import Grid
 from crossword.puzzles import Puzzle
-from tests import load_pickled_puzzle
+from tests import load_test_puzzle
 
 
 class TestPuzzle(TestCase):
 
     def test_nyt_daily(self):
         import json
-        puzzle = load_pickled_puzzle("nyt_daily")
+        puzzle = load_test_puzzle("nyt_daily")
         jsonstr = puzzle.to_json()
         obj = json.loads(jsonstr)
         jsonstr = json.dumps(obj, indent=2)
@@ -19,17 +19,17 @@ class TestPuzzle(TestCase):
             fp.write(jsonstr)
 
     def test_equals(self):
-        puzzle1 = load_pickled_puzzle("solved_atlantic_puzzle")
-        puzzle2 = load_pickled_puzzle("solved_atlantic_puzzle")
+        puzzle1 = load_test_puzzle("solved_atlantic_puzzle")
+        puzzle2 = load_test_puzzle("solved_atlantic_puzzle")
         self.assertEqual(puzzle1, puzzle2)
 
     def test_hash(self):
-        puzzle1 = load_pickled_puzzle("solved_atlantic_puzzle")
-        puzzle2 = load_pickled_puzzle("solved_atlantic_puzzle")
+        puzzle1 = load_test_puzzle("solved_atlantic_puzzle")
+        puzzle2 = load_test_puzzle("solved_atlantic_puzzle")
         self.assertEqual(hash(puzzle1), hash(puzzle2))
 
     def test_cell_type(self):
-        puzzle = load_pickled_puzzle("puzzle")
+        puzzle = load_test_puzzle("puzzle")
         cell = puzzle.get_cell(1, 1)
         self.assertEqual(type(cell), str)
         cell = puzzle.get_cell(1, 3)
@@ -83,7 +83,7 @@ class TestPuzzle(TestCase):
                 self.assertEqual(expected, actual, f'Mismatch at ({r},{c})')
 
     def test_set_across_word(self):
-        puzzle = load_pickled_puzzle("atlantic_puzzle")
+        puzzle = load_test_puzzle("atlantic_puzzle")
         seq = 10
         parm = "RIOT"
         puzzle.get_across_word(seq).set_text(parm)
@@ -92,7 +92,7 @@ class TestPuzzle(TestCase):
         self.assertEqual(expected, actual)
 
     def test_set_down_word(self):
-        puzzle = load_pickled_puzzle("atlantic_puzzle")
+        puzzle = load_test_puzzle("atlantic_puzzle")
         seq = 22
         parm = "BUBBA"
         puzzle.get_across_word(seq).set_text(parm)
@@ -101,7 +101,7 @@ class TestPuzzle(TestCase):
         self.assertEqual(expected, actual)
 
     def test_save(self):
-        puzzle = load_pickled_puzzle("solved_atlantic_puzzle")
+        puzzle = load_test_puzzle("solved_atlantic_puzzle")
         jsonstr = puzzle.to_json()
         filename = os.path.join(tempfile.gettempdir(), "test_puzzle.test_save.json")
         with open(filename, "wt") as fp:
@@ -131,7 +131,7 @@ class TestPuzzle(TestCase):
         self.assertEqual("Honor, to Fritz", word.get_clue())
 
     def test_word_count(self):
-        puzzle = load_pickled_puzzle("atlantic_puzzle")
+        puzzle = load_test_puzzle("atlantic_puzzle")
         expected = 26
         actual = puzzle.get_word_count()
         self.assertEqual(expected, actual)

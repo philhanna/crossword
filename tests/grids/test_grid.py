@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from crossword.grids import Grid
-from tests import load_pickled_puzzle
+from tests import load_test_puzzle
 
 
 class TestGrid(TestCase):
@@ -108,7 +108,7 @@ class TestGrid(TestCase):
         self.assertTrue(ok)
 
     def test_grid_from_puzzle(self):
-        puzzle = load_pickled_puzzle("nyt_daily")
+        puzzle = load_test_puzzle("nyt_daily")
         jsonstr = puzzle.to_json()
         grid = Grid.from_json(jsonstr)
         self.assertEqual(puzzle.n, grid.n)
@@ -124,7 +124,6 @@ class TestGrid(TestCase):
         stats = grid.get_statistics()
         self.assertTrue(stats['valid'])
         self.assertListEqual([1, 24, 53, 69], stats['wordlengths'][3]['alist'])
-        #print(stats)
 
     def test_statistics_bad(self):
         grid = TestGrid.get_bad_grid()
@@ -132,7 +131,6 @@ class TestGrid(TestCase):
         self.assertEqual("7 x 7", stats['size'])
         self.assertEqual(23, stats['wordcount'])
         self.assertFalse(stats['valid'])
-        #print(stats)
 
     @staticmethod
     def get_good_grid():

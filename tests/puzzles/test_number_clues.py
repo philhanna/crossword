@@ -1,13 +1,13 @@
 from unittest import TestCase
 
 from crossword.cells import NumberedCell
-from tests import load_pickled_puzzle
+from tests import load_test_puzzle
 
 
 class TestNumberClues(TestCase):
 
     def test_number_clues(self):
-        puzzle = load_pickled_puzzle("puzzle")
+        puzzle = load_test_puzzle("puzzle")
         expected = [
             NumberedCell(1,1,1,a=2,d=2),
             NumberedCell(2,1,2,d=2),
@@ -24,7 +24,7 @@ class TestNumberClues(TestCase):
         self.assertEqual(expected, actual)
 
     def test_nyt(self):
-        puzzle = load_pickled_puzzle("nyt_puzzle")
+        puzzle = load_test_puzzle("nyt_puzzle")
         nclist = puzzle.numbered_cells
         self.assertEqual(124, len(nclist))
 

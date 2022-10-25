@@ -1,14 +1,14 @@
 from unittest import TestCase
 
-from crossword.words import AcrossWord, DownWord
 from crossword.puzzles import Puzzle
-from tests import TestGrid, TestPuzzle, TestWord
+from crossword.words import AcrossWord, DownWord
+from tests import TestGrid, load_test_puzzle
 
 
 class TestDownWord(TestCase):
 
     def test_get(self):
-        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle = load_test_puzzle("atlantic_puzzle")
         AcrossWord(puzzle, 4).set_text("EFTS")
         AcrossWord(puzzle, 10).set_text("RIOT")
         AcrossWord(puzzle, 11).set_text("LOCAVORES")
@@ -28,7 +28,7 @@ class TestDownWord(TestCase):
         self.assertListEqual(expected, actual)
 
     def test_get_clear_word(self):
-        puzzle = TestWord.create_puzzle()
+        puzzle = load_test_puzzle("word_puzzle")
         # 4 down is crossed by six across words
         # 1 across is complete
         # 14 across is complete
