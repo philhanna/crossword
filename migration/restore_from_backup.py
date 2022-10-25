@@ -2,9 +2,6 @@ import pickle
 from pathlib import Path
 import sqlite3
 
-from crossword.grids import Grid
-from crossword.puzzles import Puzzle
-
 dboutfile = Path.home().joinpath("crossword_new.db")
 if dboutfile.exists():
     dboutfile.unlink()
