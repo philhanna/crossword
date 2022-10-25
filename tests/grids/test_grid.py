@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from crossword.grids import Grid
-from tests import TestPuzzle
+from tests import load_pickled_puzzle
 
 
 class TestGrid(TestCase):
@@ -108,7 +108,7 @@ class TestGrid(TestCase):
         self.assertTrue(ok)
 
     def test_grid_from_puzzle(self):
-        puzzle = TestPuzzle.create_nyt_daily()
+        puzzle = load_pickled_puzzle("nyt_daily")
         jsonstr = puzzle.to_json()
         grid = Grid.from_json(jsonstr)
         self.assertEqual(puzzle.n, grid.n)

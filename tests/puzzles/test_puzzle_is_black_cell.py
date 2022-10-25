@@ -1,13 +1,13 @@
 from unittest import TestCase
 
-from tests import TestPuzzle
+from tests import load_pickled_puzzle
 
 
 class TestPuzzleIsBlackCell(TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.puzzle = TestPuzzle.create_solved_atlantic_puzzle()
+        self.puzzle = load_pickled_puzzle("solved_atlantic_puzzle")
 
     def test_is_black_cell_true(self):
         self.assertTrue(self.puzzle.is_black_cell(2, 5))

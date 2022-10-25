@@ -3,26 +3,26 @@ from unittest import TestCase
 from crossword.cells import NumberedCell
 from crossword.grids import Grid
 from crossword.puzzles import Puzzle
-from tests import TestPuzzle
+from tests import load_pickled_puzzle
 
 
 class TestPuzzleReplaceGrid(TestCase):
 
     def test_wrong_size(self):
-        puzzle = TestPuzzle.create_solved_atlantic_puzzle()
+        puzzle = load_pickled_puzzle("solved_atlantic_puzzle")
         grid = Grid(5)
         with self.assertRaises(ValueError):
             puzzle.replace_grid(grid)
 
     def test_same_grid(self):
-        oldpuzzle = TestPuzzle.create_solved_atlantic_puzzle()
+        oldpuzzle = load_pickled_puzzle("solved_atlantic_puzzle")
         grid = Grid.from_json(oldpuzzle.to_json())
         newpuzzle = Puzzle.from_json(oldpuzzle.to_json())
         newpuzzle.replace_grid(grid)
         self.assertEqual(oldpuzzle, newpuzzle)
 
     def test_new_grid(self):
-        puzzle = TestPuzzle.create_solved_atlantic_puzzle()
+        puzzle = load_pickled_puzzle("solved_atlantic_puzzle")
         oldjson = puzzle.to_json()
         grid = Grid.from_json(puzzle.to_json())
         grid.add_black_cell(4, 4)
