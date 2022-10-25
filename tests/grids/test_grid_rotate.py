@@ -1,12 +1,12 @@
 from unittest import TestCase
 
-from tests import load_test_grid
+from tests import load_test_object
 
 
 class TestGridRotate(TestCase):
 
     def test_rotate(self):
-        grid = load_test_grid("good_grid")
+        grid = load_test_object("rotate_good_grid")
         grid.rotate()
         expected = {(1, 8), (1, 9),
             (4, 4),
@@ -17,7 +17,7 @@ class TestGridRotate(TestCase):
         self.assertSetEqual(expected, actual)
 
     def test_rotate_twice(self):
-        grid = load_test_grid("good_grid")
+        grid = load_test_object("rotate_good_grid")
         grid.undo_stack = []
         grid.redo_stack = []
         oldjson = grid.to_json()

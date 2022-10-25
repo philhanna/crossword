@@ -1,6 +1,11 @@
 import json
-from crossword.words import Word, AcrossWord, DownWord
+
+from crossword.cells import NumberedCell
 from crossword.grids import Grid
+from crossword.words import Word, AcrossWord, DownWord
+# Do not delete this line! It is necessary so that the import
+# of NumberedCell is never optimized away by the IDE
+dummy_numbered_cell = NumberedCell(1, 1, 1, 1, 1)
 
 
 class Puzzle:
@@ -19,7 +24,7 @@ class Puzzle:
         """
         self.grid = grid
         self.n = grid.n
-        self.black_cells = grid.get_black_cells()
+        self.black_cells = set(grid.get_black_cells())
         self.numbered_cells = grid.get_numbered_cells()
         self.across_words = None
         self.down_words = None
@@ -39,6 +44,74 @@ class Puzzle:
 
         self.initialize_words()
 
+    def to_python(self, fp):
+        """Generate code that will reconstruct this puzzle"""
+
+        self.grid.to_python(fp)
+
+        # Import Puzzle
+        fp.write("from crossword.puzzles import Puzzle" + "\n")
+        fp.write("from crossword.words import Word, AcrossWord, DownWord" + "\n")
+        fp.write("\n")
+
+        # Define a function
+        fp.write("def get_puzzle(grid):" + "\n")
+        title_as_string = None if not self.title else f'"{self.title}"'
+        fp.write(f"    puzzle = Puzzle(grid, title={title_as_string})" + "\n")
+
+        # Do black cells
+        fp.write(f"    for bc in grid.get_black_cells():" + "\n")
+        fp.write(f"        puzzle.black_cells.add(bc)" + "\n")
+
+        # Do numbered cells
+        fp.write(f"    puzzle.numbered_cells = []" + "\n")
+        fp.write(f"    for nc in grid.get_numbered_cells():" + "\n")
+        fp.write(f"        puzzle.numbered_cells.append(nc)" + "\n")
+
+        # Do across words
+        if self.across_words is None:
+            fp.write("    puzzle.across_words = None" + "\n")
+        else:
+            for k, v in self.across_words.items():
+                text = '"' + v.get_text() + '"'
+                fp.write(f'    puzzle.get_across_word({k}).set_text({text})' + "\n")
+                clue = v.get_clue()
+                if clue is not None:
+                    fp.write(f'    puzzle.get_across_word({k}).set_clue("{clue}")' + "\n")
+
+        # Do down words
+        if self.down_words is None:
+            fp.write("    puzzle.down_words = None" + "\n")
+        else:
+            for k, v in self.down_words.items():
+                text = '"' + v.get_text() + '"'
+                fp.write(f'    puzzle.get_down_word({k}).set_text({text})' + "\n")
+                clue = v.get_clue()
+                if clue is not None:
+                    fp.write(f'    puzzle.get_down_word({k}).set_clue("{clue}")' + "\n")
+
+        # Do undo stack
+        for listitem in self.undo_stack:
+            fp.write(f"    puzzle.undo_stack.append({repr(listitem)})" + "\n")
+
+        # Do redo stack
+        for listitem in self.redo_stack:
+            fp.write(f"    puzzle.redo_stack.append({repr(listitem)})" + "\n")
+
+        # Return the new grid
+        fp.write("    return puzzle" + "\n\n")
+
+        fp.write("grid = get_grid()" + "\n")
+        fp.write("result = get_puzzle(grid)" + "\n")
+
+        pass
+
+    @staticmethod
+    def from_python(stmts):
+        exec(stmts)
+        new_puzzle = eval("result")
+        return new_puzzle
+
     def replace_grid(self, newgrid):
         if newgrid.n != self.n:
             raise ValueError("Incompatible grid sizes")
@@ -57,8 +130,8 @@ class Puzzle:
         # Now set the clues for words that have not changed
         obj = json.loads(oldjson)
 
-        across_clues = {x['text']:x['clue'] for x in obj['across_words']}
-        down_clues = {x['text']:x['clue'] for x in obj['down_words']}
+        across_clues = {x['text']: x['clue'] for x in obj['across_words']}
+        down_clues = {x['text']: x['clue'] for x in obj['down_words']}
         cluemap = {**across_clues, **down_clues}
 
         for word in self.across_words.values():
@@ -93,7 +166,9 @@ class Puzzle:
         self.redo_stack = []
 
     def __eq__(self, other):
-        return self.to_json() == other.to_json()
+        thisjson = self.to_json()
+        thatjson = other.to_json()
+        return thisjson == thatjson
 
     def __id__(self):
         return id(self.to_json())
@@ -191,7 +266,6 @@ class Puzzle:
                     if r == nc.r + i:
                         return nc
         return None
-
 
     def get_word_count(self):
         """ Returns the number of words in the puzzle """
@@ -323,7 +397,7 @@ class Puzzle:
         # Create the puzzle
         puzzle = Puzzle(grid)
         title = image.get('title', None)
-        puzzle._title = title   # Can't use the undo/redo here yet
+        puzzle._title = title  # Can't use the undo/redo here yet
 
         # Reload the "ACROSS" words
         awlist = image['across_words']
@@ -332,8 +406,8 @@ class Puzzle:
             text = aw['text']
             clue = aw['clue']
             word = puzzle.get_across_word(seq)
-            word.set_text(text)     # TODO: Can't do this - undo/redo
-            word.set_clue(clue)     # TODO: Can't do this - undo/redo
+            word.set_text(text)  # TODO: Can't do this - undo/redo
+            word.set_clue(clue)  # TODO: Can't do this - undo/redo
 
         # Reload the "DOWN" words
         dwlist = image['down_words']
@@ -342,8 +416,8 @@ class Puzzle:
             text = dw['text']
             clue = dw['clue']
             word = puzzle.get_down_word(seq)
-            word.set_text(text)     # TODO: Can't do this - undo/redo
-            word.set_clue(clue)     # TODO: Can't do this - undo/redo
+            word.set_text(text)  # TODO: Can't do this - undo/redo
+            word.set_clue(clue)  # TODO: Can't do this - undo/redo
 
         # Reload the undo/redo stacks
         puzzle.undo_stack = image.get('undo_stack', [])

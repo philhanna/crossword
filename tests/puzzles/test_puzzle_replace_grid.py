@@ -3,31 +3,32 @@ from unittest import TestCase
 from crossword.cells import NumberedCell
 from crossword.grids import Grid
 from crossword.puzzles import Puzzle
-from tests import load_test_puzzle
+from tests import load_test_object
 
 
 class TestPuzzleReplaceGrid(TestCase):
 
     def test_wrong_size(self):
-        puzzle = load_test_puzzle("solved_atlantic_puzzle")
+        puzzle = load_test_object("solved_atlantic_puzzle")
         grid = Grid(5)
         with self.assertRaises(ValueError):
             puzzle.replace_grid(grid)
 
     def test_same_grid(self):
-        oldpuzzle = load_test_puzzle("solved_atlantic_puzzle")
+        oldpuzzle = load_test_object("solved_atlantic_puzzle")
         grid = Grid.from_json(oldpuzzle.to_json())
         newpuzzle = Puzzle.from_json(oldpuzzle.to_json())
         newpuzzle.replace_grid(grid)
         self.assertEqual(oldpuzzle, newpuzzle)
 
     def test_new_grid(self):
-        puzzle = load_test_puzzle("solved_atlantic_puzzle")
+        puzzle = load_test_object("solved_atlantic_puzzle")
         oldjson = puzzle.to_json()
         grid = Grid.from_json(puzzle.to_json())
         grid.add_black_cell(4, 4)
         puzzle.replace_grid(grid)
         newjson = puzzle.to_json()
+        newpuzzle = Puzzle.from_json(newjson)
 
         import json
         old = json.loads(oldjson)
@@ -42,38 +43,35 @@ class TestPuzzleReplaceGrid(TestCase):
 
         # Compare numbered cells
         expected = [
-            NumberedCell(seq=1, r=1, c=1, a=3, d=4),
-            NumberedCell(seq=2, r=1, c=2, a=0, d=4),
-            NumberedCell(seq=3, r=1, c=3, a=0, d=9),
-            NumberedCell(seq=4, r=1, c=6, a=4, d=5),
-            NumberedCell(seq=5, r=1, c=7, a=0, d=9),
-            NumberedCell(seq=6, r=1, c=8, a=0, d=4),
-            NumberedCell(seq=7, r=1, c=9, a=0, d=3),
-            NumberedCell(seq=8, r=2, c=1, a=4, d=0),
-            NumberedCell(seq=9, r=2, c=4, a=0, d=2),
-            NumberedCell(seq=10, r=2, c=6, a=4, d=0),
-            NumberedCell(seq=11, r=3, c=1, a=9, d=0),
-            NumberedCell(seq=12, r=3, c=5, a=0, d=5),
-            NumberedCell(seq=13, r=4, c=1, a=3, d=0),
-            NumberedCell(seq=14, r=4, c=5, a=4, d=0),
-            NumberedCell(seq=15, r=5, c=3, a=5, d=0),
-            NumberedCell(seq=16, r=5, c=4, a=0, d=5),
-            NumberedCell(seq=17, r=6, c=2, a=4, d=4),
-            NumberedCell(seq=18, r=6, c=7, a=3, d=0),
-            NumberedCell(seq=19, r=6, c=8, a=0, d=4),
-            NumberedCell(seq=20, r=6, c=9, a=0, d=4),
-            NumberedCell(seq=21, r=7, c=1, a=9, d=3),
-            NumberedCell(seq=22, r=7, c=6, a=0, d=2),
-            NumberedCell(seq=23, r=8, c=1, a=4, d=0),
-            NumberedCell(seq=24, r=8, c=6, a=4, d=0),
-            NumberedCell(seq=25, r=9, c=1, a=4, d=0),
-            NumberedCell(seq=26, r=9, c=7, a=3, d=0),
+            NumberedCell(1, 1, 1, 3, 4),
+            NumberedCell(2, 1, 2, 0, 4),
+            NumberedCell(3, 1, 3, 0, 9),
+            NumberedCell(4, 1, 6, 4, 5),
+            NumberedCell(5, 1, 7, 0, 9),
+            NumberedCell(6, 1, 8, 0, 4),
+            NumberedCell(7, 1, 9, 0, 3),
+            NumberedCell(8, 2, 1, 4, 0),
+            NumberedCell(9, 2, 4, 0, 2),
+            NumberedCell(10, 2, 6, 4, 0),
+            NumberedCell(11, 3, 1, 9, 0),
+            NumberedCell(12, 3, 5, 0, 5),
+            NumberedCell(13, 4, 1, 3, 0),
+            NumberedCell(14, 4, 5, 4, 0),
+            NumberedCell(15, 5, 3, 5, 0),
+            NumberedCell(16, 5, 4, 0, 5),
+            NumberedCell(17, 6, 2, 4, 4),
+            NumberedCell(18, 6, 7, 3, 0),
+            NumberedCell(19, 6, 8, 0, 4),
+            NumberedCell(20, 6, 9, 0, 4),
+            NumberedCell(21, 7, 1, 9, 3),
+            NumberedCell(22, 7, 6, 0, 2),
+            NumberedCell(23, 8, 1, 4, 0),
+            NumberedCell(24, 8, 6, 4, 0),
+            NumberedCell(25, 9, 1, 4, 0),
+            NumberedCell(26, 9, 7, 3, 0),
         ]
-        actual = []
-        for x in new['numbered_cells']:
-            jsonstr = json.dumps(x)
-            nc = NumberedCell.from_json(jsonstr)
-            actual.append(nc)
+        actual = [nc for nc in newpuzzle.numbered_cells]
+
         self.assertListEqual(expected, actual)
 
         # Compare clues

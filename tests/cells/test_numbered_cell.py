@@ -53,28 +53,3 @@ class TestNumberedCell(TestCase):
     def test_hash(self):
         nc1 = NumberedCell(4, 3, 2, 12, 46)
         self.assertIsNotNone(hash(nc1))
-
-    def test_to_json(self):
-        nc = NumberedCell(17, 3, 2, 4, 5)
-        expected = '{"seq": 17, "r": 3, "c": 2, "a": 4, "d": 5}'
-        actual = nc.to_json()
-        self.assertEqual(expected, actual)
-
-    def test_from_json(self):
-        jsonstr = '{"seq": 17, "r": 3, "c": 2, "a": 4}'
-        nc = NumberedCell.from_json(jsonstr)
-        self.assertEqual(17, nc.seq)
-        self.assertEqual(3, nc.r)
-        self.assertEqual(2, nc.c)
-        self.assertEqual(4, nc.a)
-        self.assertEqual(0, nc.d)
-
-    def test_json_round_trip(self):
-        nc1 = NumberedCell(17, 3, 2, 4, 5)
-        jsonstr = nc1.to_json()
-        nc2 = NumberedCell.from_json(jsonstr)
-        self.assertEqual(nc1, nc2)
-
-    def notest_print_json(self):
-        nc = NumberedCell(17, 3, 2, 4, 5)
-        print(f"DEBUG: json={nc.to_json()}")

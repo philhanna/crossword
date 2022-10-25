@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from io import StringIO
 
 from crossword.cells import NumberedCell
 
@@ -14,6 +15,43 @@ class Grid:
         self.numbered_cells = None  # Use lazy instantiation
         self.undo_stack = []
         self.redo_stack = []
+
+    def to_python(self, fp):
+        """Generate code that will reconstruct this object"""
+
+        # Imports at the top
+        fp.write("from crossword.cells import NumberedCell" + "\n")
+        fp.write("from crossword.grids import Grid" + "\n\n")
+
+        # Define a function
+        fp.write("def get_grid():" + "\n")
+        fp.write(f"    grid = Grid({self.n})" + "\n")
+
+        # Do black cells
+        for r, c in self.get_black_cells():
+            fp.write(f"    grid.black_cells.add(({r},{c}))" + "\n")
+
+        # Do numbered cells
+        fp.write(f"    grid.numbered_cells = []" + "\n")
+        for nc in self.get_numbered_cells():
+            fp.write(f"    grid.numbered_cells.append({repr(nc)})" + "\n")
+
+        # Do undo stack
+        for listitem in self.undo_stack:
+            fp.write(f"    grid.undo_stack.append({repr(listitem)})" + "\n")
+
+        # Do redo stack
+        for listitem in self.redo_stack:
+            fp.write(f"    grid.redo_stack.append({repr(listitem)})" + "\n")
+
+        # Return the new grid
+        fp.write("    return grid" + "\n\n")
+
+    @staticmethod
+    def from_python(stmts):
+        exec(stmts)
+        new_grid = eval("get_grid()")
+        return new_grid
 
     def rotate(self):
         """ Rotates the grid 90 degrees counterclockwise """
@@ -429,27 +467,28 @@ class Grid:
 
     def __str__(self):
         """ Returns the string representation of the Grid """
-        sb = f'+{"-" * (self.n * 2 - 1)}+' + "\n"
-        for r in range(1, self.n + 1):
-            if r > 1:
-                sb += '\n'
-            row = "|"
-            for c in range(1, self.n + 1):
-                cell = "*" if self.is_black_cell(r, c) else " "
-                if c > 1:
-                    row += "|"
-                row += cell
-            row += "|"
-            sb += row
-        sb += "\n"
-        sb += f'+{"-" * (self.n * 2 - 1)}+'
-        return sb
+        n = self.n
+        line = "-" * (n * 2 - 1)
+        border = "+" + line + "+"
+        with StringIO() as fp:
+            print(border, file=fp)
+            for r in range(1, n + 1):
+                line = "|".join(["*"
+                                 if self.is_black_cell(r, c)
+                                 else " "
+                                 for c in range(1, n + 1)])
+                line = "|" + line + "|"
+                print(line, file=fp)
+            print(border, file=fp)
+            output = fp.getvalue()
+            return output
 
     def __eq__(self, other):
-        return self.to_json() == other.to_json()
+        value = str(self) == str(other)
+        return value
 
     def __id__(self):
-        return id(self.to_json())
+        return id(str(self))
 
     def __hash__(self):
-        return hash(self.to_json())
+        return hash(str(self))

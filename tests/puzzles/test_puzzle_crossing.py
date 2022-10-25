@@ -1,12 +1,12 @@
 from unittest import TestCase
 
-from tests import load_test_puzzle
+from tests import load_test_object
 
 
 class TestPuzzleCrossing(TestCase):
 
     def setUp(self):
-        self.puzzle = load_test_puzzle("nyt_daily")
+        self.puzzle = load_test_object("nyt_daily")
 
     def test_gets_across(self):
         actual = self.puzzle.get_numbered_cell_across(5, 9)

@@ -3,13 +3,13 @@ import tempfile
 from unittest import TestCase
 
 from crossword.util import PuzzleToSVG
-from tests import load_test_puzzle
+from tests import load_test_object
 
 
 class TestPuzzleToSVG(TestCase):
 
     def test_write(self):
-        puzzle = load_test_puzzle("atlantic_puzzle_with_some_words")
+        puzzle = load_test_object("atlantic_puzzle_with_some_words")
         app = PuzzleToSVG(puzzle)
         xmlstr = app.generate_xml()
         filename = os.path.join(tempfile.gettempdir(), "atlantic.svg")
@@ -17,7 +17,7 @@ class TestPuzzleToSVG(TestCase):
             print(xmlstr, file=fp)
 
     def test_write_large(self):
-        puzzle = load_test_puzzle("nyt_puzzle")
+        puzzle = load_test_object("nyt_puzzle")
         app = PuzzleToSVG(puzzle)
         xmlstr = app.generate_xml()
         filename = os.path.join(tempfile.gettempdir(), "nyt.svg")
@@ -25,7 +25,7 @@ class TestPuzzleToSVG(TestCase):
             print(xmlstr, file=fp)
 
     def test_write_scaled(self):
-        puzzle = load_test_puzzle("atlantic_puzzle_with_some_words")
+        puzzle = load_test_object("atlantic_puzzle_with_some_words")
         app = PuzzleToSVG(puzzle, scale=0.375)
         xmlstr = app.generate_xml()
         filename = os.path.join(tempfile.gettempdir(), "atlantic38.svg")

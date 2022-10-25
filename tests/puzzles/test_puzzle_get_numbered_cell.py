@@ -1,13 +1,13 @@
 from unittest import TestCase
 
-from tests import load_test_puzzle
+from tests import load_test_object
 
 
 class TestPuzzleGetNumberedCell(TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.puzzle = load_test_puzzle("solved_atlantic_puzzle")
+        self.puzzle = load_test_object("solved_atlantic_puzzle")
 
     def test_get_across_only(self):
         # 8 across
