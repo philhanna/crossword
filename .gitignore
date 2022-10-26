@@ -7,4 +7,5 @@ __pycache__
 flask_session
 .idea/*
 venv/
+build
 crossword.egg-info

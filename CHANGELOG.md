@@ -13,9 +13,11 @@ and the format is based on [Keep a Changelog].
 
 ### Changed
 
+- Issue #153: Grid and Puzzle can save themselves in the form of the
+Python statements necessary to reconstruct them.
+- Issue #154: Refactored to more granular package structure.
 - Reformatted CHANGELOG.md to match the format in [Keep a Changelog].
 - Reformatted README.md to include a link to the Github repository.
-- Issue #154: Refactored to more granular package structure
 
 
 ## [2.4.0] - 2020-08-01
