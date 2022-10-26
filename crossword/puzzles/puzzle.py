@@ -281,53 +281,33 @@ class Puzzle:
 
     def undo(self):
         """ Undoes the last change """
-
-        if len(self.undo_stack) == 0:
-            return  # Nothing to undo
-
-        # Pop the undoable from the undo stack and get its type
-        undoable = self.undo_stack.pop()
-        undo_type = undoable[0]
-
-        if undo_type == 'text':
-            # Extract the set text parameters from the undoable
-            undo_seq = undoable[1]
-            undo_direction = undoable[2]
-            undo_text = undoable[3]
-
-            # Push the current text for this word to the redo stack
-            old_text = self.get_text(undo_seq, undo_direction)
-            self.redo_stack.append([undo_type, undo_seq, undo_direction, old_text])
-
-            # and set the text to the popped value
-            self.set_text(undo_seq, undo_direction, undo_text, undo=False)
-
-        pass
+        self.undoredo(self.undo_stack, self.redo_stack)
 
     def redo(self):
         """ Redoes the last change """
+        self.undoredo(self.redo_stack, self.undo_stack)
 
-        if len(self.redo_stack) == 0:
-            return  # Nothing to redo
+    def undoredo(self, stackfrom, stackto):
 
-        # Pop the undoable from the redo stack and get its type
-        undoable = self.redo_stack.pop()
-        undo_type = undoable[0]
+        if len(stackfrom) == 0:
+            return  # Nothing to do
 
-        if undo_type == 'text':
-            # Extract the set text parameters from the undoable
-            undo_seq = undoable[1]
-            undo_direction = undoable[2]
-            undo_text = undoable[3]
+        # Pop the doable from the stack and get its type
+        doable = stackfrom.pop()
+        do_type = doable[0]
+
+        if do_type == 'text':
+            # Extract the set text parameters from the doable
+            do_seq = doable[1]
+            do_direction = doable[2]
+            do_text = doable[3]
 
             # Push the current text for this word to the undo stack
-            old_text = self.get_text(undo_seq, undo_direction)
-            self.undo_stack.append([undo_type, undo_seq, undo_direction, old_text])
+            old_text = self.get_text(do_seq, do_direction)
+            stackto.append([do_type, do_seq, do_direction, old_text])
 
             # and set the text to the popped value
-            self.set_text(undo_seq, undo_direction, undo_text, undo=False)
-
-        pass
+            self.set_text(do_seq, do_direction, do_text, undo=False)
 
     #   ========================================================
     #   to_json and from_json logic
