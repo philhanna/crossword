@@ -16,6 +16,17 @@ class NumberedCell:
         self.a = a
         self.d = d
 
+    def to_json(self):
+        from crossword.util import CrosswordJSONEncoder
+        jsonstr = json.dumps(self, cls=CrosswordJSONEncoder)
+        return jsonstr
+
+    @staticmethod
+    def from_json(jsonstr):
+        from crossword.util import CrosswordJSONDecoder
+        obj = json.loads(jsonstr, cls=CrosswordJSONDecoder)
+        return obj
+
     def contains_across(self, r, c):
         result = r == self.r and c < self.c + self.a
         return result
