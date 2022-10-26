@@ -11,7 +11,7 @@ class CrosswordJSONDecoder(JSONDecoder):
         if '__type__' not in dobj:
             return dobj
         objtype = dobj.pop('__type__')
-        if objtype == NumberedCell.__class__.__name__:
+        if objtype == NumberedCell.__name__:
             return NumberedCell(**dobj)
         else:
             dobj['__type__'] = objtype
