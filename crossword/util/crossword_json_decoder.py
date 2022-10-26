@@ -1,7 +1,5 @@
 from json import JSONDecoder
 
-from crossword.cells import NumberedCell
-
 
 class CrosswordJSONDecoder(JSONDecoder):
     def __init__(self):
@@ -11,6 +9,7 @@ class CrosswordJSONDecoder(JSONDecoder):
         if '__type__' not in dobj:
             return dobj
         objtype = dobj.pop('__type__')
+        from crossword.cells import NumberedCell
         if objtype == NumberedCell.__name__:
             return NumberedCell(**dobj)
         else:
