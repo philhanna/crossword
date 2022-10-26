@@ -8,48 +8,46 @@ from crossword.util import CrosswordJSONEncoder, CrosswordJSONDecoder
 class TestNumberedCellJSON(TestCase):
 
     def test_just_r_and_c(self):
-        numbered_cell = NumberedCell(1, 3, 2)
-        jsonstr = json.dumps(numbered_cell, cls=CrosswordJSONEncoder)
-        actual = json.loads(jsonstr, cls=CrosswordJSONDecoder)
-        self.assertEqual(numbered_cell, actual)
-        self.assertEqual(0, actual.a)
-        self.assertEqual(0, actual.d)
+        nc = NumberedCell(1, 3, 2)
+        jsonstr = nc.to_json()
+        actual = NumberedCell.from_json(jsonstr)
+        self.assertEqual(nc, actual)
 
     def test_with_a(self):
-        numbered_cell = NumberedCell(1, 3, 2, a=4)
-        jsonstr = json.dumps(numbered_cell, cls=CrosswordJSONEncoder)
-        actual = json.loads(jsonstr, cls=CrosswordJSONDecoder)
-        self.assertEqual(numbered_cell, actual)
+        nc = NumberedCell(1, 3, 2, a=4)
+        jsonstr = nc.to_json()
+        actual = NumberedCell.from_json(jsonstr)
+        self.assertEqual(nc, actual)
         self.assertEqual(4, actual.a)
         self.assertEqual(0, actual.d)
 
     def test_with_d(self):
-        numbered_cell = NumberedCell(45, 3, 2, d=46)
-        jsonstr = json.dumps(numbered_cell, cls=CrosswordJSONEncoder)
-        actual = json.loads(jsonstr, cls=CrosswordJSONDecoder)
-        self.assertEqual(numbered_cell, actual)
+        nc = NumberedCell(45, 3, 2, d=46)
+        jsonstr = nc.to_json()
+        actual = NumberedCell.from_json(jsonstr)
+        self.assertEqual(nc, actual)
         self.assertEqual(0, actual.a)
         self.assertEqual(46, actual.d)
 
     def test_with_both(self):
-        numbered_cell = NumberedCell(22, 3, 2, d=46, a=12)
-        jsonstr = json.dumps(numbered_cell, cls=CrosswordJSONEncoder)
-        actual = json.loads(jsonstr, cls=CrosswordJSONDecoder)
-        self.assertEqual(numbered_cell, actual)
+        nc = NumberedCell(22, 3, 2, d=46, a=12)
+        jsonstr = nc.to_json()
+        actual = NumberedCell.from_json(jsonstr)
+        self.assertEqual(nc, actual)
         self.assertEqual(12, actual.a)
         self.assertEqual(46, actual.d)
 
     def test_with_both_as_positional(self):
-        numbered_cell = NumberedCell(4, 3, 2, 12, 46)
-        jsonstr = json.dumps(numbered_cell, cls=CrosswordJSONEncoder)
-        actual = json.loads(jsonstr, cls=CrosswordJSONDecoder)
-        self.assertEqual(numbered_cell, actual)
+        nc = NumberedCell(4, 3, 2, 12, 46)
+        jsonstr = nc.to_json()
+        actual = NumberedCell.from_json(jsonstr)
+        self.assertEqual(nc, actual)
         self.assertEqual(12, actual.a)
         self.assertEqual(46, actual.d)
 
     def test_equals_when_equal(self):
         nca = NumberedCell(17, 3, 2, 4, 5)
-        jsonstra = json.dumps(nca, cls=CrosswordJSONEncoder)
+        jsonstra = nca.to_json()
         ncb = NumberedCell(17, 3, 2, 3 + 1, 4 + 1)
-        jsonstrb = json.dumps(ncb, cls=CrosswordJSONEncoder)
+        jsonstrb = ncb.to_json()
         self.assertEqual(jsonstra, jsonstrb)
