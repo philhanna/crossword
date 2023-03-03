@@ -34,7 +34,7 @@ class Word:
         """ Never called - overridden by subclasses """
         raise RuntimeError("get_crossing_word must be implemented by subclasses")
 
-    def get_crossing_words(self):
+    def get_crossing_words(self) -> list["Word"]:
         """ Finds the list of words that cross this one
 
         Algorithm:
@@ -51,7 +51,7 @@ class Word:
             crossing_words.append(crossing_word)
         return crossing_words
 
-    def get_clear_word(self):
+    def get_clear_word(self) -> str:
         """ Sets to blank all letters of this word
         that are not intersected with completed
         crossing words.
@@ -80,15 +80,15 @@ class Word:
                 after += " "
         return after
 
-    def get_clue(self):
+    def get_clue(self) -> str:
         """ Returns the word's clue """
         return self.clue
 
-    def set_clue(self, clue):
+    def set_clue(self, clue: str) -> None:
         """ Sets the word's clue """
         self.clue = clue
 
-    def get_text(self):
+    def get_text(self) -> str:
         """ Gets the word's text from the puzzle """
         text = ""
         for r, c in self.cell_iterator():
@@ -98,7 +98,7 @@ class Word:
             text += letter
         return text
 
-    def set_text(self, text):
+    def set_text(self, text: str) -> None:
         """ Sets the word's text in the puzzle """
         if len(text) < self.length:
             text += " " * self.length
@@ -109,7 +109,7 @@ class Word:
             self.puzzle.set_cell(r, c, letter)
             i += 1
 
-    def is_complete(self):
+    def is_complete(self) -> bool:
         """ Returns True if this word has no blanks """
         for (r, c) in self.cell_iterator():
             letter = self.puzzle.get_cell(r, c)
@@ -117,7 +117,7 @@ class Word:
                 return False
         return True
 
-    def __str__(self):
+    def __str__(self) -> str:
         text = self.get_text().replace(' ', '.')
         sb = f"{self.location} {self.length} letters '{text}'"
         return sb

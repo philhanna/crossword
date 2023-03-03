@@ -10,7 +10,7 @@ class AcrossWord(Word):
         self.direction = Word.ACROSS
         self.location = f"{seq} across"
 
-    def cell_iterator(self):
+    def cell_iterator(self) -> (int, int):
         """ Generator for iterating through the cells of an across word """
         r = self.numbered_cell.r
         c = self.numbered_cell.c
@@ -18,7 +18,7 @@ class AcrossWord(Word):
             yield r, c
             c += 1
 
-    def get_crossing_word(self, r, c):
+    def get_crossing_word(self, r, c) -> Word:
         x = 0
         for rprime in range(r, 0, -1):
             if self.puzzle.is_black_cell(rprime, c):

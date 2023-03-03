@@ -1,6 +1,8 @@
 import json
+from _typeshed import SupportsLessThan
 from collections import OrderedDict
 from io import StringIO
+from typing import Any
 
 from crossword.cells import NumberedCell
 
@@ -53,7 +55,7 @@ class Grid:
         new_grid = eval("get_grid()")
         return new_grid
 
-    def rotate(self):
+    def rotate(self) -> None:
         """ Rotates the grid 90 degrees counterclockwise """
         self.rotate_stack(self.undo_stack)
         self.rotate_stack(self.redo_stack)
@@ -65,19 +67,19 @@ class Grid:
             self.add_black_cell(rprime, cprime, undo=False)
         self.numbered_cells = None
 
-    def rotate_stack(self, stack):
+    def rotate_stack(self, stack) -> None:
         n = self.n
         for i in range(len(stack)):
             r, c = stack[i]
             stack[i] = self.rotate_coordinates(r, c)
 
-    def rotate_coordinates(self, r, c):
+    def rotate_coordinates(self, r, c) -> (int, int):
         n = self.n
         cprime = r
         rprime = n + 1 - c
         return rprime, cprime
 
-    def symmetric_point(self, r, c):
+    def symmetric_point(self, r, c) -> (int, int):
         """ Returns the (r, c) of the cell at 180 degrees rotation """
         if not (1 <= r <= self.n) or not (1 <= c <= self.n):
             return None
@@ -85,7 +87,7 @@ class Grid:
         cprime = self.n + 1 - c
         return rprime, cprime
 
-    def add_black_cell(self, r, c, undo=True):
+    def add_black_cell(self, r, c, undo=True) -> None:
         """ Marks cell (r, c) as black (also its symmetric cell) """
         if self.is_black_cell(r, c):
             return
@@ -99,7 +101,7 @@ class Grid:
 
         self.numbered_cells = None
 
-    def remove_black_cell(self, r, c):
+    def remove_black_cell(self, r, c) -> None:
         """ Marks cell (r, c) as not black (also its symmetric cell) """
         if not self.is_black_cell(r, c):
             return
@@ -112,11 +114,11 @@ class Grid:
 
         self.numbered_cells = None
 
-    def is_black_cell(self, r, c):
+    def is_black_cell(self, r, c) -> bool:
         """ Returns True is there is a black cell at (r, c) """
         return (r, c) in self.black_cells
 
-    def get_black_cells(self):
+    def get_black_cells(self) -> list[(int, int)]:
         """ Returns the list of (r, c) for each black cell """
         bclist = []
         n = self.n
@@ -126,7 +128,7 @@ class Grid:
                     bclist.append((r, c))
         return bclist
 
-    def get_numbered_cells(self):
+    def get_numbered_cells(self) -> list[NumberedCell]:
         """ Finds list of all cells that start a word """
 
         # If already calculated, return that (lazy instantiation)
@@ -185,7 +187,7 @@ class Grid:
         self.numbered_cells = nclist
         return nclist
 
-    def get_word_count(self):
+    def get_word_count(self) -> int:
         """ Returns the number of words in the grid """
         count = 0
         for nc in self.get_numbered_cells():
@@ -195,9 +197,9 @@ class Grid:
                 count += 1
         return count
 
-    def get_word_lengths(self):
+    def get_word_lengths(self) -> dict[int, dict[str, list]]:
         """ Returns a list of word lengths and words of that length """
-        table = {}
+        table: dict[int, dict[str, list]] = {}
         for nc in self.get_numbered_cells():
             length = nc.a
             if length:
@@ -224,13 +226,13 @@ class Grid:
     #   undo / redo logic
     #   ========================================================
 
-    def undo(self):
+    def undo(self) -> None:
         self.undoredo(self.undo_stack, self.redo_stack)
 
-    def redo(self):
+    def redo(self) -> None:
         self.undoredo(self.redo_stack, self.undo_stack)
 
-    def undoredo(self, stackfrom, stackto):
+    def undoredo(self, stackfrom, stackto) -> None:
 
         if len(stackfrom) == 0:
             return  # Nothing to do
@@ -252,7 +254,7 @@ class Grid:
     #   to_json and from_json logic
     #   ========================================================
 
-    def to_json(self):
+    def to_json(self) -> str:
         """ Returns the JSON string representation of the Grid """
         image = dict()
         image['n'] = self.n
@@ -269,7 +271,7 @@ class Grid:
         return jsonstr
 
     @staticmethod
-    def from_json(jsonstr):
+    def from_json(jsonstr) -> "Grid":
         """ Creates a Grid object from its JSON string representation """
         image = json.loads(jsonstr)
         n = image['n']
@@ -281,7 +283,7 @@ class Grid:
         grid.redo_stack = image.get('redo_stack', [])
         return grid
 
-    def get_statistics(self):
+    def get_statistics(self) -> dict:
         """ Returns a dictionary of grid statistics """
         stats = dict()
         ok, errors = self.validate()
@@ -293,7 +295,7 @@ class Grid:
         stats['blockcount'] = len(self.black_cells)
         return stats
 
-    def validate(self):
+    def validate(self) -> (bool, dict):
         """ Validates the grid according to the NYTimes rules """
 
         # 1. Crosswords must have black square symmetry, which typically comes
@@ -322,7 +324,7 @@ class Grid:
 
         return ok, errors
 
-    def validate_interlock(self):
+    def validate_interlock(self) -> list[str]:
         """ No islands of white cells enclosed in black cells """
 
         # ==============================================================
@@ -411,7 +413,7 @@ class Grid:
 
         return error_list
 
-    def validate_unchecked_squares(self):
+    def validate_unchecked_squares(self) -> list[str]:
         """ Crosswords must not have unchecked squares:
             All letters must be found in both Across and Down answers
         """
@@ -453,7 +455,7 @@ class Grid:
 
         return error_list
 
-    def validate_minimum_word_length(self):
+    def validate_minimum_word_length(self) -> list[str]:
         """ All words must be at least three characters long """
         error_list = list()
 
@@ -465,7 +467,7 @@ class Grid:
 
         return error_list
 
-    def __str__(self):
+    def __str__(self) -> str:
         """ Returns the string representation of the Grid """
         n = self.n
         line = "-" * (n * 2 - 1)
@@ -483,12 +485,12 @@ class Grid:
             output = fp.getvalue()
             return output
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         value = str(self) == str(other)
         return value
 
-    def __id__(self):
+    def __id__(self) -> int:
         return id(str(self))
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(str(self))

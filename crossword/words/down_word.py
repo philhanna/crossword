@@ -10,7 +10,7 @@ class DownWord(Word):
         self.direction = Word.DOWN
         self.location = f"{seq} down"
 
-    def cell_iterator(self):
+    def cell_iterator(self) -> (int, int):
         """ Generator for iterating through the cells of a down word """
         r = self.numbered_cell.r
         c = self.numbered_cell.c
@@ -18,7 +18,7 @@ class DownWord(Word):
             yield r, c
             r += 1
 
-    def get_crossing_word(self, r, c):
+    def get_crossing_word(self, r: int, c: int) -> Word:
         x = 0
         for cprime in range(c, 0, -1):
             if self.puzzle.is_black_cell(r, cprime):

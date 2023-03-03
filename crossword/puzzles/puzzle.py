@@ -3,6 +3,7 @@ import json
 from crossword.cells import NumberedCell
 from crossword.grids import Grid
 from crossword.words import Word, AcrossWord, DownWord
+
 # Do not delete this line! It is necessary so that the import
 # of NumberedCell is never optimized away by the IDE
 dummy_numbered_cell = NumberedCell(1, 1, 1, 1, 1)
@@ -112,7 +113,7 @@ class Puzzle:
         new_puzzle = eval("result")
         return new_puzzle
 
-    def replace_grid(self, newgrid):
+    def replace_grid(self, newgrid) -> None:
         if newgrid.n != self.n:
             raise ValueError("Incompatible grid sizes")
         # Save the JSON image so that clues can be reconstructed
@@ -148,7 +149,7 @@ class Puzzle:
 
         pass  # TODO replace the clues
 
-    def initialize_words(self):
+    def initialize_words(self) -> None:
         # Now populate the across and down words
         self.across_words = {}
         self.down_words = {}
@@ -165,28 +166,28 @@ class Puzzle:
         self.undo_stack = []
         self.redo_stack = []
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         thisjson = self.to_json()
         thatjson = other.to_json()
         return thisjson == thatjson
 
-    def __id__(self):
+    def __id__(self) -> int:
         return id(self.to_json())
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.to_json())
 
     #   ========================================================
     #   Getters and setters
     #   ========================================================
 
-    def get_cell(self, r, c):
+    def get_cell(self, r: int, c: int) -> str:
         return self.cells.get((r, c), None)
 
-    def set_cell(self, r, c, letter):
+    def set_cell(self, r: int, c: int, letter: str) -> None:
         self.cells[(r, c)] = letter
 
-    def get_word(self, seq, direction):
+    def get_word(self, seq: int, direction: str) -> Word:
         """ Returns the word at <seq><direction> """
         word = None
         if direction == Word.ACROSS:
@@ -195,14 +196,14 @@ class Puzzle:
             word = self.get_down_word(seq)
         return word
 
-    def get_text(self, seq, direction):
+    def get_text(self, seq: int, direction: str) -> str:
         """ Returns the text of the word at <seq><directino>"""
         word = self.get_word(seq, direction)
         return word.get_text()
 
-    def set_text(self, seq, direction, text, undo=True):
+    def set_text(self, seq: int, direction: str, text: str, undo: bool = True) -> None:
         """ Sets the text of the word at <seq><direction> """
-        word = self.get_word(seq, direction)
+        word: Word = self.get_word(seq, direction)
         if undo:
             new_value = text
             old_value = word.get_text()
@@ -211,12 +212,12 @@ class Puzzle:
                 self.undo_stack.append(undoable)
         word.set_text(text)
 
-    def get_clue(self, seq, direction):
+    def get_clue(self, seq: int, direction: str) -> str:
         """ Returns the clue of the word at <seq><directino>"""
         word = self.get_word(seq, direction)
         return word.get_clue()
 
-    def set_clue(self, seq, direction, clue):
+    def set_clue(self, seq: int, direction: str, clue: str) -> None:
         """ Sets the clue of the word at <seq><direction> """
         word = self.get_word(seq, direction)
         word.set_clue(clue)
@@ -231,18 +232,18 @@ class Puzzle:
         """ Sets the puzzle title """
         self._title = title
 
-    def get_across_word(self, seq):
+    def get_across_word(self, seq: int) -> Word:
         """ Returns the word for <seq> across, or None"""
         return self.across_words.get(seq, None)
 
-    def get_down_word(self, seq):
+    def get_down_word(self, seq: int) -> Word:
         """ Returns the word for <seq> down, or None"""
         return self.down_words.get(seq, None)
 
-    def is_black_cell(self, r, c):
+    def is_black_cell(self, r: int, c: int) -> bool:
         return (r, c) in self.black_cells
 
-    def get_numbered_cell(self, r, c):
+    def get_numbered_cell(self, r: int, c: int) -> NumberedCell:
         """ Returns the numbered cell that starts at this (r, c), or None """
         result = None
         for nc in self.numbered_cells:
@@ -251,27 +252,29 @@ class Puzzle:
                 break
         return result
 
-    def get_numbered_cell_across(self, r, c):
+    def get_numbered_cell_across(self, r: int, c: int) -> NumberedCell:
+        result = None
         for nc in self.numbered_cells:
             if nc.r == r:
                 for i in range(nc.a):
                     if c == nc.c + i:
                         return nc
-        return None
+        return result
 
-    def get_numbered_cell_down(self, r, c):
+    def get_numbered_cell_down(self, r: int, c: int) -> NumberedCell:
+        result = None
         for nc in self.numbered_cells:
             if nc.c == c:
                 for i in range(nc.d):
                     if r == nc.r + i:
                         return nc
-        return None
+        return result
 
-    def get_word_count(self):
+    def get_word_count(self) -> int:
         """ Returns the number of words in the puzzle """
         return self.grid.get_word_count()
 
-    def get_word_lengths(self):
+    def get_word_lengths(self) -> dict[int, dict[str, list]]:
         """ Returns a list of word lengths and words of that length """
         return self.grid.get_word_lengths()
 
@@ -279,15 +282,15 @@ class Puzzle:
     #   undo / redo logic
     #   ========================================================
 
-    def undo(self):
+    def undo(self) -> None:
         """ Undoes the last change """
         self.undoredo(self.undo_stack, self.redo_stack)
 
-    def redo(self):
+    def redo(self) -> None:
         """ Redoes the last change """
         self.undoredo(self.redo_stack, self.undo_stack)
 
-    def undoredo(self, stackfrom, stackto):
+    def undoredo(self, stackfrom: list, stackto: list):
 
         if len(stackfrom) == 0:
             return  # Nothing to do
@@ -313,7 +316,7 @@ class Puzzle:
     #   to_json and from_json logic
     #   ========================================================
 
-    def to_json(self):
+    def to_json(self) -> str:
         image = dict()
         image['n'] = self.n
         image['title'] = self.title
@@ -362,8 +365,8 @@ class Puzzle:
         return jsonstr
 
     @staticmethod
-    def from_json(jsonstr):
-        image = json.loads(jsonstr)
+    def from_json(jsonstr: str) -> "Puzzle":
+        image: dict = json.loads(jsonstr)
 
         # Create a puzzle of the specified size
         n = image['n']
@@ -410,7 +413,7 @@ class Puzzle:
     #   Internal methods
     #   ========================================================
 
-    def validate(self):
+    def validate(self) -> (bool, list[str]):
         """ Validates puzzle for errors """
 
         grid = self.grid
@@ -427,7 +430,7 @@ class Puzzle:
 
         return ok, errors
 
-    def validate_duplicate_words(self):
+    def validate_duplicate_words(self) -> list[str]:
         """ Checks whether there are any duplicate words """
 
         # Create a map of unique word text to a list of places it's used
@@ -462,7 +465,7 @@ class Puzzle:
 
         return error_list
 
-    def get_statistics(self):
+    def get_statistics(self) -> dict[str, any]:
         """ Returns a dictionary of grid statistics """
         stats = dict()
         ok, errors = self.validate()
@@ -474,7 +477,7 @@ class Puzzle:
         stats['blockcount'] = len(self.black_cells)
         return stats
 
-    def __str__(self):
+    def __str__(self) -> str:
         sb = f'+{"-" * (self.n * 2 - 1)}+' + "\n"
         for r in range(1, self.n + 1):
             if r > 1:
