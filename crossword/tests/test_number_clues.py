@@ -1,10 +1,8 @@
-from unittest import TestCase
-
 from crossword import NumberedCell
 from crossword.tests import TestPuzzle
 
 
-class TestNumberClues(TestCase):
+class TestNumberClues:
 
     def test_number_clues(self):
         puzzle = TestPuzzle.create_puzzle()
@@ -21,12 +19,12 @@ class TestNumberClues(TestCase):
             NumberedCell(10,5,4,a=2)
         ]
         actual = puzzle.numbered_cells
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_nyt(self):
         puzzle = TestPuzzle.create_nyt_puzzle()
         nclist = puzzle.numbered_cells
-        self.assertEqual(124, len(nclist))
+        assert 124 == len(nclist)
 
     def test_contains_across(self):
         # Construct 42 across
@@ -40,10 +38,10 @@ class TestNumberClues(TestCase):
         }
         """
         nc = NumberedCell.from_json(data)
-        self.assertTrue(nc.contains_across(9, 13))
-        self.assertTrue(nc.contains_across(9, 15))
-        self.assertFalse(nc.contains_across(10, 1))
-        self.assertFalse(nc.contains_across(9, 45))
+        assert nc.contains_across(9, 13)
+        assert nc.contains_across(9, 15)
+        assert not nc.contains_across(10, 1)
+        assert not nc.contains_across(9, 45)
 
     def test_contains_down(self):
         # Construct 1 down
@@ -57,7 +55,7 @@ class TestNumberClues(TestCase):
         }
         """
         nc = NumberedCell.from_json(data)
-        self.assertTrue(nc.contains_down(2, 1))
-        self.assertTrue(nc.contains_down(4, 1))
-        self.assertFalse(nc.contains_down(10, 1))
-        self.assertFalse(nc.contains_down(9, 45))
+        assert nc.contains_down(2, 1)
+        assert nc.contains_down(4, 1)
+        assert not nc.contains_down(10, 1)
+        assert not nc.contains_down(9, 45)

@@ -1,11 +1,10 @@
 import os
 import tempfile
-from unittest import TestCase
 
 from crossword import Grid, Puzzle
 
 
-class TestPuzzle(TestCase):
+class TestPuzzle:
 
     @staticmethod
     def create_puzzle():
@@ -356,29 +355,29 @@ class TestPuzzle(TestCase):
     def test_equals(self):
         puzzle1 = self.create_solved_atlantic_puzzle()
         puzzle2 = self.create_solved_atlantic_puzzle()
-        self.assertEqual(puzzle1, puzzle2)
+        assert puzzle1 == puzzle2
 
     def test_hash(self):
         puzzle1 = self.create_solved_atlantic_puzzle()
         puzzle2 = self.create_solved_atlantic_puzzle()
-        self.assertEqual(hash(puzzle1), hash(puzzle2))
+        assert hash(puzzle1) == hash(puzzle2)
 
     def test_cell_type(self):
         puzzle = TestPuzzle.create_puzzle()
         cell = puzzle.get_cell(1, 1)
-        self.assertEqual(type(cell), str)
+        assert type(cell) == str
         cell = puzzle.get_cell(1, 3)
-        self.assertEqual(type(cell), str)
+        assert type(cell) == str
         puzzle.set_cell(1, 5, 'D')
         cell = puzzle.get_cell(1, 5)
-        self.assertEqual(type(cell), str)
+        assert type(cell) == str
 
     def test_set_cell(self):
         n = 5
         puzzle = Puzzle(Grid(n))
         puzzle.set_cell(2, 3, 'D')
         cell = puzzle.get_cell(2, 3)
-        self.assertEqual('D', cell)
+        assert 'D' == cell
         for r in range(1, n + 1):
             if r == 2:
                 continue
@@ -386,7 +385,7 @@ class TestPuzzle(TestCase):
                 if c == 3:
                     continue
                 cell = puzzle.get_cell(r, c)
-                self.assertEqual(Puzzle.WHITE, cell, f'Mismatch at ({r}, {c})')
+                assert Puzzle.WHITE == cell
 
     def test_add_black(self):
         n = 5
@@ -415,7 +414,7 @@ class TestPuzzle(TestCase):
             for c in range(1, n + 1):
                 expected = expected_cells[r - 1][c - 1]
                 actual = puzzle.get_cell(r, c)
-                self.assertEqual(expected, actual, f'Mismatch at ({r},{c})')
+                assert expected == actual
 
     def test_set_across_word(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
@@ -424,7 +423,7 @@ class TestPuzzle(TestCase):
         puzzle.get_across_word(seq).set_text(parm)
         expected = parm
         actual = puzzle.get_across_word(seq).get_text()
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_set_down_word(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
@@ -433,7 +432,7 @@ class TestPuzzle(TestCase):
         puzzle.get_across_word(seq).set_text(parm)
         expected = "BUB"
         actual = puzzle.get_across_word(seq).get_text()
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_save(self):
         puzzle = TestPuzzle.create_solved_atlantic_puzzle()
@@ -455,25 +454,25 @@ class TestPuzzle(TestCase):
 
         # Check some contents
 
-        self.assertEqual(9, puzzle.n)
+        assert 9 == puzzle.n
 
         word = puzzle.get_across_word(8)
-        self.assertEqual("SLIM", word.get_text())
-        self.assertEqual("Reed-like", word.get_clue())
+        assert "SLIM" == word.get_text()
+        assert "Reed-like" == word.get_clue()
 
         word = puzzle.get_down_word(17)
-        self.assertEqual("EHRE", word.get_text())
-        self.assertEqual("Honor, to Fritz", word.get_clue())
+        assert "EHRE" == word.get_text()
+        assert "Honor, to Fritz" == word.get_clue()
 
     def test_word_count(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
         expected = 26
         actual = puzzle.get_word_count()
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_str(self):
         grid = Grid(3)
         puzzle = Puzzle(grid)
         puzzle_string = str(puzzle)
-        self.assertTrue("+-----+" in puzzle_string)
-        self.assertTrue("| | | |" in puzzle_string)
+        assert "+-----+" in puzzle_string
+        assert "| | | |" in puzzle_string

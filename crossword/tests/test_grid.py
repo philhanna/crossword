@@ -1,37 +1,35 @@
-from unittest import TestCase
-
 from crossword import Grid
 from crossword.tests import TestPuzzle
 
 
-class TestGrid(TestCase):
+class TestGrid:
 
     def test_equals(self):
         grid1 = self.get_good_grid()
         grid2 = self.get_good_grid()
-        self.assertEqual(grid1, grid2)
+        assert grid1 == grid2
 
     def test_hash(self):
         grid1 = self.get_good_grid()
         grid2 = self.get_good_grid()
-        self.assertEqual(hash(grid1), hash(grid2))
+        assert hash(grid1) == hash(grid2)
 
     def test_symmetric_point(self):
         grid = Grid(9)
         expected = (8, 5)
         actual = grid.symmetric_point(2, 5)
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_symmetric_point_on_edge(self):
         grid = Grid(9)
         expected = (9, 1)
         actual = grid.symmetric_point(1, 9)
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_bad_symmetric_point(self):
         grid = Grid(9)
         actual = grid.symmetric_point(-3, 45)
-        self.assertIsNone(actual)
+        assert actual is None
 
     def test_add_black_cell(self):
         grid = Grid(9)
@@ -39,7 +37,7 @@ class TestGrid(TestCase):
         grid.add_black_cell(4, 9)
         expected = [(1, 5), (4, 9), (6, 1), (9, 5)]
         actual = grid.get_black_cells()
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_remove_black_cell(self):
         grid = Grid(9)
@@ -48,44 +46,44 @@ class TestGrid(TestCase):
         grid.remove_black_cell(6, 1)
         expected = [(1, 5), (9, 5)]
         actual = grid.get_black_cells()
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_to_json(self):
         grid = Grid(9)
         grid.add_black_cell(1, 5)
         grid.add_black_cell(4, 9)
         jsonstr = grid.to_json()
-        self.assertIsNotNone(jsonstr)
+        assert jsonstr is not None
 
     def test_validate_minimum_word_length_bad(self):
         grid = TestGrid.get_bad_grid()
         error_list = grid.validate_minimum_word_length()
-        self.assertTrue(len(error_list) > 0)
+        assert len(error_list) > 0
 
     def test_validate_minimum_word_length_good(self):
         grid = TestGrid.get_good_grid()
         error_list = grid.validate_minimum_word_length()
-        self.assertTrue(len(error_list) == 0)
+        assert len(error_list) == 0
 
     def test_validate_unchecked_squares_bad(self):
         grid = TestGrid.get_bad_grid()
         error_list = grid.validate_unchecked_squares()
-        self.assertTrue(len(error_list) > 0)
+        assert len(error_list) > 0
 
     def test_validate_unchecked_squares_good(self):
         grid = TestGrid.get_good_grid()
         error_list = grid.validate_unchecked_squares()
-        self.assertTrue(len(error_list) == 0)
+        assert len(error_list) == 0
 
     def test_validate_interlock_bad(self):
         grid = TestGrid.get_bad_grid()
         error_list = grid.validate_interlock()
-        self.assertTrue(len(error_list) > 0)
+        assert len(error_list) > 0
 
     def test_validate_interlock_good(self):
         grid = TestGrid.get_good_grid()
         error_list = grid.validate_interlock()
-        self.assertTrue(len(error_list) == 0)
+        assert len(error_list) == 0
 
     def test_validate_bad(self):
         grid = TestGrid.get_bad_grid()
@@ -95,7 +93,7 @@ class TestGrid(TestCase):
             import json
             jsonstr = json.dumps(errors, indent=2)
             print(jsonstr)
-        self.assertFalse(ok)
+        assert not ok
 
     def test_validate_good(self):
         grid = TestGrid.get_good_grid()
@@ -105,33 +103,33 @@ class TestGrid(TestCase):
             import json
             jsonstr = json.dumps(errors, indent=2)
             print(jsonstr)
-        self.assertTrue(ok)
+        assert ok
 
     def test_grid_from_puzzle(self):
         puzzle = TestPuzzle.create_nyt_daily()
         jsonstr = puzzle.to_json()
         grid = Grid.from_json(jsonstr)
-        self.assertEqual(puzzle.n, grid.n)
+        assert puzzle.n == grid.n
 
     def test_word_count(self):
         grid = TestGrid.get_good_grid()
         expected = 76
         actual = grid.get_word_count()
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_statistics_good(self):
         grid = TestGrid.get_good_grid()
         stats = grid.get_statistics()
-        self.assertTrue(stats['valid'])
-        self.assertListEqual([1, 24, 53, 69], stats['wordlengths'][3]['alist'])
+        assert stats['valid']
+        assert [1, 24, 53, 69] == stats['wordlengths'][3]['alist']
         #print(stats)
 
     def test_statistics_bad(self):
         grid = TestGrid.get_bad_grid()
         stats = grid.get_statistics()
-        self.assertEqual("7 x 7", stats['size'])
-        self.assertEqual(23, stats['wordcount'])
-        self.assertFalse(stats['valid'])
+        assert "7 x 7" == stats['size']
+        assert 23 == stats['wordcount']
+        assert not stats['valid']
         #print(stats)
 
     @staticmethod
@@ -309,5 +307,5 @@ class TestGrid(TestCase):
     def test_str(self):
         grid = Grid(3)
         grid_string = str(grid)
-        self.assertTrue("+-----+" in grid_string)
-        self.assertTrue("| | | |" in grid_string)
+        assert "+-----+" in grid_string
+        assert "| | | |" in grid_string

@@ -1,42 +1,40 @@
-from unittest import TestCase
-
 from crossword import Puzzle, Word
 
 
-class TestPuzzleValidate(TestCase):
+class TestPuzzleValidate:
 
     def test_no_duplicate_words(self):
         puzzle = self.create_test_puzzle()
         errors = puzzle.validate_duplicate_words()
-        self.assertEqual(0, len(errors))
+        assert 0 == len(errors)
 
     def test_duplicate_words(self):
         puzzle = self.create_test_puzzle()
         puzzle.get_word(7, Word.DOWN).set_text("DAB")
         errors = puzzle.validate_duplicate_words()
-        self.assertEqual(1, len(errors))
-        self.assertTrue("1 across" in errors[0])
-        self.assertTrue("7 down" in errors[0])
+        assert 1 == len(errors)
+        assert "1 across" in errors[0]
+        assert "7 down" in errors[0]
 
     def test_ok_valid(self):
         puzzle = self.create_test_puzzle()
         ok, errors = puzzle.validate()
-        self.assertTrue(ok)
-        self.assertEqual(4, len(errors))
-        self.assertTrue("interlock" in errors)
-        self.assertTrue("unchecked" in errors)
-        self.assertTrue("wordlength" in errors)
-        self.assertTrue("dupwords" in errors)
+        assert ok
+        assert 4 == len(errors)
+        assert "interlock" in errors
+        assert "unchecked" in errors
+        assert "wordlength" in errors
+        assert "dupwords" in errors
 
     def test_ok_invalid(self):
         puzzle = self.create_test_puzzle()
         ok, errors = puzzle.validate()
-        self.assertTrue(ok)
-        self.assertEqual(4, len(errors))
-        self.assertTrue("interlock" in errors)
-        self.assertTrue("unchecked" in errors)
-        self.assertTrue("wordlength" in errors)
-        self.assertTrue("dupwords" in errors)
+        assert ok
+        assert 4 == len(errors)
+        assert "interlock" in errors
+        assert "unchecked" in errors
+        assert "wordlength" in errors
+        assert "dupwords" in errors
 
     @staticmethod
     def create_test_puzzle():

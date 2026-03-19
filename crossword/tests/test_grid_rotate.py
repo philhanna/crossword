@@ -1,9 +1,7 @@
-from unittest import TestCase
-
 from crossword import Grid
 
 
-class TestGridRotate(TestCase):
+class TestGridRotate:
 
     def test_rotate(self):
         grid = self.get_good_grid()
@@ -14,7 +12,7 @@ class TestGridRotate(TestCase):
             (6, 6),
             (9, 1), (9, 2),}
         actual = { (r, c) for (r, c) in grid.get_black_cells() }
-        self.assertSetEqual(expected, actual)
+        assert expected == actual
 
     def test_rotate_twice(self):
         grid = self.get_good_grid()
@@ -26,7 +24,7 @@ class TestGridRotate(TestCase):
         grid.undo_stack = []
         grid.redo_stack = []
         newjson = grid.to_json()
-        self.assertEqual(oldjson, newjson)
+        assert oldjson == newjson
 
     @staticmethod
     def get_good_grid():

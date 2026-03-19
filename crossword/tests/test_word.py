@@ -1,35 +1,29 @@
-from unittest import TestCase
-
 from crossword import AcrossWord, Puzzle, Word
 from crossword.tests import TestPuzzle
 
 
-class TestWord(TestCase):
+class TestWord:
 
     def test_is_complete(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
         word = AcrossWord(puzzle, 4)
         word.set_text("HEFT")
-        self.assertTrue(word.is_complete())
+        assert word.is_complete()
         word.set_text("EFT")
-        self.assertFalse(word.is_complete())
+        assert not word.is_complete()
         word.set_text("HEFT")
-        self.assertTrue(word.is_complete())
+        assert word.is_complete()
 
     def test_direction(self):
-        self.assertEqual("A", Word.ACROSS)
-        self.assertEqual("D", Word.DOWN)
+        assert "A" == Word.ACROSS
+        assert "D" == Word.DOWN
 
     def test_get_crossing_words(self):
         puzzle = self.create_puzzle()
         word = puzzle.get_across_word(17)
-        self.assertEqual("NINE", word.get_text())
+        assert "NINE" == word.get_text()
         cw = word.get_crossing_words()
-        self.assertEqual(4, len(cw))
-        #self.assertEqual(puzzle.get_down_word(1).get_text(), cw[0])
-        #self.assertEqual(puzzle.get_down_word(2).get_text(), cw[1])
-        #self.assertEqual(puzzle.get_down_word(3).get_text(), cw[2])
-        #self.assertEqual(puzzle.get_down_word(4).get_text(), cw[3])
+        assert 4 == len(cw)
 
     @staticmethod
     def create_puzzle():

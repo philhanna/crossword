@@ -1,12 +1,11 @@
 import os.path
 import tempfile
-from unittest import TestCase
 
 from crossword import PuzzleToSVG
 from crossword.tests import TestPuzzle
 
 
-class TestPuzzleToSVG(TestCase):
+class TestPuzzleToSVG:
 
     def test_write(self):
         puzzle = TestPuzzle.create_atlantic_puzzle_with_some_words()

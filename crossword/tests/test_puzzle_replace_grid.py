@@ -1,15 +1,15 @@
-from unittest import TestCase
+import pytest
 
 from crossword import Grid, Puzzle, NumberedCell, Word
 from crossword.tests import TestPuzzle
 
 
-class TestPuzzleReplaceGrid(TestCase):
+class TestPuzzleReplaceGrid:
 
     def test_wrong_size(self):
         puzzle = TestPuzzle.create_solved_atlantic_puzzle()
         grid = Grid(5)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             puzzle.replace_grid(grid)
 
     def test_same_grid(self):
@@ -17,7 +17,7 @@ class TestPuzzleReplaceGrid(TestCase):
         grid = Grid.from_json(oldpuzzle.to_json())
         newpuzzle = Puzzle.from_json(oldpuzzle.to_json())
         newpuzzle.replace_grid(grid)
-        self.assertEqual(oldpuzzle, newpuzzle)
+        assert oldpuzzle == newpuzzle
 
     def test_new_grid(self):
         puzzle = TestPuzzle.create_solved_atlantic_puzzle()
@@ -32,11 +32,11 @@ class TestPuzzleReplaceGrid(TestCase):
         new = json.loads(newjson)
 
         # Compare black cells
-        self.assertIn([4, 4], new['black_cells'])
-        self.assertIn([6, 6], new['black_cells'])
+        assert [4, 4] in new['black_cells']
+        assert [6, 6] in new['black_cells']
         new['black_cells'].remove([4, 4])
         new['black_cells'].remove([6, 6])
-        self.assertListEqual(old['black_cells'], new['black_cells'])
+        assert old['black_cells'] == new['black_cells']
 
         # Compare numbered cells
         expected = [
@@ -72,7 +72,7 @@ class TestPuzzleReplaceGrid(TestCase):
             jsonstr = json.dumps(x)
             nc = NumberedCell.from_json(jsonstr)
             actual.append(nc)
-        self.assertListEqual(expected, actual)
+        assert expected == actual
 
         # Compare clues
 
@@ -83,4 +83,4 @@ class TestPuzzleReplaceGrid(TestCase):
         for k, v in newclues.items():
             if k in oldclues:
                 oldclue = oldclues[k]
-                self.assertEqual(oldclue, newclues[k])
+                assert oldclue == newclues[k]

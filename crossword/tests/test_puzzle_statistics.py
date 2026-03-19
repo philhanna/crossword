@@ -1,16 +1,14 @@
-from unittest import TestCase
-
 from crossword import Puzzle, Word
 
 
-class TestPuzzleStatistics(TestCase):
+class TestPuzzleStatistics:
 
     def test_stats(self):
         puzzle = self.create_test_puzzle()
         stats = puzzle.get_statistics()
         expected = "9 x 9"
         actual = stats['size']
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     @staticmethod
     def create_test_puzzle():

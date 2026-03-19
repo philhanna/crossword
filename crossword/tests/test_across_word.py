@@ -1,10 +1,8 @@
-from unittest import TestCase
-
 from crossword import Puzzle, DownWord, AcrossWord
 from crossword.tests import TestPuzzle, TestGrid, TestWord
 
 
-class TestAcrossWord(TestCase):
+class TestAcrossWord:
 
     def test_get(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
@@ -12,7 +10,7 @@ class TestAcrossWord(TestCase):
         DownWord(puzzle, 7).set_text("STS")
         actual = AcrossWord(puzzle, 10).get_text()
         expected = "  OT"
-        self.assertEqual(expected, actual)
+        assert expected == actual
 
     def test_get_crossing_words(self):
         grid = TestGrid.get_good_grid()
@@ -22,7 +20,7 @@ class TestAcrossWord(TestCase):
         expected = [3, 14, 21, 4, 5]
         across_word = puzzle.get_across_word(20)
         actual = [word.seq for word in across_word.get_crossing_words()]
-        self.assertListEqual(expected, actual)
+        assert expected == actual
 
     def test_get_clear_word(self):
         puzzle = TestWord.create_puzzle()
@@ -34,4 +32,4 @@ class TestAcrossWord(TestCase):
         across_word = puzzle.get_across_word(10)
         expected = "E   "
         actual = across_word.get_clear_word()
-        self.assertEqual(expected, actual)
+        assert expected == actual
