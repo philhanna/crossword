@@ -1,0 +1,221 @@
+"""
+Unit tests for GridUseCases
+"""
+
+import pytest
+from unittest.mock import Mock, MagicMock, call
+from crossword import Grid
+from crossword.use_cases.grid_use_cases import GridUseCases
+from crossword.ports.persistence import PersistenceError
+
+
+@pytest.fixture
+def mock_persistence():
+    """Create a mock persistence adapter"""
+    return Mock()
+
+
+@pytest.fixture
+def grid_uc(mock_persistence):
+    """Create a GridUseCases instance with mock persistence"""
+    return GridUseCases(mock_persistence)
+
+
+class TestGridUseCasesCreate:
+    """Tests for create_grid"""
+
+    def test_create_grid_valid_size(self, grid_uc, mock_persistence):
+        """Create a grid with valid size"""
+        grid_uc.create_grid(1, "test_grid", 15)
+        mock_persistence.save_grid.assert_called_once()
+        args = mock_persistence.save_grid.call_args[0]
+        assert args[0] == 1  # user_id
+        assert args[1] == "test_grid"  # name
+        assert isinstance(args[2], Grid)
+        assert args[2].n == 15
+
+    def test_create_grid_invalid_size_zero(self, grid_uc):
+        """Create a grid with invalid size (0)"""
+        with pytest.raises(ValueError, match="Grid size must be at least 1"):
+            grid_uc.create_grid(1, "test", 0)
+
+    def test_create_grid_invalid_size_negative(self, grid_uc):
+        """Create a grid with invalid size (negative)"""
+        with pytest.raises(ValueError, match="Grid size must be at least 1"):
+            grid_uc.create_grid(1, "test", -5)
+
+    def test_create_grid_persistence_error(self, grid_uc, mock_persistence):
+        """Handle persistence error during save"""
+        mock_persistence.save_grid.side_effect = PersistenceError("Disk full")
+        with pytest.raises(PersistenceError, match="Disk full"):
+            grid_uc.create_grid(1, "test", 15)
+
+
+class TestGridUseCasesLoad:
+    """Tests for load_grid"""
+
+    def test_load_grid_success(self, grid_uc, mock_persistence):
+        """Load grid successfully"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.load_grid(1, "test_grid")
+
+        assert result == test_grid
+        mock_persistence.load_grid.assert_called_once_with(1, "test_grid")
+
+    def test_load_grid_not_found(self, grid_uc, mock_persistence):
+        """Load grid that doesn't exist"""
+        mock_persistence.load_grid.side_effect = PersistenceError("Grid not found")
+        with pytest.raises(PersistenceError, match="Grid not found"):
+            grid_uc.load_grid(1, "nonexistent")
+
+
+class TestGridUseCasesDelete:
+    """Tests for delete_grid"""
+
+    def test_delete_grid_success(self, grid_uc, mock_persistence):
+        """Delete grid successfully"""
+        grid_uc.delete_grid(1, "test_grid")
+        mock_persistence.delete_grid.assert_called_once_with(1, "test_grid")
+
+    def test_delete_grid_not_found(self, grid_uc, mock_persistence):
+        """Delete grid that doesn't exist"""
+        mock_persistence.delete_grid.side_effect = PersistenceError("Grid not found")
+        with pytest.raises(PersistenceError, match="Grid not found"):
+            grid_uc.delete_grid(1, "nonexistent")
+
+
+class TestGridUseCasesList:
+    """Tests for list_grids"""
+
+    def test_list_grids_success(self, grid_uc, mock_persistence):
+        """List grids successfully"""
+        mock_persistence.list_grids.return_value = ["grid1", "grid2", "grid3"]
+
+        result = grid_uc.list_grids(1)
+
+        assert result == ["grid1", "grid2", "grid3"]
+        mock_persistence.list_grids.assert_called_once_with(1)
+
+    def test_list_grids_empty(self, grid_uc, mock_persistence):
+        """List grids when none exist"""
+        mock_persistence.list_grids.return_value = []
+
+        result = grid_uc.list_grids(1)
+
+        assert result == []
+
+
+class TestGridUseCasesToggleBlackCell:
+    """Tests for toggle_black_cell"""
+
+    def test_toggle_black_cell_add(self, grid_uc, mock_persistence):
+        """Toggle cell from white to black"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.toggle_black_cell(1, "test_grid", 5, 5)
+
+        assert (5, 5) in result.black_cells
+        mock_persistence.load_grid.assert_called_once_with(1, "test_grid")
+        mock_persistence.save_grid.assert_called_once()
+
+    def test_toggle_black_cell_remove(self, grid_uc, mock_persistence):
+        """Toggle cell from black to white"""
+        test_grid = Grid(15)
+        test_grid.add_black_cell(5, 5, undo=False)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.toggle_black_cell(1, "test_grid", 5, 5)
+
+        # After removing (5,5), it should be white again
+        # Note: symmetric point was also added, so check both are removed
+        assert (5, 5) not in result.black_cells
+        mock_persistence.save_grid.assert_called_once()
+
+    def test_toggle_black_cell_applies_symmetry(self, grid_uc, mock_persistence):
+        """Toggle applies 180-degree symmetry"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.toggle_black_cell(1, "test_grid", 5, 5)
+
+        # Both (5,5) and its symmetric point should be black
+        symmetric = test_grid.symmetric_point(5, 5)
+        assert (5, 5) in result.black_cells
+        assert symmetric in result.black_cells
+
+
+class TestGridUseCasesRotate:
+    """Tests for rotate_grid"""
+
+    def test_rotate_grid_success(self, grid_uc, mock_persistence):
+        """Rotate grid successfully"""
+        test_grid = Grid(15)
+        test_grid.add_black_cell(1, 1, undo=False)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.rotate_grid(1, "test_grid")
+
+        # Grid should be rotated
+        assert result.n == 15
+        mock_persistence.save_grid.assert_called_once()
+
+
+class TestGridUseCasesUndo:
+    """Tests for undo_grid"""
+
+    def test_undo_grid_with_operations(self, grid_uc, mock_persistence):
+        """Undo when there are operations in undo stack"""
+        test_grid = Grid(15)
+        test_grid.add_black_cell(5, 5, undo=True)
+        # Now undo_stack has (5, 5)
+        mock_persistence.load_grid.return_value = test_grid
+
+        assert len(test_grid.undo_stack) > 0, "Test setup: should have undo operations"
+        result = grid_uc.undo_grid(1, "test_grid")
+
+        # Should call save_grid
+        mock_persistence.save_grid.assert_called_once()
+
+    def test_undo_grid_empty_stack(self, grid_uc, mock_persistence):
+        """Undo when undo stack is empty"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        # Should not raise, just do nothing
+        result = grid_uc.undo_grid(1, "test_grid")
+
+        assert result == test_grid
+        mock_persistence.save_grid.assert_called_once()
+
+
+class TestGridUseCasesRedo:
+    """Tests for redo_grid"""
+
+    def test_redo_grid_with_operations(self, grid_uc, mock_persistence):
+        """Redo when there are operations in redo stack"""
+        test_grid = Grid(15)
+        test_grid.add_black_cell(5, 5, undo=True)
+        test_grid.undo()
+        # Now redo_stack has (5, 5)
+        mock_persistence.load_grid.return_value = test_grid
+
+        initial_stack_len = len(test_grid.redo_stack)
+        result = grid_uc.redo_grid(1, "test_grid")
+
+        # After redo, stack should be shorter
+        assert len(result.redo_stack) == initial_stack_len - 1
+        mock_persistence.save_grid.assert_called_once()
+
+    def test_redo_grid_empty_stack(self, grid_uc, mock_persistence):
+        """Redo when redo stack is empty"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        # Should not raise, just do nothing
+        result = grid_uc.redo_grid(1, "test_grid")
+
+        assert result == test_grid
+        mock_persistence.save_grid.assert_called_once()

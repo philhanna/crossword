@@ -256,7 +256,7 @@ class SQLiteAdapter(PersistencePort):
 
     def close(self) -> None:
         """Close the database connection."""
-        if self.conn:
+        if hasattr(self, 'conn') and self.conn:
             self.conn.close()
 
     def __del__(self):
