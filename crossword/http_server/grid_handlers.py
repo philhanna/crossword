@@ -45,7 +45,17 @@ def handle_create_grid(path_params, query_params, body_params, session_token, re
 
         user_id = 1
         app.grid_uc.create_grid(user_id, name, size)
-        return {"status": "created", "name": name, "size": size}
+
+        # Load the grid to return full data for frontend rendering
+        grid = app.grid_uc.load_grid(user_id, name)
+        cells = [False] * (size * size)
+        for idx in grid.black_cells:
+            cells[idx] = True
+
+        return {
+            "size": size,
+            "cells": cells,
+        }
 
     except ValueError as e:
         return {"error": str(e)}
@@ -68,11 +78,14 @@ def handle_load_grid(path_params, query_params, body_params, session_token, requ
         user_id = 1
         grid = app.grid_uc.load_grid(user_id, name)
 
+        # Convert black_cells set to cells array for frontend
+        cells = [False] * (grid.n * grid.n)
+        for idx in grid.black_cells:
+            cells[idx] = True
+
         return {
-            "name": name,
             "size": grid.n,
-            "black_cells": list(grid.black_cells),
-            "grid_json": grid.to_json(),
+            "cells": cells,
         }
 
     except PersistenceError:
@@ -124,12 +137,14 @@ def handle_toggle_black_cell(path_params, query_params, body_params, session_tok
         user_id = 1
         grid = app.grid_uc.toggle_black_cell(user_id, name, r, c)
 
+        # Convert black_cells set to cells array for frontend
+        cells = [False] * (grid.n * grid.n)
+        for idx in grid.black_cells:
+            cells[idx] = True
+
         return {
-            "name": name,
-            "r": r,
-            "c": c,
-            "black_cells": list(grid.black_cells),
-            "grid_json": grid.to_json(),
+            "size": grid.n,
+            "cells": cells,
         }
 
     except PersistenceError:
@@ -151,10 +166,14 @@ def handle_rotate_grid(path_params, query_params, body_params, session_token, re
         user_id = 1
         grid = app.grid_uc.rotate_grid(user_id, name)
 
+        # Convert black_cells set to cells array for frontend
+        cells = [False] * (grid.n * grid.n)
+        for idx in grid.black_cells:
+            cells[idx] = True
+
         return {
-            "name": name,
-            "black_cells": list(grid.black_cells),
-            "grid_json": grid.to_json(),
+            "size": grid.n,
+            "cells": cells,
         }
 
     except PersistenceError:
@@ -176,10 +195,14 @@ def handle_undo_grid(path_params, query_params, body_params, session_token, requ
         user_id = 1
         grid = app.grid_uc.undo_grid(user_id, name)
 
+        # Convert black_cells set to cells array for frontend
+        cells = [False] * (grid.n * grid.n)
+        for idx in grid.black_cells:
+            cells[idx] = True
+
         return {
-            "name": name,
-            "black_cells": list(grid.black_cells),
-            "grid_json": grid.to_json(),
+            "size": grid.n,
+            "cells": cells,
         }
 
     except PersistenceError:
@@ -201,10 +224,14 @@ def handle_redo_grid(path_params, query_params, body_params, session_token, requ
         user_id = 1
         grid = app.grid_uc.redo_grid(user_id, name)
 
+        # Convert black_cells set to cells array for frontend
+        cells = [False] * (grid.n * grid.n)
+        for idx in grid.black_cells:
+            cells[idx] = True
+
         return {
-            "name": name,
-            "black_cells": list(grid.black_cells),
-            "grid_json": grid.to_json(),
+            "size": grid.n,
+            "cells": cells,
         }
 
     except PersistenceError:

@@ -48,7 +48,59 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
         user_id = 1
         app.puzzle_uc.create_puzzle(user_id, name, grid_name)
 
-        return {"status": "created", "name": name, "grid_name": grid_name}
+        # Load the puzzle to return full data for frontend rendering
+        puzzle = app.puzzle_uc.load_puzzle(user_id, name)
+        grid_cells = [False] * (puzzle.n * puzzle.n)
+        for idx in puzzle.black_cells:
+            grid_cells[idx] = True
+
+        # Build puzzle cells with letter and number info
+        puzzle_cells = {}
+
+        words = []
+        for seq, word in sorted(puzzle.across_words.items()):
+            cells_list = list(word.cell_iterator())
+            words.append({
+                "seq": seq,
+                "direction": "across",
+                "answer": word.get_text(),
+                "clue": word.get_clue() or "",
+                "cells": cells_list,
+                "pattern": word.get_text() if word.get_text() else "?" * len(cells_list),
+            })
+
+            # Add cell info for puzzle rendering
+            for idx, (r, c) in enumerate(cells_list):
+                cell_idx = r * puzzle.n + c
+                if cell_idx not in puzzle_cells:
+                    puzzle_cells[cell_idx] = {}
+                if word.get_text() and idx < len(word.get_text()):
+                    puzzle_cells[cell_idx]["letter"] = word.get_text()[idx]
+                # Add number if this is the start of an across word
+                if idx == 0:
+                    puzzle_cells[cell_idx]["number"] = seq
+
+        for seq, word in sorted(puzzle.down_words.items()):
+            cells_list = list(word.cell_iterator())
+            words.append({
+                "seq": seq,
+                "direction": "down",
+                "answer": word.get_text(),
+                "clue": word.get_clue() or "",
+                "cells": cells_list,
+                "pattern": word.get_text() if word.get_text() else "?" * len(cells_list),
+            })
+
+        return {
+            "grid": {
+                "size": puzzle.n,
+                "cells": grid_cells,
+            },
+            "puzzle": {
+                "cells": puzzle_cells,
+                "words": words,
+            }
+        }
 
     except PersistenceError as e:
         return {"error": str(e)}
@@ -69,32 +121,58 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
         user_id = 1
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
 
-        response = {
-            "name": name,
-            "size": puzzle.n,
-            "black_cells": list(puzzle.black_cells),
-            "puzzle_json": puzzle.to_json(),
-            "across_words": {},
-            "down_words": {},
+        # Build grid cells
+        grid_cells = [False] * (puzzle.n * puzzle.n)
+        for idx in puzzle.black_cells:
+            grid_cells[idx] = True
+
+        # Build puzzle cells with letter and number info
+        puzzle_cells = {}
+
+        words = []
+        for seq, word in sorted(puzzle.across_words.items()):
+            cells_list = list(word.cell_iterator())
+            words.append({
+                "seq": seq,
+                "direction": "across",
+                "answer": word.get_text(),
+                "clue": word.get_clue() or "",
+                "cells": cells_list,
+                "pattern": word.get_text() if word.get_text() else "?" * len(cells_list),
+            })
+
+            # Add cell info for puzzle rendering
+            for idx, (r, c) in enumerate(cells_list):
+                cell_idx = r * puzzle.n + c
+                if cell_idx not in puzzle_cells:
+                    puzzle_cells[cell_idx] = {}
+                if word.get_text() and idx < len(word.get_text()):
+                    puzzle_cells[cell_idx]["letter"] = word.get_text()[idx]
+                # Add number if this is the start of an across word
+                if idx == 0:
+                    puzzle_cells[cell_idx]["number"] = seq
+
+        for seq, word in sorted(puzzle.down_words.items()):
+            cells_list = list(word.cell_iterator())
+            words.append({
+                "seq": seq,
+                "direction": "down",
+                "answer": word.get_text(),
+                "clue": word.get_clue() or "",
+                "cells": cells_list,
+                "pattern": word.get_text() if word.get_text() else "?" * len(cells_list),
+            })
+
+        return {
+            "grid": {
+                "size": puzzle.n,
+                "cells": grid_cells,
+            },
+            "puzzle": {
+                "cells": puzzle_cells,
+                "words": words,
+            }
         }
-
-        for seq, word in puzzle.across_words.items():
-            response["across_words"][str(seq)] = {
-                "seq": seq,
-                "cells": [(r, c) for r, c in word.cells],
-                "letters": word.letters(),
-                "clue": word.clue() if hasattr(word, "clue") else "",
-            }
-
-        for seq, word in puzzle.down_words.items():
-            response["down_words"][str(seq)] = {
-                "seq": seq,
-                "cells": [(r, c) for r, c in word.cells],
-                "letters": word.letters(),
-                "clue": word.clue() if hasattr(word, "clue") else "",
-            }
-
-        return response
 
     except PersistenceError:
         return {"error": f"Puzzle not found: {name}"}
@@ -189,9 +267,9 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
         return {
             "seq": seq,
             "direction": direction,
-            "cells": [(r, c) for r, c in word.cells],
-            "letters": word.letters(),
-            "clue": word.clue() if hasattr(word, "clue") else "",
+            "cells": list(word.cell_iterator()),
+            "answer": word.get_text(),
+            "clue": word.get_clue() or "",
         }
 
     except ValueError as e:
@@ -254,9 +332,38 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
         user_id = 1
         puzzle = app.puzzle_uc.undo_puzzle(user_id, name)
 
+        # Build response with full puzzle data
+        grid_cells = [False] * (puzzle.n * puzzle.n)
+        for idx in puzzle.black_cells:
+            grid_cells[idx] = True
+
+        puzzle_cells = {}
+        for r in range(puzzle.n):
+            for c in range(puzzle.n):
+                cell_idx = r * puzzle.n + c
+                if puzzle_cells.get(cell_idx) is None:
+                    puzzle_cells[cell_idx] = {}
+
+                for seq, word in puzzle.across_words.items():
+                    if (r, c) in word.cells:
+                        cell_idx_in_word = word.cells.index((r, c))
+                        if word.letters() and cell_idx_in_word < len(word.letters()):
+                            puzzle_cells[cell_idx]["letter"] = word.letters()[cell_idx_in_word]
+
+                for seq, word in puzzle.across_words.items():
+                    if word.cells and word.cells[0] == (r, c):
+                        puzzle_cells[cell_idx]["number"] = seq
+                        break
+
+        words = []
+        for seq, word in sorted(puzzle.across_words.items()):
+            words.append({"seq": seq, "direction": "across", "clue": word.clue() if hasattr(word, "clue") else ""})
+        for seq, word in sorted(puzzle.down_words.items()):
+            words.append({"seq": seq, "direction": "down", "clue": word.clue() if hasattr(word, "clue") else ""})
+
         return {
-            "name": name,
-            "puzzle_json": puzzle.to_json(),
+            "grid": {"size": puzzle.n, "cells": grid_cells},
+            "puzzle": {"cells": puzzle_cells, "words": words},
         }
 
     except PersistenceError:
@@ -278,9 +385,38 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
         user_id = 1
         puzzle = app.puzzle_uc.redo_puzzle(user_id, name)
 
+        # Build response with full puzzle data
+        grid_cells = [False] * (puzzle.n * puzzle.n)
+        for idx in puzzle.black_cells:
+            grid_cells[idx] = True
+
+        puzzle_cells = {}
+        for r in range(puzzle.n):
+            for c in range(puzzle.n):
+                cell_idx = r * puzzle.n + c
+                if puzzle_cells.get(cell_idx) is None:
+                    puzzle_cells[cell_idx] = {}
+
+                for seq, word in puzzle.across_words.items():
+                    if (r, c) in word.cells:
+                        cell_idx_in_word = word.cells.index((r, c))
+                        if word.letters() and cell_idx_in_word < len(word.letters()):
+                            puzzle_cells[cell_idx]["letter"] = word.letters()[cell_idx_in_word]
+
+                for seq, word in puzzle.across_words.items():
+                    if word.cells and word.cells[0] == (r, c):
+                        puzzle_cells[cell_idx]["number"] = seq
+                        break
+
+        words = []
+        for seq, word in sorted(puzzle.across_words.items()):
+            words.append({"seq": seq, "direction": "across", "clue": word.clue() if hasattr(word, "clue") else ""})
+        for seq, word in sorted(puzzle.down_words.items()):
+            words.append({"seq": seq, "direction": "down", "clue": word.clue() if hasattr(word, "clue") else ""})
+
         return {
-            "name": name,
-            "puzzle_json": puzzle.to_json(),
+            "grid": {"size": puzzle.n, "cells": grid_cells},
+            "puzzle": {"cells": puzzle_cells, "words": words},
         }
 
     except PersistenceError:

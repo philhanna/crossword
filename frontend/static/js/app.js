@@ -183,40 +183,130 @@ function setupEventListeners() {
     });
 
     // Grid toolbar buttons
-    document.getElementById('btn-rotate-grid').addEventListener('click', () => {
-        console.log('Rotate grid');
+    document.getElementById('btn-rotate-grid').addEventListener('click', async () => {
+        const gridName = State.get('currentGrid');
+        if (!gridName) return;
+        try {
+            showStatus('Rotating grid...');
+            const rotated = await CrosswordAPI.rotateGrid(gridName);
+            GridEditor.render(rotated);
+            showStatus('Grid rotated');
+        } catch (err) {
+            showError(`Failed to rotate grid: ${err.message}`);
+        }
     });
 
-    document.getElementById('btn-undo-grid').addEventListener('click', () => {
-        console.log('Undo grid');
+    document.getElementById('btn-undo-grid').addEventListener('click', async () => {
+        const gridName = State.get('currentGrid');
+        if (!gridName) return;
+        try {
+            showStatus('Undoing...');
+            const undone = await CrosswordAPI.undoGrid(gridName);
+            GridEditor.render(undone);
+            showStatus('Undo complete');
+        } catch (err) {
+            showError(`Failed to undo: ${err.message}`);
+        }
     });
 
-    document.getElementById('btn-redo-grid').addEventListener('click', () => {
-        console.log('Redo grid');
+    document.getElementById('btn-redo-grid').addEventListener('click', async () => {
+        const gridName = State.get('currentGrid');
+        if (!gridName) return;
+        try {
+            showStatus('Redoing...');
+            const redone = await CrosswordAPI.redoGrid(gridName);
+            GridEditor.render(redone);
+            showStatus('Redo complete');
+        } catch (err) {
+            showError(`Failed to redo: ${err.message}`);
+        }
     });
 
-    document.getElementById('btn-delete-grid').addEventListener('click', () => {
-        console.log('Delete grid');
+    document.getElementById('btn-delete-grid').addEventListener('click', async () => {
+        const gridName = State.get('currentGrid');
+        if (!gridName) return;
+        if (!confirm(`Delete grid "${gridName}"? This cannot be undone.`)) return;
+        try {
+            showStatus('Deleting grid...');
+            await CrosswordAPI.deleteGrid(gridName);
+            showStatus('Grid deleted');
+            returnToList();
+            await loadGridsAndPuzzles();
+        } catch (err) {
+            showError(`Failed to delete grid: ${err.message}`);
+        }
     });
 
     // Puzzle toolbar buttons
-    document.getElementById('btn-undo-puzzle').addEventListener('click', () => {
-        console.log('Undo puzzle');
+    document.getElementById('btn-undo-puzzle').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (!puzzleName) return;
+        try {
+            showStatus('Undoing...');
+            const undone = await CrosswordAPI.undoPuzzle(puzzleName);
+            PuzzleEditor.render(undone);
+            showStatus('Undo complete');
+        } catch (err) {
+            showError(`Failed to undo: ${err.message}`);
+        }
     });
 
-    document.getElementById('btn-redo-puzzle').addEventListener('click', () => {
-        console.log('Redo puzzle');
+    document.getElementById('btn-redo-puzzle').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (!puzzleName) return;
+        try {
+            showStatus('Redoing...');
+            const redone = await CrosswordAPI.redoPuzzle(puzzleName);
+            PuzzleEditor.render(redone);
+            showStatus('Redo complete');
+        } catch (err) {
+            showError(`Failed to redo: ${err.message}`);
+        }
     });
 
-    document.getElementById('btn-save-puzzle').addEventListener('click', () => {
-        console.log('Save puzzle');
+    document.getElementById('btn-save-puzzle').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (!puzzleName) return;
+        try {
+            showStatus('Puzzle saved');
+            // Changes are auto-saved via API calls, but show confirmation
+        } catch (err) {
+            showError(`Failed to save: ${err.message}`);
+        }
     });
 
-    document.getElementById('btn-delete-puzzle').addEventListener('click', () => {
-        console.log('Delete puzzle');
+    document.getElementById('btn-delete-puzzle').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (!puzzleName) return;
+        if (!confirm(`Delete puzzle "${puzzleName}"? This cannot be undone.`)) return;
+        try {
+            showStatus('Deleting puzzle...');
+            await CrosswordAPI.deletePuzzle(puzzleName);
+            showStatus('Puzzle deleted');
+            returnToList();
+            await loadGridsAndPuzzles();
+        } catch (err) {
+            showError(`Failed to delete puzzle: ${err.message}`);
+        }
     });
 
-    document.getElementById('btn-export-xml').addEventListener('click', () => {
-        console.log('Export XML');
+    document.getElementById('btn-export-xml').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (!puzzleName) return;
+        try {
+            showStatus('Exporting XML...');
+            const xml = await CrosswordAPI.exportPuzzleXML(puzzleName);
+            // Create a download link
+            const blob = new Blob([xml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${puzzleName}.xml`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showStatus('XML exported');
+        } catch (err) {
+            showError(`Failed to export: ${err.message}`);
+        }
     });
 }
