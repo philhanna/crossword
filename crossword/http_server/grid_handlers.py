@@ -12,6 +12,7 @@ Routes:
   POST   /api/grids/<name>/redo          → redo_grid
 """
 
+import traceback
 from crossword.ports.persistence import PersistenceError
 
 
@@ -119,6 +120,7 @@ def handle_toggle_black_cell(path_params, query_params, body_params, session_tok
     """
     Toggle a black cell in a grid.
     PUT /api/grids/<name>/cells/<r>/<c>
+    Note: Frontend sends 0-indexed coordinates, grid expects 1-indexed
     """
     try:
         name = path_params[0] if len(path_params) > 0 else None
@@ -129,8 +131,8 @@ def handle_toggle_black_cell(path_params, query_params, body_params, session_tok
             return {"error": "Missing name, r, or c"}
 
         try:
-            r = int(r)
-            c = int(c)
+            r = int(r) + 1  # Convert 0-indexed to 1-indexed
+            c = int(c) + 1  # Convert 0-indexed to 1-indexed
         except ValueError:
             return {"error": "r and c must be integers"}
 
@@ -150,7 +152,9 @@ def handle_toggle_black_cell(path_params, query_params, body_params, session_tok
     except PersistenceError:
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
-        return {"error": str(e)}
+        print(f"ERROR in handle_toggle_black_cell: {e}")
+        print(traceback.format_exc())
+        return {"error": f"Toggle failed: {str(e)}"}
 
 
 def handle_rotate_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):

@@ -206,6 +206,7 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
     Set a letter in a puzzle cell.
     PUT /api/puzzles/<name>/cells/<r>/<c>
     Body: { "letter": "A" }
+    Note: Frontend sends 0-indexed coordinates, puzzle expects 1-indexed
     """
     try:
         name = path_params[0] if len(path_params) > 0 else None
@@ -219,8 +220,8 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
             return {"error": "Missing 'letter'"}
 
         try:
-            r = int(r)
-            c = int(c)
+            r = int(r) + 1  # Convert 0-indexed to 1-indexed
+            c = int(c) + 1  # Convert 0-indexed to 1-indexed
         except ValueError:
             return {"error": "r and c must be integers"}
 
@@ -232,7 +233,6 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
             "r": r,
             "c": c,
             "letter": letter.upper(),
-            "puzzle_json": puzzle.to_json(),
         }
 
     except ValueError as e:
