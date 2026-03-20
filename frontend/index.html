@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<!-- ================ header ================ -->
+<head>
+<title>Crossword Puzzle Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+<div class="w3-container"><h1>Crossword Puzzle Editor</h1></div>
+
+<!-- ================ menu ================ -->
+
+<div class="w3-bar w3-blue-gray">
+
+  <!-- Grid menu -->
+  <div class="w3-dropdown-hover w3-blue-gray">
+    <button class="w3-button">Grid</button>
+    <div class="w3-dropdown-content w3-bar-block w3-card-4">
+      <a id="menu-grid-new"              class="w3-bar-item w3-button" onclick="do_grid_new()">New grid...</a>
+      <a id="menu-grid-new-from-puzzle"  class="w3-bar-item w3-button" onclick="do_grid_new_from_puzzle()">New grid from puzzle...</a>
+      <a id="menu-grid-open"             class="w3-bar-item w3-button" onclick="do_grid_open()">Open grid...</a>
+      <a id="menu-grid-save"             class="w3-bar-item w3-button" onclick="do_grid_save()">Save grid</a>
+      <a id="menu-grid-save-as"          class="w3-bar-item w3-button" onclick="do_grid_save_as()">Save grid as...</a>
+      <a id="menu-grid-close"            class="w3-bar-item w3-button" onclick="do_grid_close()">Close grid</a>
+      <a id="menu-grid-delete"           class="w3-bar-item w3-button" onclick="do_grid_delete()">Delete grid</a>
+    </div>
+  </div>
+
+  <!-- Puzzle menu -->
+  <div class="w3-dropdown-hover w3-blue-gray">
+    <button class="w3-button">Puzzle</button>
+    <div class="w3-dropdown-content w3-bar-block w3-card-4">
+      <a id="menu-puzzle-new"            class="w3-bar-item w3-button" onclick="do_puzzle_new()">New puzzle...</a>
+      <a id="menu-puzzle-open"           class="w3-bar-item w3-button" onclick="do_puzzle_open()">Open puzzle...</a>
+      <a id="menu-puzzle-save"           class="w3-bar-item w3-button" onclick="do_puzzle_save()">Save puzzle</a>
+      <a id="menu-puzzle-save-as"        class="w3-bar-item w3-button" onclick="do_puzzle_save_as()">Save puzzle as...</a>
+      <a id="menu-puzzle-close"          class="w3-bar-item w3-button" onclick="do_puzzle_close()">Close puzzle</a>
+      <a id="menu-puzzle-delete"         class="w3-bar-item w3-button" onclick="do_puzzle_delete()">Delete puzzle</a>
+    </div>
+  </div>
+
+  <!-- Publish menu -->
+  <div class="w3-dropdown-hover w3-blue-gray">
+    <button class="w3-button">Publish</button>
+    <div class="w3-dropdown-content w3-bar-block w3-card-4">
+      <a id="menu-publish-acrosslite"    class="w3-bar-item w3-button" onclick="do_publish('puz')">Across Lite format</a>
+      <a id="menu-publish-cwcompiler"    class="w3-bar-item w3-button" onclick="do_publish('xml')">Crossword Compiler format</a>
+      <a id="menu-publish-nytimes"       class="w3-bar-item w3-button" onclick="do_publish('nyt')">New York Times format</a>
+    </div>
+  </div>
+
+  <a class="w3-bar-item w3-button w3-right"
+     href="https://github.com/philhanna/crossword/wiki"
+     target="_blank">Help</a>
+</div>
+
+<!-- ================ main content ================ -->
+
+<div class="w3-cell-row">
+  <!-- LHS: grid / chooser panel (45%) -->
+  <div id="lhs" class="w3-cell" style="width:45%;padding-top:0"></div>
+  <!-- RHS: clues / suggestions panel (55%) -->
+  <div id="rhs" class="w3-cell" style="width:55%"></div>
+</div>
+
+<!-- ================ footer ================ -->
+
+<!-- Message box dialog (OK / Cancel) -->
+<div id="mb" class="w3-modal" style="display:none">
+  <div class="w3-modal-content w3-card-4" style="width:30%">
+    <div class="w3-blue-gray w3-center">
+      <span class="w3-button w3-display-topright" onclick="hideElement('mb')">&times;</span>
+      <h3 id="mb-title"></h3>
+    </div>
+    <div class="w3-container">
+      <div class="w3-section">
+        <span id="mb-prompt"></span>
+      </div>
+      <div class="w3-section w3-center">
+        <a class="w3-button w3-border w3-round w3-gray"
+           id="mb-ok"
+           href="#"
+           style="width:100px">OK</a>
+        <button class="w3-button w3-border w3-round w3-gray"
+                onclick="hideElement('mb')"
+                style="width:100px">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Input box dialog (text input + OK / Cancel) -->
+<div id="ib" class="w3-modal" style="display:none">
+  <div class="w3-modal-content w3-card-4" style="width:30%">
+    <div class="w3-blue-gray w3-center">
+      <span class="w3-button w3-display-topright" onclick="hideElement('ib')">&times;</span>
+      <h3 id="ib-title"></h3>
+    </div>
+    <div class="w3-section">
+      <span id="ib-prompt"></span>
+    </div>
+    <form id="ib-form" name="ib-form" class="w3-container">
+      <div class="w3-section">
+        <label id="ib-label"></label>
+        <input type="text" id="ib-input" name="ib-input" value="" required>
+        <div class="w3-section w3-center">
+          <button class="w3-button w3-border w3-round w3-gray"
+                  id="ib-ok"
+                  type="submit"
+                  value="OK"
+                  style="width:100px">OK</button>
+          <button class="w3-button w3-border w3-round w3-gray"
+                  onclick="hideElement('ib');return false;"
+                  style="width:100px">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Chooser dialog (scrollable list of grids or puzzles) -->
+<div id="ch" class="w3-modal" style="display:none">
+  <div class="w3-modal-content w3-card-4" style="width:40%">
+    <div class="w3-blue-gray w3-center">
+      <span class="w3-button w3-display-topright" onclick="hideElement('ch')">&times;</span>
+      <h3 id="ch-title"></h3>
+    </div>
+    <div id="ch-list" class="w3-container chooser-list"></div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

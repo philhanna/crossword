@@ -1,0 +1,902 @@
+
+<div class="w3-container">
+    <div id="preview-dialog" class="w3-modal" style="display:none">
+        <div id="preview-container" class="w3-modal-content" style="width:30%" onclick="hideElement('preview-dialog')">
+            <div class="w3-container w3-blue-gray">
+                <span id="preview-heading"></span>
+                <span class="w3-display-topright w3-hover-red" onclick="hideElement('preview-dialog');">&nbsp;&nbsp;&times;&nbsp;&nbsp;</span>
+            </div>
+            <div id="preview-svgstr" style="text-align:center"></div>
+        </div>
+    </div>
+</div><html>
+<!--- ================ header ================ -->
+<head>
+<title>Crossword Puzzle Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+h1 {
+    font-size: 170%;
+}
+h2 {
+    font-size: 150%;
+}
+h3 {
+    padding-top: 5px; /* This was the key! */
+    margin: 0;
+    font-size: 130%;
+    height: 40px;
+    vertical-align: bottom;
+}
+.chooser-list {
+    overflow:scroll;
+    overflow-x:hidden;
+    height:500px;
+}
+.chooser-list a {
+    text-decoration:none;
+}
+
+.crosstb {
+    vertical-align: top;
+    font-size: 12px;
+}
+.crosstb-icon { font-size: 15px; }
+
+.clue-list {
+    overflow:scroll;
+    overflow-x:hidden;
+    height:436px;
+    width:95%;
+    line-height:95%;
+}
+.clue-list a {
+    text-decoration:none;
+}
+.clue-list li {
+    font-size: 11pt;
+    font-family: Verdana;
+}
+</style>
+<script>
+// Global variables
+let PUZZLE_CLICK_STATE = 0;
+let CLICK_EVENT;
+const BOXSIZE = 32;
+
+function not_yet(fname) {
+    alert(`${fname} is not yet implemented...`);
+}
+function showElement(id) {
+    document.getElementById(id).style.display = "block";
+}
+function hideElement(id) {
+    document.getElementById(id).style.display = "none";
+}
+function do_grid_new() {
+    const title = "New grid";
+    const label = "<b>Grid size:</b> <em>(a single odd positive integer)</em>";
+    const value = "";
+    const action = "javascript:validateNewGridFormAndSubmit()";
+    const method = "";
+    inputBox(title, label, value, action, method);
+}
+function do_grid_new_from_puzzle() {
+
+}
+function validateNewGridFormAndSubmit() {
+    let n = document.forms["ib-form"]["ib-input"].value;
+    if (isNaN(n)) {
+        alert(n + " is not a number");
+        return false;
+    }
+    n = Number(n);
+    if (n % 2 == 0) {
+        alert(n + " is not an odd number");
+        return false;
+    }
+    if (n < 0) {
+        alert(n + " is not a positive number");
+        return false;
+    }
+    hideElement("ib");
+    let url = "/grid-new";
+    url += `?n=${n}`;
+    window.location.href=url;
+}
+</script>
+</head>
+
+<body>
+<div class="w3-container"><h1>Crossword Puzzle Editor</h1></div>
+
+<!--- ================ menu ================ -->
+
+<div class="w3-bar w3-blue-gray">
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Grid</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+<a class="w3-bar-item w3-button w3-disabled" >New grid...</a>
+<a class="w3-bar-item w3-button w3-disabled" >New grid from puzzle...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Open grid...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Save grid</a>
+<a class="w3-bar-item w3-button w3-disabled" >Save grid as...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Close grid</a>
+<a class="w3-bar-item w3-button w3-disabled" >Delete grid</a>
+      </div>
+   </div>
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Puzzle</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+<a class="w3-bar-item w3-button w3-disabled" >New puzzle...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Open puzzle...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Save puzzle</a>
+<a class="w3-bar-item w3-button w3-disabled" >Save puzzle as...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Close puzzle</a>
+<a class="w3-bar-item w3-button w3-disabled" >Delete puzzle</a>
+      </div>
+   </div>
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Publish</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+<a class="w3-bar-item w3-button"   href="/puzzle-chooser//puzzle-publish-acrosslite"   >Across Lite format</a>
+<a class="w3-bar-item w3-button"   href="/puzzle-chooser//puzzle-publish-cwcompiler"   >Crossword Compiler format</a>
+<a class="w3-bar-item w3-button"   href="/puzzle-chooser//puzzle-publish-nytimes"   >New York Times format</a>
+      </div>
+   </div>
+   <a class="w3-bar-item w3-button w3-right"
+      href="https://github.com/philhanna/crossword/wiki"
+   >Help</a>
+</div>
+
+<!-- ================ header block ================ -->
+
+
+
+<div class="w3-cell-row">
+   <!-- ================ LHS block ================ -->
+   <div class="w3-cell" style="width:45%;padding-top:0">
+   
+<script>
+function cancel_dialog() {
+    let url;
+    
+    url = "/";
+    
+    window.location.href = url;
+}
+function do_grid_preview(gridname) {
+    const xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            const jsonstr = this.responseText;
+            const obj = JSON.parse(jsonstr);
+            document.getElementById("preview-container").style.width = obj.width;
+            document.getElementById("preview-heading").innerHTML = obj.heading;
+            document.getElementById("preview-svgstr").innerHTML = obj.svgstr;
+            showElement("preview-dialog");
+        }
+    };
+    const url = "/grid-preview" + "?gridname=" + gridname;
+    xhttp.open("GET", url, true);
+    xhttp.send();
+}
+function do_puzzle_preview(puzzlename) {
+    const xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            const jsonstr = this.responseText;
+            const obj = JSON.parse(jsonstr);
+            document.getElementById("preview-container").style.width = obj.width;
+            document.getElementById("preview-heading").innerHTML = obj.heading;
+            document.getElementById("preview-svgstr").innerHTML = obj.svgstr;
+            showElement("preview-dialog");
+        }
+    };
+    const url = "/puzzle-preview" + "?puzzlename=" + puzzlename;
+    xhttp.open("GET", url, true);
+    xhttp.send();
+}
+</script>
+
+<div class="w3-container w3-margin-top">
+    <div class="w3-display-container">
+        <div class="w3-blue-gray w3-center">
+        <h3>Puzzle chooser</h3>
+        <span class="w3-button w3-display-topright w3-hover-red w3-small" onclick="cancel_dialog()">&times;</span>
+        </div>
+        <div class="w3-container">
+            <p>Choose from the following puzzles:</p>
+            <div class="w3-section">
+                <ul class="w3-ul w3-card-2 chooser-list">
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('puzz1')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=puzz1">
+                            <span>puzz1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('testpuzz')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=testpuzz">
+                            <span>testpuzz</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-10')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-10">
+                            <span>disney-10</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('Puzzle9')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=Puzzle9">
+                            <span>Puzzle9</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('temp')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=temp">
+                            <span>temp</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('moviequotes')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=moviequotes">
+                            <span>moviequotes</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('palindrome')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=palindrome">
+                            <span>palindrome</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('CanterburyTales')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=CanterburyTales">
+                            <span>CanterburyTales</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-9')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-9">
+                            <span>disney-9</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('rhymetime')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=rhymetime">
+                            <span>rhymetime</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-8')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-8">
+                            <span>disney-8</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('lioness')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=lioness">
+                            <span>lioness</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('21x21')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=21x21">
+                            <span>21x21</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('money')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=money">
+                            <span>money</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-7')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-7">
+                            <span>disney-7</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-6')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-6">
+                            <span>disney-6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-5')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-5">
+                            <span>disney-5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('corn-3')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=corn-3">
+                            <span>corn-3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-4')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-4">
+                            <span>disney-4</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-3')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-3">
+                            <span>disney-3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-2')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-2">
+                            <span>disney-2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney">
+                            <span>disney</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('aug0220')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=aug0220">
+                            <span>aug0220</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('altest3')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=altest3">
+                            <span>altest3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('canterbury')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=canterbury">
+                            <span>canterbury</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('disney-1')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=disney-1">
+                            <span>disney-1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('firstplace')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=firstplace">
+                            <span>firstplace</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('rest-2')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=rest-2">
+                            <span>rest-2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('firstplace152')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=firstplace152">
+                            <span>firstplace152</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('chain4')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=chain4">
+                            <span>chain4</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('chain4b')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=chain4b">
+                            <span>chain4b</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('taut')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=taut">
+                            <span>taut</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('acts')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=acts">
+                            <span>acts</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('redoubled')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=redoubled">
+                            <span>redoubled</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('rest-theme')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=rest-theme">
+                            <span>rest-theme</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('puzzle-2')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=puzzle-2">
+                            <span>puzzle-2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('movies')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=movies">
+                            <span>movies</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('currency')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=currency">
+                            <span>currency</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('dogs')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=dogs">
+                            <span>dogs</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('boll')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=boll">
+                            <span>boll</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('homer')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=homer">
+                            <span>homer</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('puzzle-1')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=puzzle-1">
+                            <span>puzzle-1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('rest')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=rest">
+                            <span>rest</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('latest')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=latest">
+                            <span>latest</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('magic')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=magic">
+                            <span>magic</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('vieux pont')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=vieux%20pont">
+                            <span>vieux pont</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('atlantic')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=atlantic">
+                            <span>atlantic</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('nyt0610')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=nyt0610">
+                            <span>nyt0610</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('forecast')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=forecast">
+                            <span>forecast</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('nyt0609')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=nyt0609">
+                            <span>nyt0609</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('breaking-good')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=breaking-good">
+                            <span>breaking-good</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('forecast-theme')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=forecast-theme">
+                            <span>forecast-theme</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('orchard')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=orchard">
+                            <span>orchard</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_puzzle_preview('money-talks')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-new-from-puzzle?puzzlename=money-talks">
+                            <span>money-talks</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+   </div>
+   <!-- ================ RHS block ================ -->
+   <div class="w3-cell" style="width:55%">
+   
+   
+   </div>
+</div>
+<!--- ================ footer ================ -->
+
+
+
+<script>
+    function messageBox(title, prompt, ok) {
+        document.getElementById("mb-title").innerHTML = title;
+        document.getElementById("mb-prompt").innerHTML = prompt;
+        document.getElementById("mb-ok").setAttribute("href", ok);
+        document.getElementById("mb").style.display = "block";
+    }
+</script>
+<div id="mb" class="w3-modal" style="display:none">
+    <div class="w3-modal-content w3-card-4" style="width:30%">
+        <div class="w3-blue-gray w3-center">
+            <span class="w3-button w3-display-topright" onclick="hideElement('mb')">&times;</span>
+            <h3 id="mb-title"></h3>
+        </div>
+        <div class="w3-container">
+            <div class="w3-section">
+                <span id="mb-prompt"></span>
+            </div>
+            <div class="w3-section w3-center">
+                <!-- OK button -->
+                <a class="w3-button w3-border w3-round w3-gray"
+                   id="mb-ok"
+                   href="#"
+                   style="width:100px">OK</a>
+                <!-- Cancel button -->
+                <button class="w3-button w3-border w3-round w3-gray"
+                        onclick="hideElement('mb')"
+                        style="width:100px">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function inputBox(title, label, value, action, method) {
+    document.getElementById("ib-title").innerHTML = title;
+    document.getElementById("ib-label").innerHTML = label;
+    document.getElementById("ib-input").value = value;
+    document.getElementById("ib-form").setAttribute("action", action);
+    if (method != "") {
+        document.getElementById("ib-form").method = method;
+    }
+    document.getElementById("ib").style.display = "block";
+}
+function inputBoxSubmit() {
+    alert("DEBUG: submit_function not specified");
+}
+</script>
+<div id="ib" class="w3-modal" style="display:none">
+    <div class="w3-modal-content w3-card-4" style="width:30%">
+        <div class="w3-blue-gray w3-center">
+            <span class="w3-button w3-display-topright" onclick="hideElement('ib')">&times;</span>
+            <h3 id="ib-title"></h3>
+        </div>
+        <div class="w3-section">
+            <span id="ib-prompt"></span>
+        </div>
+        <form id="ib-form" name="ib-form" class="w3-container">
+            <div class="w3-section">
+                <label id="ib-label"></label>
+                <input type="text" id="ib-input" name="ib-input" value="" required></input>
+                <div class="w3-section w3-center">
+                    <!-- OK button -->
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            id="ib-ok"
+                            type="submit"
+                            value="OK"
+                            style="width:100px">OK</button>
+                    <!-- Cancel button -->
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            onclick="hideElement('ib')"
+                            style="width:100px">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</body>

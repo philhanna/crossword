@@ -1,0 +1,1067 @@
+
+<div class="w3-container">
+    <div id="preview-dialog" class="w3-modal" style="display:none">
+        <div id="preview-container" class="w3-modal-content" style="width:30%" onclick="hideElement('preview-dialog')">
+            <div class="w3-container w3-blue-gray">
+                <span id="preview-heading"></span>
+                <span class="w3-display-topright w3-hover-red" onclick="hideElement('preview-dialog');">&nbsp;&nbsp;&times;&nbsp;&nbsp;</span>
+            </div>
+            <div id="preview-svgstr" style="text-align:center"></div>
+        </div>
+    </div>
+</div><html>
+<!--- ================ header ================ -->
+<head>
+<title>Crossword Puzzle Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+h1 {
+    font-size: 170%;
+}
+h2 {
+    font-size: 150%;
+}
+h3 {
+    padding-top: 5px; /* This was the key! */
+    margin: 0;
+    font-size: 130%;
+    height: 40px;
+    vertical-align: bottom;
+}
+.chooser-list {
+    overflow:scroll;
+    overflow-x:hidden;
+    height:500px;
+}
+.chooser-list a {
+    text-decoration:none;
+}
+
+.crosstb {
+    vertical-align: top;
+    font-size: 12px;
+}
+.crosstb-icon { font-size: 15px; }
+
+.clue-list {
+    overflow:scroll;
+    overflow-x:hidden;
+    height:436px;
+    width:95%;
+    line-height:95%;
+}
+.clue-list a {
+    text-decoration:none;
+}
+.clue-list li {
+    font-size: 11pt;
+    font-family: Verdana;
+}
+</style>
+<script>
+// Global variables
+let PUZZLE_CLICK_STATE = 0;
+let CLICK_EVENT;
+const BOXSIZE = 32;
+
+function not_yet(fname) {
+    alert(`${fname} is not yet implemented...`);
+}
+function showElement(id) {
+    document.getElementById(id).style.display = "block";
+}
+function hideElement(id) {
+    document.getElementById(id).style.display = "none";
+}
+function do_grid_new() {
+    const title = "New grid";
+    const label = "<b>Grid size:</b> <em>(a single odd positive integer)</em>";
+    const value = "";
+    const action = "javascript:validateNewGridFormAndSubmit()";
+    const method = "";
+    inputBox(title, label, value, action, method);
+}
+function do_grid_new_from_puzzle() {
+
+}
+function validateNewGridFormAndSubmit() {
+    let n = document.forms["ib-form"]["ib-input"].value;
+    if (isNaN(n)) {
+        alert(n + " is not a number");
+        return false;
+    }
+    n = Number(n);
+    if (n % 2 == 0) {
+        alert(n + " is not an odd number");
+        return false;
+    }
+    if (n < 0) {
+        alert(n + " is not a positive number");
+        return false;
+    }
+    hideElement("ib");
+    let url = "/grid-new";
+    url += `?n=${n}`;
+    window.location.href=url;
+}
+</script>
+</head>
+
+<body>
+<div class="w3-container"><h1>Crossword Puzzle Editor</h1></div>
+
+<!--- ================ menu ================ -->
+
+<div class="w3-bar w3-blue-gray">
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Grid</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+<a class="w3-bar-item w3-button w3-disabled" >New grid...</a>
+<a class="w3-bar-item w3-button w3-disabled" >New grid from puzzle...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Open grid...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Save grid</a>
+<a class="w3-bar-item w3-button w3-disabled" >Save grid as...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Close grid</a>
+<a class="w3-bar-item w3-button w3-disabled" >Delete grid</a>
+      </div>
+   </div>
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Puzzle</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+<a class="w3-bar-item w3-button w3-disabled" >New puzzle...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Open puzzle...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Save puzzle</a>
+<a class="w3-bar-item w3-button w3-disabled" >Save puzzle as...</a>
+<a class="w3-bar-item w3-button w3-disabled" >Close puzzle</a>
+<a class="w3-bar-item w3-button w3-disabled" >Delete puzzle</a>
+      </div>
+   </div>
+   <div class="w3-dropdown-hover w3-blue-gray">
+      <button class="w3-button">Publish</button>
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+<a class="w3-bar-item w3-button"   href="/puzzle-chooser//puzzle-publish-acrosslite"   >Across Lite format</a>
+<a class="w3-bar-item w3-button"   href="/puzzle-chooser//puzzle-publish-cwcompiler"   >Crossword Compiler format</a>
+<a class="w3-bar-item w3-button"   href="/puzzle-chooser//puzzle-publish-nytimes"   >New York Times format</a>
+      </div>
+   </div>
+   <a class="w3-bar-item w3-button w3-right"
+      href="https://github.com/philhanna/crossword/wiki"
+   >Help</a>
+</div>
+
+<!-- ================ header block ================ -->
+
+
+
+<div class="w3-cell-row">
+   <!-- ================ LHS block ================ -->
+   <div class="w3-cell" style="width:45%;padding-top:0">
+   
+<script>
+function cancel_dialog() {
+    let url;
+    
+    url = "/";
+    
+    window.location.href = url;
+}
+function do_grid_preview(gridname) {
+    const xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            const jsonstr = this.responseText;
+            const obj = JSON.parse(jsonstr);
+            document.getElementById("preview-container").style.width = obj.width;
+            document.getElementById("preview-heading").innerHTML = obj.heading;
+            document.getElementById("preview-svgstr").innerHTML = obj.svgstr;
+            showElement("preview-dialog");
+        }
+    };
+    const url = "/grid-preview" + "?gridname=" + gridname;
+    xhttp.open("GET", url, true);
+    xhttp.send();
+}
+function do_puzzle_preview(puzzlename) {
+    const xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            const jsonstr = this.responseText;
+            const obj = JSON.parse(jsonstr);
+            document.getElementById("preview-container").style.width = obj.width;
+            document.getElementById("preview-heading").innerHTML = obj.heading;
+            document.getElementById("preview-svgstr").innerHTML = obj.svgstr;
+            showElement("preview-dialog");
+        }
+    };
+    const url = "/puzzle-preview" + "?puzzlename=" + puzzlename;
+    xhttp.open("GET", url, true);
+    xhttp.send();
+}
+</script>
+
+<div class="w3-container w3-margin-top">
+    <div class="w3-display-container">
+        <div class="w3-blue-gray w3-center">
+        <h3>Grid chooser</h3>
+        <span class="w3-button w3-display-topright w3-hover-red w3-small" onclick="cancel_dialog()">&times;</span>
+        </div>
+        <div class="w3-container">
+            <p>Choose from the following grids:</p>
+            <div class="w3-section">
+                <ul class="w3-ul w3-card-2 chooser-list">
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('toggletest')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=toggletest">
+                            <span>toggletest</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('testgrid')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=testgrid">
+                            <span>testgrid</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('debuggrid')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=debuggrid">
+                            <span>debuggrid</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('togtest')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=togtest">
+                            <span>togtest</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('test')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=test">
+                            <span>test</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('detailed test')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=detailed%20test">
+                            <span>detailed test</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('BLENDER')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=BLENDER">
+                            <span>BLENDER</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('Grid9')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=Grid9">
+                            <span>Grid9</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('None')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=None">
+                            <span>None</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('sample')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=sample">
+                            <span>sample</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('palindrome')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=palindrome">
+                            <span>palindrome</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('CaturburyTales')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=CaturburyTales">
+                            <span>CaturburyTales</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('11x11')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=11x11">
+                            <span>11x11</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('moviequotes')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=moviequotes">
+                            <span>moviequotes</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('money')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=money">
+                            <span>money</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('21x21(13,13,11)')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=21x21%2813%2C13%2C11%29">
+                            <span>21x21(13,13,11)</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('disney-10')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=disney-10">
+                            <span>disney-10</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('rhymetime')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=rhymetime">
+                            <span>rhymetime</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('disney-9')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=disney-9">
+                            <span>disney-9</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid11x4')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid11x4">
+                            <span>grid11x4</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('money-2')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=money-2">
+                            <span>money-2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('disney-7')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=disney-7">
+                            <span>disney-7</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('disney-6')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=disney-6">
+                            <span>disney-6</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('disney-5')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=disney-5">
+                            <span>disney-5</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('disney-4')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=disney-4">
+                            <span>disney-4</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('corn')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=corn">
+                            <span>corn</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('disney')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=disney">
+                            <span>disney</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid4')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid4">
+                            <span>grid4</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('8(4)b')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=8%284%29b">
+                            <span>8(4)b</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('nytsun')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=nytsun">
+                            <span>nytsun</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('canterbury')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=canterbury">
+                            <span>canterbury</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('dogs')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=dogs">
+                            <span>dogs</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('21-140-13(2)')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=21-140-13%282%29">
+                            <span>21-140-13(2)</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('21-136-13(4)')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=21-136-13%284%29">
+                            <span>21-136-13(4)</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('chain4b-r')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=chain4b-r">
+                            <span>chain4b-r</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('firstplace')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=firstplace">
+                            <span>firstplace</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('21x21NYT0726')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=21x21NYT0726">
+                            <span>21x21NYT0726</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('21x21b')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=21x21b">
+                            <span>21x21b</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('8(4)')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=8%284%29">
+                            <span>8(4)</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('8(12)')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=8%2812%29">
+                            <span>8(12)</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('70-11')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=70-11">
+                            <span>70-11</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('9(4)')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=9%284%29">
+                            <span>9(4)</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('8(2)-11(2)')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=8%282%29-11%282%29">
+                            <span>8(2)-11(2)</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('stairs')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=stairs">
+                            <span>stairs</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('stairs-3')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=stairs-3">
+                            <span>stairs-3</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid-9-10a')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid-9-10a">
+                            <span>grid-9-10a</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid-70-11')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid-70-11">
+                            <span>grid-70-11</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('stairs-2')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=stairs-2">
+                            <span>stairs-2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid-2')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid-2">
+                            <span>grid-2</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('15x15')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=15x15">
+                            <span>15x15</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid-9-10-11')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid-9-10-11">
+                            <span>grid-9-10-11</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('vieux pont')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=vieux%20pont">
+                            <span>vieux pont</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid-9-10')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid-9-10">
+                            <span>grid-9-10</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid72_11')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid72_11">
+                            <span>grid72_11</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('der-pasco')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=der-pasco">
+                            <span>der-pasco</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid68_11')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid68_11">
+                            <span>grid68_11</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid-1')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid-1">
+                            <span>grid-1</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid68_14')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid68_14">
+                            <span>grid68_14</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid70_13')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid70_13">
+                            <span>grid70_13</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid72_12b')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid72_12b">
+                            <span>grid72_12b</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid9_9')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid9_9">
+                            <span>grid9_9</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('forecast')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=forecast">
+                            <span>forecast</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid72_12a')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid72_12a">
+                            <span>grid72_12a</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid76_12')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid76_12">
+                            <span>grid76_12</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid9_28')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid9_28">
+                            <span>grid9_28</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid70_15')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid70_15">
+                            <span>grid70_15</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid72_15')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid72_15">
+                            <span>grid72_15</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('grid78_13')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=grid78_13">
+                            <span>grid78_13</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a class="w3-button"
+                           onclick="do_grid_preview('rest')">
+                            <i class="material-icons">preview</i>
+                        </a>
+                        <a class="w3-button"
+                            href="/grid-open?gridname=rest">
+                            <span>rest</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+   </div>
+   <!-- ================ RHS block ================ -->
+   <div class="w3-cell" style="width:55%">
+   
+   
+   </div>
+</div>
+<!--- ================ footer ================ -->
+
+
+
+<script>
+    function messageBox(title, prompt, ok) {
+        document.getElementById("mb-title").innerHTML = title;
+        document.getElementById("mb-prompt").innerHTML = prompt;
+        document.getElementById("mb-ok").setAttribute("href", ok);
+        document.getElementById("mb").style.display = "block";
+    }
+</script>
+<div id="mb" class="w3-modal" style="display:none">
+    <div class="w3-modal-content w3-card-4" style="width:30%">
+        <div class="w3-blue-gray w3-center">
+            <span class="w3-button w3-display-topright" onclick="hideElement('mb')">&times;</span>
+            <h3 id="mb-title"></h3>
+        </div>
+        <div class="w3-container">
+            <div class="w3-section">
+                <span id="mb-prompt"></span>
+            </div>
+            <div class="w3-section w3-center">
+                <!-- OK button -->
+                <a class="w3-button w3-border w3-round w3-gray"
+                   id="mb-ok"
+                   href="#"
+                   style="width:100px">OK</a>
+                <!-- Cancel button -->
+                <button class="w3-button w3-border w3-round w3-gray"
+                        onclick="hideElement('mb')"
+                        style="width:100px">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function inputBox(title, label, value, action, method) {
+    document.getElementById("ib-title").innerHTML = title;
+    document.getElementById("ib-label").innerHTML = label;
+    document.getElementById("ib-input").value = value;
+    document.getElementById("ib-form").setAttribute("action", action);
+    if (method != "") {
+        document.getElementById("ib-form").method = method;
+    }
+    document.getElementById("ib").style.display = "block";
+}
+function inputBoxSubmit() {
+    alert("DEBUG: submit_function not specified");
+}
+</script>
+<div id="ib" class="w3-modal" style="display:none">
+    <div class="w3-modal-content w3-card-4" style="width:30%">
+        <div class="w3-blue-gray w3-center">
+            <span class="w3-button w3-display-topright" onclick="hideElement('ib')">&times;</span>
+            <h3 id="ib-title"></h3>
+        </div>
+        <div class="w3-section">
+            <span id="ib-prompt"></span>
+        </div>
+        <form id="ib-form" name="ib-form" class="w3-container">
+            <div class="w3-section">
+                <label id="ib-label"></label>
+                <input type="text" id="ib-input" name="ib-input" value="" required></input>
+                <div class="w3-section w3-center">
+                    <!-- OK button -->
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            id="ib-ok"
+                            type="submit"
+                            value="OK"
+                            style="width:100px">OK</button>
+                    <!-- Cancel button -->
+                    <button class="w3-button w3-border w3-round w3-gray"
+                            onclick="hideElement('ib')"
+                            style="width:100px">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
