@@ -12,6 +12,7 @@ from crossword.http_server.grid_handlers import (
     handle_create_grid,
     handle_load_grid,
     handle_delete_grid,
+    handle_copy_grid,
     handle_toggle_black_cell,
     handle_rotate_grid,
     handle_undo_grid,
@@ -55,6 +56,7 @@ def register_routes(router):
     router.add_route("POST", r"^/api/grids$", handle_create_grid)
     router.add_route("GET", r"^/api/grids/([^/]+)$", handle_load_grid)
     router.add_route("DELETE", r"^/api/grids/([^/]+)$", handle_delete_grid)
+    router.add_route("POST", r"^/api/grids/([^/]+)/copy$", handle_copy_grid)
     router.add_route("PUT", r"^/api/grids/([^/]+)/cells/(\d+)/(\d+)$", handle_toggle_black_cell)
     router.add_route("POST", r"^/api/grids/([^/]+)/rotate$", handle_rotate_grid)
     router.add_route("POST", r"^/api/grids/([^/]+)/undo$", handle_undo_grid)

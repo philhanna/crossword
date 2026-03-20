@@ -6,6 +6,7 @@ Public interface:
   load_grid(user_id, name) -> Grid
   delete_grid(user_id, name) -> None
   list_grids(user_id) -> list[str]
+  copy_grid(user_id, source_name, new_name) -> Grid
   toggle_black_cell(user_id, name, r, c) -> Grid
   rotate_grid(user_id, name) -> Grid
   undo_grid(user_id, name) -> Grid
@@ -88,6 +89,28 @@ class GridUseCases:
             PersistenceError: If listing fails
         """
         return self.persistence.list_grids(user_id)
+
+    def copy_grid(self, user_id: int, source_name: str, new_name: str) -> Grid:
+        """
+        Copy a grid to a new name.
+
+        Args:
+            user_id: The user who owns the grid
+            source_name: Name of the grid to copy
+            new_name: Name for the copy
+
+        Returns:
+            The copied Grid object
+
+        Raises:
+            PersistenceError: If source not found or save fails
+            ValueError: If new_name is empty
+        """
+        if not new_name or not new_name.strip():
+            raise ValueError("new_name must not be empty")
+        grid = self.persistence.load_grid(user_id, source_name)
+        self.persistence.save_grid(user_id, new_name, grid)
+        return grid
 
     def toggle_black_cell(self, user_id: int, name: str, r: int, c: int) -> Grid:
         """

@@ -6,6 +6,7 @@ Routes:
   POST   /api/grids              → create_grid
   GET    /api/grids/<name>       → load_grid
   DELETE /api/grids/<name>       → delete_grid
+  POST   /api/grids/<name>/copy          → copy_grid
   PUT    /api/grids/<name>/cells/<r>/<c>  → toggle_black_cell
   POST   /api/grids/<name>/rotate        → rotate_grid
   POST   /api/grids/<name>/undo          → undo_grid
@@ -112,6 +113,43 @@ def handle_delete_grid(path_params, query_params, body_params, session_token, re
 
         return {"status": "deleted", "name": name}
 
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_copy_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Copy a grid to a new name.
+    POST /api/grids/<name>/copy
+    Body: { "new_name": "..." }
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing grid name"}
+
+        new_name = body_params.get("new_name")
+        if not new_name or not isinstance(new_name, str):
+            return {"error": "Missing or invalid 'new_name'"}
+
+        user_id = 1
+        grid = app.grid_uc.copy_grid(user_id, name, new_name)
+
+        cells = [False] * (grid.n * grid.n)
+        for r, c in grid.black_cells:
+            cell_idx = (r - 1) * grid.n + (c - 1)
+            cells[cell_idx] = True
+
+        return {
+            "name": new_name,
+            "size": grid.n,
+            "cells": cells,
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
     except PersistenceError:
         return {"error": f"Grid not found: {name}"}
     except Exception as e:

@@ -107,6 +107,49 @@ class TestGridUseCasesList:
         assert result == []
 
 
+class TestGridUseCasesCopy:
+    """Tests for copy_grid"""
+
+    def test_copy_grid_success(self, grid_uc, mock_persistence):
+        """Copy a grid to a new name"""
+        source = Grid(15)
+        source.add_black_cell(3, 3, undo=False)
+        mock_persistence.load_grid.return_value = source
+
+        result = grid_uc.copy_grid(1, "original", "copy")
+
+        mock_persistence.load_grid.assert_called_once_with(1, "original")
+        mock_persistence.save_grid.assert_called_once_with(1, "copy", source)
+        assert result is source
+
+    def test_copy_grid_source_not_found(self, grid_uc, mock_persistence):
+        """Copy a grid that does not exist"""
+        mock_persistence.load_grid.side_effect = PersistenceError("Grid not found")
+
+        with pytest.raises(PersistenceError, match="Grid not found"):
+            grid_uc.copy_grid(1, "nonexistent", "copy")
+
+    def test_copy_grid_empty_new_name(self, grid_uc):
+        """Reject an empty new_name"""
+        with pytest.raises(ValueError, match="new_name must not be empty"):
+            grid_uc.copy_grid(1, "original", "")
+
+    def test_copy_grid_whitespace_new_name(self, grid_uc):
+        """Reject a whitespace-only new_name"""
+        with pytest.raises(ValueError, match="new_name must not be empty"):
+            grid_uc.copy_grid(1, "original", "   ")
+
+    def test_copy_grid_preserves_black_cells(self, grid_uc, mock_persistence):
+        """Copied grid retains the source's black cells"""
+        source = Grid(15)
+        source.add_black_cell(5, 5, undo=False)
+        mock_persistence.load_grid.return_value = source
+
+        result = grid_uc.copy_grid(1, "original", "copy")
+
+        assert (5, 5) in result.black_cells
+
+
 class TestGridUseCasesToggleBlackCell:
     """Tests for toggle_black_cell"""
 
