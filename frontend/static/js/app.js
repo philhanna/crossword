@@ -11,12 +11,244 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Wire up button events
     setupEventListeners();
+    setupMenuEventListeners();
 
     // Subscribe to state changes
     State.subscribe((newState) => {
         console.log('State updated:', newState);
+        updateMenuState();
     });
+
+    // Initial menu state update
+    updateMenuState();
 });
+
+/**
+ * Menu state management
+ */
+const MenuState = {
+    grid_new: true,
+    grid_from_puzzle: true,
+    grid_open: true,
+    grid_save: false,
+    grid_save_as: false,
+    grid_close: false,
+    grid_delete: false,
+    puzzle_new: false,
+    puzzle_open: true,
+    puzzle_save: false,
+    puzzle_save_as: false,
+    puzzle_close: false,
+    puzzle_delete: false,
+    export_acrosslite: true,
+    export_compiler: true,
+    export_nytimes: true,
+
+    update() {
+        const state = State.get();
+        this.grid_save = state.currentGrid && state.isDirty;
+        this.grid_save_as = !!state.currentGrid;
+        this.grid_close = !!state.currentGrid;
+        this.grid_delete = !!state.currentGrid;
+
+        this.puzzle_new = state.grids && state.grids.length > 0;
+        this.puzzle_save = state.currentPuzzle && state.isDirty;
+        this.puzzle_save_as = !!state.currentPuzzle;
+        this.puzzle_close = !!state.currentPuzzle;
+        this.puzzle_delete = !!state.currentPuzzle;
+
+        this.renderMenuItems();
+    },
+
+    renderMenuItems() {
+        Object.entries(this).forEach(([key, enabled]) => {
+            if (key === 'update' || key === 'renderMenuItems') return;
+            const btn = document.getElementById(`menu-${key}`);
+            if (btn) {
+                btn.classList.toggle('w3-disabled', !enabled);
+                if (!enabled) {
+                    btn.style.pointerEvents = 'none';
+                    btn.style.opacity = '0.5';
+                } else {
+                    btn.style.pointerEvents = 'auto';
+                    btn.style.opacity = '1';
+                }
+            }
+        });
+    }
+};
+
+function updateMenuState() {
+    MenuState.update();
+}
+
+/**
+ * Wire up menu event listeners
+ */
+function setupMenuEventListeners() {
+    // Grid menu
+    document.getElementById('menu-grid-new').addEventListener('click', () => {
+        Dialogs.showNewGrid();
+    });
+
+    document.getElementById('menu-grid-from-puzzle').addEventListener('click', () => {
+        showPuzzleChooserForGridCreation();
+    });
+
+    document.getElementById('menu-grid-open').addEventListener('click', () => {
+        returnToList();
+    });
+
+    document.getElementById('menu-grid-save').addEventListener('click', async () => {
+        const gridName = State.get('currentGrid');
+        if (gridName) {
+            try {
+                showStatus('Saving grid...');
+                await CrosswordAPI.saveGrid(gridName);
+                State.set({ isDirty: false });
+                showStatus('Grid saved');
+            } catch (err) {
+                showError(`Failed to save: ${err.message}`);
+            }
+        }
+    });
+
+    document.getElementById('menu-grid-save-as').addEventListener('click', () => {
+        const gridName = State.get('currentGrid');
+        if (gridName) {
+            Dialogs.showSaveGridAs(gridName);
+        }
+    });
+
+    document.getElementById('menu-grid-close').addEventListener('click', () => {
+        returnToList();
+    });
+
+    document.getElementById('menu-grid-delete').addEventListener('click', async () => {
+        const gridName = State.get('currentGrid');
+        if (gridName) {
+            if (!confirm(`Delete grid "${gridName}"? This cannot be undone.`)) return;
+            try {
+                showStatus('Deleting grid...');
+                await CrosswordAPI.deleteGrid(gridName);
+                showStatus('Grid deleted');
+                returnToList();
+                await loadGridsAndPuzzles();
+            } catch (err) {
+                showError(`Failed to delete grid: ${err.message}`);
+            }
+        }
+    });
+
+    // Puzzle menu
+    document.getElementById('menu-puzzle-new').addEventListener('click', () => {
+        Dialogs.showNewPuzzle();
+    });
+
+    document.getElementById('menu-puzzle-open').addEventListener('click', () => {
+        returnToList();
+    });
+
+    document.getElementById('menu-puzzle-save').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (puzzleName) {
+            try {
+                showStatus('Saving puzzle...');
+                await CrosswordAPI.savePuzzle(puzzleName);
+                State.set({ isDirty: false });
+                showStatus('Puzzle saved');
+            } catch (err) {
+                showError(`Failed to save: ${err.message}`);
+            }
+        }
+    });
+
+    document.getElementById('menu-puzzle-save-as').addEventListener('click', () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (puzzleName) {
+            Dialogs.showSavePuzzleAs(puzzleName);
+        }
+    });
+
+    document.getElementById('menu-puzzle-close').addEventListener('click', () => {
+        returnToList();
+    });
+
+    document.getElementById('menu-puzzle-delete').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (puzzleName) {
+            if (!confirm(`Delete puzzle "${puzzleName}"? This cannot be undone.`)) return;
+            try {
+                showStatus('Deleting puzzle...');
+                await CrosswordAPI.deletePuzzle(puzzleName);
+                showStatus('Puzzle deleted');
+                returnToList();
+                await loadGridsAndPuzzles();
+            } catch (err) {
+                showError(`Failed to delete puzzle: ${err.message}`);
+            }
+        }
+    });
+
+    // Export menu
+    document.getElementById('menu-export-acrosslite').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (puzzleName) {
+            try {
+                showStatus('Exporting Across Lite format...');
+                const xml = await CrosswordAPI.exportPuzzleXML(puzzleName);
+                downloadFile(xml, `${puzzleName}.puz`, 'application/octet-stream');
+                showStatus('Exported as Across Lite format');
+            } catch (err) {
+                showError(`Failed to export: ${err.message}`);
+            }
+        }
+    });
+
+    document.getElementById('menu-export-compiler').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (puzzleName) {
+            try {
+                showStatus('Exporting Crossword Compiler format...');
+                const xml = await CrosswordAPI.exportPuzzleXML(puzzleName);
+                downloadFile(xml, `${puzzleName}.ccxml`, 'application/xml');
+                showStatus('Exported as Crossword Compiler format');
+            } catch (err) {
+                showError(`Failed to export: ${err.message}`);
+            }
+        }
+    });
+
+    document.getElementById('menu-export-nytimes').addEventListener('click', async () => {
+        const puzzleName = State.get('currentPuzzle');
+        if (puzzleName) {
+            try {
+                showStatus('Exporting New York Times format...');
+                const xml = await CrosswordAPI.exportPuzzleXML(puzzleName);
+                downloadFile(xml, `${puzzleName}.xml`, 'application/xml');
+                showStatus('Exported as New York Times format');
+            } catch (err) {
+                showError(`Failed to export: ${err.message}`);
+            }
+        }
+    });
+}
+
+function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function showPuzzleChooserForGridCreation() {
+    // Show a puzzle chooser dialog
+    // This would need to be implemented in dialogs.js
+    console.log('Show puzzle chooser for grid creation');
+}
 
 /**
  * Load grids and puzzles from API and update UI
@@ -124,6 +356,7 @@ async function loadAndDisplayPuzzle(name) {
         document.getElementById('list-section').style.display = 'none';
         document.getElementById('grid-section').style.display = 'none';
         document.getElementById('puzzle-section').style.display = 'block';
+        document.getElementById('right-panel').style.display = 'block';
 
         PuzzleEditor.render(puzzle);
         showStatus(`Loaded puzzle "${name}"`);
@@ -145,6 +378,7 @@ function returnToList() {
     document.getElementById('list-section').style.display = 'block';
     document.getElementById('grid-section').style.display = 'none';
     document.getElementById('puzzle-section').style.display = 'none';
+    document.getElementById('right-panel').style.display = 'none';
 }
 
 /**
@@ -167,16 +401,6 @@ function showError(message) {
  * Wire up event listeners
  */
 function setupEventListeners() {
-    // New grid button
-    document.getElementById('btn-new-grid').addEventListener('click', () => {
-        Dialogs.showNewGrid();
-    });
-
-    // New puzzle button
-    document.getElementById('btn-new-puzzle').addEventListener('click', () => {
-        Dialogs.showNewPuzzle();
-    });
-
     // Close error dialog
     document.getElementById('btn-close-error').addEventListener('click', () => {
         document.getElementById('dialog-error').style.display = 'none';
@@ -287,26 +511,6 @@ function setupEventListeners() {
             await loadGridsAndPuzzles();
         } catch (err) {
             showError(`Failed to delete puzzle: ${err.message}`);
-        }
-    });
-
-    document.getElementById('btn-export-xml').addEventListener('click', async () => {
-        const puzzleName = State.get('currentPuzzle');
-        if (!puzzleName) return;
-        try {
-            showStatus('Exporting XML...');
-            const xml = await CrosswordAPI.exportPuzzleXML(puzzleName);
-            // Create a download link
-            const blob = new Blob([xml], { type: 'application/xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${puzzleName}.xml`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showStatus('XML exported');
-        } catch (err) {
-            showError(`Failed to export: ${err.message}`);
         }
     });
 }

@@ -137,4 +137,26 @@ const Dialogs = {
     showError: (message) => {
         showError(message);
     },
+
+    /**
+     * Show save grid as dialog
+     */
+    showSaveGridAs: (currentName) => {
+        const newName = prompt(`Save grid "${currentName}" as:`, currentName);
+        if (newName && newName !== currentName) {
+            // API call would go here
+            console.log(`Save grid as: ${newName}`);
+        }
+    },
+
+    /**
+     * Show save puzzle as dialog
+     */
+    showSavePuzzleAs: (currentName) => {
+        const newName = prompt(`Save puzzle "${currentName}" as:`, currentName);
+        if (newName && newName !== currentName) {
+            // API call would go here
+            console.log(`Save puzzle as: ${newName}`);
+        }
+    },
 };
