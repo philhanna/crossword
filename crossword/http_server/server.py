@@ -133,8 +133,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                 request_handler=self,
             )
 
-            # Send response
-            if isinstance(response, dict):
+            # Send response (skip if handler already sent it and returned None)
+            if response is None:
+                pass  # Handler already sent the response
+            elif isinstance(response, dict):
                 self._send_json(response)
             elif isinstance(response, bytes):
                 self._send_bytes(response)

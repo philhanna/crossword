@@ -1,0 +1,213 @@
+"""
+Grid handlers - CRUD operations on grids via HTTP.
+
+Routes:
+  GET    /api/grids              → list_grids
+  POST   /api/grids              → create_grid
+  GET    /api/grids/<name>       → load_grid
+  DELETE /api/grids/<name>       → delete_grid
+  PUT    /api/grids/<name>/cells/<r>/<c>  → toggle_black_cell
+  POST   /api/grids/<name>/rotate        → rotate_grid
+  POST   /api/grids/<name>/undo          → undo_grid
+  POST   /api/grids/<name>/redo          → redo_grid
+"""
+
+from crossword.ports.persistence import PersistenceError
+
+
+def handle_list_grids(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    List all grids for the current user.
+    GET /api/grids
+    """
+    try:
+        user_id = 1
+        grids = app.grid_uc.list_grids(user_id)
+        return {"grids": grids}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_create_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Create a new grid.
+    POST /api/grids
+    Body: { "name": "grid1", "size": 15 }
+    """
+    try:
+        name = body_params.get("name")
+        size = body_params.get("size")
+
+        if not name or not isinstance(name, str):
+            return {"error": "Missing or invalid 'name'"}
+        if not isinstance(size, int) or size < 1:
+            return {"error": "Missing or invalid 'size' (must be integer >= 1)"}
+
+        user_id = 1
+        app.grid_uc.create_grid(user_id, name, size)
+        return {"status": "created", "name": name, "size": size}
+
+    except ValueError as e:
+        return {"error": str(e)}
+    except PersistenceError as e:
+        return {"error": str(e)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_load_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Load a grid by name.
+    GET /api/grids/<name>
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing grid name"}
+
+        user_id = 1
+        grid = app.grid_uc.load_grid(user_id, name)
+
+        return {
+            "name": name,
+            "size": grid.n,
+            "black_cells": list(grid.black_cells),
+            "grid_json": grid.to_json(),
+        }
+
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_delete_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Delete a grid by name.
+    DELETE /api/grids/<name>
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing grid name"}
+
+        user_id = 1
+        app.grid_uc.delete_grid(user_id, name)
+
+        return {"status": "deleted", "name": name}
+
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_toggle_black_cell(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Toggle a black cell in a grid.
+    PUT /api/grids/<name>/cells/<r>/<c>
+    """
+    try:
+        name = path_params[0] if len(path_params) > 0 else None
+        r = path_params[1] if len(path_params) > 1 else None
+        c = path_params[2] if len(path_params) > 2 else None
+
+        if not name or not r or not c:
+            return {"error": "Missing name, r, or c"}
+
+        try:
+            r = int(r)
+            c = int(c)
+        except ValueError:
+            return {"error": "r and c must be integers"}
+
+        user_id = 1
+        grid = app.grid_uc.toggle_black_cell(user_id, name, r, c)
+
+        return {
+            "name": name,
+            "r": r,
+            "c": c,
+            "black_cells": list(grid.black_cells),
+            "grid_json": grid.to_json(),
+        }
+
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_rotate_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Rotate a grid 90 degrees counterclockwise.
+    POST /api/grids/<name>/rotate
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing grid name"}
+
+        user_id = 1
+        grid = app.grid_uc.rotate_grid(user_id, name)
+
+        return {
+            "name": name,
+            "black_cells": list(grid.black_cells),
+            "grid_json": grid.to_json(),
+        }
+
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_undo_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Undo the last operation on a grid.
+    POST /api/grids/<name>/undo
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing grid name"}
+
+        user_id = 1
+        grid = app.grid_uc.undo_grid(user_id, name)
+
+        return {
+            "name": name,
+            "black_cells": list(grid.black_cells),
+            "grid_json": grid.to_json(),
+        }
+
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_redo_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Redo the last undone operation on a grid.
+    POST /api/grids/<name>/redo
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing grid name"}
+
+        user_id = 1
+        grid = app.grid_uc.redo_grid(user_id, name)
+
+        return {
+            "name": name,
+            "black_cells": list(grid.black_cells),
+            "grid_json": grid.to_json(),
+        }
+
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
