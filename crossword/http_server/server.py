@@ -131,6 +131,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 body_params=body_params,
                 session_token=session_token,
                 request_handler=self,
+                app=self.app,
             )
 
             # Send response (skip if handler already sent it and returned None)
