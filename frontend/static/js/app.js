@@ -98,34 +98,36 @@ function menuEnable(id)  { document.getElementById(id).classList.remove('w3-disa
 function menuDisable(id) { document.getElementById(id).classList.add('w3-disabled'); }
 
 /**
- * Update all menu items based on current AppState.
+ * Update all menu items based on current AppState.view.
+ * Three mutually exclusive states: 'home', 'grid-editor', 'puzzle-editor'.
  * Mirrors exactly the enabled/disabled state seen in the reference HTML pages.
  */
 function updateMenu() {
-    const gridOpen   = AppState.gridName   !== null;
-    const puzzleOpen = AppState.puzzleName !== null;
+    const home   = AppState.view === 'home';
+    const grid   = AppState.view === 'grid-editor';
+    const puzzle = AppState.view === 'puzzle-editor';
 
     // Grid menu
-    gridOpen ? menuDisable('menu-grid-new')             : menuEnable('menu-grid-new');
-    gridOpen ? menuDisable('menu-grid-new-from-puzzle') : menuEnable('menu-grid-new-from-puzzle');
-    gridOpen ? menuDisable('menu-grid-open')            : menuEnable('menu-grid-open');
-    gridOpen ? menuEnable('menu-grid-save')             : menuDisable('menu-grid-save');
-    gridOpen ? menuEnable('menu-grid-save-as')          : menuDisable('menu-grid-save-as');
-    gridOpen ? menuEnable('menu-grid-close')            : menuDisable('menu-grid-close');
-    gridOpen ? menuDisable('menu-grid-delete')          : menuDisable('menu-grid-delete'); // always disabled for now
+    home  ? menuEnable('menu-grid-new')             : menuDisable('menu-grid-new');
+    home  ? menuEnable('menu-grid-new-from-puzzle') : menuDisable('menu-grid-new-from-puzzle');
+    home  ? menuEnable('menu-grid-open')            : menuDisable('menu-grid-open');
+    grid  ? menuEnable('menu-grid-save')            : menuDisable('menu-grid-save');
+    grid  ? menuEnable('menu-grid-save-as')         : menuDisable('menu-grid-save-as');
+    grid  ? menuEnable('menu-grid-close')           : menuDisable('menu-grid-close');
+    menuDisable('menu-grid-delete'); // skipped for now
 
     // Puzzle menu
-    gridOpen  ? menuEnable('menu-puzzle-new')           : menuDisable('menu-puzzle-new');
-    puzzleOpen ? menuEnable('menu-puzzle-open')         : menuDisable('menu-puzzle-open');  // chooser always available
-    puzzleOpen ? menuEnable('menu-puzzle-save')         : menuDisable('menu-puzzle-save');
-    puzzleOpen ? menuEnable('menu-puzzle-save-as')      : menuDisable('menu-puzzle-save-as');
-    puzzleOpen ? menuEnable('menu-puzzle-close')        : menuDisable('menu-puzzle-close');
-    puzzleOpen ? menuDisable('menu-puzzle-delete')      : menuDisable('menu-puzzle-delete'); // always disabled for now
+    home   ? menuEnable('menu-puzzle-new')          : menuDisable('menu-puzzle-new');
+    home   ? menuEnable('menu-puzzle-open')         : menuDisable('menu-puzzle-open');
+    puzzle ? menuEnable('menu-puzzle-save')         : menuDisable('menu-puzzle-save');
+    puzzle ? menuEnable('menu-puzzle-save-as')      : menuDisable('menu-puzzle-save-as');
+    puzzle ? menuEnable('menu-puzzle-close')        : menuDisable('menu-puzzle-close');
+    puzzle ? menuEnable('menu-puzzle-delete')       : menuDisable('menu-puzzle-delete');
 
-    // Publish menu — enabled only when a puzzle is open
-    puzzleOpen ? menuEnable('menu-publish-acrosslite')  : menuDisable('menu-publish-acrosslite');
-    puzzleOpen ? menuEnable('menu-publish-cwcompiler')  : menuDisable('menu-publish-cwcompiler');
-    puzzleOpen ? menuEnable('menu-publish-nytimes')     : menuDisable('menu-publish-nytimes');
+    // Publish menu — always enabled
+    menuEnable('menu-publish-acrosslite');
+    menuEnable('menu-publish-cwcompiler');
+    menuEnable('menu-publish-nytimes');
 }
 
 // ---------------------------------------------------------------------------
