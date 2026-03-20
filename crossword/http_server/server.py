@@ -17,7 +17,7 @@ class Route:
     """Single route definition: method + path pattern -> handler"""
 
     def __init__(self, method: str, path_pattern: str, handler):
-        """
+        r"""
         Args:
             method: HTTP method ('GET', 'POST', 'PUT', 'DELETE', etc.)
             path_pattern: Regex pattern for path matching (e.g., r'^/grids/(\d+)$')
