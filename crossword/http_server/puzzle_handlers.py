@@ -51,8 +51,9 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
         # Load the puzzle to return full data for frontend rendering
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
         grid_cells = [False] * (puzzle.n * puzzle.n)
-        for idx in puzzle.black_cells:
-            grid_cells[idx] = True
+        for r, c in puzzle.black_cells:
+            cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
+            grid_cells[cell_idx] = True
 
         # Build puzzle cells with letter and number info
         puzzle_cells = {}
@@ -71,7 +72,7 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
 
             # Add cell info for puzzle rendering
             for idx, (r, c) in enumerate(cells_list):
-                cell_idx = r * puzzle.n + c
+                cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed flat index
                 if cell_idx not in puzzle_cells:
                     puzzle_cells[cell_idx] = {}
                 if word.get_text() and idx < len(word.get_text()):
@@ -123,8 +124,9 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
 
         # Build grid cells
         grid_cells = [False] * (puzzle.n * puzzle.n)
-        for idx in puzzle.black_cells:
-            grid_cells[idx] = True
+        for r, c in puzzle.black_cells:
+            cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
+            grid_cells[cell_idx] = True
 
         # Build puzzle cells with letter and number info
         puzzle_cells = {}
@@ -143,7 +145,7 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
 
             # Add cell info for puzzle rendering
             for idx, (r, c) in enumerate(cells_list):
-                cell_idx = r * puzzle.n + c
+                cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed flat index
                 if cell_idx not in puzzle_cells:
                     puzzle_cells[cell_idx] = {}
                 if word.get_text() and idx < len(word.get_text()):
@@ -334,32 +336,30 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
 
         # Build response with full puzzle data
         grid_cells = [False] * (puzzle.n * puzzle.n)
-        for idx in puzzle.black_cells:
-            grid_cells[idx] = True
+        for r, c in puzzle.black_cells:
+            cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed
+            grid_cells[cell_idx] = True
 
         puzzle_cells = {}
-        for r in range(puzzle.n):
-            for c in range(puzzle.n):
-                cell_idx = r * puzzle.n + c
-                if puzzle_cells.get(cell_idx) is None:
-                    puzzle_cells[cell_idx] = {}
-
-                for seq, word in puzzle.across_words.items():
-                    if (r, c) in word.cells:
-                        cell_idx_in_word = word.cells.index((r, c))
-                        if word.letters() and cell_idx_in_word < len(word.letters()):
-                            puzzle_cells[cell_idx]["letter"] = word.letters()[cell_idx_in_word]
-
-                for seq, word in puzzle.across_words.items():
-                    if word.cells and word.cells[0] == (r, c):
-                        puzzle_cells[cell_idx]["number"] = seq
-                        break
-
         words = []
+
         for seq, word in sorted(puzzle.across_words.items()):
-            words.append({"seq": seq, "direction": "across", "clue": word.clue() if hasattr(word, "clue") else ""})
+            cells_list = list(word.cell_iterator())
+            words.append({"seq": seq, "direction": "across", "clue": word.get_clue() or ""})
+
+            # Add cell info for puzzle rendering
+            for idx, (r, c) in enumerate(cells_list):
+                cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed
+                if cell_idx not in puzzle_cells:
+                    puzzle_cells[cell_idx] = {}
+                if word.get_text() and idx < len(word.get_text()):
+                    puzzle_cells[cell_idx]["letter"] = word.get_text()[idx]
+                if idx == 0:
+                    puzzle_cells[cell_idx]["number"] = seq
+
         for seq, word in sorted(puzzle.down_words.items()):
-            words.append({"seq": seq, "direction": "down", "clue": word.clue() if hasattr(word, "clue") else ""})
+            cells_list = list(word.cell_iterator())
+            words.append({"seq": seq, "direction": "down", "clue": word.get_clue() or ""})
 
         return {
             "grid": {"size": puzzle.n, "cells": grid_cells},
@@ -387,32 +387,30 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
 
         # Build response with full puzzle data
         grid_cells = [False] * (puzzle.n * puzzle.n)
-        for idx in puzzle.black_cells:
-            grid_cells[idx] = True
+        for r, c in puzzle.black_cells:
+            cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed
+            grid_cells[cell_idx] = True
 
         puzzle_cells = {}
-        for r in range(puzzle.n):
-            for c in range(puzzle.n):
-                cell_idx = r * puzzle.n + c
-                if puzzle_cells.get(cell_idx) is None:
-                    puzzle_cells[cell_idx] = {}
-
-                for seq, word in puzzle.across_words.items():
-                    if (r, c) in word.cells:
-                        cell_idx_in_word = word.cells.index((r, c))
-                        if word.letters() and cell_idx_in_word < len(word.letters()):
-                            puzzle_cells[cell_idx]["letter"] = word.letters()[cell_idx_in_word]
-
-                for seq, word in puzzle.across_words.items():
-                    if word.cells and word.cells[0] == (r, c):
-                        puzzle_cells[cell_idx]["number"] = seq
-                        break
-
         words = []
+
         for seq, word in sorted(puzzle.across_words.items()):
-            words.append({"seq": seq, "direction": "across", "clue": word.clue() if hasattr(word, "clue") else ""})
+            cells_list = list(word.cell_iterator())
+            words.append({"seq": seq, "direction": "across", "clue": word.get_clue() or ""})
+
+            # Add cell info for puzzle rendering
+            for idx, (r, c) in enumerate(cells_list):
+                cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed
+                if cell_idx not in puzzle_cells:
+                    puzzle_cells[cell_idx] = {}
+                if word.get_text() and idx < len(word.get_text()):
+                    puzzle_cells[cell_idx]["letter"] = word.get_text()[idx]
+                if idx == 0:
+                    puzzle_cells[cell_idx]["number"] = seq
+
         for seq, word in sorted(puzzle.down_words.items()):
-            words.append({"seq": seq, "direction": "down", "clue": word.clue() if hasattr(word, "clue") else ""})
+            cells_list = list(word.cell_iterator())
+            words.append({"seq": seq, "direction": "down", "clue": word.get_clue() or ""})
 
         return {
             "grid": {"size": puzzle.n, "cells": grid_cells},

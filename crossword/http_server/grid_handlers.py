@@ -50,8 +50,9 @@ def handle_create_grid(path_params, query_params, body_params, session_token, re
         # Load the grid to return full data for frontend rendering
         grid = app.grid_uc.load_grid(user_id, name)
         cells = [False] * (size * size)
-        for idx in grid.black_cells:
-            cells[idx] = True
+        for r, c in grid.black_cells:
+            cell_idx = (r - 1) * size + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
+            cells[cell_idx] = True
 
         return {
             "size": size,
@@ -81,8 +82,9 @@ def handle_load_grid(path_params, query_params, body_params, session_token, requ
 
         # Convert black_cells set to cells array for frontend
         cells = [False] * (grid.n * grid.n)
-        for idx in grid.black_cells:
-            cells[idx] = True
+        for r, c in grid.black_cells:
+            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
+            cells[cell_idx] = True
 
         return {
             "size": grid.n,
@@ -141,8 +143,9 @@ def handle_toggle_black_cell(path_params, query_params, body_params, session_tok
 
         # Convert black_cells set to cells array for frontend
         cells = [False] * (grid.n * grid.n)
-        for idx in grid.black_cells:
-            cells[idx] = True
+        for r, c in grid.black_cells:
+            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
+            cells[cell_idx] = True
 
         return {
             "size": grid.n,
@@ -172,8 +175,9 @@ def handle_rotate_grid(path_params, query_params, body_params, session_token, re
 
         # Convert black_cells set to cells array for frontend
         cells = [False] * (grid.n * grid.n)
-        for idx in grid.black_cells:
-            cells[idx] = True
+        for r, c in grid.black_cells:
+            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
+            cells[cell_idx] = True
 
         return {
             "size": grid.n,
@@ -201,8 +205,9 @@ def handle_undo_grid(path_params, query_params, body_params, session_token, requ
 
         # Convert black_cells set to cells array for frontend
         cells = [False] * (grid.n * grid.n)
-        for idx in grid.black_cells:
-            cells[idx] = True
+        for r, c in grid.black_cells:
+            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
+            cells[cell_idx] = True
 
         return {
             "size": grid.n,
@@ -230,8 +235,9 @@ def handle_redo_grid(path_params, query_params, body_params, session_token, requ
 
         # Convert black_cells set to cells array for frontend
         cells = [False] * (grid.n * grid.n)
-        for idx in grid.black_cells:
-            cells[idx] = True
+        for r, c in grid.black_cells:
+            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
+            cells[cell_idx] = True
 
         return {
             "size": grid.n,
