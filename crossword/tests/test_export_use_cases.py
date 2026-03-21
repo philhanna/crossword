@@ -102,35 +102,35 @@ class TestExportUseCasesGridToPng:
             export_uc.export_grid_to_png(1, "test_grid")
 
 
-class TestExportUseCasesPuzzleToPuz:
-    """Tests for export_puzzle_to_puz"""
+class TestExportUseCasesPuzzleToAcrosslite:
+    """Tests for export_puzzle_to_acrosslite"""
 
-    def test_export_puzzle_to_puz_success(self, export_uc, mock_persistence, mock_export, test_puzzle):
-        """Export puzzle to .puz successfully"""
-        puz_bytes = b"ACROSS&DOWN\x00... .puz content ..."
+    def test_export_puzzle_to_acrosslite_success(self, export_uc, mock_persistence, mock_export, test_puzzle):
+        """Export puzzle to AcrossLite format successfully"""
+        zip_bytes = b"PK\x03\x04... zip content ..."
         mock_persistence.load_puzzle.return_value = test_puzzle
-        mock_export.export_puzzle_to_puz.return_value = puz_bytes
+        mock_export.export_puzzle_to_acrosslite.return_value = zip_bytes
 
-        result = export_uc.export_puzzle_to_puz(1, "test_puzzle")
+        result = export_uc.export_puzzle_to_acrosslite(1, "test_puzzle")
 
-        assert result == puz_bytes
+        assert result == zip_bytes
         mock_persistence.load_puzzle.assert_called_once_with(1, "test_puzzle")
-        mock_export.export_puzzle_to_puz.assert_called_once_with(test_puzzle)
+        mock_export.export_puzzle_to_acrosslite.assert_called_once_with(test_puzzle)
 
-    def test_export_puzzle_to_puz_puzzle_not_found(self, export_uc, mock_persistence, mock_export):
-        """Export puzzle to .puz when puzzle not found"""
+    def test_export_puzzle_to_acrosslite_puzzle_not_found(self, export_uc, mock_persistence, mock_export):
+        """Export puzzle to AcrossLite when puzzle not found"""
         mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
 
         with pytest.raises(PersistenceError, match="Puzzle not found"):
-            export_uc.export_puzzle_to_puz(1, "nonexistent")
+            export_uc.export_puzzle_to_acrosslite(1, "nonexistent")
 
-    def test_export_puzzle_to_puz_export_error(self, export_uc, mock_persistence, mock_export, test_puzzle):
-        """Export puzzle to .puz when export fails"""
+    def test_export_puzzle_to_acrosslite_export_error(self, export_uc, mock_persistence, mock_export, test_puzzle):
+        """Export puzzle to AcrossLite when export fails"""
         mock_persistence.load_puzzle.return_value = test_puzzle
-        mock_export.export_puzzle_to_puz.side_effect = ExportError("Export failed")
+        mock_export.export_puzzle_to_acrosslite.side_effect = ExportError("Export failed")
 
         with pytest.raises(ExportError, match="Export failed"):
-            export_uc.export_puzzle_to_puz(1, "test_puzzle")
+            export_uc.export_puzzle_to_acrosslite(1, "test_puzzle")
 
 
 class TestExportUseCasesPuzzleToXml:
@@ -162,3 +162,34 @@ class TestExportUseCasesPuzzleToXml:
 
         with pytest.raises(ExportError, match="Export failed"):
             export_uc.export_puzzle_to_xml(1, "test_puzzle")
+
+
+class TestExportUseCasesPuzzleToNytimes:
+    """Tests for export_puzzle_to_nytimes"""
+
+    def test_export_puzzle_to_nytimes_success(self, export_uc, mock_persistence, mock_export, test_puzzle):
+        """Export puzzle to NYTimes format successfully"""
+        zip_bytes = b"PK\x03\x04... zip content ..."
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        mock_export.export_puzzle_to_nytimes.return_value = zip_bytes
+
+        result = export_uc.export_puzzle_to_nytimes(1, "test_puzzle")
+
+        assert result == zip_bytes
+        mock_persistence.load_puzzle.assert_called_once_with(1, "test_puzzle")
+        mock_export.export_puzzle_to_nytimes.assert_called_once_with(test_puzzle)
+
+    def test_export_puzzle_to_nytimes_puzzle_not_found(self, export_uc, mock_persistence, mock_export):
+        """Export puzzle to NYTimes when puzzle not found"""
+        mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
+
+        with pytest.raises(PersistenceError, match="Puzzle not found"):
+            export_uc.export_puzzle_to_nytimes(1, "nonexistent")
+
+    def test_export_puzzle_to_nytimes_export_error(self, export_uc, mock_persistence, mock_export, test_puzzle):
+        """Export puzzle to NYTimes when export fails"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        mock_export.export_puzzle_to_nytimes.side_effect = ExportError("Export failed")
+
+        with pytest.raises(ExportError, match="Export failed"):
+            export_uc.export_puzzle_to_nytimes(1, "test_puzzle")

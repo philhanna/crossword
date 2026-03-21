@@ -4,8 +4,9 @@ Export use cases - Exporting grids and puzzles to various formats.
 Public interface:
   export_grid_to_pdf(user_id, name) -> bytes
   export_grid_to_png(user_id, name) -> bytes
-  export_puzzle_to_puz(user_id, name) -> bytes
+  export_puzzle_to_acrosslite(user_id, name) -> bytes
   export_puzzle_to_xml(user_id, name) -> str
+  export_puzzle_to_nytimes(user_id, name) -> bytes
 """
 
 from crossword.ports.persistence import PersistencePort, PersistenceError
@@ -59,27 +60,29 @@ class ExportUseCases:
         grid = self.persistence.load_grid(user_id, name)
         return self.export.export_grid_to_png(grid)
 
-    def export_puzzle_to_puz(self, user_id: int, name: str) -> bytes:
+    def export_puzzle_to_acrosslite(self, user_id: int, name: str) -> bytes:
         """
-        Export a puzzle to AcrossLite .puz binary format.
+        Export a puzzle to AcrossLite text format.
+
+        Returns a ZIP archive containing the .txt file and a .json backup.
 
         Args:
             user_id: The user who owns this puzzle
             name: Name/identifier for the puzzle
 
         Returns:
-            .puz file contents as bytes
+            ZIP archive as bytes
 
         Raises:
             PersistenceError: If puzzle not found
             ExportError: If export fails
         """
         puzzle = self.persistence.load_puzzle(user_id, name)
-        return self.export.export_puzzle_to_puz(puzzle)
+        return self.export.export_puzzle_to_acrosslite(puzzle)
 
     def export_puzzle_to_xml(self, user_id: int, name: str) -> str:
         """
-        Export a puzzle to XML text format.
+        Export a puzzle to Crossword Compiler XML format.
 
         Args:
             user_id: The user who owns this puzzle
@@ -94,3 +97,23 @@ class ExportUseCases:
         """
         puzzle = self.persistence.load_puzzle(user_id, name)
         return self.export.export_puzzle_to_xml(puzzle)
+
+    def export_puzzle_to_nytimes(self, user_id: int, name: str) -> bytes:
+        """
+        Export a puzzle in NYTimes submission format.
+
+        Returns a ZIP archive containing an HTML clue sheet and SVG grid image.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+
+        Returns:
+            ZIP archive as bytes
+
+        Raises:
+            PersistenceError: If puzzle not found
+            ExportError: If export fails
+        """
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        return self.export.export_puzzle_to_nytimes(puzzle)

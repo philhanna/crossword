@@ -72,8 +72,9 @@ class TestPortSignatures:
         required_methods = [
             "export_grid_to_pdf",
             "export_grid_to_png",
-            "export_puzzle_to_puz",
+            "export_puzzle_to_acrosslite",
             "export_puzzle_to_xml",
+            "export_puzzle_to_nytimes",
         ]
         for method_name in required_methods:
             assert hasattr(ExportPort, method_name), f"Missing {method_name}"
