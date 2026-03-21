@@ -12,7 +12,9 @@ const BOXSIZE = 32;
 
 const AppState = {
     view: 'home',            // 'home' | 'grid-editor' | 'puzzle-editor'
-    gridName: null,          // name of currently-open grid (original)
+    gridOriginalName: null,  // name of currently-open grid (original)
+    gridWorkingName: null,   // grid working copy name (e.g. '__wc__a1b2c3d4')
+    gridData: null,          // { size, cells[] } from API
     puzzleName: null,        // name of currently-open puzzle (original)
     puzzleWorkingName: null, // working copy name (e.g. '__wc__a1b2c3d4')
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
@@ -153,7 +155,161 @@ function renderHome() {
         '<div class="w3-container"><p>Use the Grid or Puzzle menu to get started.</p></div>';
 }
 
-function renderGridEditor() { /* Phase 2 */ }
+// ---------------------------------------------------------------------------
+// Grid SVG renderer (client-side)
+// ---------------------------------------------------------------------------
+
+function computeGridNumbers(cells, n) {
+    const nums = new Array(n * n).fill(null);
+    let num = 1;
+    for (let r = 1; r <= n; r++) {
+        for (let c = 1; c <= n; c++) {
+            const idx = (r - 1) * n + (c - 1);
+            if (cells[idx]) continue; // black cell
+            const startsAcross = (c === 1 || cells[(r - 1) * n + (c - 2)]) &&
+                                  c < n && !cells[(r - 1) * n + c];
+            const startsDown   = (r === 1 || cells[(r - 2) * n + (c - 1)]) &&
+                                  r < n && !cells[r * n + (c - 1)];
+            if (startsAcross || startsDown) nums[idx] = num++;
+        }
+    }
+    return nums;
+}
+
+function buildGridSvg(cells, n) {
+    const totalPx = n * BOXSIZE + 1;
+    const nums    = computeGridNumbers(cells, n);
+    const parts   = [
+        `<svg xmlns="http://www.w3.org/2000/svg" id="grid-svg" ` +
+        `width="${totalPx}" height="${totalPx}" style="cursor:pointer;display:block">`,
+    ];
+    for (let r = 1; r <= n; r++) {
+        for (let c = 1; c <= n; c++) {
+            const idx   = (r - 1) * n + (c - 1);
+            const x     = (c - 1) * BOXSIZE;
+            const y     = (r - 1) * BOXSIZE;
+            const black = cells[idx];
+            parts.push(
+                `<rect x="${x}" y="${y}" width="${BOXSIZE}" height="${BOXSIZE}" ` +
+                `fill="${black ? 'black' : 'white'}" stroke="#999" stroke-width="0.5"/>`
+            );
+            if (!black && nums[idx] !== null) {
+                parts.push(
+                    `<text x="${x + 2}" y="${y + 10}" ` +
+                    `font-size="9" font-family="sans-serif">${nums[idx]}</text>`
+                );
+            }
+        }
+    }
+    parts.push(
+        `<rect x="0" y="0" width="${totalPx - 1}" height="${totalPx - 1}" ` +
+        `fill="none" stroke="black" stroke-width="2"/>`
+    );
+    parts.push('</svg>');
+    return parts.join('');
+}
+
+// ---------------------------------------------------------------------------
+// Grid editor — rendering and click handling
+// ---------------------------------------------------------------------------
+
+function renderGridEditor() {
+    const gd   = AppState.gridData;
+    const name = AppState.gridOriginalName || '(untitled)';
+
+    const toolbar = `
+<div class="w3-container w3-margin-bottom" style="height:36px">
+  <div class="w3-bar w3-border">
+    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_rotate_action()">
+      <i class="material-icons crosstb-icon">rotate_right</i><span>Rotate</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_undo_action()">
+      <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_redo_action()">
+      <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_info_action()">
+      <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
+  </div>
+</div>`;
+
+    document.getElementById('lhs').innerHTML = `
+<div class="w3-container">
+  <h3>Editing grid <b>${escapeHtml(name)}</b></h3>
+</div>
+${toolbar}
+<div id="grid-svg-container" class="w3-container" style="padding-top:4px">
+  ${gd ? buildGridSvg(gd.cells, gd.size) : ''}
+</div>
+<div class="w3-container w3-text-gray" style="margin-top:8px;font-style:italic">
+  Click to toggle black cells
+</div>`;
+
+    document.getElementById('rhs').innerHTML = '';
+
+    const svg = document.getElementById('grid-svg');
+    if (svg) svg.addEventListener('click', handleGridClick);
+}
+
+async function handleGridClick(event) {
+    const svg = document.getElementById('grid-svg');
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const x    = event.clientX - rect.left;
+    const y    = event.clientY - rect.top;
+    const n    = AppState.gridData.size;
+    const r    = Math.floor(y / BOXSIZE);  // 0-indexed for API
+    const c    = Math.floor(x / BOXSIZE);
+    if (r < 0 || r >= n || c < 0 || c >= n) return;
+    const wn   = AppState.gridWorkingName;
+    try {
+        const data = await apiFetch('PUT',
+            `/api/grids/${encodeURIComponent(wn)}/cells/${r}/${c}`);
+        if (data.error) { alert(`Error: ${data.error}`); return; }
+        AppState.gridData = data;
+        const container = document.getElementById('grid-svg-container');
+        if (container) {
+            container.innerHTML = buildGridSvg(data.cells, data.size);
+            document.getElementById('grid-svg').addEventListener('click', handleGridClick);
+        }
+    } catch (e) {
+        alert('Error toggling cell');
+    }
+}
+
+async function _gridAction(method, path) {
+    const wn = AppState.gridWorkingName;
+    try {
+        const data = await apiFetch(method, `/api/grids/${encodeURIComponent(wn)}${path}`);
+        if (data.error) { alert(`Error: ${data.error}`); return; }
+        AppState.gridData = data;
+        const container = document.getElementById('grid-svg-container');
+        if (container) {
+            container.innerHTML = buildGridSvg(data.cells, data.size);
+            document.getElementById('grid-svg').addEventListener('click', handleGridClick);
+        }
+    } catch (e) { alert('Error performing grid action'); }
+}
+
+async function do_grid_rotate_action() { await _gridAction('POST', '/rotate'); }
+async function do_grid_undo_action()   { await _gridAction('POST', '/undo'); }
+async function do_grid_redo_action()   { await _gridAction('POST', '/redo'); }
+
+async function do_grid_info_action() {
+    const gd = AppState.gridData;
+    if (!gd) return;
+    const n       = gd.size;
+    const blacks  = gd.cells.filter(Boolean).length;
+    const whites  = n * n - blacks;
+    const nums    = computeGridNumbers(gd.cells, n);
+    const numbered = nums.filter(v => v !== null).length;
+    messageBox(
+        'Grid info',
+        `<b>Size:</b> ${n}×${n}<br>` +
+        `<b>White cells:</b> ${whites}<br>` +
+        `<b>Black cells:</b> ${blacks}<br>` +
+        `<b>Numbered cells:</b> ${numbered}`,
+        null, null
+    );
+}
 
 // ---------------------------------------------------------------------------
 // Puzzle SVG renderer (client-side)
@@ -675,8 +831,38 @@ async function do_puzzle_open() {
     }
 }
 
-function do_puzzle_new() {
-    alert('New puzzle — coming in Phase 3 (requires grid chooser)');
+async function do_puzzle_new() {
+    try {
+        const listData = await apiFetch('GET', '/api/grids');
+        if (listData.error) { alert(`Error: ${listData.error}`); return; }
+        const grids = (listData.grids || []).filter(g => !g.startsWith('__wc__'));
+        if (grids.length === 0) {
+            messageBox('New puzzle', 'No saved grids found. Create a grid first.', null, null);
+            return;
+        }
+        showChooser('Choose a grid', grids, (gridName) => {
+            inputBox('New puzzle', '<b>Puzzle name:</b>', '', async (name) => {
+                if (!name) return;
+                try {
+                    const data = await apiFetch('POST', '/api/puzzles',
+                        { name, grid_name: gridName });
+                    if (data.error) { alert(`Error creating puzzle: ${data.error}`); return; }
+                    const openData = await apiFetch('POST',
+                        `/api/puzzles/${encodeURIComponent(name)}/open`);
+                    if (openData.error) { alert(`Error opening puzzle: ${openData.error}`); return; }
+                    const wn = openData.working_name;
+                    const puzzleData = await apiFetch('GET',
+                        `/api/puzzles/${encodeURIComponent(wn)}`);
+                    if (puzzleData.error) { alert(`Error loading puzzle: ${puzzleData.error}`); return; }
+                    AppState.puzzleName        = name;
+                    AppState.puzzleWorkingName = wn;
+                    AppState.puzzleData        = puzzleData;
+                    AppState.editingWord       = null;
+                    showView('puzzle-editor');
+                } catch (e) { alert('Error creating puzzle'); }
+            });
+        });
+    } catch (e) { alert('Error listing grids'); }
 }
 
 async function do_puzzle_save() {
@@ -846,30 +1032,121 @@ async function do_puzzle_delete() {
 }
 
 // ---------------------------------------------------------------------------
-// Menu actions — Grid (Phase 2 stubs)
+// Menu actions — Grid
 // ---------------------------------------------------------------------------
+
+async function _openGridInEditor(name) {
+    try {
+        const openData = await apiFetch('POST', `/api/grids/${encodeURIComponent(name)}/open`);
+        if (openData.error) { alert(`Error opening grid: ${openData.error}`); return; }
+        const wn       = openData.working_name;
+        const gridData = await apiFetch('GET', `/api/grids/${encodeURIComponent(wn)}`);
+        if (gridData.error) { alert(`Error loading grid: ${gridData.error}`); return; }
+        AppState.gridOriginalName = name;
+        AppState.gridWorkingName  = wn;
+        AppState.gridData         = gridData;
+        showView('grid-editor');
+    } catch (e) { alert('Error opening grid'); }
+}
 
 function do_grid_new() {
     inputBox(
         'New grid',
-        '<b>Grid size:</b> <em>(a single odd positive integer)</em>',
+        '<b>Grid size:</b> <em>(an odd positive integer, e.g. 15)</em>',
         '',
-        (value) => {
-            const n = Number(value);
-            if (!value || isNaN(n))  { alert(value + ' is not a number'); return; }
-            if (n % 2 === 0)         { alert(n + ' is not an odd number'); return; }
-            if (n < 1)               { alert(n + ' is not a positive number'); return; }
-            alert(`Create ${n}×${n} grid — coming in Phase 2`);
+        (sizeVal) => {
+            const n = Number(sizeVal);
+            if (!sizeVal || isNaN(n))  { alert(sizeVal + ' is not a number'); return; }
+            if (n % 2 === 0)           { alert(n + ' is not an odd number'); return; }
+            if (n < 1)                 { alert(n + ' is not a positive number'); return; }
+            inputBox('New grid', '<b>Grid name:</b>', '', async (name) => {
+                if (!name) return;
+                try {
+                    const data = await apiFetch('POST', '/api/grids', { name, size: n });
+                    if (data.error) { alert(`Error creating grid: ${data.error}`); return; }
+                    await _openGridInEditor(name);
+                } catch (e) { alert('Error creating grid'); }
+            });
         }
     );
 }
 
-function do_grid_new_from_puzzle() { alert('New grid from puzzle — coming in Phase 2'); }
-function do_grid_open()            { alert('Open grid — coming in Phase 2'); }
-function do_grid_save()            { alert('Save grid — coming in Phase 2'); }
-function do_grid_save_as()         { alert('Save grid as — coming in Phase 2'); }
-function do_grid_close()           { AppState.gridName = null; showView('home'); }
-function do_grid_delete()          { alert('Delete grid — coming in Phase 2'); }
+async function do_grid_new_from_puzzle() {
+    try {
+        const listData = await apiFetch('GET', '/api/puzzles');
+        if (listData.error) { alert(`Error: ${listData.error}`); return; }
+        const puzzles = (listData.puzzles || []).filter(p => !p.startsWith('__wc__'));
+        if (puzzles.length === 0) {
+            messageBox('New grid from puzzle', 'No saved puzzles found.', null, null);
+            return;
+        }
+        showChooser('Choose a puzzle', puzzles, (puzzleName) => {
+            inputBox('New grid from puzzle', '<b>New grid name:</b>', '', async (gridName) => {
+                if (!gridName) return;
+                try {
+                    const data = await apiFetch('POST', '/api/grids/from-puzzle',
+                        { name: gridName, puzzle_name: puzzleName });
+                    if (data.error) { alert(`Error: ${data.error}`); return; }
+                    await _openGridInEditor(gridName);
+                } catch (e) { alert('Error creating grid from puzzle'); }
+            });
+        });
+    } catch (e) { alert('Error listing puzzles'); }
+}
+
+async function do_grid_open() {
+    try {
+        const listData = await apiFetch('GET', '/api/grids');
+        if (listData.error) { alert(`Error: ${listData.error}`); return; }
+        const grids = (listData.grids || []).filter(g => !g.startsWith('__wc__'));
+        if (grids.length === 0) {
+            messageBox('Open grid', 'No saved grids found.', null, null);
+            return;
+        }
+        showChooser('Open grid', grids, async (name) => {
+            await _openGridInEditor(name);
+        });
+    } catch (e) { alert('Error listing grids'); }
+}
+
+async function do_grid_save() {
+    const wn   = AppState.gridWorkingName;
+    const name = AppState.gridOriginalName;
+    if (!name) { do_grid_save_as(); return; }
+    try {
+        const data = await apiFetch('POST',
+            `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: name });
+        if (data.error) alert(`Save failed: ${data.error}`);
+    } catch (e) { alert('Error saving grid'); }
+}
+
+async function do_grid_save_as() {
+    inputBox('Save grid as', 'Grid name:', AppState.gridOriginalName || '', async (newName) => {
+        if (!newName) return;
+        const wn = AppState.gridWorkingName;
+        try {
+            const data = await apiFetch('POST',
+                `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: newName });
+            if (data.error) { alert(`Save failed: ${data.error}`); return; }
+            AppState.gridOriginalName = newName;
+            renderGridEditor();
+        } catch (e) { alert('Error saving grid'); }
+    });
+}
+
+async function do_grid_close() {
+    const wn = AppState.gridWorkingName;
+    AppState.gridOriginalName = null;
+    AppState.gridWorkingName  = null;
+    AppState.gridData         = null;
+    if (wn) {
+        try { await apiFetch('DELETE', `/api/grids/${encodeURIComponent(wn)}`); }
+        catch (e) { /* ignore cleanup errors */ }
+    }
+    showView('home');
+}
+
+function do_grid_delete() { /* Grid delete is disabled in the menu */ }
 
 // ---------------------------------------------------------------------------
 // Menu actions — Publish (Phase 5 stub)
