@@ -17,6 +17,7 @@ const AppState = {
     puzzleWorkingName: null, // working copy name (e.g. '__wc__a1b2c3d4')
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
     editingWord: null,       // null | {seq, direction, cells, answer, clue}
+    showingStats: false,     // true = RHS shows stats panel
 };
 
 // ---------------------------------------------------------------------------
@@ -283,6 +284,8 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_title()">
       <i class="material-icons crosstb-icon">title</i><span>Title</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
+      <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
       <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
@@ -304,8 +307,15 @@ ${toolbar}
 }
 
 function renderPuzzleEditorRhs() {
-    document.getElementById('rhs').innerHTML =
-        AppState.editingWord ? renderWordEditorPanel() : renderClues();
+    let html;
+    if (AppState.editingWord) {
+        html = renderWordEditorPanel();
+    } else if (AppState.showingStats) {
+        html = AppState._statsData ? renderStatsPanel(AppState._statsData) : '';
+    } else {
+        html = renderClues();
+    }
+    document.getElementById('rhs').innerHTML = html;
 }
 
 function renderClues() {
@@ -464,7 +474,8 @@ async function openWordEditor(seq, direction) {
 }
 
 function closeWordEditor() {
-    AppState.editingWord = null;
+    AppState.editingWord  = null;
+    AppState.showingStats = false;
     renderPuzzleEditorRhs();
 }
 
@@ -720,6 +731,88 @@ async function do_puzzle_title() {
     });
 }
 
+async function do_puzzle_stats() {
+    const wn = AppState.puzzleWorkingName;
+    try {
+        const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/stats`);
+        if (data.error) { alert(`Error: ${data.error}`); return; }
+        AppState._statsData   = data;
+        AppState.showingStats = true;
+        AppState.editingWord  = null;
+        renderPuzzleEditorRhs();
+    } catch (e) { alert('Error fetching stats'); }
+}
+
+function renderStatsPanel(stats) {
+    const validColor = stats.valid ? 'w3-text-green' : 'w3-text-red';
+    const validText  = stats.valid ? 'Valid' : 'Invalid';
+
+    // Errors section
+    let errorsHtml;
+    const allErrors = Object.values(stats.errors).flat();
+    if (allErrors.length === 0) {
+        errorsHtml = 'None';
+    } else {
+        errorsHtml = '<ul style="list-style-type:none;margin:0;padding:0">' +
+            allErrors.map(e => `<li style="color:#cc0000">${escapeHtml(e)}</li>`).join('') +
+            '</ul>';
+    }
+
+    // Word lengths table
+    const wlRows = Object.entries(stats.wordlengths)
+        .sort((a, b) => Number(b[0]) - Number(a[0]))
+        .map(([len, entry]) => {
+            const across = (entry.alist || []).join(', ') || '—';
+            const down   = (entry.dlist || []).join(', ') || '—';
+            return `<tr>
+  <td style="border:1px solid #ccc;padding:3px 8px">${len}</td>
+  <td style="border:1px solid #ccc;padding:3px 8px;word-break:break-word">${escapeHtml(across)}</td>
+  <td style="border:1px solid #ccc;padding:3px 8px;word-break:break-word">${escapeHtml(down)}</td>
+</tr>`;
+        }).join('');
+
+    function row(label, value) {
+        return `<div class="w3-section w3-cell-row">
+  <div class="w3-cell" style="width:30%"><b>${label}</b></div>
+  <div class="w3-cell">${value}</div>
+</div>`;
+    }
+
+    return `
+<div class="w3-margin-right">
+  <header class="w3-container w3-blue-gray" style="padding:7px;position:relative">
+    <h3>Puzzle statistics</h3>
+    <span class="w3-button w3-xlarge w3-hover-red"
+          style="position:absolute;top:0;right:0"
+          onclick="closeStatsPanel()">&times;</span>
+  </header>
+  <div class="w3-card-4">
+    <div class="w3-container" style="padding-bottom:12px">
+      ${row('Valid:', `<span class="${validColor}"><b>${validText}</b></span>`)}
+      ${row('Errors:', errorsHtml)}
+      ${row('Size:', escapeHtml(stats.size))}
+      ${row('Word count:', stats.wordcount)}
+      ${row('Black cells:', stats.blockcount)}
+      <div class="w3-section">
+        <table class="w3-table" style="border-collapse:collapse;width:auto">
+          <tr>
+            <th style="border:1px solid #ccc;padding:3px 8px">Word length</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Across</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Down</th>
+          </tr>
+          ${wlRows}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function closeStatsPanel() {
+    AppState.showingStats = false;
+    renderPuzzleEditorRhs();
+}
+
 async function do_puzzle_undo() { await _puzzleUndoRedo('undo'); }
 async function do_puzzle_redo() { await _puzzleUndoRedo('redo'); }
 
@@ -729,8 +822,9 @@ async function _puzzleUndoRedo(action) {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(wn)}/${action}`);
         if (data.error) { alert(`${action} failed: ${data.error}`); return; }
-        AppState.puzzleData  = data;
-        AppState.editingWord = null;
+        AppState.puzzleData   = data;
+        AppState.editingWord  = null;
+        AppState.showingStats = false;
         renderPuzzleEditor();
     } catch (e) { alert(`Error during ${action}`); }
 }

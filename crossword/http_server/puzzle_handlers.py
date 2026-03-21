@@ -17,6 +17,7 @@ Routes:
   POST   /api/puzzles/<name>/redo          → redo_puzzle
   PUT    /api/puzzles/<name>/grid          → replace_puzzle_grid
   GET    /api/puzzles/<name>/preview       → get_puzzle_preview
+  GET    /api/puzzles/<name>/stats         → get_puzzle_stats
 """
 
 from crossword.ports.persistence import PersistenceError
@@ -456,6 +457,25 @@ def handle_get_puzzle_preview(path_params, query_params, body_params, session_to
 
         user_id = 1
         return app.puzzle_uc.get_puzzle_preview(user_id, name)
+
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_get_puzzle_stats(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Return statistics and validation results for a puzzle.
+    GET /api/puzzles/<name>/stats
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+
+        user_id = 1
+        return app.puzzle_uc.get_puzzle_stats(user_id, name)
 
     except PersistenceError:
         return {"error": f"Puzzle not found: {name}"}

@@ -17,6 +17,7 @@ Public interface:
   redo_puzzle(user_id, name) -> Puzzle
   replace_puzzle_grid(user_id, name, new_grid_name) -> Puzzle
   get_puzzle_preview(user_id, name) -> dict
+  get_puzzle_stats(user_id, name) -> dict
 """
 
 import uuid
@@ -363,6 +364,24 @@ class PuzzleUseCases:
         self.persistence.save_puzzle(user_id, name, puzzle)
 
         return puzzle
+
+    def get_puzzle_stats(self, user_id: int, name: str) -> dict:
+        """
+        Return statistics and validation results for a puzzle.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+
+        Returns:
+            Dict with keys: valid, errors, size, wordcount, blockcount,
+            wordlengths
+
+        Raises:
+            PersistenceError: If puzzle not found
+        """
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        return puzzle.get_statistics()
 
     def get_puzzle_preview(self, user_id: int, name: str) -> dict:
         """

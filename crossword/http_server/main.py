@@ -37,6 +37,7 @@ from crossword.http_server.puzzle_handlers import (
     handle_redo_puzzle,
     handle_replace_puzzle_grid,
     handle_get_puzzle_preview,
+    handle_get_puzzle_stats,
 )
 from crossword.http_server.word_handlers import (
     handle_get_suggestions,
@@ -91,6 +92,7 @@ def register_routes(router):
     router.add_route("POST", r"^/api/puzzles/([^/]+)/redo$", handle_redo_puzzle)
     router.add_route("PUT", r"^/api/puzzles/([^/]+)/grid$", handle_replace_puzzle_grid)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/preview$", handle_get_puzzle_preview)
+    router.add_route("GET", r"^/api/puzzles/([^/]+)/stats$", handle_get_puzzle_stats)
 
     # Word routes
     router.add_route("GET", r"^/api/words/suggestions$", handle_get_suggestions)

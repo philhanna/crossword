@@ -538,3 +538,51 @@ class TestPuzzleUseCasesGetPreview:
 
         with pytest.raises(PersistenceError):
             puzzle_uc.get_puzzle_preview(1, "missing_puzzle")
+
+
+class TestPuzzleUseCasesGetStats:
+    """Tests for get_puzzle_stats"""
+
+    def test_get_puzzle_stats_returns_required_keys(self, puzzle_uc, mock_persistence, test_puzzle):
+        """get_puzzle_stats returns dict with all required keys"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_stats(1, "my_puzzle")
+
+        assert "valid" in result
+        assert "errors" in result
+        assert "size" in result
+        assert "wordcount" in result
+        assert "blockcount" in result
+        assert "wordlengths" in result
+
+    def test_get_puzzle_stats_valid_is_bool(self, puzzle_uc, mock_persistence, test_puzzle):
+        """valid field is a boolean"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_stats(1, "my_puzzle")
+
+        assert isinstance(result["valid"], bool)
+
+    def test_get_puzzle_stats_size_contains_n(self, puzzle_uc, mock_persistence, test_puzzle):
+        """size field reflects puzzle dimensions"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_stats(1, "my_puzzle")
+
+        assert "15" in result["size"]
+
+    def test_get_puzzle_stats_wordcount_is_int(self, puzzle_uc, mock_persistence, test_puzzle):
+        """wordcount is an integer"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_stats(1, "my_puzzle")
+
+        assert isinstance(result["wordcount"], int)
+
+    def test_get_puzzle_stats_not_found(self, puzzle_uc, mock_persistence):
+        """get_puzzle_stats raises PersistenceError if puzzle not found"""
+        mock_persistence.load_puzzle.side_effect = PersistenceError("not found")
+
+        with pytest.raises(PersistenceError):
+            puzzle_uc.get_puzzle_stats(1, "missing")
