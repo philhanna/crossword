@@ -91,6 +91,44 @@ function showChooser(title, items, onSelect) {
     showElement('ch');
 }
 
+async function showPreviewChooser(title, names, apiPrefix, onSelect) {
+    document.getElementById('ch-title').innerHTML = title;
+    const listEl = document.getElementById('ch-list');
+    listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews…</div>';
+    showElement('ch');
+
+    const previews = await Promise.all(
+        names.map(name =>
+            apiFetch('GET', `${apiPrefix}/${encodeURIComponent(name)}/preview`)
+                .catch(() => ({ name, heading: name, svgstr: '', error: true }))
+        )
+    );
+
+    listEl.innerHTML = '';
+    for (const p of previews) {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;cursor:pointer;padding:6px 8px;border-bottom:1px solid #ddd';
+        row.onmouseover = () => row.style.background = '#f1f1f1';
+        row.onmouseout  = () => row.style.background = '';
+        row.onclick     = () => { hideElement('ch'); onSelect(p.name); };
+
+        const svgDiv = document.createElement('div');
+        svgDiv.style.cssText = 'flex-shrink:0;width:150px;overflow:hidden;margin-right:12px';
+        if (p.svgstr) {
+            svgDiv.innerHTML = p.svgstr;
+            const svg = svgDiv.querySelector('svg');
+            if (svg) { svg.setAttribute('width', '150'); svg.setAttribute('height', '150'); }
+        }
+
+        const textDiv = document.createElement('div');
+        textDiv.innerHTML = `<b>${escapeHtml(p.name)}</b><br><small class="w3-text-gray">${escapeHtml(p.heading || '')}</small>`;
+
+        row.appendChild(svgDiv);
+        row.appendChild(textDiv);
+        listEl.appendChild(row);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Menu enable / disable
 // ---------------------------------------------------------------------------
@@ -303,7 +341,7 @@ async function do_grid_info_action() {
     const numbered = nums.filter(v => v !== null).length;
     messageBox(
         'Grid info',
-        `<b>Size:</b> ${n}×${n}<br>` +
+        `<b>Size:</b> ${n} &times; ${n}<br>` +
         `<b>White cells:</b> ${whites}<br>` +
         `<b>Black cells:</b> ${blacks}<br>` +
         `<b>Numbered cells:</b> ${numbered}`,
@@ -810,7 +848,7 @@ async function do_puzzle_open() {
             messageBox('Open puzzle', 'No saved puzzles found.', null, null);
             return;
         }
-        showChooser('Open puzzle', puzzles, async (name) => {
+        showPreviewChooser('Open puzzle', puzzles, '/api/puzzles', async (name) => {
             try {
                 const openData = await apiFetch('POST',
                     `/api/puzzles/${encodeURIComponent(name)}/open`);
@@ -840,7 +878,7 @@ async function do_puzzle_new() {
             messageBox('New puzzle', 'No saved grids found. Create a grid first.', null, null);
             return;
         }
-        showChooser('Choose a grid', grids, (gridName) => {
+        showPreviewChooser('Choose a grid', grids, '/api/grids', (gridName) => {
             inputBox('New puzzle', '<b>Puzzle name:</b>', '', async (name) => {
                 if (!name) return;
                 try {
@@ -948,8 +986,8 @@ function renderStatsPanel(stats) {
     const wlRows = Object.entries(stats.wordlengths)
         .sort((a, b) => Number(b[0]) - Number(a[0]))
         .map(([len, entry]) => {
-            const across = (entry.alist || []).join(', ') || '—';
-            const down   = (entry.dlist || []).join(', ') || '—';
+            const across = (entry.alist || []).join(', ') || '(none)';
+            const down   = (entry.dlist || []).join(', ') || '(none)';
             return `<tr>
   <td style="border:1px solid #ccc;padding:3px 8px">${len}</td>
   <td style="border:1px solid #ccc;padding:3px 8px;word-break:break-word">${escapeHtml(across)}</td>
@@ -1080,7 +1118,7 @@ async function do_grid_new_from_puzzle() {
             messageBox('New grid from puzzle', 'No saved puzzles found.', null, null);
             return;
         }
-        showChooser('Choose a puzzle', puzzles, (puzzleName) => {
+        showPreviewChooser('Choose a puzzle', puzzles, '/api/puzzles', (puzzleName) => {
             inputBox('New grid from puzzle', '<b>New grid name:</b>', '', async (gridName) => {
                 if (!gridName) return;
                 try {
@@ -1103,7 +1141,7 @@ async function do_grid_open() {
             messageBox('Open grid', 'No saved grids found.', null, null);
             return;
         }
-        showChooser('Open grid', grids, async (name) => {
+        showPreviewChooser('Open grid', grids, '/api/grids', async (name) => {
             await _openGridInEditor(name);
         });
     } catch (e) { alert('Error listing grids'); }
