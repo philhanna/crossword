@@ -5,9 +5,11 @@ Public interface:
   get_suggestions(pattern) -> list[str]
   get_all_words() -> list[str]
   validate_word(word) -> bool
+  get_word_constraints(word) -> dict
 """
 
 import re
+from crossword import LetterList
 from crossword.ports.word_list import WordListPort
 
 
@@ -69,6 +71,73 @@ class WordUseCases:
         word_lower = word.lower()
         all_words = self.word_list.get_all_words()
         return word_lower in all_words
+
+    def get_word_constraints(self, word) -> dict:
+        """
+        Compute letter constraints for a word based on its crossing words.
+
+        For each position in the word, examines the crossing word and determines
+        which letters are valid at that position by looking up all dictionary
+        words matching the crossing word's current pattern.
+
+        Args:
+            word: A Word domain object (AcrossWord or DownWord)
+
+        Returns:
+            Dict with keys:
+              - word: current text of the word (spaces shown as '.')
+              - length: word length
+              - crossers: list of per-position constraint dicts, each with:
+                  pos, letter, crossing_text, crossing_location,
+                  crossing_index, regexp, choices
+              - pattern: concatenated regexps (usable as a suggestions pattern)
+        """
+        word_coords = list(word.cell_iterator())
+        word_text = word.get_text()
+        crossing_words = word.get_crossing_words()
+
+        crossers = []
+        for i, crossing_word in enumerate(crossing_words):
+            crossing_text = crossing_word.get_text()
+            # Build regex pattern from crossing word: spaces/blanks become '.'
+            crossing_pattern = "^" + re.sub(r"[ ?]", ".", crossing_text) + "$"
+
+            # Find where in the crossing word it intersects this word
+            crossing_index = 1
+            for j, (r, c) in enumerate(crossing_word.cell_iterator()):
+                if (r, c) == word_coords[i]:
+                    crossing_index = j + 1  # 1-indexed
+                    break
+
+            # Look up all words matching the crossing pattern
+            matches = self.word_list.get_matches(crossing_pattern)
+            letter_set = {m[crossing_index - 1].upper() for m in matches}
+            nchoices = len(matches)
+
+            regexp = LetterList.regexp(letter_set)
+            if not regexp:
+                # Crossing word not in dictionary — fall back to current letter
+                regexp = word_text[i] if word_text[i] != " " else "."
+                nchoices = 1
+
+            crossers.append({
+                "pos": i + 1,
+                "letter": word_text[i],
+                "crossing_text": crossing_text.replace(" ", "."),
+                "crossing_location": crossing_word.location,
+                "crossing_index": crossing_index,
+                "regexp": regexp,
+                "choices": nchoices,
+            })
+
+        pattern = "".join(c["regexp"] for c in crossers)
+
+        return {
+            "word": word_text.replace(" ", "."),
+            "length": word.length,
+            "crossers": crossers,
+            "pattern": pattern,
+        }
 
     # Helper methods
 

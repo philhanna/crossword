@@ -5,7 +5,10 @@ Routes:
   GET /api/words/suggestions?pattern=<pattern>  → get_suggestions
   GET /api/words/all                            → get_all_words
   GET /api/words/validate?word=<word>           → validate_word
+  GET /api/puzzles/<name>/words/<seq>/<dir>/constraints → get_word_constraints
 """
+
+from crossword.ports.persistence import PersistenceError
 
 
 def handle_get_suggestions(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
@@ -57,5 +60,35 @@ def handle_validate_word(path_params, query_params, body_params, session_token, 
 
         return {"word": word, "valid": is_valid}
 
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_get_word_constraints(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Return letter constraints for a word based on its crossing words.
+    GET /api/puzzles/<name>/words/<seq>/<direction>/constraints
+    """
+    try:
+        name = path_params[0] if len(path_params) > 0 else None
+        seq_str = path_params[1] if len(path_params) > 1 else None
+        direction = path_params[2] if len(path_params) > 2 else None
+
+        if not name or not seq_str or not direction:
+            return {"error": "Missing name, seq, or direction"}
+
+        try:
+            seq = int(seq_str)
+        except ValueError:
+            return {"error": "seq must be an integer"}
+
+        user_id = 1
+        word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
+        return app.word_uc.get_word_constraints(word)
+
+    except ValueError as e:
+        return {"error": str(e)}
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
         return {"error": str(e)}
