@@ -155,7 +155,7 @@ function updateMenu() {
     grid  ? menuEnable('menu-grid-save')            : menuDisable('menu-grid-save');
     grid  ? menuEnable('menu-grid-save-as')         : menuDisable('menu-grid-save-as');
     grid  ? menuEnable('menu-grid-close')           : menuDisable('menu-grid-close');
-    menuDisable('menu-grid-delete');
+    grid  ? menuEnable('menu-grid-delete')  : menuDisable('menu-grid-delete');
 
     home   ? menuEnable('menu-puzzle-new')          : menuDisable('menu-puzzle-new');
     home   ? menuEnable('menu-puzzle-open')         : menuDisable('menu-puzzle-open');
@@ -1184,7 +1184,21 @@ async function do_grid_close() {
     showView('home');
 }
 
-function do_grid_delete() { /* Grid delete is disabled in the menu */ }
+async function do_grid_delete() {
+    const name = AppState.gridOriginalName;
+    if (!name) return;
+    messageBox(
+        'Delete grid',
+        `Are you sure you want to delete grid <b>'${escapeHtml(name)}'</b>?`,
+        null,
+        async () => {
+            try {
+                await apiFetch('DELETE', `/api/grids/${encodeURIComponent(name)}`);
+                await do_grid_close();
+            } catch (e) { alert('Error deleting grid'); }
+        }
+    );
+}
 
 // ---------------------------------------------------------------------------
 // Menu actions — Publish (Phase 5 stub)
