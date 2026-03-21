@@ -307,15 +307,17 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
 
 def handle_set_word_clue(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
     """
-    Set a clue for a word.
+    Set the clue and optionally the text for a word.
     PUT /api/puzzles/<name>/words/<seq>/<direction>
-    Body: { "clue": "The answer to life" }
+    Body: { "clue": "The answer to life", "text": "ANSWER" }
+    If 'text' is provided it is applied with undo tracking.
     """
     try:
         name = path_params[0] if len(path_params) > 0 else None
         seq = path_params[1] if len(path_params) > 1 else None
         direction = path_params[2] if len(path_params) > 2 else None
         clue = body_params.get("clue", "")
+        text = body_params.get("text", None)
 
         if not name or not seq or not direction:
             return {"error": "Missing name, seq, or direction"}
@@ -326,15 +328,8 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
             return {"error": "seq must be an integer"}
 
         user_id = 1
-        puzzle = app.puzzle_uc.set_word_clue(user_id, name, seq, direction, clue)
-
-        return {
-            "name": name,
-            "seq": seq,
-            "direction": direction,
-            "clue": clue,
-            "puzzle_json": puzzle.to_json(),
-        }
+        puzzle = app.puzzle_uc.set_word_clue(user_id, name, seq, direction, clue, text)
+        return _puzzle_response(puzzle)
 
     except ValueError as e:
         return {"error": str(e)}

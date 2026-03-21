@@ -23,6 +23,7 @@ Public interface:
 import uuid
 
 from crossword import Puzzle, PuzzleToSVG
+from crossword.domain.word import Word
 from crossword.ports.persistence import PersistencePort, PersistenceError
 
 
@@ -263,9 +264,13 @@ class PuzzleUseCases:
         else:
             raise ValueError(f"Direction must be 'across' or 'down', got {repr(direction)}")
 
-    def set_word_clue(self, user_id: int, name: str, seq: int, direction: str, clue: str) -> Puzzle:
+    def set_word_clue(self, user_id: int, name: str, seq: int, direction: str,
+                      clue: str, text: str = None) -> Puzzle:
         """
-        Set the clue for a word and save the change.
+        Set the clue (and optionally the text) for a word and save the change.
+
+        If text is provided it is applied via puzzle.set_text(), which pushes
+        the previous value onto the undo stack so the change can be undone.
 
         Args:
             user_id: The user who owns this puzzle
@@ -273,6 +278,7 @@ class PuzzleUseCases:
             seq: Numbered cell sequence number
             direction: 'across' or 'down'
             clue: The clue text
+            text: Optional new word text (A-Z and spaces); tracked by undo
 
         Returns:
             Updated Puzzle object
@@ -282,17 +288,25 @@ class PuzzleUseCases:
             ValueError: If seq or direction is invalid
         """
         puzzle = self.persistence.load_puzzle(user_id, name)
+        dir_lower = direction.lower()
 
-        if direction.lower() == "across":
+        if dir_lower == "across":
             if seq not in puzzle.across_words:
                 raise ValueError(f"No across word at {seq}")
-            puzzle.across_words[seq].set_clue(clue)
-        elif direction.lower() == "down":
+        elif dir_lower == "down":
             if seq not in puzzle.down_words:
                 raise ValueError(f"No down word at {seq}")
-            puzzle.down_words[seq].set_clue(clue)
         else:
             raise ValueError(f"Direction must be 'across' or 'down', got {repr(direction)}")
+
+        if text is not None:
+            word_dir = Word.ACROSS if dir_lower == "across" else Word.DOWN
+            puzzle.set_text(seq, word_dir, text)
+
+        if dir_lower == "across":
+            puzzle.across_words[seq].set_clue(clue)
+        else:
+            puzzle.down_words[seq].set_clue(clue)
 
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle

@@ -810,24 +810,12 @@ async function doWordEditOK() {
     text = text.padEnd(len).slice(0, len).replace(/\./g, ' ');
 
     try {
-        // Save each cell letter in parallel
-        await Promise.all(
-            ew.cells.map(([r, c], i) =>
-                apiFetch('PUT',
-                    `/api/puzzles/${encodeURIComponent(wn)}/cells/${r}/${c}`,
-                    { letter: text[i] })
-            )
-        );
-
-        // Save clue
-        await apiFetch('PUT',
+        // Save text (undo-tracked) and clue in one request
+        const data = await apiFetch('PUT',
             `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}`,
-            { clue });
-
-        // Reload and re-render
-        const fresh = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}`);
-        if (fresh.error) { alert(`Error reloading puzzle: ${fresh.error}`); return; }
-        AppState.puzzleData  = fresh;
+            { text, clue });
+        if (data.error) { alert(`Error saving word: ${data.error}`); return; }
+        AppState.puzzleData  = data;
         AppState.editingWord = null;
         renderPuzzleEditor();
     } catch (e) {
