@@ -158,7 +158,7 @@ class SQLiteAdapter(PersistencePort):
                 (user_id,)
             )
             rows = cursor.fetchall()
-            return [row['gridname'] for row in rows]
+            return [row['gridname'] for row in rows if row['gridname'] is not None]
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to list grids: {e}")
 
@@ -250,7 +250,7 @@ class SQLiteAdapter(PersistencePort):
                 (user_id,)
             )
             rows = cursor.fetchall()
-            return [row['puzzlename'] for row in rows]
+            return [row['puzzlename'] for row in rows if row['puzzlename'] is not None]
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to list puzzles: {e}")
 

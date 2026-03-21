@@ -83,7 +83,7 @@ function showChooser(title, items, onSelect) {
     listEl.innerHTML = '';
     for (const item of items) {
         const a = document.createElement('a');
-        a.className = 'w3-bar-item w3-button';
+        a.className = 'w3-bar-item w3-button w3-block w3-left-align';
         a.textContent = item;
         a.onclick = () => { hideElement('ch'); onSelect(item); };
         listEl.appendChild(a);
@@ -805,7 +805,7 @@ async function do_puzzle_open() {
     try {
         const listData = await apiFetch('GET', '/api/puzzles');
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
-        const puzzles = (listData.puzzles || []).filter(p => !p.startsWith('__wc__'));
+        const puzzles = (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
         if (puzzles.length === 0) {
             messageBox('Open puzzle', 'No saved puzzles found.', null, null);
             return;
@@ -835,7 +835,7 @@ async function do_puzzle_new() {
     try {
         const listData = await apiFetch('GET', '/api/grids');
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
-        const grids = (listData.grids || []).filter(g => !g.startsWith('__wc__'));
+        const grids = (listData.grids || []).filter(g => g && !g.startsWith('__wc__'));
         if (grids.length === 0) {
             messageBox('New puzzle', 'No saved grids found. Create a grid first.', null, null);
             return;
@@ -1075,7 +1075,7 @@ async function do_grid_new_from_puzzle() {
     try {
         const listData = await apiFetch('GET', '/api/puzzles');
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
-        const puzzles = (listData.puzzles || []).filter(p => !p.startsWith('__wc__'));
+        const puzzles = (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
         if (puzzles.length === 0) {
             messageBox('New grid from puzzle', 'No saved puzzles found.', null, null);
             return;
@@ -1098,7 +1098,7 @@ async function do_grid_open() {
     try {
         const listData = await apiFetch('GET', '/api/grids');
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
-        const grids = (listData.grids || []).filter(g => !g.startsWith('__wc__'));
+        const grids = (listData.grids || []).filter(g => g && !g.startsWith('__wc__'));
         if (grids.length === 0) {
             messageBox('Open grid', 'No saved grids found.', null, null);
             return;
