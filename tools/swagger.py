@@ -103,6 +103,14 @@ SPEC = {
                     "error": {"type": "string"},
                 },
             },
+            "WorkingCopySession": {
+                "type": "object",
+                "properties": {
+                    "original_name": {"type": "string", "example": "mygrid"},
+                    "working_name":  {"type": "string", "example": "__wc__a1b2c3d4",
+                                      "description": "Temporary working copy name. Target all edits here until Save/Close."},
+                },
+            },
         }
     },
 
@@ -202,6 +210,21 @@ SPEC = {
                     "400": {"description": "Validation error",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                     "404": {"description": "Source not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/grids/{name}/open": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["grids"],
+                "summary": "Open a grid for editing (creates working copy)",
+                "description": "Creates a temporary working copy of the grid. Direct all edits at `working_name`. On Save, copy `working_name` back to `original_name` then delete it. On Close without saving, just delete `working_name`.",
+                "responses": {
+                    "200": {"description": "Working copy session info",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WorkingCopySession"}}}},
+                    "404": {"description": "Grid not found",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },
@@ -350,6 +373,21 @@ SPEC = {
                     "200": {"description": "Copied puzzle data",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
                     "404": {"description": "Source not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/open": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Open a puzzle for editing (creates working copy)",
+                "description": "Creates a temporary working copy of the puzzle. Direct all edits at `working_name`. On Save, copy `working_name` back to `original_name` then delete it. On Close without saving, just delete `working_name`.",
+                "responses": {
+                    "200": {"description": "Working copy session info",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WorkingCopySession"}}}},
+                    "404": {"description": "Puzzle not found",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },

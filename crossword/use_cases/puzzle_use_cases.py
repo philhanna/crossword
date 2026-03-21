@@ -6,6 +6,10 @@ Public interface:
   load_puzzle(user_id, name) -> Puzzle
   delete_puzzle(user_id, name) -> None
   list_puzzles(user_id) -> list[str]
+  copy_puzzle(user_id, source_name, new_name) -> Puzzle
+  open_puzzle_for_editing(user_id, name) -> str
+  set_puzzle_title(user_id, name, title) -> Puzzle
+  reset_word(user_id, name, seq, direction) -> Puzzle
   set_cell_letter(user_id, name, r, c, letter) -> Puzzle
   get_word_at(user_id, name, seq, direction) -> Word
   set_word_clue(user_id, name, seq, direction, clue) -> Puzzle
@@ -13,6 +17,8 @@ Public interface:
   redo_puzzle(user_id, name) -> Puzzle
   replace_puzzle_grid(user_id, name, new_grid_name) -> Puzzle
 """
+
+import uuid
 
 from crossword import Puzzle
 from crossword.ports.persistence import PersistencePort, PersistenceError
@@ -87,6 +93,109 @@ class PuzzleUseCases:
             PersistenceError: If listing fails
         """
         return self.persistence.list_puzzles(user_id)
+
+    def copy_puzzle(self, user_id: int, source_name: str, new_name: str) -> Puzzle:
+        """
+        Copy a puzzle to a new name.
+
+        Args:
+            user_id: The user who owns the puzzle
+            source_name: Name of the puzzle to copy
+            new_name: Name for the copy
+
+        Returns:
+            The copied Puzzle object
+
+        Raises:
+            PersistenceError: If source not found or save fails
+            ValueError: If new_name is empty
+        """
+        if not new_name or not new_name.strip():
+            raise ValueError("new_name must not be empty")
+        puzzle = self.persistence.load_puzzle(user_id, source_name)
+        self.persistence.save_puzzle(user_id, new_name, puzzle)
+        return puzzle
+
+    def open_puzzle_for_editing(self, user_id: int, name: str) -> str:
+        """
+        Open a puzzle for editing by creating a working copy.
+
+        The working copy is a snapshot of the puzzle at the time of opening.
+        All edits should target the working copy name. On Save, copy the
+        working copy back over the original. On Close, delete the working copy.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name of the puzzle to open
+
+        Returns:
+            working_name: The name of the working copy (e.g. '__wc__a1b2c3d4')
+
+        Raises:
+            PersistenceError: If puzzle not found or save fails
+        """
+        working_name = f"__wc__{uuid.uuid4().hex[:8]}"
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        self.persistence.save_puzzle(user_id, working_name, puzzle)
+        return working_name
+
+    def set_puzzle_title(self, user_id: int, name: str, title: str) -> Puzzle:
+        """
+        Set the title of a puzzle and save the change.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            title: New title string (may be empty)
+
+        Returns:
+            Updated Puzzle object
+
+        Raises:
+            PersistenceError: If load/save fails
+        """
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.title = title
+        self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
+    def reset_word(self, user_id: int, name: str, seq: int, direction: str) -> Puzzle:
+        """
+        Clear all letters in a word that are not shared with a completed crossing word.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            seq: Numbered cell sequence number
+            direction: 'across' or 'down'
+
+        Returns:
+            Updated Puzzle object
+
+        Raises:
+            PersistenceError: If load/save fails
+            ValueError: If seq or direction is invalid
+        """
+        puzzle = self.persistence.load_puzzle(user_id, name)
+
+        if direction.lower() == "across":
+            if seq not in puzzle.across_words:
+                raise ValueError(f"No across word at {seq}")
+            word = puzzle.across_words[seq]
+        elif direction.lower() == "down":
+            if seq not in puzzle.down_words:
+                raise ValueError(f"No down word at {seq}")
+            word = puzzle.down_words[seq]
+        else:
+            raise ValueError(f"Direction must be 'across' or 'down', got {repr(direction)}")
+
+        cleared_text = word.get_clear_word()
+        old_text = word.get_text()
+        if old_text != cleared_text:
+            puzzle.undo_stack.append(["text", seq, direction.lower(), old_text])
+        word.set_text(cleared_text)
+        self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
 
     def set_cell_letter(self, user_id: int, name: str, r: int, c: int, letter: str) -> Puzzle:
         """

@@ -6,6 +6,10 @@ Routes:
   POST   /api/puzzles              → create_puzzle
   GET    /api/puzzles/<name>       → load_puzzle
   DELETE /api/puzzles/<name>       → delete_puzzle
+  POST   /api/puzzles/<name>/copy          → copy_puzzle
+  POST   /api/puzzles/<name>/open          → open_puzzle_for_editing
+  PUT    /api/puzzles/<name>/title         → set_puzzle_title
+  POST   /api/puzzles/<name>/words/<seq>/<direction>/reset  → reset_word
   PUT    /api/puzzles/<name>/cells/<r>/<c>  → set_cell_letter
   GET    /api/puzzles/<name>/words/<seq>/<direction>  → get_word_at
   PUT    /api/puzzles/<name>/words/<seq>/<direction>  → set_word_clue
@@ -15,6 +19,51 @@ Routes:
 """
 
 from crossword.ports.persistence import PersistenceError
+
+
+def _puzzle_response(puzzle):
+    """Build the standard puzzle API response dict from a Puzzle object."""
+    grid_cells = [False] * (puzzle.n * puzzle.n)
+    for r, c in puzzle.black_cells:
+        cell_idx = (r - 1) * puzzle.n + (c - 1)
+        grid_cells[cell_idx] = True
+
+    puzzle_cells = {}
+    words = []
+
+    for seq, word in sorted(puzzle.across_words.items()):
+        cells_list = list(word.cell_iterator())
+        words.append({
+            "seq": seq,
+            "direction": "across",
+            "answer": word.get_text(),
+            "clue": word.get_clue() or "",
+            "cells": cells_list,
+        })
+        for idx, (r, c) in enumerate(cells_list):
+            cell_idx = (r - 1) * puzzle.n + (c - 1)
+            if cell_idx not in puzzle_cells:
+                puzzle_cells[cell_idx] = {}
+            letter = word.get_text()[idx] if word.get_text() and idx < len(word.get_text()) else None
+            if letter and letter.strip():
+                puzzle_cells[cell_idx]["letter"] = letter
+            if idx == 0:
+                puzzle_cells[cell_idx]["number"] = seq
+
+    for seq, word in sorted(puzzle.down_words.items()):
+        cells_list = list(word.cell_iterator())
+        words.append({
+            "seq": seq,
+            "direction": "down",
+            "answer": word.get_text(),
+            "clue": word.get_clue() or "",
+            "cells": cells_list,
+        })
+
+    return {
+        "grid": {"size": puzzle.n, "cells": grid_cells},
+        "puzzle": {"cells": puzzle_cells, "words": words},
+    }
 
 
 def handle_list_puzzles(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
@@ -47,61 +96,8 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
 
         user_id = 1
         app.puzzle_uc.create_puzzle(user_id, name, grid_name)
-
-        # Load the puzzle to return full data for frontend rendering
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
-        grid_cells = [False] * (puzzle.n * puzzle.n)
-        for r, c in puzzle.black_cells:
-            cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
-            grid_cells[cell_idx] = True
-
-        # Build puzzle cells with letter and number info
-        puzzle_cells = {}
-
-        words = []
-        for seq, word in sorted(puzzle.across_words.items()):
-            cells_list = list(word.cell_iterator())
-            words.append({
-                "seq": seq,
-                "direction": "across",
-                "answer": word.get_text(),
-                "clue": word.get_clue() or "",
-                "cells": cells_list,
-                "pattern": word.get_text() if word.get_text() else "?" * len(cells_list),
-            })
-
-            # Add cell info for puzzle rendering
-            for idx, (r, c) in enumerate(cells_list):
-                cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed flat index
-                if cell_idx not in puzzle_cells:
-                    puzzle_cells[cell_idx] = {}
-                if word.get_text() and idx < len(word.get_text()):
-                    puzzle_cells[cell_idx]["letter"] = word.get_text()[idx]
-                # Add number if this is the start of an across word
-                if idx == 0:
-                    puzzle_cells[cell_idx]["number"] = seq
-
-        for seq, word in sorted(puzzle.down_words.items()):
-            cells_list = list(word.cell_iterator())
-            words.append({
-                "seq": seq,
-                "direction": "down",
-                "answer": word.get_text(),
-                "clue": word.get_clue() or "",
-                "cells": cells_list,
-                "pattern": word.get_text() if word.get_text() else "?" * len(cells_list),
-            })
-
-        return {
-            "grid": {
-                "size": puzzle.n,
-                "cells": grid_cells,
-            },
-            "puzzle": {
-                "cells": puzzle_cells,
-                "words": words,
-            }
-        }
+        return _puzzle_response(puzzle)
 
     except PersistenceError as e:
         return {"error": str(e)}
@@ -121,60 +117,7 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
 
         user_id = 1
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
-
-        # Build grid cells
-        grid_cells = [False] * (puzzle.n * puzzle.n)
-        for r, c in puzzle.black_cells:
-            cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
-            grid_cells[cell_idx] = True
-
-        # Build puzzle cells with letter and number info
-        puzzle_cells = {}
-
-        words = []
-        for seq, word in sorted(puzzle.across_words.items()):
-            cells_list = list(word.cell_iterator())
-            words.append({
-                "seq": seq,
-                "direction": "across",
-                "answer": word.get_text(),
-                "clue": word.get_clue() or "",
-                "cells": cells_list,
-                "pattern": word.get_text() if word.get_text() else "?" * len(cells_list),
-            })
-
-            # Add cell info for puzzle rendering
-            for idx, (r, c) in enumerate(cells_list):
-                cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed flat index
-                if cell_idx not in puzzle_cells:
-                    puzzle_cells[cell_idx] = {}
-                if word.get_text() and idx < len(word.get_text()):
-                    puzzle_cells[cell_idx]["letter"] = word.get_text()[idx]
-                # Add number if this is the start of an across word
-                if idx == 0:
-                    puzzle_cells[cell_idx]["number"] = seq
-
-        for seq, word in sorted(puzzle.down_words.items()):
-            cells_list = list(word.cell_iterator())
-            words.append({
-                "seq": seq,
-                "direction": "down",
-                "answer": word.get_text(),
-                "clue": word.get_clue() or "",
-                "cells": cells_list,
-                "pattern": word.get_text() if word.get_text() else "?" * len(cells_list),
-            })
-
-        return {
-            "grid": {
-                "size": puzzle.n,
-                "cells": grid_cells,
-            },
-            "puzzle": {
-                "cells": puzzle_cells,
-                "words": words,
-            }
-        }
+        return _puzzle_response(puzzle)
 
     except PersistenceError:
         return {"error": f"Puzzle not found: {name}"}
@@ -197,6 +140,84 @@ def handle_delete_puzzle(path_params, query_params, body_params, session_token, 
 
         return {"status": "deleted", "name": name}
 
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_open_puzzle_for_editing(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Open a puzzle for editing by creating a working copy.
+    POST /api/puzzles/<name>/open
+    Returns: { "original_name": "mypuzzle", "working_name": "__wc__a1b2c3d4" }
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+
+        user_id = 1
+        working_name = app.puzzle_uc.open_puzzle_for_editing(user_id, name)
+        return {"original_name": name, "working_name": working_name}
+
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_set_puzzle_title(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Set the title of a puzzle.
+    PUT /api/puzzles/<name>/title
+    Body: { "title": "My Puzzle Title" }
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+
+        if "title" not in body_params:
+            return {"error": "Missing 'title'"}
+        title = body_params["title"]
+        if not isinstance(title, str):
+            return {"error": "'title' must be a string"}
+
+        user_id = 1
+        app.puzzle_uc.set_puzzle_title(user_id, name, title)
+        return {"name": name, "title": title}
+
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_reset_word(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Clear letters in a word that are not shared with a completed crossing word.
+    POST /api/puzzles/<name>/words/<seq>/<direction>/reset
+    """
+    try:
+        name      = path_params[0] if len(path_params) > 0 else None
+        seq       = path_params[1] if len(path_params) > 1 else None
+        direction = path_params[2] if len(path_params) > 2 else None
+
+        if not name or not seq or not direction:
+            return {"error": "Missing name, seq, or direction"}
+
+        try:
+            seq = int(seq)
+        except ValueError:
+            return {"error": "seq must be an integer"}
+
+        user_id = 1
+        puzzle = app.puzzle_uc.reset_word(user_id, name, seq, direction)
+        return _puzzle_response(puzzle)
+
+    except ValueError as e:
+        return {"error": str(e)}
     except PersistenceError:
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
@@ -333,38 +354,7 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
 
         user_id = 1
         puzzle = app.puzzle_uc.undo_puzzle(user_id, name)
-
-        # Build response with full puzzle data
-        grid_cells = [False] * (puzzle.n * puzzle.n)
-        for r, c in puzzle.black_cells:
-            cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed
-            grid_cells[cell_idx] = True
-
-        puzzle_cells = {}
-        words = []
-
-        for seq, word in sorted(puzzle.across_words.items()):
-            cells_list = list(word.cell_iterator())
-            words.append({"seq": seq, "direction": "across", "clue": word.get_clue() or ""})
-
-            # Add cell info for puzzle rendering
-            for idx, (r, c) in enumerate(cells_list):
-                cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed
-                if cell_idx not in puzzle_cells:
-                    puzzle_cells[cell_idx] = {}
-                if word.get_text() and idx < len(word.get_text()):
-                    puzzle_cells[cell_idx]["letter"] = word.get_text()[idx]
-                if idx == 0:
-                    puzzle_cells[cell_idx]["number"] = seq
-
-        for seq, word in sorted(puzzle.down_words.items()):
-            cells_list = list(word.cell_iterator())
-            words.append({"seq": seq, "direction": "down", "clue": word.get_clue() or ""})
-
-        return {
-            "grid": {"size": puzzle.n, "cells": grid_cells},
-            "puzzle": {"cells": puzzle_cells, "words": words},
-        }
+        return _puzzle_response(puzzle)
 
     except PersistenceError:
         return {"error": f"Puzzle not found: {name}"}
@@ -384,38 +374,7 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
 
         user_id = 1
         puzzle = app.puzzle_uc.redo_puzzle(user_id, name)
-
-        # Build response with full puzzle data
-        grid_cells = [False] * (puzzle.n * puzzle.n)
-        for r, c in puzzle.black_cells:
-            cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed
-            grid_cells[cell_idx] = True
-
-        puzzle_cells = {}
-        words = []
-
-        for seq, word in sorted(puzzle.across_words.items()):
-            cells_list = list(word.cell_iterator())
-            words.append({"seq": seq, "direction": "across", "clue": word.get_clue() or ""})
-
-            # Add cell info for puzzle rendering
-            for idx, (r, c) in enumerate(cells_list):
-                cell_idx = (r - 1) * puzzle.n + (c - 1)  # Convert 1-indexed to 0-indexed
-                if cell_idx not in puzzle_cells:
-                    puzzle_cells[cell_idx] = {}
-                if word.get_text() and idx < len(word.get_text()):
-                    puzzle_cells[cell_idx]["letter"] = word.get_text()[idx]
-                if idx == 0:
-                    puzzle_cells[cell_idx]["number"] = seq
-
-        for seq, word in sorted(puzzle.down_words.items()):
-            cells_list = list(word.cell_iterator())
-            words.append({"seq": seq, "direction": "down", "clue": word.get_clue() or ""})
-
-        return {
-            "grid": {"size": puzzle.n, "cells": grid_cells},
-            "puzzle": {"cells": puzzle_cells, "words": words},
-        }
+        return _puzzle_response(puzzle)
 
     except PersistenceError:
         return {"error": f"Puzzle not found: {name}"}
@@ -451,5 +410,34 @@ def handle_replace_puzzle_grid(path_params, query_params, body_params, session_t
         return {"error": str(e)}
     except PersistenceError as e:
         return {"error": str(e)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_copy_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Copy a puzzle to a new name.
+    POST /api/puzzles/<name>/copy
+    Body: { "new_name": "..." }
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+
+        new_name = body_params.get("new_name")
+        if not new_name or not isinstance(new_name, str):
+            return {"error": "Missing or invalid 'new_name'"}
+
+        user_id = 1
+        puzzle = app.puzzle_uc.copy_puzzle(user_id, name, new_name)
+        response = _puzzle_response(puzzle)
+        response["name"] = new_name
+        return response
+
+    except ValueError as e:
+        return {"error": str(e)}
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
         return {"error": str(e)}

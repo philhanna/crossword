@@ -7,11 +7,14 @@ Public interface:
   delete_grid(user_id, name) -> None
   list_grids(user_id) -> list[str]
   copy_grid(user_id, source_name, new_name) -> Grid
+  open_grid_for_editing(user_id, name) -> str
   toggle_black_cell(user_id, name, r, c) -> Grid
   rotate_grid(user_id, name) -> Grid
   undo_grid(user_id, name) -> Grid
   redo_grid(user_id, name) -> Grid
 """
+
+import uuid
 
 from crossword import Grid
 from crossword.ports.persistence import PersistencePort, PersistenceError
@@ -89,6 +92,29 @@ class GridUseCases:
             PersistenceError: If listing fails
         """
         return self.persistence.list_grids(user_id)
+
+    def open_grid_for_editing(self, user_id: int, name: str) -> str:
+        """
+        Open a grid for editing by creating a working copy.
+
+        The working copy is a snapshot of the grid at the time of opening.
+        All edits should target the working copy name. On Save, copy the
+        working copy back over the original. On Close, delete the working copy.
+
+        Args:
+            user_id: The user who owns this grid
+            name: Name of the grid to open
+
+        Returns:
+            working_name: The name of the working copy (e.g. '__wc__a1b2c3d4')
+
+        Raises:
+            PersistenceError: If grid not found or save fails
+        """
+        working_name = f"__wc__{uuid.uuid4().hex[:8]}"
+        grid = self.persistence.load_grid(user_id, name)
+        self.persistence.save_grid(user_id, working_name, grid)
+        return working_name
 
     def copy_grid(self, user_id: int, source_name: str, new_name: str) -> Grid:
         """

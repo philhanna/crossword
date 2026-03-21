@@ -150,6 +150,46 @@ class TestGridUseCasesCopy:
         assert (5, 5) in result.black_cells
 
 
+class TestGridUseCasesOpenForEditing:
+    """Tests for open_grid_for_editing"""
+
+    def test_open_grid_returns_working_name(self, grid_uc, mock_persistence):
+        """Returns a working copy name with the __wc__ prefix"""
+        mock_persistence.load_grid.return_value = Grid(15)
+
+        working_name = grid_uc.open_grid_for_editing(1, "mygrid")
+
+        assert working_name.startswith("__wc__")
+        assert len(working_name) == len("__wc__") + 8
+
+    def test_open_grid_creates_working_copy(self, grid_uc, mock_persistence):
+        """Saves a working copy under the returned name"""
+        source = Grid(15)
+        source.add_black_cell(3, 3, undo=False)
+        mock_persistence.load_grid.return_value = source
+
+        working_name = grid_uc.open_grid_for_editing(1, "mygrid")
+
+        mock_persistence.load_grid.assert_called_once_with(1, "mygrid")
+        mock_persistence.save_grid.assert_called_once_with(1, working_name, source)
+
+    def test_open_grid_unique_names(self, grid_uc, mock_persistence):
+        """Each call returns a different working name"""
+        mock_persistence.load_grid.return_value = Grid(15)
+
+        name1 = grid_uc.open_grid_for_editing(1, "mygrid")
+        name2 = grid_uc.open_grid_for_editing(1, "mygrid")
+
+        assert name1 != name2
+
+    def test_open_grid_not_found(self, grid_uc, mock_persistence):
+        """Raises PersistenceError if grid does not exist"""
+        mock_persistence.load_grid.side_effect = PersistenceError("Grid not found")
+
+        with pytest.raises(PersistenceError, match="Grid not found"):
+            grid_uc.open_grid_for_editing(1, "nonexistent")
+
+
 class TestGridUseCasesToggleBlackCell:
     """Tests for toggle_black_cell"""
 

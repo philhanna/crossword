@@ -59,6 +59,51 @@ class TestPuzzleUseCasesCreate:
             puzzle_uc.create_puzzle(1, "test_puzzle", "nonexistent_grid")
 
 
+class TestPuzzleUseCasesCopy:
+    """Tests for copy_puzzle"""
+
+    def test_copy_puzzle_success(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Copy a puzzle to a new name"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.copy_puzzle(1, "original", "copy")
+
+        mock_persistence.load_puzzle.assert_called_once_with(1, "original")
+        mock_persistence.save_puzzle.assert_called_once_with(1, "copy", test_puzzle)
+        assert result is test_puzzle
+
+    def test_copy_puzzle_source_not_found(self, puzzle_uc, mock_persistence):
+        """Copy a puzzle that does not exist"""
+        mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
+
+        with pytest.raises(PersistenceError, match="Puzzle not found"):
+            puzzle_uc.copy_puzzle(1, "nonexistent", "copy")
+
+    def test_copy_puzzle_empty_new_name(self, puzzle_uc):
+        """Reject an empty new_name"""
+        with pytest.raises(ValueError, match="new_name must not be empty"):
+            puzzle_uc.copy_puzzle(1, "original", "")
+
+    def test_copy_puzzle_whitespace_new_name(self, puzzle_uc):
+        """Reject a whitespace-only new_name"""
+        with pytest.raises(ValueError, match="new_name must not be empty"):
+            puzzle_uc.copy_puzzle(1, "original", "   ")
+
+    def test_copy_puzzle_preserves_clues(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Copied puzzle retains clues from the source"""
+        # Set a clue on the first across word if any exist
+        if test_puzzle.across_words:
+            seq = next(iter(test_puzzle.across_words))
+            test_puzzle.across_words[seq].set_clue("Test clue")
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.copy_puzzle(1, "original", "copy")
+
+        if result.across_words:
+            seq = next(iter(result.across_words))
+            assert result.across_words[seq].get_clue() == "Test clue"
+
+
 class TestPuzzleUseCasesLoad:
     """Tests for load_puzzle"""
 
@@ -115,6 +160,126 @@ class TestPuzzleUseCasesList:
         result = puzzle_uc.list_puzzles(1)
 
         assert result == []
+
+
+class TestPuzzleUseCasesOpenForEditing:
+    """Tests for open_puzzle_for_editing"""
+
+    def test_open_puzzle_returns_working_name(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Returns a working copy name with the __wc__ prefix"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        working_name = puzzle_uc.open_puzzle_for_editing(1, "mypuzzle")
+
+        assert working_name.startswith("__wc__")
+        assert len(working_name) == len("__wc__") + 8
+
+    def test_open_puzzle_creates_working_copy(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Saves a working copy under the returned name"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        working_name = puzzle_uc.open_puzzle_for_editing(1, "mypuzzle")
+
+        mock_persistence.load_puzzle.assert_called_once_with(1, "mypuzzle")
+        mock_persistence.save_puzzle.assert_called_once_with(1, working_name, test_puzzle)
+
+    def test_open_puzzle_unique_names(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Each call returns a different working name"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        name1 = puzzle_uc.open_puzzle_for_editing(1, "mypuzzle")
+        name2 = puzzle_uc.open_puzzle_for_editing(1, "mypuzzle")
+
+        assert name1 != name2
+
+    def test_open_puzzle_not_found(self, puzzle_uc, mock_persistence):
+        """Raises PersistenceError if puzzle does not exist"""
+        mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
+
+        with pytest.raises(PersistenceError, match="Puzzle not found"):
+            puzzle_uc.open_puzzle_for_editing(1, "nonexistent")
+
+
+class TestPuzzleUseCasesSetTitle:
+    """Tests for set_puzzle_title"""
+
+    def test_set_title_success(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Set a title and save"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.set_puzzle_title(1, "test_puzzle", "My Great Puzzle")
+
+        assert result.title == "My Great Puzzle"
+        mock_persistence.save_puzzle.assert_called_once_with(1, "test_puzzle", test_puzzle)
+
+    def test_set_title_empty_string(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Empty string is a valid title (clears it)"""
+        test_puzzle.title = "Old Title"
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.set_puzzle_title(1, "test_puzzle", "")
+
+        assert result.title == ""
+        mock_persistence.save_puzzle.assert_called_once()
+
+    def test_set_title_not_found(self, puzzle_uc, mock_persistence):
+        """Raises PersistenceError if puzzle does not exist"""
+        mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
+
+        with pytest.raises(PersistenceError, match="Puzzle not found"):
+            puzzle_uc.set_puzzle_title(1, "nonexistent", "Title")
+
+
+class TestPuzzleUseCasesResetWord:
+    """Tests for reset_word"""
+
+    def test_reset_word_across(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Reset an across word — clears letters not locked by crossing words"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        if test_puzzle.across_words:
+            first_seq = list(test_puzzle.across_words.keys())[0]
+            result = puzzle_uc.reset_word(1, "test_puzzle", first_seq, "across")
+            mock_persistence.save_puzzle.assert_called_once()
+            assert result is test_puzzle
+
+    def test_reset_word_down(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Reset a down word"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        if test_puzzle.down_words:
+            first_seq = list(test_puzzle.down_words.keys())[0]
+            result = puzzle_uc.reset_word(1, "test_puzzle", first_seq, "down")
+            mock_persistence.save_puzzle.assert_called_once()
+            assert result is test_puzzle
+
+    def test_reset_word_invalid_direction(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Raises ValueError for invalid direction"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        with pytest.raises(ValueError, match="Direction must be 'across' or 'down'"):
+            puzzle_uc.reset_word(1, "test_puzzle", 1, "diagonal")
+
+    def test_reset_word_nonexistent_across(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Raises ValueError for nonexistent across seq"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        with pytest.raises(ValueError, match="No across word at"):
+            puzzle_uc.reset_word(1, "test_puzzle", 9999, "across")
+
+    def test_reset_word_nonexistent_down(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Raises ValueError for nonexistent down seq"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        with pytest.raises(ValueError, match="No down word at"):
+            puzzle_uc.reset_word(1, "test_puzzle", 9999, "down")
+
+    def test_reset_word_not_found(self, puzzle_uc, mock_persistence):
+        """Raises PersistenceError if puzzle does not exist"""
+        mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
+
+        with pytest.raises(PersistenceError, match="Puzzle not found"):
+            puzzle_uc.reset_word(1, "nonexistent", 1, "across")
 
 
 class TestPuzzleUseCasesSetCellLetter:

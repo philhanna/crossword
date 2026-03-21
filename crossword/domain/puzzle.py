@@ -1,5 +1,6 @@
 import json
-from crossword import AcrossWord, DownWord, Grid, Word
+from .word import AcrossWord, DownWord, Word
+from .grid import Grid
 
 
 class Puzzle:

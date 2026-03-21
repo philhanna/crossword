@@ -7,6 +7,7 @@ Routes:
   GET    /api/grids/<name>       → load_grid
   DELETE /api/grids/<name>       → delete_grid
   POST   /api/grids/<name>/copy          → copy_grid
+  POST   /api/grids/<name>/open          → open_grid_for_editing
   PUT    /api/grids/<name>/cells/<r>/<c>  → toggle_black_cell
   POST   /api/grids/<name>/rotate        → rotate_grid
   POST   /api/grids/<name>/undo          → undo_grid
@@ -150,6 +151,27 @@ def handle_copy_grid(path_params, query_params, body_params, session_token, requ
 
     except ValueError as e:
         return {"error": str(e)}
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_open_grid_for_editing(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Open a grid for editing by creating a working copy.
+    POST /api/grids/<name>/open
+    Returns: { "original_name": "mygrid", "working_name": "__wc__a1b2c3d4" }
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing grid name"}
+
+        user_id = 1
+        working_name = app.grid_uc.open_grid_for_editing(user_id, name)
+        return {"original_name": name, "working_name": working_name}
+
     except PersistenceError:
         return {"error": f"Grid not found: {name}"}
     except Exception as e:

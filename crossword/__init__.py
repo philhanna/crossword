@@ -68,9 +68,5 @@ def sha256(s):
     return value
 
 
-from .numbered_cell import *
-from .letter_list import LetterList
-from .grid import *
-from .word import *
-from .puzzle import *
-from .to_svg import *
+from .domain import *
+from .domain import LetterList

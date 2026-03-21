@@ -13,6 +13,7 @@ from crossword.http_server.grid_handlers import (
     handle_load_grid,
     handle_delete_grid,
     handle_copy_grid,
+    handle_open_grid_for_editing,
     handle_toggle_black_cell,
     handle_rotate_grid,
     handle_undo_grid,
@@ -23,6 +24,10 @@ from crossword.http_server.puzzle_handlers import (
     handle_create_puzzle,
     handle_load_puzzle,
     handle_delete_puzzle,
+    handle_copy_puzzle,
+    handle_open_puzzle_for_editing,
+    handle_set_puzzle_title,
+    handle_reset_word,
     handle_set_cell_letter,
     handle_get_word_at,
     handle_set_word_clue,
@@ -57,6 +62,7 @@ def register_routes(router):
     router.add_route("GET", r"^/api/grids/([^/]+)$", handle_load_grid)
     router.add_route("DELETE", r"^/api/grids/([^/]+)$", handle_delete_grid)
     router.add_route("POST", r"^/api/grids/([^/]+)/copy$", handle_copy_grid)
+    router.add_route("POST", r"^/api/grids/([^/]+)/open$", handle_open_grid_for_editing)
     router.add_route("PUT", r"^/api/grids/([^/]+)/cells/(\d+)/(\d+)$", handle_toggle_black_cell)
     router.add_route("POST", r"^/api/grids/([^/]+)/rotate$", handle_rotate_grid)
     router.add_route("POST", r"^/api/grids/([^/]+)/undo$", handle_undo_grid)
@@ -67,9 +73,13 @@ def register_routes(router):
     router.add_route("POST", r"^/api/puzzles$", handle_create_puzzle)
     router.add_route("GET", r"^/api/puzzles/([^/]+)$", handle_load_puzzle)
     router.add_route("DELETE", r"^/api/puzzles/([^/]+)$", handle_delete_puzzle)
+    router.add_route("POST", r"^/api/puzzles/([^/]+)/copy$", handle_copy_puzzle)
+    router.add_route("POST", r"^/api/puzzles/([^/]+)/open$", handle_open_puzzle_for_editing)
+    router.add_route("PUT",  r"^/api/puzzles/([^/]+)/title$", handle_set_puzzle_title)
     router.add_route("PUT", r"^/api/puzzles/([^/]+)/cells/(\d+)/(\d+)$", handle_set_cell_letter)
-    router.add_route("GET", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)$", handle_get_word_at)
-    router.add_route("PUT", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)$", handle_set_word_clue)
+    router.add_route("GET",  r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)$", handle_get_word_at)
+    router.add_route("PUT",  r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)$", handle_set_word_clue)
+    router.add_route("POST", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/reset$", handle_reset_word)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/undo$", handle_undo_puzzle)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/redo$", handle_redo_puzzle)
     router.add_route("PUT", r"^/api/puzzles/([^/]+)/grid$", handle_replace_puzzle_grid)

@@ -1,7 +1,7 @@
 import json
 from collections import OrderedDict
 
-from crossword import NumberedCell
+from .numbered_cell import NumberedCell
 
 
 class Grid:

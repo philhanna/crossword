@@ -1,6 +1,6 @@
 from enum import Enum
 
-from crossword import NumberedCell
+from .numbered_cell import NumberedCell
 
 
 class Word:
