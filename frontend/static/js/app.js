@@ -638,11 +638,12 @@ async function do_puzzle_open() {
     try {
         const listData = await apiFetch('GET', '/api/puzzles');
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
-        if (!listData.puzzles || listData.puzzles.length === 0) {
+        const puzzles = (listData.puzzles || []).filter(p => !p.startsWith('__wc__'));
+        if (puzzles.length === 0) {
             messageBox('Open puzzle', 'No saved puzzles found.', null, null);
             return;
         }
-        showChooser('Open puzzle', listData.puzzles, async (name) => {
+        showChooser('Open puzzle', puzzles, async (name) => {
             try {
                 const openData = await apiFetch('POST',
                     `/api/puzzles/${encodeURIComponent(name)}/open`);
