@@ -63,7 +63,7 @@ def _puzzle_response(puzzle):
 
     return {
         "grid": {"size": puzzle.n, "cells": grid_cells},
-        "puzzle": {"cells": puzzle_cells, "words": words},
+        "puzzle": {"title": puzzle.title or "", "cells": puzzle_cells, "words": words},
     }
 
 
