@@ -4,7 +4,7 @@ Unit tests for GridUseCases
 
 import pytest
 from unittest.mock import Mock, MagicMock, call
-from crossword import Grid
+from crossword import Grid, Puzzle
 from crossword.use_cases.grid_use_cases import GridUseCases
 from crossword.ports.persistence import PersistenceError
 
@@ -272,6 +272,89 @@ class TestGridUseCasesUndo:
 
         assert result == test_grid
         mock_persistence.save_grid.assert_called_once()
+
+
+class TestGridUseCasesCreateFromPuzzle:
+    """Tests for create_grid_from_puzzle"""
+
+    def _make_puzzle_with_black_cells(self, n, black_cells):
+        """Helper: create a puzzle whose grid has the given black cells"""
+        grid = Grid(n)
+        for r, c in black_cells:
+            grid.add_black_cell(r, c, undo=False)
+        return Puzzle(grid)
+
+    def test_creates_grid_with_correct_black_cells(self, grid_uc, mock_persistence):
+        """New grid inherits the puzzle's black cell layout"""
+        puzzle = self._make_puzzle_with_black_cells(15, [(3, 3), (5, 7)])
+        mock_persistence.load_puzzle.return_value = puzzle
+
+        result = grid_uc.create_grid_from_puzzle(1, "mypuzzle", "newgrid")
+
+        assert (3, 3) in result.black_cells
+        assert (5, 7) in result.black_cells
+
+    def test_saves_grid_under_given_name(self, grid_uc, mock_persistence):
+        """Grid is saved using the provided grid_name"""
+        puzzle = self._make_puzzle_with_black_cells(15, [])
+        mock_persistence.load_puzzle.return_value = puzzle
+
+        grid_uc.create_grid_from_puzzle(1, "mypuzzle", "newgrid")
+
+        mock_persistence.save_grid.assert_called_once()
+        args = mock_persistence.save_grid.call_args[0]
+        assert args[0] == 1
+        assert args[1] == "newgrid"
+        assert isinstance(args[2], Grid)
+
+    def test_clears_undo_stack(self, grid_uc, mock_persistence):
+        """Undo stack is empty on the new grid regardless of puzzle's grid history"""
+        grid = Grid(15)
+        grid.add_black_cell(3, 3, undo=True)  # populates undo_stack
+        assert len(grid.undo_stack) > 0
+        mock_persistence.load_puzzle.return_value = Puzzle(grid)
+
+        result = grid_uc.create_grid_from_puzzle(1, "mypuzzle", "newgrid")
+
+        assert result.undo_stack == []
+
+    def test_clears_redo_stack(self, grid_uc, mock_persistence):
+        """Redo stack is empty on the new grid"""
+        grid = Grid(15)
+        grid.add_black_cell(3, 3, undo=True)
+        grid.undo()  # populates redo_stack
+        assert len(grid.redo_stack) > 0
+        mock_persistence.load_puzzle.return_value = Puzzle(grid)
+
+        result = grid_uc.create_grid_from_puzzle(1, "mypuzzle", "newgrid")
+
+        assert result.redo_stack == []
+
+    def test_puzzle_not_found(self, grid_uc, mock_persistence):
+        """Raises PersistenceError if puzzle does not exist"""
+        mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
+
+        with pytest.raises(PersistenceError, match="Puzzle not found"):
+            grid_uc.create_grid_from_puzzle(1, "nonexistent", "newgrid")
+
+    def test_empty_grid_name_raises(self, grid_uc):
+        """Raises ValueError if grid_name is empty"""
+        with pytest.raises(ValueError, match="grid_name must not be empty"):
+            grid_uc.create_grid_from_puzzle(1, "mypuzzle", "")
+
+    def test_whitespace_grid_name_raises(self, grid_uc):
+        """Raises ValueError if grid_name is whitespace only"""
+        with pytest.raises(ValueError, match="grid_name must not be empty"):
+            grid_uc.create_grid_from_puzzle(1, "mypuzzle", "   ")
+
+    def test_preserves_grid_size(self, grid_uc, mock_persistence):
+        """New grid has the same size as the puzzle's grid"""
+        puzzle = self._make_puzzle_with_black_cells(21, [])
+        mock_persistence.load_puzzle.return_value = puzzle
+
+        result = grid_uc.create_grid_from_puzzle(1, "mypuzzle", "newgrid")
+
+        assert result.n == 21
 
 
 class TestGridUseCasesRedo:

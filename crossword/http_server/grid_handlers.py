@@ -4,6 +4,7 @@ Grid handlers - CRUD operations on grids via HTTP.
 Routes:
   GET    /api/grids              → list_grids
   POST   /api/grids              → create_grid
+  POST   /api/grids/from-puzzle  → create_grid_from_puzzle
   GET    /api/grids/<name>       → load_grid
   DELETE /api/grids/<name>       → delete_grid
   POST   /api/grids/<name>/copy          → copy_grid
@@ -65,6 +66,43 @@ def handle_create_grid(path_params, query_params, body_params, session_token, re
         return {"error": str(e)}
     except PersistenceError as e:
         return {"error": str(e)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_create_grid_from_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Create a new grid from the layout of an existing puzzle.
+    POST /api/grids/from-puzzle
+    Body: { "puzzle_name": "...", "grid_name": "..." }
+    """
+    try:
+        puzzle_name = body_params.get("puzzle_name")
+        grid_name = body_params.get("grid_name")
+
+        if not puzzle_name or not isinstance(puzzle_name, str):
+            return {"error": "Missing or invalid 'puzzle_name'"}
+        if not grid_name or not isinstance(grid_name, str):
+            return {"error": "Missing or invalid 'grid_name'"}
+
+        user_id = 1
+        grid = app.grid_uc.create_grid_from_puzzle(user_id, puzzle_name, grid_name)
+
+        cells = [False] * (grid.n * grid.n)
+        for r, c in grid.black_cells:
+            cell_idx = (r - 1) * grid.n + (c - 1)
+            cells[cell_idx] = True
+
+        return {
+            "name": grid_name,
+            "size": grid.n,
+            "cells": cells,
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {puzzle_name}"}
     except Exception as e:
         return {"error": str(e)}
 

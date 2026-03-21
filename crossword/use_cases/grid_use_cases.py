@@ -12,6 +12,7 @@ Public interface:
   rotate_grid(user_id, name) -> Grid
   undo_grid(user_id, name) -> Grid
   redo_grid(user_id, name) -> Grid
+  create_grid_from_puzzle(user_id, puzzle_name, grid_name) -> Grid
 """
 
 import uuid
@@ -216,6 +217,34 @@ class GridUseCases:
                 grid.add_black_cell(r, c)
 
         self.persistence.save_grid(user_id, name, grid)
+        return grid
+
+    def create_grid_from_puzzle(self, user_id: int, puzzle_name: str, grid_name: str) -> Grid:
+        """
+        Create a new grid by copying the grid layout from an existing puzzle.
+
+        The black cell pattern is copied from the puzzle's grid.
+        The undo/redo stacks are cleared on the new grid.
+
+        Args:
+            user_id: The user who owns the puzzle
+            puzzle_name: Name of the puzzle to copy the grid from
+            grid_name: Name to save the new grid under
+
+        Returns:
+            The new Grid object
+
+        Raises:
+            PersistenceError: If puzzle not found or save fails
+            ValueError: If grid_name is empty
+        """
+        if not grid_name or not grid_name.strip():
+            raise ValueError("grid_name must not be empty")
+        puzzle = self.persistence.load_puzzle(user_id, puzzle_name)
+        grid = puzzle.grid
+        grid.undo_stack = []
+        grid.redo_stack = []
+        self.persistence.save_grid(user_id, grid_name, grid)
         return grid
 
     def redo_grid(self, user_id: int, name: str) -> Grid:
