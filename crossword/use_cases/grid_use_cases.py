@@ -13,11 +13,12 @@ Public interface:
   undo_grid(user_id, name) -> Grid
   redo_grid(user_id, name) -> Grid
   create_grid_from_puzzle(user_id, puzzle_name, grid_name) -> Grid
+  get_grid_preview(user_id, name) -> dict
 """
 
 import uuid
 
-from crossword import Grid
+from crossword import Grid, GridToSVG
 from crossword.ports.persistence import PersistencePort, PersistenceError
 
 
@@ -246,6 +247,42 @@ class GridUseCases:
         grid.redo_stack = []
         self.persistence.save_grid(user_id, grid_name, grid)
         return grid
+
+    def get_grid_preview(self, user_id: int, name: str) -> dict:
+        """
+        Return a scaled-down SVG and summary heading for a grid.
+
+        Used by the chooser to display a thumbnail for each grid.
+
+        Args:
+            user_id: The user who owns this grid
+            name: Name/identifier for the grid
+
+        Returns:
+            Dict with keys: name, heading, width, svgstr
+
+        Raises:
+            PersistenceError: If grid not found
+        """
+        grid = self.persistence.load_grid(user_id, name)
+        scale = 0.75
+        svg = GridToSVG(grid, scale=scale)
+        width = (svg.boxsize * grid.n + 32) * scale
+        svgstr = svg.generate_xml()
+
+        heading_parts = [f"{grid.get_word_count()} words"]
+        wlens = grid.get_word_lengths()
+        for wlen in sorted(wlens.keys(), reverse=True)[:2]:
+            total = len(wlens[wlen]['alist']) + len(wlens[wlen]['dlist'])
+            heading_parts.append(f"{wlen}-letter: {total}")
+        heading = f"{name} ({', '.join(heading_parts)})"
+
+        return {
+            "name": name,
+            "heading": heading,
+            "width": width,
+            "svgstr": svgstr,
+        }
 
     def redo_grid(self, user_id: int, name: str) -> Grid:
         """

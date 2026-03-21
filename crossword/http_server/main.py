@@ -19,6 +19,7 @@ from crossword.http_server.grid_handlers import (
     handle_rotate_grid,
     handle_undo_grid,
     handle_redo_grid,
+    handle_get_grid_preview,
 )
 from crossword.http_server.puzzle_handlers import (
     handle_list_puzzles,
@@ -35,6 +36,7 @@ from crossword.http_server.puzzle_handlers import (
     handle_undo_puzzle,
     handle_redo_puzzle,
     handle_replace_puzzle_grid,
+    handle_get_puzzle_preview,
 )
 from crossword.http_server.word_handlers import (
     handle_get_suggestions,
@@ -70,6 +72,7 @@ def register_routes(router):
     router.add_route("POST", r"^/api/grids/([^/]+)/rotate$", handle_rotate_grid)
     router.add_route("POST", r"^/api/grids/([^/]+)/undo$", handle_undo_grid)
     router.add_route("POST", r"^/api/grids/([^/]+)/redo$", handle_redo_grid)
+    router.add_route("GET", r"^/api/grids/([^/]+)/preview$", handle_get_grid_preview)
 
     # Puzzle routes
     router.add_route("GET", r"^/api/puzzles$", handle_list_puzzles)
@@ -86,6 +89,7 @@ def register_routes(router):
     router.add_route("POST", r"^/api/puzzles/([^/]+)/undo$", handle_undo_puzzle)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/redo$", handle_redo_puzzle)
     router.add_route("PUT", r"^/api/puzzles/([^/]+)/grid$", handle_replace_puzzle_grid)
+    router.add_route("GET", r"^/api/puzzles/([^/]+)/preview$", handle_get_puzzle_preview)
 
     # Word routes
     router.add_route("GET", r"^/api/words/suggestions$", handle_get_suggestions)

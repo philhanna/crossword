@@ -491,3 +491,50 @@ class TestPuzzleUseCasesReplacGrid:
 
         with pytest.raises(ValueError, match="Incompatible grid sizes"):
             puzzle_uc.replace_puzzle_grid(1, "test_puzzle", "new_grid")
+
+
+class TestPuzzleUseCasesGetPreview:
+    """Tests for get_puzzle_preview"""
+
+    def test_get_puzzle_preview_returns_dict(self, puzzle_uc, mock_persistence, test_puzzle):
+        """get_puzzle_preview returns a dict with required keys"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_preview(1, "my_puzzle")
+
+        assert isinstance(result, dict)
+        assert result["name"] == "my_puzzle"
+        assert "heading" in result
+        assert "width" in result
+        assert "svgstr" in result
+
+    def test_get_puzzle_preview_svgstr_is_xml(self, puzzle_uc, mock_persistence, test_puzzle):
+        """svgstr should be an SVG XML string"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_preview(1, "my_puzzle")
+
+        assert "<svg" in result["svgstr"]
+
+    def test_get_puzzle_preview_heading_contains_name(self, puzzle_uc, mock_persistence, test_puzzle):
+        """heading should contain the puzzle name"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_preview(1, "my_puzzle")
+
+        assert "my_puzzle" in result["heading"]
+
+    def test_get_puzzle_preview_width_is_positive(self, puzzle_uc, mock_persistence, test_puzzle):
+        """width should be a positive number"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_preview(1, "my_puzzle")
+
+        assert result["width"] > 0
+
+    def test_get_puzzle_preview_not_found(self, puzzle_uc, mock_persistence):
+        """get_puzzle_preview raises PersistenceError if puzzle not found"""
+        mock_persistence.load_puzzle.side_effect = PersistenceError("not found")
+
+        with pytest.raises(PersistenceError):
+            puzzle_uc.get_puzzle_preview(1, "missing_puzzle")

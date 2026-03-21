@@ -385,3 +385,54 @@ class TestGridUseCasesRedo:
 
         assert result == test_grid
         mock_persistence.save_grid.assert_called_once()
+
+
+class TestGridUseCasesGetPreview:
+    """Tests for get_grid_preview"""
+
+    def test_get_grid_preview_returns_dict(self, grid_uc, mock_persistence):
+        """get_grid_preview returns a dict with required keys"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.get_grid_preview(1, "my_grid")
+
+        assert isinstance(result, dict)
+        assert result["name"] == "my_grid"
+        assert "heading" in result
+        assert "width" in result
+        assert "svgstr" in result
+
+    def test_get_grid_preview_svgstr_is_xml(self, grid_uc, mock_persistence):
+        """svgstr should be an SVG XML string"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.get_grid_preview(1, "my_grid")
+
+        assert "<svg" in result["svgstr"]
+
+    def test_get_grid_preview_heading_contains_name(self, grid_uc, mock_persistence):
+        """heading should contain the grid name"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.get_grid_preview(1, "my_grid")
+
+        assert "my_grid" in result["heading"]
+
+    def test_get_grid_preview_width_is_positive(self, grid_uc, mock_persistence):
+        """width should be a positive number"""
+        test_grid = Grid(15)
+        mock_persistence.load_grid.return_value = test_grid
+
+        result = grid_uc.get_grid_preview(1, "my_grid")
+
+        assert result["width"] > 0
+
+    def test_get_grid_preview_not_found(self, grid_uc, mock_persistence):
+        """get_grid_preview raises PersistenceError if grid not found"""
+        mock_persistence.load_grid.side_effect = PersistenceError("not found")
+
+        with pytest.raises(PersistenceError):
+            grid_uc.get_grid_preview(1, "missing_grid")

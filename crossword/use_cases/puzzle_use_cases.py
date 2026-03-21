@@ -16,11 +16,12 @@ Public interface:
   undo_puzzle(user_id, name) -> Puzzle
   redo_puzzle(user_id, name) -> Puzzle
   replace_puzzle_grid(user_id, name, new_grid_name) -> Puzzle
+  get_puzzle_preview(user_id, name) -> dict
 """
 
 import uuid
 
-from crossword import Puzzle
+from crossword import Puzzle, PuzzleToSVG
 from crossword.ports.persistence import PersistencePort, PersistenceError
 
 
@@ -362,3 +363,39 @@ class PuzzleUseCases:
         self.persistence.save_puzzle(user_id, name, puzzle)
 
         return puzzle
+
+    def get_puzzle_preview(self, user_id: int, name: str) -> dict:
+        """
+        Return a scaled-down SVG and summary heading for a puzzle.
+
+        Used by the chooser to display a thumbnail for each puzzle.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+
+        Returns:
+            Dict with keys: name, heading, width, svgstr
+
+        Raises:
+            PersistenceError: If puzzle not found
+        """
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        scale = 0.75
+        svg = PuzzleToSVG(puzzle, scale=scale)
+        width = (svg.boxsize * puzzle.n + 32) * scale
+        svgstr = svg.generate_xml()
+
+        heading_parts = [f"{puzzle.get_word_count()} words"]
+        wlens = puzzle.get_word_lengths()
+        for wlen in sorted(wlens.keys(), reverse=True)[:2]:
+            total = len(wlens[wlen]['alist']) + len(wlens[wlen]['dlist'])
+            heading_parts.append(f"{wlen}-letter: {total}")
+        heading = f"{name} ({', '.join(heading_parts)})"
+
+        return {
+            "name": name,
+            "heading": heading,
+            "width": width,
+            "svgstr": svgstr,
+        }
