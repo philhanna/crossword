@@ -155,7 +155,7 @@ class WordUseCases:
             Regex pattern string
         """
         # If already contains regex syntax, assume it's a full regex
-        if any(c in pattern for c in "[]()*+^$.|"):
+        if any(c in pattern for c in "[]()*+^$|"):
             return pattern
 
         # Convert ? to . (any character) and ^ . $ anchors
