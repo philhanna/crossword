@@ -898,7 +898,8 @@ async function do_puzzle_save() {
     try {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name });
-        if (data.error) alert(`Save failed: ${data.error}`);
+        if (data.error) { alert(`Save failed: ${data.error}`); return; }
+        messageBox('Save puzzle', `Puzzle <b>${escapeHtml(name)}</b> saved.`, null, () => {});
     } catch (e) { alert('Error saving puzzle'); }
 }
 
