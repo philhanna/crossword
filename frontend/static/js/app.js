@@ -19,7 +19,9 @@ const AppState = {
     puzzleWorkingName: null, // working copy name (e.g. '__wc__a1b2c3d4')
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
     editingWord: null,       // null | {seq, direction, cells, answer, clue}
-    showingStats: false,     // true = RHS shows stats panel
+    showingStats: false,     // true = puzzle editor RHS shows stats panel
+    showingGridStats: false, // true = grid editor RHS shows stats panel
+    _gridStatsData: null,    // cached grid stats response
 };
 
 // ---------------------------------------------------------------------------
@@ -281,7 +283,7 @@ ${toolbar}
   Click to toggle black cells
 </div>`;
 
-    document.getElementById('rhs').innerHTML = '';
+    renderGridEditorRhs();
 
     const svg = document.getElementById('grid-svg');
     if (svg) svg.addEventListener('click', handleGridClick);
@@ -331,22 +333,91 @@ async function do_grid_rotate_action() { await _gridAction('POST', '/rotate'); }
 async function do_grid_undo_action()   { await _gridAction('POST', '/undo'); }
 async function do_grid_redo_action()   { await _gridAction('POST', '/redo'); }
 
+function renderGridEditorRhs() {
+    const html = AppState.showingGridStats && AppState._gridStatsData
+        ? renderGridStatsPanel(AppState._gridStatsData)
+        : '';
+    document.getElementById('rhs').innerHTML = html;
+}
+
 async function do_grid_info_action() {
-    const gd = AppState.gridData;
-    if (!gd) return;
-    const n       = gd.size;
-    const blacks  = gd.cells.filter(Boolean).length;
-    const whites  = n * n - blacks;
-    const nums    = computeGridNumbers(gd.cells, n);
-    const numbered = nums.filter(v => v !== null).length;
-    messageBox(
-        'Grid info',
-        `<b>Size:</b> ${n} &times; ${n}<br>` +
-        `<b>White cells:</b> ${whites}<br>` +
-        `<b>Black cells:</b> ${blacks}<br>` +
-        `<b>Numbered cells:</b> ${numbered}`,
-        null, null
-    );
+    const wn = AppState.gridWorkingName;
+    if (!wn) return;
+    try {
+        const data = await apiFetch('GET', `/api/grids/${encodeURIComponent(wn)}/stats`);
+        if (data.error) { alert(`Error: ${data.error}`); return; }
+        AppState._gridStatsData   = data;
+        AppState.showingGridStats = true;
+        renderGridEditorRhs();
+    } catch (e) { alert('Error fetching grid stats'); }
+}
+
+function renderGridStatsPanel(stats) {
+    const validColor = stats.valid ? 'w3-text-green' : 'w3-text-red';
+    const validText  = stats.valid ? 'Valid' : 'Invalid';
+
+    let errorsHtml;
+    const allErrors = Object.values(stats.errors).flat();
+    if (allErrors.length === 0) {
+        errorsHtml = 'None';
+    } else {
+        errorsHtml = '<ul style="list-style-type:none;margin:0;padding:0">' +
+            allErrors.map(e => `<li style="color:#cc0000">${escapeHtml(e)}</li>`).join('') +
+            '</ul>';
+    }
+
+    const wlRows = Object.entries(stats.wordlengths)
+        .sort((a, b) => Number(b[0]) - Number(a[0]))
+        .map(([len, entry]) => {
+            const across = (entry.alist || []).join(', ') || '(none)';
+            const down   = (entry.dlist || []).join(', ') || '(none)';
+            return `<tr>
+  <td style="border:1px solid #ccc;padding:3px 8px">${len}</td>
+  <td style="border:1px solid #ccc;padding:3px 8px;word-break:break-word">${escapeHtml(across)}</td>
+  <td style="border:1px solid #ccc;padding:3px 8px;word-break:break-word">${escapeHtml(down)}</td>
+</tr>`;
+        }).join('');
+
+    function row(label, value) {
+        return `<div class="w3-section w3-cell-row">
+  <div class="w3-cell" style="width:30%"><b>${label}</b></div>
+  <div class="w3-cell">${value}</div>
+</div>`;
+    }
+
+    return `
+<div class="w3-margin-right">
+  <header class="w3-container w3-blue-gray" style="padding:7px;position:relative">
+    <h3>Grid statistics</h3>
+    <span class="w3-button w3-xlarge w3-hover-red"
+          style="position:absolute;top:0;right:0"
+          onclick="closeGridStatsPanel()">&times;</span>
+  </header>
+  <div class="w3-card-4">
+    <div class="w3-container" style="padding-bottom:12px">
+      ${row('Valid:', `<span class="${validColor}"><b>${validText}</b></span>`)}
+      ${row('Errors:', errorsHtml)}
+      ${row('Size:', escapeHtml(stats.size))}
+      ${row('Word count:', stats.wordcount)}
+      ${row('Black cells:', stats.blockcount)}
+      <div class="w3-section">
+        <table class="w3-table" style="border-collapse:collapse;width:auto">
+          <tr>
+            <th style="border:1px solid #ccc;padding:3px 8px">Word length</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Across</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Down</th>
+          </tr>
+          ${wlRows}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function closeGridStatsPanel() {
+    AppState.showingGridStats = false;
+    renderGridEditorRhs();
 }
 
 // ---------------------------------------------------------------------------
@@ -1167,6 +1238,8 @@ async function do_grid_close() {
     AppState.gridOriginalName = null;
     AppState.gridWorkingName  = null;
     AppState.gridData         = null;
+    AppState.showingGridStats = false;
+    AppState._gridStatsData   = null;
     if (wn) {
         try { await apiFetch('DELETE', `/api/grids/${encodeURIComponent(wn)}`); }
         catch (e) { /* ignore cleanup errors */ }

@@ -20,6 +20,7 @@ from crossword.http_server.grid_handlers import (
     handle_undo_grid,
     handle_redo_grid,
     handle_get_grid_preview,
+    handle_get_grid_stats,
 )
 from crossword.http_server.puzzle_handlers import (
     handle_list_puzzles,
@@ -75,6 +76,7 @@ def register_routes(router):
     router.add_route("POST", r"^/api/grids/([^/]+)/undo$", handle_undo_grid)
     router.add_route("POST", r"^/api/grids/([^/]+)/redo$", handle_redo_grid)
     router.add_route("GET", r"^/api/grids/([^/]+)/preview$", handle_get_grid_preview)
+    router.add_route("GET", r"^/api/grids/([^/]+)/stats$", handle_get_grid_stats)
 
     # Puzzle routes
     router.add_route("GET", r"^/api/puzzles$", handle_list_puzzles)

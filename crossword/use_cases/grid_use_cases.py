@@ -14,6 +14,7 @@ Public interface:
   redo_grid(user_id, name) -> Grid
   create_grid_from_puzzle(user_id, puzzle_name, grid_name) -> Grid
   get_grid_preview(user_id, name) -> dict
+  get_grid_stats(user_id, name) -> dict
 """
 
 import uuid
@@ -283,6 +284,24 @@ class GridUseCases:
             "width": width,
             "svgstr": svgstr,
         }
+
+    def get_grid_stats(self, user_id: int, name: str) -> dict:
+        """
+        Return statistics and validation results for a grid.
+
+        Args:
+            user_id: The user who owns this grid
+            name: Name/identifier for the grid
+
+        Returns:
+            Dict with keys: valid, errors, size, wordcount, blockcount,
+            wordlengths
+
+        Raises:
+            PersistenceError: If grid not found
+        """
+        grid = self.persistence.load_grid(user_id, name)
+        return grid.get_statistics()
 
     def redo_grid(self, user_id: int, name: str) -> Grid:
         """

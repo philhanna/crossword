@@ -14,6 +14,7 @@ Routes:
   POST   /api/grids/<name>/undo          → undo_grid
   POST   /api/grids/<name>/redo          → redo_grid
   GET    /api/grids/<name>/preview       → get_grid_preview
+  GET    /api/grids/<name>/stats         → get_grid_stats
 """
 
 import traceback
@@ -361,6 +362,25 @@ def handle_get_grid_preview(path_params, query_params, body_params, session_toke
 
         user_id = 1
         return app.grid_uc.get_grid_preview(user_id, name)
+
+    except PersistenceError:
+        return {"error": f"Grid not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_get_grid_stats(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Return statistics and validation results for a grid.
+    GET /api/grids/<name>/stats
+    """
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing grid name"}
+
+        user_id = 1
+        return app.grid_uc.get_grid_stats(user_id, name)
 
     except PersistenceError:
         return {"error": f"Grid not found: {name}"}
