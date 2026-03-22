@@ -61,6 +61,15 @@ def _puzzle_response(puzzle):
             "clue": word.get_clue() or "",
             "cells": cells_list,
         })
+        for idx, (r, c) in enumerate(cells_list):
+            cell_idx = (r - 1) * puzzle.n + (c - 1)
+            if cell_idx not in puzzle_cells:
+                puzzle_cells[cell_idx] = {}
+            letter = word.get_text()[idx] if word.get_text() and idx < len(word.get_text()) else None
+            if letter and letter.strip():
+                puzzle_cells[cell_idx].setdefault("letter", letter)
+            if idx == 0:
+                puzzle_cells[cell_idx].setdefault("number", seq)
 
     return {
         "grid": {"size": puzzle.n, "cells": grid_cells},
