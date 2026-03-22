@@ -6,8 +6,39 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-- Reformatted CHANGELOG.md to match the format in [Keep a Changelog].
-- Reformatted README.md to include a link to the Github repository.
+Complete rewrite of the application backend and frontend.
+
+### Added
+
+- Hexagonal (Ports & Adapters) architecture replacing the Flask/SQLAlchemy stack
+  - Domain models (`Grid`, `Puzzle`, `Word`) with no framework dependencies
+  - Port interfaces: `PersistencePort`, `WordListPort`, `ExportPort`
+  - Adapters: `SQLiteAdapter`, `DictionaryAdapter`
+  - Use cases: `GridUseCases`, `PuzzleUseCases`, `WordUseCases`, `ExportUseCases`
+  - Wiring module assembles the app via constructor injection
+- Built-in HTTP server (Python `BaseHTTPRequestHandler`) replacing Flask
+- Single-page frontend in plain JavaScript (`frontend/index.html`, `static/`)
+  - Grid editor: clickable SVG, rotate, undo/redo, info toolbar
+  - Puzzle editor: clickable SVG, word editor panel, clue lists, stats panel
+  - Preview chooser for all grid and puzzle open/new actions
+  - 3-state menu machine: `home` / `grid-editor` / `puzzle-editor`
+  - Auto-persistence: every edit saves to the DB immediately
+  - Working-copy pattern (`__wc__<uuid>`) for in-progress edits
+- Word editor panel: suggest, constraints, and reset tabs
+- Word constraints endpoint (`GET /api/words/constraints`)
+- Puzzle statistics panel
+- Grid preview and puzzle preview endpoints
+- `create_grid_from_puzzle` use case and endpoint
+- Delete grid option
+- Swagger UI tool (`tools/swagger.py`) with live route diff checking
+- `tools/md_to_pdf.py` — Markdown to PDF via Chrome headless
+- `design.md` — architecture overview (ports & adapters)
+- `pyproject.toml` replacing `setup.py` and `requirements.txt`
+
+### Removed
+
+- Flask, Flask-Session, Flask-SQLAlchemy, SQLAlchemy, Jinja2 dependencies
+- All Jinja2 templates and Flask blueprint code
 
 ## [2.4.0] - 2020-08-01
 
