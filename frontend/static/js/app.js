@@ -19,6 +19,7 @@ const AppState = {
     puzzleName: null,        // name of currently-open puzzle (original)
     puzzleWorkingName: null, // working copy name (e.g. '__wc__a1b2c3d4')
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
+    puzzleSavedHash: null,   // checksum of puzzle at last open/save
     editingWord: null,       // null | {seq, direction, cells, answer, clue}
     showingStats: false,     // true = puzzle editor RHS shows stats panel
     showingGridStats: false, // true = grid editor RHS shows stats panel
@@ -29,8 +30,8 @@ const AppState = {
 // Utility helpers
 // ---------------------------------------------------------------------------
 
-function _hashCells(cells) {
-    const s = JSON.stringify(cells);
+function _hash(obj) {
+    const s = JSON.stringify(obj);
     let h = 5381;
     for (let i = 0; i < s.length; i++)
         h = (h * 33 ^ s.charCodeAt(i)) >>> 0;
@@ -932,6 +933,7 @@ async function do_puzzle_open() {
                 AppState.puzzleName        = name;
                 AppState.puzzleWorkingName = wn;
                 AppState.puzzleData        = puzzleData;
+                AppState.puzzleSavedHash   = _hash(puzzleData.puzzle);
                 AppState.editingWord       = null;
                 showView('puzzle-editor');
             } catch (e) { alert('Error opening puzzle'); }
@@ -967,6 +969,7 @@ async function do_puzzle_new() {
                     AppState.puzzleName        = name;
                     AppState.puzzleWorkingName = wn;
                     AppState.puzzleData        = puzzleData;
+                    AppState.puzzleSavedHash   = _hash(puzzleData.puzzle);
                     AppState.editingWord       = null;
                     showView('puzzle-editor');
                 } catch (e) { alert('Error creating puzzle'); }
@@ -983,6 +986,7 @@ async function do_puzzle_save() {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { alert(`Save failed: ${data.error}`); return; }
+        AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
         messageBox('Save puzzle', `Puzzle <b>${escapeHtml(name)}</b> saved.`, null, () => {});
     } catch (e) { alert('Error saving puzzle'); }
 }
@@ -995,23 +999,41 @@ async function do_puzzle_save_as() {
             const data = await apiFetch('POST',
                 `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: newName });
             if (data.error) { alert(`Save failed: ${data.error}`); return; }
-            AppState.puzzleName = newName;
+            AppState.puzzleName      = newName;
+            AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
             renderPuzzleEditorLhs();
         } catch (e) { alert('Error saving puzzle'); }
     });
 }
 
-async function do_puzzle_close() {
+async function _doPuzzleCloseConfirmed() {
     const wn = AppState.puzzleWorkingName;
     AppState.puzzleName        = null;
     AppState.puzzleWorkingName = null;
     AppState.puzzleData        = null;
+    AppState.puzzleSavedHash   = null;
     AppState.editingWord       = null;
     if (wn) {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
         catch (e) { /* ignore cleanup errors */ }
     }
     showView('home');
+}
+
+async function do_puzzle_close() {
+    const isDirty = AppState.puzzleData &&
+        _hash(AppState.puzzleData.puzzle) !== AppState.puzzleSavedHash;
+    if (isDirty) {
+        const name = AppState.puzzleName || '(untitled)';
+        messageBox(
+            'Close puzzle',
+            `Puzzle <b>${escapeHtml(name)}</b> has unsaved changes. Close without saving?`,
+            null,
+            () => _doPuzzleCloseConfirmed()
+        );
+    } else {
+        await _doPuzzleCloseConfirmed();
+    }
 }
 
 async function do_puzzle_title() {
@@ -1156,7 +1178,7 @@ async function _openGridInEditor(name) {
         AppState.gridOriginalName = name;
         AppState.gridWorkingName  = wn;
         AppState.gridData         = gridData;
-        AppState.gridSavedHash    = _hashCells(gridData.cells);
+        AppState.gridSavedHash    = _hash(gridData.cells);
         showView('grid-editor');
     } catch (e) { alert('Error opening grid'); }
 }
@@ -1229,7 +1251,7 @@ async function do_grid_save() {
         const data = await apiFetch('POST',
             `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { alert(`Save failed: ${data.error}`); return; }
-        AppState.gridSavedHash = _hashCells(AppState.gridData.cells);
+        AppState.gridSavedHash = _hash(AppState.gridData.cells);
         messageBox('Save grid', `Grid <b>${escapeHtml(name)}</b> saved.`, null, () => {});
     } catch (e) { alert('Error saving grid'); }
 }
@@ -1243,7 +1265,7 @@ async function do_grid_save_as() {
                 `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: newName });
             if (data.error) { alert(`Save failed: ${data.error}`); return; }
             AppState.gridOriginalName = newName;
-            AppState.gridSavedHash    = _hashCells(AppState.gridData.cells);
+            AppState.gridSavedHash    = _hash(AppState.gridData.cells);
             renderGridEditor();
         } catch (e) { alert('Error saving grid'); }
     });
@@ -1266,7 +1288,7 @@ async function _doGridCloseConfirmed() {
 
 async function do_grid_close() {
     const isDirty = AppState.gridData &&
-        _hashCells(AppState.gridData.cells) !== AppState.gridSavedHash;
+        _hash(AppState.gridData.cells) !== AppState.gridSavedHash;
     if (isDirty) {
         const name = AppState.gridOriginalName || '(untitled)';
         messageBox(
