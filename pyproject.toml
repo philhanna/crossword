@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crossword"
+version = "2.4.0"
+description = "Crossword Puzzle Editor"
+license = { text = "MIT" }
+authors = [{ name = "Phil Hanna" }]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/philhanna/crossword"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["crossword*"]
+exclude = ["crossword.tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["crossword/tests"]
