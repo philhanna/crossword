@@ -15,6 +15,7 @@ const AppState = {
     gridOriginalName: null,  // name of currently-open grid (original)
     gridWorkingName: null,   // grid working copy name (e.g. '__wc__a1b2c3d4')
     gridData: null,          // { size, cells[] } from API
+    gridSavedHash: null,     // checksum of cells[] at last open/save
     puzzleName: null,        // name of currently-open puzzle (original)
     puzzleWorkingName: null, // working copy name (e.g. '__wc__a1b2c3d4')
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
@@ -27,6 +28,14 @@ const AppState = {
 // ---------------------------------------------------------------------------
 // Utility helpers
 // ---------------------------------------------------------------------------
+
+function _hashCells(cells) {
+    const s = JSON.stringify(cells);
+    let h = 5381;
+    for (let i = 0; i < s.length; i++)
+        h = (h * 33 ^ s.charCodeAt(i)) >>> 0;
+    return h;
+}
 
 function showElement(id) { document.getElementById(id).style.display = 'block'; }
 function hideElement(id) { document.getElementById(id).style.display = 'none'; }
@@ -1147,6 +1156,7 @@ async function _openGridInEditor(name) {
         AppState.gridOriginalName = name;
         AppState.gridWorkingName  = wn;
         AppState.gridData         = gridData;
+        AppState.gridSavedHash    = _hashCells(gridData.cells);
         showView('grid-editor');
     } catch (e) { alert('Error opening grid'); }
 }
@@ -1219,6 +1229,7 @@ async function do_grid_save() {
         const data = await apiFetch('POST',
             `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { alert(`Save failed: ${data.error}`); return; }
+        AppState.gridSavedHash = _hashCells(AppState.gridData.cells);
         messageBox('Save grid', `Grid <b>${escapeHtml(name)}</b> saved.`, null, () => {});
     } catch (e) { alert('Error saving grid'); }
 }
@@ -1232,16 +1243,18 @@ async function do_grid_save_as() {
                 `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: newName });
             if (data.error) { alert(`Save failed: ${data.error}`); return; }
             AppState.gridOriginalName = newName;
+            AppState.gridSavedHash    = _hashCells(AppState.gridData.cells);
             renderGridEditor();
         } catch (e) { alert('Error saving grid'); }
     });
 }
 
-async function do_grid_close() {
+async function _doGridCloseConfirmed() {
     const wn = AppState.gridWorkingName;
     AppState.gridOriginalName = null;
     AppState.gridWorkingName  = null;
     AppState.gridData         = null;
+    AppState.gridSavedHash    = null;
     AppState.showingGridStats = false;
     AppState._gridStatsData   = null;
     if (wn) {
@@ -1249,6 +1262,22 @@ async function do_grid_close() {
         catch (e) { /* ignore cleanup errors */ }
     }
     showView('home');
+}
+
+async function do_grid_close() {
+    const isDirty = AppState.gridData &&
+        _hashCells(AppState.gridData.cells) !== AppState.gridSavedHash;
+    if (isDirty) {
+        const name = AppState.gridOriginalName || '(untitled)';
+        messageBox(
+            'Close grid',
+            `Grid <b>${escapeHtml(name)}</b> has unsaved changes. Close without saving?`,
+            null,
+            () => _doGridCloseConfirmed()
+        );
+    } else {
+        await _doGridCloseConfirmed();
+    }
 }
 
 async function do_grid_delete() {
