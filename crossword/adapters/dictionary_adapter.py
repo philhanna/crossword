@@ -78,8 +78,7 @@ class DictionaryAdapter(WordListPort):
         except re.error as e:
             raise ValueError(f"Invalid regex pattern: {e}")
 
-        # Find all matching words (use search to match anywhere, not just start)
-        return sorted([word for word in self._words if regex.search(word)])
+        return sorted([word for word in self._words if regex.fullmatch(word)])
 
     def get_all_words(self) -> list[str]:
         """

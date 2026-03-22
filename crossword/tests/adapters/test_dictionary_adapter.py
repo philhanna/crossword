@@ -36,24 +36,21 @@ class TestDictionaryAdapter:
         assert 'hello' not in matches
 
     def test_get_matches_starting_letter(self, adapter):
-        """Test pattern matching by starting letter"""
-        # Words starting with 'a'
-        matches = adapter.get_matches("^a")
+        """Test pattern matching by starting letter (full-word match)"""
+        matches = adapter.get_matches("^a.*$")
         assert 'apple' in matches
         assert 'application' in matches
         assert 'hello' not in matches
 
     def test_get_matches_ending_letter(self, adapter):
-        """Test pattern matching by ending letter"""
-        # Words ending with 'e'
-        matches = adapter.get_matches("e$")
+        """Test pattern matching by ending letter (full-word match)"""
+        matches = adapter.get_matches("^.*e$")
         assert 'apple' in matches
         assert 'hello' not in matches
 
     def test_get_matches_contains_pattern(self, adapter):
-        """Test pattern matching for contained patterns"""
-        # Words containing 'app'
-        matches = adapter.get_matches("app")
+        """Test pattern matching for contained patterns (full-word match)"""
+        matches = adapter.get_matches("^.*app.*$")
         assert 'apple' in matches
         assert 'application' in matches
         assert 'hello' not in matches

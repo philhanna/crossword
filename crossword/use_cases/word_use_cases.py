@@ -154,9 +154,14 @@ class WordUseCases:
         Returns:
             Regex pattern string
         """
-        # If already contains regex syntax, assume it's a full regex
+        # If already contains regex syntax, add anchors if missing
         if any(c in pattern for c in "[]()*+^$|"):
-            return pattern
+            p = pattern
+            if not p.startswith("^"):
+                p = "^" + p
+            if not p.endswith("$"):
+                p = p + "$"
+            return p
 
         # Convert ? to . (any character) and ^ . $ anchors
         escaped = pattern.replace("?", ".")

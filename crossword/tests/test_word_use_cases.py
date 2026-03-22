@@ -177,40 +177,39 @@ class TestWordUseCasesPatternToRegex:
         assert result == "^.PPLE$"
 
     def test_pattern_to_regex_bracket_syntax(self, word_uc):
-        """Pattern with brackets is treated as regex"""
-        pattern = "[AE]PPLE"
-        result = word_uc._pattern_to_regex(pattern)
-        assert result == pattern
+        """Pattern with brackets gets anchored"""
+        result = word_uc._pattern_to_regex("[AE]PPLE")
+        assert result == "^[AE]PPLE$"
 
     def test_pattern_to_regex_pipe_syntax(self, word_uc):
-        """Pattern with pipe is treated as regex"""
-        pattern = "APPLE|AMPLE"
-        result = word_uc._pattern_to_regex(pattern)
-        assert result == pattern
+        """Pattern with pipe gets anchored"""
+        result = word_uc._pattern_to_regex("APPLE|AMPLE")
+        assert result == "^APPLE|AMPLE$"
 
     def test_pattern_to_regex_plus_syntax(self, word_uc):
-        """Pattern with + is treated as regex"""
-        pattern = "A+PPLE"
-        result = word_uc._pattern_to_regex(pattern)
-        assert result == pattern
+        """Pattern with + gets anchored"""
+        result = word_uc._pattern_to_regex("A+PPLE")
+        assert result == "^A+PPLE$"
 
     def test_pattern_to_regex_asterisk_syntax(self, word_uc):
-        """Pattern with * is treated as regex"""
-        pattern = "A*PPLE"
-        result = word_uc._pattern_to_regex(pattern)
-        assert result == pattern
+        """Pattern with * gets anchored"""
+        result = word_uc._pattern_to_regex("A*PPLE")
+        assert result == "^A*PPLE$"
 
     def test_pattern_to_regex_caret_syntax(self, word_uc):
-        """Pattern with ^ is treated as regex"""
-        pattern = "^APPLE"
-        result = word_uc._pattern_to_regex(pattern)
-        assert result == pattern
+        """Pattern starting with ^ gets $ appended only"""
+        result = word_uc._pattern_to_regex("^APPLE")
+        assert result == "^APPLE$"
 
     def test_pattern_to_regex_paren_syntax(self, word_uc):
-        """Pattern with parens is treated as regex"""
-        pattern = "(AP)PLE"
-        result = word_uc._pattern_to_regex(pattern)
-        assert result == pattern
+        """Pattern with parens gets anchored"""
+        result = word_uc._pattern_to_regex("(AP)PLE")
+        assert result == "^(AP)PLE$"
+
+    def test_pattern_to_regex_constraint_pattern(self, word_uc):
+        """Constraint patterns from word constraints get anchored for full-word matching"""
+        result = word_uc._pattern_to_regex("G[^Q][^BGJL-NP-QTW-XZ][^DF-GJ-MQX][A-EH-JMOR-UWY][^DF-HJQX-Z]")
+        assert result == "^G[^Q][^BGJL-NP-QTW-XZ][^DF-GJ-MQX][A-EH-JMOR-UWY][^DF-HJQX-Z]$"
 
 
 def _make_mock_word(text, length, location, cells, crossing_words):
