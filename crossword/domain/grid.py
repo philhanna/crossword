@@ -224,6 +224,8 @@ class Grid:
             ncdict = vars(numbered_cell)
             nclist.append(ncdict)
         image['numbered_cells'] = nclist
+        image['undo_stack'] = self.undo_stack
+        image['redo_stack'] = self.redo_stack
         jsonstr = json.dumps(image)
         return jsonstr
 
@@ -231,13 +233,13 @@ class Grid:
     def from_json(jsonstr):
         """ Creates a Grid object from its JSON string representation """
         image = json.loads(jsonstr)
-        image.pop('undo_stack', None)
-        image.pop('redo_stack', None)
         n = image['n']
         grid = Grid(n)
         for r, c in image['black_cells']:
-            grid.add_black_cell(r, c)
+            grid.add_black_cell(r, c, undo=False)
         grid.get_numbered_cells()
+        grid.undo_stack = image.get('undo_stack', [])
+        grid.redo_stack = image.get('redo_stack', [])
         return grid
 
     def get_statistics(self):

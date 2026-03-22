@@ -138,6 +138,8 @@ class GridUseCases:
         if not new_name or not new_name.strip():
             raise ValueError("new_name must not be empty")
         grid = self.persistence.load_grid(user_id, source_name)
+        grid.undo_stack = []
+        grid.redo_stack = []
         self.persistence.save_grid(user_id, new_name, grid)
         return grid
 

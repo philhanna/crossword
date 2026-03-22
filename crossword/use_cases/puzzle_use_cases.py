@@ -116,6 +116,8 @@ class PuzzleUseCases:
         if not new_name or not new_name.strip():
             raise ValueError("new_name must not be empty")
         puzzle = self.persistence.load_puzzle(user_id, source_name)
+        puzzle.undo_stack = []
+        puzzle.redo_stack = []
         self.persistence.save_puzzle(user_id, new_name, puzzle)
         return puzzle
 
