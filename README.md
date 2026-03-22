@@ -1,175 +1,143 @@
-# Crossword Editor
+# Crossword Composer
 
-This is a web-based application that allows the user
-to create and edit crossword puzzles.
+A web-based application for creating and editing crossword puzzles.
 
 ## Table of contents
+- [Requirements](#requirements)
 - [Setup](#setup)
-    - [Install python](#install-python)
-    - [Install git](#install-git)
-    - [Install the crossword application](#install-the-crossword-application)
-    - [Configuration](#configuration)
-- [Starting the server](#starting-the-server)
-- [Starting the application](#starting-the-application)
+- [Configuration](#configuration)
+- [Running the server](#running-the-server)
+- [Using the application](#using-the-application)
+- [References](#references)
+
+## Requirements
+
+- Python 3.10 or greater
+- git
+
+The application has **no external Python dependencies** — it uses only the standard library.
 
 ## Setup
 
-Depending on what is already installed on your computer,
-you may or may not have to do all these steps.
+### Clone the repository
 
-### Install python
-[Python 3.6 or greater](https://www.python.org/) is required.
-If you don't already have it installed, see the
-[Python downloads](https://www.python.org/downloads/release) page.
-
-### Install git
-`git` is the source code version control system used by **GitHub**.
-If you do not already have it installed, see the 
-[git book official website](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-
-### Install the crossword application
-
-#### Installing for the first time
-If this is the first time you have downloaded the software
-onto this computer, clone it from the GitHub repository,
-like this:
-
-**On Windows:**
-```bat
-cd %USERPROFILE%
+```bash
 git clone https://github.com/philhanna/crossword
+cd crossword
 ```
 
-**On MacOS/Linux:**
+### Install in a virtual environment
+
 ```bash
-cd $HOME
-git clone https://github.com/philhanna/crossword
-```
-
-#### Upgrading to a newer version
-If you are upgrading to a newer version, you only need
-to run "git pull" from the crossword directory:
-
-**On Windows:**
-```bat
-cd %USERPROFILE%\crossword
-git pull
-```
-
-**On MacOS/Linux:**
-```bash
-cd $HOME/crossword
-git pull
-```
-
-#### Creating a virtual environment and installing the application
-Then install the application in a Python virtual environment:
-
-**On Windows:**
-```bat
-cd %USERPROFILE%\crossword
-python -m venv venv
-venv\Scripts\activate.bat
-python -m pip install -r requirements.txt
-python -m pip install .
-```
-
-**On MacOS/Linux:**
-```bash
-cd $HOME/crossword
 python3 -m venv venv
-source venv/bin/activate
-python -m pip install -r requirements.txt
-python -m pip install .
+source venv/bin/activate   # On Windows: venv\Scripts\activate.bat
+pip install .
 ```
 
-The `pip install -r requirements.txt` step installs the
-following, if required:
-- The [Flask](https://flask.palletsprojects.com/en/1.1.x/) package,
-for running the web application.
-- The [Flask-Session](https://flasksession.readthedocs.io/en/latest/)
-package, which provides support for server-side sessions.
+### Upgrading
 
-The `pip install .` command (**note the dot!**) actually installs
-the application in your Python system.
+```bash
+cd crossword
+git pull
+pip install .
+```
 
-### Configuration
+## Configuration
 
-The application uses the following default configuration:
-- A sample database named `samples.db`
-- A logging level of `INFO`
+The application is configured via `~/.crossword.ini` in your home directory:
 
-You can change the configuration by creating a text file
-named `.crossword.ini` in your user HOME directory.  This
-file has the format:
 ```ini
 [DEFAULT]
 #
-# dbfile -  The fully qualified path to the crossword database.
-#           This is an SQLite 3 database.
-# See https://www.sqlite.org/index.html
+# dbfile - Fully qualified path to the SQLite 3 database.
 #
 dbfile=/path/to/crossword.db
 #
-# log_level -   This must one of the following:
-#               CRITICAL
-#               ERROR
-#               WARNING
-#               INFO
-#               DEBUG
-#               NOTSET
-# See https://docs.python.org/3.7/library/logging.html#levels
+# log_level - One of: CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 #
 log_level=INFO
 ```
-Other configuration options may be added in future releases.
 
-## Starting the server
+If the file does not exist, the application uses `samples.db` in the project directory
+and a log level of `INFO`.
 
-The program uses the Python `flask` framework for web applications.
-The Python program that runs the application is named `webapp.py`.
-It uses Flask to run a small HTTP server that you connect to with
-a web browser.
+## Running the server
 
-To start the HTTP server, run `main.py`, as follows:
-
-**On Windows:**
-```bat
-cd %USERPROFILE%\crossword
-venv\Scripts\activate.bat
-python -m crossword.ui.main
-```
-
-**On MacOS/Linux:**
 ```bash
-cd $HOME/crossword
-source venv/bin/activate
-python -m crossword.ui.main
+source venv/bin/activate   # if not already active
+python -m crossword.http_server
 ```
 
-This runs an HTTP server on port 5000 on your computer.
-You can leave it running or cancel it at any time with Ctrl-C.
-You may wish to create a script (or a .bat file, on Windows)
-to run these steps.
+Or use the provided script:
 
-## Starting the application
+```bash
+./run_server
+```
 
-Finally, to start using the application:
+This starts an HTTP server on port 5000. Stop it at any time with `Ctrl-C`.
 
-1. Open a web browser
-_(Note: The application works in Chrome, Microsoft Edge, and Opera.
-Firefox is not supported at present because of a
-bug in translating mouse clicks into grid row and column values.
-See [issue #8](https://github.com/philhanna/crossword/issues/8)
-in the GitHub repository)_
-2. Go to http://localhost:5000
-_(Note: Sometimes I have to use http://127.0.0.1:5000 the first time)_
+## Using the application
 
-There is a **Help** button on the far right of the menu bar
-that takes you to the user's guide.
-You can also access this guide directly at the project's
-[github wiki](https://github.com/philhanna/crossword/wiki).
+Open a browser and go to **http://localhost:5000**.
+
+The application is a single-page app with three modes:
+
+### Home
+Starting state. Choose to create or open a grid or puzzle.
+
+### Grid editor
+Create and edit the black-cell pattern of a crossword grid.
+
+- **Toolbar:** Rotate, Undo, Redo, Info, Save, Close
+- **Menu (Grid):** New, New from puzzle, Open, Save, Save As, Close, Delete
+- Click a cell to toggle it black/white. The grid is kept symmetric automatically.
+- Undo/redo history is maintained per session.
+
+### Puzzle editor
+Fill in answers and clues for a grid.
+
+- **Toolbar:** Save, Save As, Close, Title, Info, Undo, Redo
+- **Menu (Puzzle):** New, Open, Save, Save As, Close, Delete
+- Click a cell or clue to select a word.
+- The word editor panel offers three tabs: **Suggest** (word suggestions), **Constraints** (pattern matching), and **Reset**.
+- A statistics panel shows fill progress.
+
+### Publish
+Available from any mode via the **Publish** menu:
+
+| Format | Description |
+|--------|-------------|
+| Across Lite (.puz) | Standard binary format for most crossword apps |
+| Crossword Compiler (.xml) | XML export |
+| New York Times (.nyt) | NYT submission format |
+
+### Working copy pattern
+All edits target an invisible working copy (`__wc__<uuid>`). Choosing **Save** commits
+the working copy back to the named puzzle/grid. Choosing **Close** without saving
+discards it. This means every keystroke is auto-persisted without overwriting the
+last saved version until you explicitly save.
+
+## Architecture
+
+The backend follows a **Hexagonal (Ports & Adapters)** design:
+
+| Layer | Modules |
+|-------|---------|
+| Domain | `grid`, `puzzle`, `word` — pure Python, no framework deps |
+| Ports | `persistence`, `word_list`, `export` |
+| Adapters | `SQLiteAdapter`, `DictionaryAdapter`, `ExportAdapter` |
+| Use Cases | `GridUseCases`, `PuzzleUseCases`, `WordUseCases`, `ExportUseCases` |
+| HTTP Server | `BaseHTTPRequestHandler` with regex router (no Flask) |
+| Frontend | Single `index.html` + `static/js/app.js` + `static/css/style.css` |
+
+## Tools
+
+| Script | Description |
+|--------|-------------|
+| `tools/swagger.py` | Swagger UI for the REST API (`python3 tools/swagger.py`) |
+| `tools/md_to_pdf.py` | Convert Markdown to PDF via Chrome headless |
 
 ## References
 
-- [Github repository](https://github.com/philhanna/crossword)
+- [GitHub repository](https://github.com/philhanna/crossword)
+- [User guide (GitHub wiki)](https://github.com/philhanna/crossword/wiki)
