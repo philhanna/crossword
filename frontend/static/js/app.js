@@ -1191,12 +1191,54 @@ async function do_grid_delete() {
 }
 
 // ---------------------------------------------------------------------------
-// Menu actions — Publish (Phase 5 stub)
+// Menu actions — Publish
 // ---------------------------------------------------------------------------
 
-function do_publish(format) {
-    if (!AppState.puzzleName) return;
-    alert(`Publish "${AppState.puzzleName}" as ${format} — coming in Phase 5`);
+async function _downloadExport(name, format) {
+    const endpointMap = { puz: 'acrosslite', xml: 'xml', nyt: 'nytimes' };
+    const filenameMap = { puz: `acrosslite-${name}.zip`, xml: `${name}.xml`, nyt: `nytimes-${name}.zip` };
+    const endpoint = endpointMap[format];
+    const filename = filenameMap[format];
+    try {
+        const resp = await fetch(`/api/export/puzzles/${encodeURIComponent(name)}/${endpoint}`);
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            messageBox('Publish error', err.error || `HTTP ${resp.status}`, null, null);
+            return;
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        messageBox('Publish error', 'Export request failed.', null, null);
+    }
+}
+
+async function do_publish(format) {
+    if (AppState.view === 'puzzle-editor' && AppState.puzzleName) {
+        await _downloadExport(AppState.puzzleName, format);
+    } else {
+        try {
+            const listData = await apiFetch('GET', '/api/puzzles');
+            if (listData.error) { alert(`Error: ${listData.error}`); return; }
+            const puzzles = (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
+            if (puzzles.length === 0) {
+                messageBox('Publish', 'No saved puzzles found.', null, null);
+                return;
+            }
+            showPreviewChooser('Choose a puzzle to publish', puzzles, '/api/puzzles', async (name) => {
+                await _downloadExport(name, format);
+            });
+        } catch (e) {
+            alert('Error listing puzzles');
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -7,6 +7,7 @@ ready for HTTP handlers or CLI commands to call.
 
 from crossword.adapters.sqlite_adapter import SQLiteAdapter
 from crossword.adapters.dictionary_adapter import DictionaryAdapter
+from crossword.adapters.export_adapter import ExportAdapter
 from crossword.use_cases.grid_use_cases import GridUseCases
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
@@ -70,8 +71,8 @@ def make_app(config=None):
             # If no word file, adapter will just have empty dict (acceptable for testing)
             pass
 
-    # Export adapter (not yet implemented; will be None)
-    export_adapter = None
+    # Export adapter
+    export_adapter = ExportAdapter()
 
     # ========================================================================
     # Instantiate Use Cases (with constructor injection)
