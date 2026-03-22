@@ -1,4 +1,4 @@
-# Crossword App — Ports & Adapters Design
+# Crossword Composer — Ports & Adapters Design
 
 ## The big idea
 
@@ -73,7 +73,7 @@ Concrete classes that implement the ports using real technology.
 **DictionaryAdapter** implements `WordListPort`:
 - Loads a word list from the same SQLite database (`words` table)
 - Keeps words in memory as a Python set
-- Matches patterns using `re` (regular expressions)
+- Matches patterns using `re.fullmatch()` (full-word match, case-insensitive)
 
 ---
 
@@ -154,11 +154,12 @@ handle_get_suggestions
   → app.word_uc.get_suggestions("?HALE")
 
 WordUseCases.get_suggestions
-  → convert "?HALE" to regex "^.HALE$"
+  → _pattern_to_regex("?HALE") → "^.HALE$"
+    (regex-syntax patterns like "[A-Z]..." also get ^...$ anchors added)
   → self.word_list.get_matches("^.HALE$")   ← calls the port
 
 DictionaryAdapter.get_matches
-  → filter in-memory word set with re.compile("^.HALE$", re.IGNORECASE)
+  → filter in-memory word set with re.fullmatch("^.HALE$", word, re.IGNORECASE)
   → returns ["SHALE", "WHALE", ...]
 
 Response: {"pattern": "?HALE", "suggestions": ["SHALE", "WHALE", ...], "count": 2}
