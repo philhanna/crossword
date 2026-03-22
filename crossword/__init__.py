@@ -22,28 +22,23 @@ def get_elapsed_time(stime, etime):
 def init_config():
     import os.path
     import logging
-    import configparser
+    import yaml
+
+    this_dir = os.path.dirname(__file__)
+    project_root_dir = os.path.dirname(this_dir)
 
     defaults = {
-        'dbfile': "samples.db",
+        'dbfile': os.path.join(project_root_dir, "samples.db"),
         'log_level': "INFO",
     }
-    filename = os.path.expanduser("~/.crossword.ini")
-    config = configparser.ConfigParser(defaults=defaults)
+    filename = os.path.expanduser("~/.config/crossword/config.yaml")
     if os.path.exists(filename):
-        config.read(filename)
+        with open(filename) as f:
+            loaded = yaml.safe_load(f) or {}
+        options = {**defaults, **loaded}
     else:
-        msg = f".crossword.ini file was not found. Using default configuration. See README.md"
-        logging.warning(msg)
-        # Adjust dbfile for correct path, relative to the package
-        this_dir = os.path.dirname(__file__)
-        project_root_dir = os.path.dirname(this_dir)
-        v = config['DEFAULT']['dbfile']
-        dbfile = os.path.join(project_root_dir, v)
-        config['DEFAULT']['dbfile'] = dbfile
-    options = {}
-    for k, v in config['DEFAULT'].items():
-        options[k] = v
+        logging.warning(f"Config file not found: {filename}. Using default configuration. See README.md")
+        options = defaults
     logging.info(f"Using database at {options['dbfile']}")
     return options
 

@@ -44,18 +44,22 @@ pip install .
 
 ## Configuration
 
-The application is configured via `~/.crossword.ini` in your home directory:
+The application is configured via `~/.config/crossword/config.yaml`.
+A sample configuration file is provided at `sample.yaml` in the project root — copy it to get started:
 
-```ini
-[DEFAULT]
-#
-# dbfile - Fully qualified path to the SQLite 3 database.
-#
-dbfile=/path/to/crossword.db
-#
-# log_level - One of: CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
-#
-log_level=INFO
+```bash
+mkdir -p ~/.config/crossword
+cp sample.yaml ~/.config/crossword/config.yaml
+```
+
+Then edit `~/.config/crossword/config.yaml`:
+
+```yaml
+# dbfile: fully qualified path to the SQLite 3 database
+dbfile: /path/to/crossword.db
+
+# log_level: one of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
+log_level: INFO
 ```
 
 If the file does not exist, the application uses `samples.db` in the project directory
