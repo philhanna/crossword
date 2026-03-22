@@ -268,6 +268,10 @@ function renderGridEditor() {
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_grid_info_action()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_save()">
+      <i class="material-icons crosstb-icon">save</i><span>Save</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_close()">
+      <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
   </div>
 </div>`;
 
