@@ -1111,7 +1111,7 @@ async function do_grid_new_from_puzzle() {
                 if (!gridName) return;
                 try {
                     const data = await apiFetch('POST', '/api/grids/from-puzzle',
-                        { name: gridName, puzzle_name: puzzleName });
+                        { grid_name: gridName, puzzle_name: puzzleName });
                     if (data.error) { alert(`Error: ${data.error}`); return; }
                     await _openGridInEditor(gridName);
                 } catch (e) { alert('Error creating grid from puzzle'); }
