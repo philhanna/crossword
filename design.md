@@ -12,7 +12,7 @@ HTTP request
      │
      ▼
 ┌──────────────┐
-│  HTTP Server  │  — routes request to a handler function
+│  HTTP Server │  — routes request to a handler function
 └──────┬───────┘
        │ calls
        ▼
