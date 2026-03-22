@@ -171,11 +171,10 @@ class TestWordUseCasesPatternToRegex:
         assert result == pattern
 
     def test_pattern_to_regex_mixed_syntax(self, word_uc):
-        """Pattern with dot is treated as regex"""
+        """Pattern with dot wildcard is anchored like a simple pattern"""
         pattern = ".PPLE"
         result = word_uc._pattern_to_regex(pattern)
-        # Contains dot, so treated as regex, not converted
-        assert result == pattern
+        assert result == "^.PPLE$"
 
     def test_pattern_to_regex_bracket_syntax(self, word_uc):
         """Pattern with brackets is treated as regex"""
