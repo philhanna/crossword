@@ -335,16 +335,8 @@ class PuzzleUseCases:
         puzzle = self.persistence.load_puzzle(user_id, name)
 
         if puzzle.undo_stack:
-            undo_snapshot = list(puzzle.undo_stack)
-            redo_snapshot = list(puzzle.redo_stack)
-            applying = puzzle.undo_stack[-1]
             puzzle.undo()
             self.persistence.save_puzzle(user_id, name, puzzle)
-            logger.info("undo: puzzle=%s applying=%s", name, applying)
-            logger.info("  undo_stack: %s", undo_snapshot)
-            logger.info("  redo_stack: %s", redo_snapshot)
-        else:
-            logger.info("undo requested but stack empty: puzzle=%s", name)
 
         return puzzle
 
@@ -365,16 +357,8 @@ class PuzzleUseCases:
         puzzle = self.persistence.load_puzzle(user_id, name)
 
         if puzzle.redo_stack:
-            undo_snapshot = list(puzzle.undo_stack)
-            redo_snapshot = list(puzzle.redo_stack)
-            applying = puzzle.redo_stack[-1]
             puzzle.redo()
             self.persistence.save_puzzle(user_id, name, puzzle)
-            logger.info("redo: puzzle=%s applying=%s", name, applying)
-            logger.info("  undo_stack: %s", undo_snapshot)
-            logger.info("  redo_stack: %s", redo_snapshot)
-        else:
-            logger.info("redo requested but stack empty: puzzle=%s", name)
 
         return puzzle
 
