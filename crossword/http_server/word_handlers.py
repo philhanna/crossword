@@ -26,6 +26,7 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
         pattern = query_params.get("pattern")
 
         if not pattern or not isinstance(pattern, str):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'pattern' query parameter"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'pattern' query parameter"}
 
@@ -35,9 +36,11 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
         return {"pattern": pattern, "suggestions": suggestions, "count": len(suggestions)}
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": f"Invalid pattern: {str(e)}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Invalid pattern: {str(e)}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -55,6 +58,7 @@ def handle_get_all_words(path_params, query_params, body_params, session_token, 
         return {"count": len(words), "words": words}
 
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -70,6 +74,7 @@ def handle_validate_word(path_params, query_params, body_params, session_token, 
         word = query_params.get("word")
 
         if not word or not isinstance(word, str):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'word' query parameter"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'word' query parameter"}
 
@@ -79,6 +84,7 @@ def handle_validate_word(path_params, query_params, body_params, session_token, 
         return {"word": word, "valid": is_valid}
 
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -96,12 +102,14 @@ def handle_get_word_constraints(path_params, query_params, body_params, session_
         direction = path_params[2] if len(path_params) > 2 else None
 
         if not name or not seq_str or not direction:
+            logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing name, seq, or direction"}
 
         try:
             seq = int(seq_str)
         except ValueError:
+            logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
@@ -111,12 +119,15 @@ def handle_get_word_constraints(path_params, query_params, body_params, session_
         return app.word_uc.get_word_constraints(word)
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -134,12 +145,14 @@ def handle_get_ranked_suggestions(path_params, query_params, body_params, sessio
         direction = path_params[2] if len(path_params) > 2 else None
 
         if not name or not seq_str or not direction:
+            logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing name, seq, or direction"}
 
         try:
             seq = int(seq_str)
         except ValueError:
+            logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
@@ -150,11 +163,14 @@ def handle_get_ranked_suggestions(path_params, query_params, body_params, sessio
         return {"suggestions": suggestions, "count": len(suggestions)}
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}

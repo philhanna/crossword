@@ -95,6 +95,7 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"puzzles": puzzles}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -112,9 +113,11 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
         grid_name = body_params.get("grid_name")
 
         if not name or not isinstance(name, str):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'name'"}
         if not grid_name or not isinstance(grid_name, str):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'grid_name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'grid_name'"}
 
@@ -125,9 +128,11 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
         return _puzzle_response(puzzle)
 
     except PersistenceError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -142,6 +147,7 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
@@ -151,9 +157,11 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
         return _puzzle_response(puzzle)
 
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -168,6 +176,7 @@ def handle_delete_puzzle(path_params, query_params, body_params, session_token, 
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
@@ -178,9 +187,11 @@ def handle_delete_puzzle(path_params, query_params, body_params, session_token, 
         return {"status": "deleted", "name": name}
 
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -196,6 +207,7 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
@@ -205,9 +217,11 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
         return {"original_name": name, "working_name": working_name}
 
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -223,14 +237,17 @@ def handle_set_puzzle_title(path_params, query_params, body_params, session_toke
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
         if "title" not in body_params:
+            logger.debug("  returning: %s", {"error": "Missing 'title'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing 'title'"}
         title = body_params["title"]
         if not isinstance(title, str):
+            logger.debug("  returning: %s", {"error": "'title' must be a string"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "'title' must be a string"}
 
@@ -240,9 +257,11 @@ def handle_set_puzzle_title(path_params, query_params, body_params, session_toke
         return {"name": name, "title": title}
 
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -260,12 +279,14 @@ def handle_reset_word(path_params, query_params, body_params, session_token, req
         direction = path_params[2] if len(path_params) > 2 else None
 
         if not name or not seq or not direction:
+            logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing name, seq, or direction"}
 
         try:
             seq = int(seq)
         except ValueError:
+            logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
@@ -275,12 +296,15 @@ def handle_reset_word(path_params, query_params, body_params, session_token, req
         return _puzzle_response(puzzle)
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -301,9 +325,11 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
         letter = body_params.get("letter")
 
         if not name or not r or not c:
+            logger.debug("  returning: %s", {"error": "Missing name, r, or c"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing name, r, or c"}
         if letter is None:
+            logger.debug("  returning: %s", {"error": "Missing 'letter'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing 'letter'"}
 
@@ -311,6 +337,7 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
             r = int(r) + 1  # Convert 0-indexed to 1-indexed
             c = int(c) + 1  # Convert 0-indexed to 1-indexed
         except ValueError:
+            logger.debug("  returning: %s", {"error": "r and c must be integers"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "r and c must be integers"}
 
@@ -326,12 +353,15 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
         }
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -349,12 +379,14 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
         direction = path_params[2] if len(path_params) > 2 else None
 
         if not name or not seq or not direction:
+            logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing name, seq, or direction"}
 
         try:
             seq = int(seq)
         except ValueError:
+            logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
@@ -371,12 +403,15 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
         }
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -398,12 +433,14 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
         text = body_params.get("text", None)
 
         if not name or not seq or not direction:
+            logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing name, seq, or direction"}
 
         try:
             seq = int(seq)
         except ValueError:
+            logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
@@ -413,12 +450,15 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
         return _puzzle_response(puzzle)
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -433,6 +473,7 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
@@ -442,9 +483,11 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
         return _puzzle_response(puzzle)
 
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -459,6 +502,7 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
@@ -468,9 +512,11 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
         return _puzzle_response(puzzle)
 
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -488,9 +534,11 @@ def handle_replace_puzzle_grid(path_params, query_params, body_params, session_t
         new_grid_name = body_params.get("new_grid_name")
 
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
         if not new_grid_name or not isinstance(new_grid_name, str):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'new_grid_name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'new_grid_name'"}
 
@@ -505,12 +553,15 @@ def handle_replace_puzzle_grid(path_params, query_params, body_params, session_t
         }
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -526,11 +577,13 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
         new_name = body_params.get("new_name")
         if not new_name or not isinstance(new_name, str):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'new_name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'new_name'"}
 
@@ -542,12 +595,15 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
         return response
 
     except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -562,6 +618,7 @@ def handle_get_puzzle_preview(path_params, query_params, body_params, session_to
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
@@ -570,9 +627,11 @@ def handle_get_puzzle_preview(path_params, query_params, body_params, session_to
         return app.puzzle_uc.get_puzzle_preview(user_id, name)
 
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -587,6 +646,7 @@ def handle_get_puzzle_stats(path_params, query_params, body_params, session_toke
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
@@ -595,8 +655,10 @@ def handle_get_puzzle_stats(path_params, query_params, body_params, session_toke
         return app.puzzle_uc.get_puzzle_stats(user_id, name)
 
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}

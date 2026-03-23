@@ -40,6 +40,7 @@ def handle_export_grid_to_pdf(path_params, query_params, body_params, session_to
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("  returning: %s", {"error": "Missing grid name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing grid name"}
     try:
@@ -48,12 +49,15 @@ def handle_export_grid_to_pdf(path_params, query_params, body_params, session_to
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Grid not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except ExportError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -67,6 +71,7 @@ def handle_export_grid_to_png(path_params, query_params, body_params, session_to
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("  returning: %s", {"error": "Missing grid name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing grid name"}
     try:
@@ -75,12 +80,15 @@ def handle_export_grid_to_png(path_params, query_params, body_params, session_to
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Grid not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except ExportError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -94,6 +102,7 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
@@ -102,12 +111,15 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except ExportError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -121,6 +133,7 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
@@ -129,12 +142,15 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except ExportError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
@@ -148,6 +164,7 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
@@ -156,11 +173,14 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except ExportError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
