@@ -89,7 +89,7 @@ class WordUseCases:
               - length: word length
               - crossers: list of per-position constraint dicts, each with:
                   pos, letter, crossing_text, crossing_location,
-                  crossing_index, regexp, choices
+                  crossing_index, regexp, choices, letter_freq
               - pattern: concatenated regexps (usable as a suggestions pattern)
         """
         word_coords = list(word.cell_iterator())
@@ -111,7 +111,11 @@ class WordUseCases:
 
             # Look up all words matching the crossing pattern
             matches = self.word_list.get_matches(crossing_pattern)
-            letter_set = {m[crossing_index - 1].upper() for m in matches}
+            letter_freq = {}
+            for m in matches:
+                letter = m[crossing_index - 1].upper()
+                letter_freq[letter] = letter_freq.get(letter, 0) + 1
+            letter_set = set(letter_freq.keys())
             nchoices = len(matches)
 
             regexp = LetterList.regexp(letter_set)
@@ -128,6 +132,7 @@ class WordUseCases:
                 "crossing_index": crossing_index,
                 "regexp": regexp,
                 "choices": nchoices,
+                "letter_freq": letter_freq,
             })
 
         pattern = "".join(c["regexp"] for c in crossers)
@@ -138,6 +143,42 @@ class WordUseCases:
             "crossers": crossers,
             "pattern": pattern,
         }
+
+    def get_ranked_suggestions(self, word) -> list[dict]:
+        """
+        Return word candidates for the given word, ranked by crossing viability score.
+
+        For each candidate matching the word's constraint pattern, computes a score
+        equal to the sum of crossing-word match counts for each letter in the candidate.
+        Higher scores mean the candidate's letters are more common across the crossing
+        words, leaving more options open for those words.
+
+        Args:
+            word: A Word domain object (AcrossWord or DownWord)
+
+        Returns:
+            List of dicts sorted by score descending:
+              [{"word": "crane", "score": 142}, ...]
+        """
+        constraints = self.get_word_constraints(word)
+        pattern = constraints["pattern"]
+        crossers = constraints["crossers"]
+
+        candidates = self.word_list.get_matches(self._pattern_to_regex(pattern))
+
+        def score(candidate):
+            total = 0
+            for i, crosser in enumerate(crossers):
+                if i < len(candidate):
+                    letter = candidate[i].upper()
+                    total += crosser["letter_freq"].get(letter, 0)
+            return total
+
+        return sorted(
+            [{"word": c, "score": score(c)} for c in candidates],
+            key=lambda x: x["score"],
+            reverse=True,
+        )
 
     # Helper methods
 

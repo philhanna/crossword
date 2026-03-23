@@ -5,7 +5,8 @@ Routes:
   GET /api/words/suggestions?pattern=<pattern>  → get_suggestions
   GET /api/words/all                            → get_all_words
   GET /api/words/validate?word=<word>           → validate_word
-  GET /api/puzzles/<name>/words/<seq>/<dir>/constraints → get_word_constraints
+  GET /api/puzzles/<name>/words/<seq>/<dir>/constraints  → get_word_constraints
+  GET /api/puzzles/<name>/words/<seq>/<dir>/suggestions  → get_ranked_suggestions
 """
 
 from crossword.ports.persistence import PersistenceError
@@ -85,6 +86,37 @@ def handle_get_word_constraints(path_params, query_params, body_params, session_
         user_id = 1
         word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
         return app.word_uc.get_word_constraints(word)
+
+    except ValueError as e:
+        return {"error": str(e)}
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_get_ranked_suggestions(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Return word suggestions for a puzzle word, ranked by crossing viability score.
+    GET /api/puzzles/<name>/words/<seq>/<direction>/suggestions
+    """
+    try:
+        name = path_params[0] if len(path_params) > 0 else None
+        seq_str = path_params[1] if len(path_params) > 1 else None
+        direction = path_params[2] if len(path_params) > 2 else None
+
+        if not name or not seq_str or not direction:
+            return {"error": "Missing name, seq, or direction"}
+
+        try:
+            seq = int(seq_str)
+        except ValueError:
+            return {"error": "seq must be an integer"}
+
+        user_id = 1
+        word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
+        suggestions = app.word_uc.get_ranked_suggestions(word)
+        return {"suggestions": suggestions, "count": len(suggestions)}
 
     except ValueError as e:
         return {"error": str(e)}

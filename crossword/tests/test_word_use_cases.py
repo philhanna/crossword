@@ -349,3 +349,91 @@ class TestWordUseCasesGetWordConstraints:
 
         assert result["crossers"][0]["choices"] == 3
         assert "A" in result["crossers"][0]["regexp"] or "[" in result["crossers"][0]["regexp"]
+
+    def test_crosser_includes_letter_freq(self, word_uc, mock_word_list):
+        """Each crosser includes letter_freq dict"""
+        cw1 = _make_mock_crossing("AB", "1 down", [(1, 1), (2, 1)])
+        word = _make_mock_word("H", 1, "1 across", [(1, 1)], [cw1])
+        mock_word_list.get_matches.return_value = ["ab", "ac", "ab"]
+
+        result = word_uc.get_word_constraints(word)
+
+        assert "letter_freq" in result["crossers"][0]
+
+    def test_letter_freq_counts_letters_at_crossing_index(self, word_uc, mock_word_list):
+        """letter_freq tallies letters at crossing_index across matching words"""
+        # across word at row 1: cells (1,1),(1,2)
+        # crossing down word at col 1: cells (1,1),(2,1),(3,1) — crossing_index=1
+        cw1 = _make_mock_crossing("ABC", "1 down", [(1, 1), (2, 1), (3, 1)])
+        word = _make_mock_word("H ", 2, "1 across", [(1, 1), (1, 2)],
+                               [cw1, _make_mock_crossing("X", "2 down", [(1, 2)])])
+        mock_word_list.get_matches.side_effect = [
+            ["abc", "axy", "bcd"],  # A appears 2x, B appears 1x at index 0
+            ["xy"],
+        ]
+
+        result = word_uc.get_word_constraints(word)
+
+        freq = result["crossers"][0]["letter_freq"]
+        assert freq.get("A") == 2
+        assert freq.get("B") == 1
+
+
+class TestWordUseCasesGetRankedSuggestions:
+    """Tests for get_ranked_suggestions"""
+
+    def test_ranks_higher_scoring_candidate_first(self, word_uc, mock_word_list):
+        """Candidate whose letters appear more in crossing words ranks first"""
+        # 2-letter word; crossers: col 1 prefers E (10x), col 2 prefers R (8x)
+        cw1 = _make_mock_crossing("AB", "1 down", [(1, 1), (2, 1)])
+        cw2 = _make_mock_crossing("CD", "2 down", [(1, 2), (2, 2)])
+        word = _make_mock_word("  ", 2, "1 across", [(1, 1), (1, 2)], [cw1, cw2])
+        mock_word_list.get_matches.side_effect = [
+            # crosser 1: E appears 10x, A appears 2x at index 0
+            ["eb", "eb", "eb", "eb", "eb", "eb", "eb", "eb", "eb", "eb", "ab", "ab"],
+            # crosser 2: R appears 8x, D appears 1x at index 0
+            ["ra", "ra", "ra", "ra", "ra", "ra", "ra", "ra", "da"],
+            # candidates matching pattern
+            ["er", "ad"],
+        ]
+
+        result = word_uc.get_ranked_suggestions(word)
+
+        assert result[0]["word"] == "er"   # E(10)+R(8)=18
+        assert result[1]["word"] == "ad"   # A(2)+D(1)=3
+
+    def test_returns_word_and_score_keys(self, word_uc, mock_word_list):
+        """Each result dict has 'word' and 'score' keys"""
+        cw1 = _make_mock_crossing("AB", "1 down", [(1, 1), (2, 1)])
+        word = _make_mock_word(" ", 1, "1 across", [(1, 1)], [cw1])
+        mock_word_list.get_matches.side_effect = [["ab", "cb"], ["ab"]]
+
+        result = word_uc.get_ranked_suggestions(word)
+
+        assert len(result) == 1
+        assert "word" in result[0]
+        assert "score" in result[0]
+
+    def test_no_candidates_returns_empty_list(self, word_uc, mock_word_list):
+        """Returns empty list when no candidates match the pattern"""
+        cw1 = _make_mock_crossing("AB", "1 down", [(1, 1), (2, 1)])
+        word = _make_mock_word(" ", 1, "1 across", [(1, 1)], [cw1])
+        mock_word_list.get_matches.side_effect = [["ab"], []]
+
+        result = word_uc.get_ranked_suggestions(word)
+
+        assert result == []
+
+    def test_all_blank_crossers_scores_zero(self, word_uc, mock_word_list):
+        """When crossing words are all blank, all candidates score 0 but are still returned"""
+        cw1 = _make_mock_crossing("  ", "1 down", [(1, 1), (2, 1)])
+        word = _make_mock_word(" ", 1, "1 across", [(1, 1)], [cw1])
+        mock_word_list.get_matches.side_effect = [
+            [],        # crossing word matches nothing → letter_freq is empty
+            ["a", "b", "c"],  # candidates
+        ]
+
+        result = word_uc.get_ranked_suggestions(word)
+
+        assert len(result) == 3
+        assert all(item["score"] == 0 for item in result)

@@ -818,6 +818,40 @@ function doFastpath(pattern) {
     doWordSuggest();
 }
 
+async function doConstrainedSuggest() {
+    const ew      = AppState.editingWord;
+    const wn      = AppState.puzzleWorkingName;
+    const matchEl  = document.getElementById('we-match');
+    const selectEl = document.getElementById('we-select');
+
+    openWordEditTab('we-tab-suggest');
+    matchEl.style.display  = 'none';
+    selectEl.style.display = 'none';
+
+    try {
+        const data = await apiFetch('GET',
+            `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/suggestions`);
+        selectEl.innerHTML = '';
+        if (!data.suggestions || data.suggestions.length === 0) {
+            matchEl.innerHTML     = 'No matches found';
+            matchEl.style.display = 'block';
+        } else {
+            matchEl.innerHTML     = `${data.suggestions.length} matches found (ranked by fit):`;
+            matchEl.style.display = 'block';
+            for (const item of data.suggestions) {
+                const opt       = document.createElement('option');
+                opt.value       = item.word.toUpperCase();
+                opt.textContent = `${item.word.toUpperCase()}  (${item.score})`;
+                selectEl.appendChild(opt);
+            }
+            selectEl.style.display = 'block';
+        }
+    } catch (e) {
+        matchEl.innerHTML     = 'Error fetching suggestions';
+        matchEl.style.display = 'block';
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Word editor — Constraints tab
 // ---------------------------------------------------------------------------
@@ -848,7 +882,7 @@ async function doWordConstraints() {
   <input class="w3-border" id="we-pattern-input"
          value="${escapeHtml(data.pattern)}" style="width:120px;margin:0 8px"/>
   <button type="button" class="w3-margin-left"
-          onclick="doFastpath(document.getElementById('we-pattern-input').value)">
+          onclick="doConstrainedSuggest()">
     Suggest &rsaquo;
   </button>
 </div>

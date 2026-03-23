@@ -45,6 +45,7 @@ from crossword.http_server.word_handlers import (
     handle_get_all_words,
     handle_validate_word,
     handle_get_word_constraints,
+    handle_get_ranked_suggestions,
 )
 from crossword.http_server.export_handlers import (
     handle_export_grid_to_pdf,
@@ -101,6 +102,7 @@ def register_routes(router):
     router.add_route("GET", r"^/api/words/all$", handle_get_all_words)
     router.add_route("GET", r"^/api/words/validate$", handle_validate_word)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/constraints$", handle_get_word_constraints)
+    router.add_route("GET", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/suggestions$", handle_get_ranked_suggestions)
 
     # Export routes
     router.add_route("GET", r"^/api/export/grids/([^/]+)/pdf$", handle_export_grid_to_pdf)
