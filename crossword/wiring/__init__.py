@@ -5,6 +5,8 @@ Single entry point: make_app(config) returns an AppContainer with all use cases,
 ready for HTTP handlers or CLI commands to call.
 """
 
+import logging
+
 from crossword.adapters.sqlite_adapter import SQLiteAdapter
 from crossword.adapters.dictionary_adapter import DictionaryAdapter
 from crossword.adapters.export_adapter import ExportAdapter
@@ -46,6 +48,12 @@ def make_app(config=None):
         # Import here to avoid circular imports and module shadowing
         from crossword import init_config
         config = init_config()
+
+    log_level = getattr(logging, config.get("log_level", "INFO").upper(), logging.INFO)
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
 
     # ========================================================================
     # Instantiate Adapters

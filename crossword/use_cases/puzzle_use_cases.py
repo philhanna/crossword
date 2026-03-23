@@ -20,11 +20,14 @@ Public interface:
   get_puzzle_stats(user_id, name) -> dict
 """
 
+import logging
 import uuid
 
 from crossword import Puzzle, PuzzleToSVG
 from crossword.domain.word import Word
 from crossword.ports.persistence import PersistencePort, PersistenceError
+
+logger = logging.getLogger(__name__)
 
 
 class PuzzleUseCases:
@@ -332,8 +335,13 @@ class PuzzleUseCases:
         puzzle = self.persistence.load_puzzle(user_id, name)
 
         if puzzle.undo_stack:
+            stack_snapshot = list(puzzle.undo_stack)
+            applying = puzzle.undo_stack[-1]
             puzzle.undo()
             self.persistence.save_puzzle(user_id, name, puzzle)
+            logger.info("undo: puzzle=%s stack=%s applying=%s", name, stack_snapshot, applying)
+        else:
+            logger.info("undo requested but stack empty: puzzle=%s", name)
 
         return puzzle
 
@@ -354,8 +362,13 @@ class PuzzleUseCases:
         puzzle = self.persistence.load_puzzle(user_id, name)
 
         if puzzle.redo_stack:
+            stack_snapshot = list(puzzle.redo_stack)
+            applying = puzzle.redo_stack[-1]
             puzzle.redo()
             self.persistence.save_puzzle(user_id, name, puzzle)
+            logger.info("redo: puzzle=%s stack=%s applying=%s", name, stack_snapshot, applying)
+        else:
+            logger.info("redo requested but stack empty: puzzle=%s", name)
 
         return puzzle
 
