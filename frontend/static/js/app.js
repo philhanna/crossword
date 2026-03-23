@@ -272,9 +272,9 @@ function renderGridEditor() {
   <div class="w3-bar w3-border">
     <a class="w3-bar-item w3-button crosstb" onclick="do_grid_rotate_action()">
       <i class="material-icons crosstb-icon">rotate_right</i><span>Rotate</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_undo_action()">
+    <a id="grid-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_grid_undo_action()">
       <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_redo_action()">
+    <a id="grid-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_grid_redo_action()">
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_grid_info_action()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
@@ -301,6 +301,7 @@ ${toolbar}
 
     const svg = document.getElementById('grid-svg');
     if (svg) svg.addEventListener('click', handleGridClick);
+    _updateGridUndoRedo();
 }
 
 async function handleGridClick(event) {
@@ -324,6 +325,7 @@ async function handleGridClick(event) {
             container.innerHTML = buildGridSvg(data.cells, data.size);
             document.getElementById('grid-svg').addEventListener('click', handleGridClick);
         }
+        _updateGridUndoRedo();
     } catch (e) {
         alert('Error toggling cell');
     }
@@ -340,7 +342,17 @@ async function _gridAction(method, path) {
             container.innerHTML = buildGridSvg(data.cells, data.size);
             document.getElementById('grid-svg').addEventListener('click', handleGridClick);
         }
+        _updateGridUndoRedo();
     } catch (e) { alert('Error performing grid action'); }
+}
+
+function _updateGridUndoRedo() {
+    const gd = AppState.gridData;
+    const ub = document.getElementById('grid-undo-btn');
+    const rb = document.getElementById('grid-redo-btn');
+    if (!ub || !rb) return;
+    ub.classList.toggle('w3-disabled', !gd || !gd.can_undo);
+    rb.classList.toggle('w3-disabled', !gd || !gd.can_redo);
 }
 
 async function do_grid_rotate_action() { await _gridAction('POST', '/rotate'); }
