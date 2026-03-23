@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [Unreleased]
+
+### Fixed
+
+- Issue #185: Corrected toolbar button ordering in grid and puzzle editors
+
 ## [2.5.0] - 2026-03-23
 
 Complete rewrite of the application backend and frontend.
