@@ -116,6 +116,8 @@ class GridUseCases:
         """
         working_name = f"__wc__{uuid.uuid4().hex[:8]}"
         grid = self.persistence.load_grid(user_id, name)
+        grid.undo_stack = []
+        grid.redo_stack = []
         self.persistence.save_grid(user_id, working_name, grid)
         return working_name
 
@@ -209,7 +211,9 @@ class GridUseCases:
             PersistenceError: If load/save fails
         """
         grid = self.persistence.load_grid(user_id, name)
+        print(f"undo_grid: undo_stack={grid.undo_stack}  redo_stack={grid.redo_stack}")
         grid.undo()
+        print(f"undo_grid: undo_stack={grid.undo_stack}  redo_stack={grid.redo_stack}")
         self.persistence.save_grid(user_id, name, grid)
         return grid
 
@@ -312,6 +316,8 @@ class GridUseCases:
             PersistenceError: If load/save fails
         """
         grid = self.persistence.load_grid(user_id, name)
+        print(f"redo_grid: undo_stack={grid.undo_stack}  redo_stack={grid.redo_stack}")
         grid.redo()
+        print(f"redo_grid: undo_stack={grid.undo_stack}  redo_stack={grid.redo_stack}")
         self.persistence.save_grid(user_id, name, grid)
         return grid
