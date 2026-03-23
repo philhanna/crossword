@@ -1149,7 +1149,7 @@ function _updatePuzzleUndoRedo() {
     const pd = AppState.puzzleData;
     const ub = document.getElementById('puzzle-undo-btn');
     const rb = document.getElementById('puzzle-redo-btn');
-    if (!ub || !rb) return;
+if (!ub || !rb) return;
     ub.classList.toggle('w3-disabled', !pd || !pd.can_undo);
     rb.classList.toggle('w3-disabled', !pd || !pd.can_redo);
 }

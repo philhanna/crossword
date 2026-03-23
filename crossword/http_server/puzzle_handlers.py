@@ -74,6 +74,8 @@ def _puzzle_response(puzzle):
     return {
         "grid": {"size": puzzle.n, "cells": grid_cells},
         "puzzle": {"title": puzzle.title or "", "cells": puzzle_cells, "words": words},
+        "can_undo": bool(puzzle.undo_stack),
+        "can_redo": bool(puzzle.redo_stack),
     }
 
 
