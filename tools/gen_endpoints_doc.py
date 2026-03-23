@@ -5,6 +5,10 @@ Generate docs/design/endpoints.md from live route registrations.
 Imports register_routes() to discover all routes and their handler functions,
 then uses inspect to find source file and line number for each handler.
 Pretty path names (with named parameters) are sourced from the Swagger SPEC.
+git ss
+The only manual upkeep needed: if you add a route that's not in the
+swagger SPEC and has path parameters, add an entry to _EXTRA_PATHS in
+the script so the param names come out correctly instead of {param}.
 
 Usage:
     python3 tools/gen_endpoints_doc.py
