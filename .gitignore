@@ -9,3 +9,4 @@ flask_session
 venv/
 build/
 crossword.egg-info
+server.log
