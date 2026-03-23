@@ -209,17 +209,7 @@ class GridUseCases:
             PersistenceError: If load/save fails
         """
         grid = self.persistence.load_grid(user_id, name)
-
-        if grid.undo_stack:
-            r, c = grid.undo_stack.pop()
-            grid.redo_stack.append((r, c))
-
-            # Undoing a black cell operation: toggle the cell
-            if grid.is_black_cell(r, c):
-                grid.remove_black_cell(r, c)
-            else:
-                grid.add_black_cell(r, c)
-
+        grid.undo()
         self.persistence.save_grid(user_id, name, grid)
         return grid
 
@@ -322,16 +312,6 @@ class GridUseCases:
             PersistenceError: If load/save fails
         """
         grid = self.persistence.load_grid(user_id, name)
-
-        if grid.redo_stack:
-            r, c = grid.redo_stack.pop()
-            grid.undo_stack.append((r, c))
-
-            # Redoing: toggle the cell
-            if grid.is_black_cell(r, c):
-                grid.remove_black_cell(r, c)
-            else:
-                grid.add_black_cell(r, c)
-
+        grid.redo()
         self.persistence.save_grid(user_id, name, grid)
         return grid
