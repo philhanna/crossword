@@ -141,6 +141,8 @@ class PuzzleUseCases:
         """
         working_name = f"__wc__{uuid.uuid4().hex[:8]}"
         puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.undo_stack = []
+        puzzle.redo_stack = []
         self.persistence.save_puzzle(user_id, working_name, puzzle)
         return working_name
 

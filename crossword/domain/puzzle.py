@@ -296,6 +296,8 @@ class Puzzle:
             }
             dwlist.append(dwdict)
         image['down_words'] = dwlist
+        image['undo_stack'] = self.undo_stack
+        image['redo_stack'] = self.redo_stack
 
         # Create string in JSON format
         jsonstr = json.dumps(image)
@@ -340,7 +342,9 @@ class Puzzle:
             word.set_text(text)     # TODO: Can't do this - undo/redo
             word.set_clue(clue)     # TODO: Can't do this - undo/redo
 
-        # Done
+        puzzle.undo_stack = image.get('undo_stack', [])
+        puzzle.redo_stack = image.get('redo_stack', [])
+
         return puzzle
 
     #   ========================================================
