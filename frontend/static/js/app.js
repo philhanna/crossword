@@ -271,18 +271,20 @@ function renderGridEditor() {
     const toolbar = `
 <div class="w3-container w3-margin-bottom" style="height:36px">
   <div class="w3-bar w3-border">
-    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_rotate_action()">
-      <i class="material-icons crosstb-icon">rotate_right</i><span>Rotate</span></a>
+        <a class="w3-bar-item w3-button crosstb" onclick="do_grid_save()">
+            <i class="material-icons crosstb-icon">save</i><span>Save</span></a>
+        <a class="w3-bar-item w3-button crosstb" onclick="do_grid_save_as()">
+            <i class="material-icons crosstb-icon">save_alt</i><span>Save As</span></a>
+        <a class="w3-bar-item w3-button crosstb" onclick="do_grid_close()">
+            <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
     <a id="grid-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_grid_undo_action()">
       <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
     <a id="grid-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_grid_redo_action()">
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_grid_info_action()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_save()">
-      <i class="material-icons crosstb-icon">save</i><span>Save</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_grid_close()">
-      <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
+        <a class="w3-bar-item w3-button crosstb" onclick="do_grid_rotate_action()">
+            <i class="material-icons crosstb-icon">rotate_right</i><span>Rotate</span></a>
   </div>
 </div>`;
 
