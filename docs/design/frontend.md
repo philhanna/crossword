@@ -171,6 +171,63 @@ Three tabs:
 
 `_downloadExport(name, format)` fetches the export endpoint and triggers a browser download by creating a temporary `<a>` element with `download` attribute.
 
+## Example: End-to-End Interaction Flow
+
+Tracing **clicking a clue in the clue list** — one of the most complete flows in the app.
+
+### 1. User clicks a clue
+
+`renderClues()` renders each item as:
+
+```js
+`<li><a onclick="openWordEditor(${w.seq}, '${direction}')">`
+```
+
+### 2. `openWordEditor(seq, direction)`
+
+```js
+const data = await apiFetch('GET',
+    `/api/puzzles/${encodeURIComponent(wn)}/words/${seq}/${direction}`);
+AppState.editingWord = { seq, direction, cells, answer, clue };
+renderPuzzleEditorRhs();
+```
+
+`apiFetch` calls `fetch()` with `Content-Type: application/json`.
+
+### 3. Server handles `GET /api/puzzles/{wn}/words/{seq}/{dir}`
+
+Routes to `handle_get_word` in `puzzle_handlers.py`, which calls `puzzle_uc.get_word(user_id, name, seq, direction)`. Returns:
+
+```json
+{ "seq": 5, "direction": "across", "cells": [[1,1],[1,2],...], "answer": "HELLO", "clue": "A greeting" }
+```
+
+### 4. Response rendered
+
+`openWordEditor` stores the response in `AppState.editingWord`, then `renderPuzzleEditorRhs()` picks the word editor branch:
+
+```js
+if (AppState.editingWord)
+    html = renderWordEditorPanel();
+```
+
+`renderWordEditorPanel()` builds the word editor HTML from `AppState.editingWord` and assigns it to `rhs.innerHTML`.
+
+### Summary
+
+```
+click clue
+  → openWordEditor(seq, dir)
+    → apiFetch GET /api/puzzles/{wn}/words/{seq}/{dir}
+      → puzzle_handlers.handle_get_word
+        → puzzle_uc.get_word(...)
+      ← JSON { seq, direction, cells, answer, clue }
+    ← AppState.editingWord = data
+  → renderPuzzleEditorRhs()
+    → renderWordEditorPanel()
+      → rhs.innerHTML = <word editor HTML>
+```
+
 ## HTTP Communication
 
 All API calls go through `apiFetch(method, path, body)` — a thin wrapper around `fetch()` that sets `Content-Type: application/json` and parses the JSON response. Errors are detected by checking `data.error` in the response body (HTTP status is not checked).
