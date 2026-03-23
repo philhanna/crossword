@@ -53,6 +53,7 @@ def make_app(config=None):
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        force=True,
     )
 
     # ========================================================================
