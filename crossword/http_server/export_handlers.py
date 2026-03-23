@@ -9,8 +9,11 @@ Routes:
   GET /api/export/puzzles/<name>/nytimes    → export_puzzle_to_nytimes
 """
 
+import logging
 from crossword.ports.persistence import PersistenceError
 from crossword.ports.export import ExportError
+
+logger = logging.getLogger(__name__)
 
 
 def _send_download(request_handler, data, content_type, filename):
@@ -33,6 +36,7 @@ def handle_export_grid_to_pdf(path_params, query_params, body_params, session_to
     Export a grid to PDF format.
     GET /api/export/grids/<name>/pdf
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
         return {"error": "Missing grid name"}
@@ -53,6 +57,7 @@ def handle_export_grid_to_png(path_params, query_params, body_params, session_to
     Export a grid to PNG image format.
     GET /api/export/grids/<name>/png
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
         return {"error": "Missing grid name"}
@@ -73,6 +78,7 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
     Export a puzzle to AcrossLite text format (ZIP containing .txt + .json).
     GET /api/export/puzzles/<name>/acrosslite
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
         return {"error": "Missing puzzle name"}
@@ -93,6 +99,7 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
     Export a puzzle to Crossword Compiler XML format.
     GET /api/export/puzzles/<name>/xml
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
         return {"error": "Missing puzzle name"}
@@ -113,6 +120,7 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
     Export a puzzle in NYTimes submission format (ZIP containing .html + .svg).
     GET /api/export/puzzles/<name>/nytimes
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
         return {"error": "Missing puzzle name"}

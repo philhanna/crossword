@@ -52,7 +52,8 @@ def make_app(config=None):
     log_level = getattr(logging, config.get("log_level", "INFO").upper(), logging.INFO)
     logging.basicConfig(
         level=log_level,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        format="%(asctime)s %(levelname)s %(filename)s:%(lineno)d: %(message)s",
+        datefmt="%H:%M:%S",
         force=True,
     )
 

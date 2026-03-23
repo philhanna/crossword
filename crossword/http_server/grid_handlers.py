@@ -17,8 +17,11 @@ Routes:
   GET    /api/grids/<name>/stats         → get_grid_stats
 """
 
+import logging
 import traceback
 from crossword.ports.persistence import PersistenceError
+
+logger = logging.getLogger(__name__)
 
 
 def _grid_response(grid):
@@ -38,6 +41,7 @@ def handle_list_grids(path_params, query_params, body_params, session_token, req
     List all grids for the current user.
     GET /api/grids
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         user_id = 1
         grids = app.grid_uc.list_grids(user_id)
@@ -52,6 +56,7 @@ def handle_create_grid(path_params, query_params, body_params, session_token, re
     POST /api/grids
     Body: { "name": "grid1", "size": 15 }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = body_params.get("name")
         size = body_params.get("size")
@@ -90,6 +95,7 @@ def handle_create_grid_from_puzzle(path_params, query_params, body_params, sessi
     POST /api/grids/from-puzzle
     Body: { "puzzle_name": "...", "grid_name": "..." }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         puzzle_name = body_params.get("puzzle_name")
         grid_name = body_params.get("grid_name")
@@ -126,6 +132,7 @@ def handle_load_grid(path_params, query_params, body_params, session_token, requ
     Load a grid by name.
     GET /api/grids/<name>
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -156,6 +163,7 @@ def handle_delete_grid(path_params, query_params, body_params, session_token, re
     Delete a grid by name.
     DELETE /api/grids/<name>
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -178,6 +186,7 @@ def handle_copy_grid(path_params, query_params, body_params, session_token, requ
     POST /api/grids/<name>/copy
     Body: { "new_name": "..." }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -215,6 +224,7 @@ def handle_open_grid_for_editing(path_params, query_params, body_params, session
     POST /api/grids/<name>/open
     Returns: { "original_name": "mygrid", "working_name": "__wc__a1b2c3d4" }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -236,6 +246,7 @@ def handle_toggle_black_cell(path_params, query_params, body_params, session_tok
     PUT /api/grids/<name>/cells/<r>/<c>
     Note: Frontend sends 0-indexed coordinates, grid expects 1-indexed
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if len(path_params) > 0 else None
         r = path_params[1] if len(path_params) > 1 else None
@@ -267,6 +278,7 @@ def handle_rotate_grid(path_params, query_params, body_params, session_token, re
     Rotate a grid 90 degrees counterclockwise.
     POST /api/grids/<name>/rotate
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -287,6 +299,7 @@ def handle_undo_grid(path_params, query_params, body_params, session_token, requ
     Undo the last operation on a grid.
     POST /api/grids/<name>/undo
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -307,6 +320,7 @@ def handle_redo_grid(path_params, query_params, body_params, session_token, requ
     Redo the last undone operation on a grid.
     POST /api/grids/<name>/redo
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -327,6 +341,7 @@ def handle_get_grid_preview(path_params, query_params, body_params, session_toke
     Return a scaled-down SVG thumbnail and summary heading for a grid.
     GET /api/grids/<name>/preview
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -346,6 +361,7 @@ def handle_get_grid_stats(path_params, query_params, body_params, session_token,
     Return statistics and validation results for a grid.
     GET /api/grids/<name>/stats
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:

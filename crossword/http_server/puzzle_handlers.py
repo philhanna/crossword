@@ -20,7 +20,10 @@ Routes:
   GET    /api/puzzles/<name>/stats         → get_puzzle_stats
 """
 
+import logging
 from crossword.ports.persistence import PersistenceError
+
+logger = logging.getLogger(__name__)
 
 
 def _puzzle_response(puzzle):
@@ -84,6 +87,7 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
     List all puzzles for the current user.
     GET /api/puzzles
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         user_id = 1
         puzzles = app.puzzle_uc.list_puzzles(user_id)
@@ -98,6 +102,7 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
     POST /api/puzzles
     Body: { "name": "puzzle1", "grid_name": "grid1" }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = body_params.get("name")
         grid_name = body_params.get("grid_name")
@@ -123,6 +128,7 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
     Load a puzzle by name.
     GET /api/puzzles/<name>
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -143,6 +149,7 @@ def handle_delete_puzzle(path_params, query_params, body_params, session_token, 
     Delete a puzzle by name.
     DELETE /api/puzzles/<name>
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -165,6 +172,7 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
     POST /api/puzzles/<name>/open
     Returns: { "original_name": "mypuzzle", "working_name": "__wc__a1b2c3d4" }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -186,6 +194,7 @@ def handle_set_puzzle_title(path_params, query_params, body_params, session_toke
     PUT /api/puzzles/<name>/title
     Body: { "title": "My Puzzle Title" }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -212,6 +221,7 @@ def handle_reset_word(path_params, query_params, body_params, session_token, req
     Clear letters in a word that are not shared with a completed crossing word.
     POST /api/puzzles/<name>/words/<seq>/<direction>/reset
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name      = path_params[0] if len(path_params) > 0 else None
         seq       = path_params[1] if len(path_params) > 1 else None
@@ -244,6 +254,7 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
     Body: { "letter": "A" }
     Note: Frontend sends 0-indexed coordinates, puzzle expects 1-indexed
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if len(path_params) > 0 else None
         r = path_params[1] if len(path_params) > 1 else None
@@ -284,6 +295,7 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
     Get a word at a numbered cell.
     GET /api/puzzles/<name>/words/<seq>/<direction>
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if len(path_params) > 0 else None
         seq = path_params[1] if len(path_params) > 1 else None
@@ -323,6 +335,7 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
     Body: { "clue": "The answer to life", "text": "ANSWER" }
     If 'text' is provided it is applied with undo tracking.
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if len(path_params) > 0 else None
         seq = path_params[1] if len(path_params) > 1 else None
@@ -355,6 +368,7 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
     Undo the last operation on a puzzle.
     POST /api/puzzles/<name>/undo
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -375,6 +389,7 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
     Redo the last undone operation on a puzzle.
     POST /api/puzzles/<name>/redo
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -396,6 +411,7 @@ def handle_replace_puzzle_grid(path_params, query_params, body_params, session_t
     PUT /api/puzzles/<name>/grid
     Body: { "new_grid_name": "grid2" }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         new_grid_name = body_params.get("new_grid_name")
@@ -428,6 +444,7 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
     POST /api/puzzles/<name>/copy
     Body: { "new_name": "..." }
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -456,6 +473,7 @@ def handle_get_puzzle_preview(path_params, query_params, body_params, session_to
     Return a scaled-down SVG thumbnail and summary heading for a puzzle.
     GET /api/puzzles/<name>/preview
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
@@ -475,6 +493,7 @@ def handle_get_puzzle_stats(path_params, query_params, body_params, session_toke
     Return statistics and validation results for a puzzle.
     GET /api/puzzles/<name>/stats
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:

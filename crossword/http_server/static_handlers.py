@@ -2,7 +2,10 @@
 Static file handlers - serve index.html and static assets (CSS, JS).
 """
 
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def get_frontend_dir():
@@ -17,6 +20,7 @@ def handle_get_index(path_params, query_params, body_params, session_token, requ
     Serve index.html for root path.
     GET /
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         frontend_dir = get_frontend_dir()
         index_file = frontend_dir / "index.html"
@@ -38,6 +42,7 @@ def handle_get_static(path_params, query_params, body_params, session_token, req
     Serve static assets (CSS, JS, etc.).
     GET /static/<filename>
     """
+    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
     try:
         filename = path_params[0] if path_params else ""
 
