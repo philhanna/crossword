@@ -574,14 +574,14 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">save_alt</i><span>Save As</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_close()">
       <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_title()">
-      <i class="material-icons crosstb-icon">title</i><span>Title</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
-      <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
     <a id="puzzle-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
       <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
     <a id="puzzle-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
+        <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
+            <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
+        <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_title()">
+            <i class="material-icons crosstb-icon">title</i><span>Title</span></a>
   </div>
 </div>`;
 
