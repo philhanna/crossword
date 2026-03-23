@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
-## [Unreleased]
+## [2.5.0] - 2026-03-23
 
 Complete rewrite of the application backend and frontend.
 
@@ -27,13 +27,40 @@ Complete rewrite of the application backend and frontend.
 - Word editor panel: suggest, constraints, and reset tabs
 - Word constraints endpoint (`GET /api/words/constraints`)
 - Puzzle statistics panel
+- Grid statistics panel
 - Grid preview and puzzle preview endpoints
 - `create_grid_from_puzzle` use case and endpoint
 - Delete grid option
+- Save and Close buttons on grid toolbar
+- Warn on unsaved changes when closing grid or puzzle
+- Confirmation dialog after Grid > Save and Puzzle > Save succeed
+- Publish feature (Phases 1–4): AcrossLite `.puz` export, PDF, and print
+- Rebranded header with Mozart image and "Crossword Composer" title
+- Puzzle undo/redo button enable/disable driven by `can_undo`/`can_redo` API fields
 - Swagger UI tool (`tools/swagger.py`) with live route diff checking
 - `tools/md_to_pdf.py` — Markdown to PDF via Chrome headless
+- `tools/gen_endpoints_doc.py` — generates `docs/endpoints.md` from live routes
+- `docs/endpoints.md` — auto-generated API endpoint reference
 - `design.md` — architecture overview (ports & adapters)
 - `pyproject.toml` replacing `setup.py` and `requirements.txt`
+
+### Changed
+
+- Config file format switched to YAML in local config directory
+- Reorganized `docs/` directory structure
+- Undo/redo stacks persisted in working copy only, not in canonical saves
+- `can_undo` / `can_redo` exposed in grid and puzzle API responses
+
+### Fixed
+
+- Issue #184: Grid undo/redo delegated to domain model `Grid.undo()` / `Grid.redo()`; stacks cleared when creating working copy
+- Grid undo/redo: persist stacks in working copy, update toolbar buttons correctly
+- Puzzle undo/redo: persist stacks in working copy, clear on open and save
+- Grid LHS vertical shift when info panel opens/closes
+- Missing cell numbers for down-only words in puzzle SVG
+- Regexp suggest ignoring character classes in word editor
+- `New Grid from Puzzle` sending wrong field name to API
+- Treat dot as single-char wildcard in word suggestion patterns
 
 ### Removed
 
@@ -206,7 +233,8 @@ editing is done (see Issue #99).
 
 [Semantic Versioning]: https://semver.org/
 [Keep a Changelog]: https://keepachangelog.com/
-[Unreleased]: https://github.com/philhanna/crossword/compare/2.4.0..HEAD
+[Unreleased]: https://github.com/philhanna/crossword/compare/2.5.0..HEAD
+[2.5.0]: https://github.com/philhanna/crossword/compare/2.4.0..2.5.0
 [2.4.0]: https://github.com/philhanna/crossword/compare/2.3.0..2.4.0
 [2.3.0]: https://github.com/philhanna/crossword/compare/2.2.0..2.3.0
 [2.2.0]: https://github.com/philhanna/crossword/compare/2.1.4..2.2.0
