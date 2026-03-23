@@ -31,6 +31,7 @@ const AppState = {
 // ---------------------------------------------------------------------------
 
 function _hash(obj) {
+    // This is the djb2 hash function
     const s = JSON.stringify(obj);
     let h = 5381;
     for (let i = 0; i < s.length; i++)
