@@ -41,12 +41,15 @@ def handle_list_grids(path_params, query_params, body_params, session_token, req
     List all grids for the current user.
     GET /api/grids
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         user_id = 1
         grids = app.grid_uc.list_grids(user_id)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"grids": grids}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -56,14 +59,17 @@ def handle_create_grid(path_params, query_params, body_params, session_token, re
     POST /api/grids
     Body: { "name": "grid1", "size": 15 }
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = body_params.get("name")
         size = body_params.get("size")
 
         if not name or not isinstance(name, str):
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'name'"}
         if not isinstance(size, int) or size < 1:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'size' (must be integer >= 1)"}
 
         user_id = 1
@@ -76,16 +82,20 @@ def handle_create_grid(path_params, query_params, body_params, session_token, re
             cell_idx = (r - 1) * size + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
             cells[cell_idx] = True
 
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {
             "size": size,
             "cells": cells,
         }
 
     except ValueError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -95,14 +105,17 @@ def handle_create_grid_from_puzzle(path_params, query_params, body_params, sessi
     POST /api/grids/from-puzzle
     Body: { "puzzle_name": "...", "grid_name": "..." }
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         puzzle_name = body_params.get("puzzle_name")
         grid_name = body_params.get("grid_name")
 
         if not puzzle_name or not isinstance(puzzle_name, str):
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'puzzle_name'"}
         if not grid_name or not isinstance(grid_name, str):
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'grid_name'"}
 
         user_id = 1
@@ -113,6 +126,7 @@ def handle_create_grid_from_puzzle(path_params, query_params, body_params, sessi
             cell_idx = (r - 1) * grid.n + (c - 1)
             cells[cell_idx] = True
 
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {
             "name": grid_name,
             "size": grid.n,
@@ -120,10 +134,13 @@ def handle_create_grid_from_puzzle(path_params, query_params, body_params, sessi
         }
 
     except ValueError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {puzzle_name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -132,10 +149,12 @@ def handle_load_grid(path_params, query_params, body_params, session_token, requ
     Load a grid by name.
     GET /api/grids/<name>
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         user_id = 1
@@ -147,14 +166,17 @@ def handle_load_grid(path_params, query_params, body_params, session_token, requ
             cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
             cells[cell_idx] = True
 
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {
             "size": grid.n,
             "cells": cells,
         }
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -163,20 +185,25 @@ def handle_delete_grid(path_params, query_params, body_params, session_token, re
     Delete a grid by name.
     DELETE /api/grids/<name>
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         user_id = 1
         app.grid_uc.delete_grid(user_id, name)
 
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"status": "deleted", "name": name}
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -186,14 +213,17 @@ def handle_copy_grid(path_params, query_params, body_params, session_token, requ
     POST /api/grids/<name>/copy
     Body: { "new_name": "..." }
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         new_name = body_params.get("new_name")
         if not new_name or not isinstance(new_name, str):
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'new_name'"}
 
         user_id = 1
@@ -204,6 +234,7 @@ def handle_copy_grid(path_params, query_params, body_params, session_token, requ
             cell_idx = (r - 1) * grid.n + (c - 1)
             cells[cell_idx] = True
 
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {
             "name": new_name,
             "size": grid.n,
@@ -211,10 +242,13 @@ def handle_copy_grid(path_params, query_params, body_params, session_token, requ
         }
 
     except ValueError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -224,19 +258,24 @@ def handle_open_grid_for_editing(path_params, query_params, body_params, session
     POST /api/grids/<name>/open
     Returns: { "original_name": "mygrid", "working_name": "__wc__a1b2c3d4" }
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         user_id = 1
         working_name = app.grid_uc.open_grid_for_editing(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"original_name": name, "working_name": working_name}
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -246,30 +285,36 @@ def handle_toggle_black_cell(path_params, query_params, body_params, session_tok
     PUT /api/grids/<name>/cells/<r>/<c>
     Note: Frontend sends 0-indexed coordinates, grid expects 1-indexed
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if len(path_params) > 0 else None
         r = path_params[1] if len(path_params) > 1 else None
         c = path_params[2] if len(path_params) > 2 else None
 
         if not name or not r or not c:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing name, r, or c"}
 
         try:
             r = int(r) + 1  # Convert 0-indexed to 1-indexed
             c = int(c) + 1  # Convert 0-indexed to 1-indexed
         except ValueError:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "r and c must be integers"}
 
         user_id = 1
         grid = app.grid_uc.toggle_black_cell(user_id, name, r, c)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _grid_response(grid)
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
         print(f"ERROR in handle_toggle_black_cell: {e}")
         print(traceback.format_exc())
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Toggle failed: {str(e)}"}
 
 
@@ -278,19 +323,24 @@ def handle_rotate_grid(path_params, query_params, body_params, session_token, re
     Rotate a grid 90 degrees counterclockwise.
     POST /api/grids/<name>/rotate
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         user_id = 1
         grid = app.grid_uc.rotate_grid(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _grid_response(grid)
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -299,19 +349,24 @@ def handle_undo_grid(path_params, query_params, body_params, session_token, requ
     Undo the last operation on a grid.
     POST /api/grids/<name>/undo
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         user_id = 1
         grid = app.grid_uc.undo_grid(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _grid_response(grid)
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -320,19 +375,24 @@ def handle_redo_grid(path_params, query_params, body_params, session_token, requ
     Redo the last undone operation on a grid.
     POST /api/grids/<name>/redo
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         user_id = 1
         grid = app.grid_uc.redo_grid(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _grid_response(grid)
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -341,18 +401,23 @@ def handle_get_grid_preview(path_params, query_params, body_params, session_toke
     Return a scaled-down SVG thumbnail and summary heading for a grid.
     GET /api/grids/<name>/preview
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         user_id = 1
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return app.grid_uc.get_grid_preview(user_id, name)
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -361,16 +426,21 @@ def handle_get_grid_stats(path_params, query_params, body_params, session_token,
     Return statistics and validation results for a grid.
     GET /api/grids/<name>/stats
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = path_params[0] if path_params else None
         if not name:
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing grid name"}
 
         user_id = 1
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return app.grid_uc.get_grid_stats(user_id, name)
 
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}

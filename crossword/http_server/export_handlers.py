@@ -36,19 +36,25 @@ def handle_export_grid_to_pdf(path_params, query_params, body_params, session_to
     Export a grid to PDF format.
     GET /api/export/grids/<name>/pdf
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing grid name"}
     try:
         pdf_bytes = app.export_uc.export_grid_to_pdf(1, name)
         _send_download(request_handler, pdf_bytes, "application/pdf", f"{name}.pdf")
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except ExportError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -57,19 +63,25 @@ def handle_export_grid_to_png(path_params, query_params, body_params, session_to
     Export a grid to PNG image format.
     GET /api/export/grids/<name>/png
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing grid name"}
     try:
         png_bytes = app.export_uc.export_grid_to_png(1, name)
         _send_download(request_handler, png_bytes, "image/png", f"{name}.png")
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Grid not found: {name}"}
     except ExportError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -78,19 +90,25 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
     Export a puzzle to AcrossLite text format (ZIP containing .txt + .json).
     GET /api/export/puzzles/<name>/acrosslite
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
         zip_bytes = app.export_uc.export_puzzle_to_acrosslite(1, name)
         _send_download(request_handler, zip_bytes, "application/zip", f"acrosslite-{name}.zip")
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except ExportError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -99,19 +117,25 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
     Export a puzzle to Crossword Compiler XML format.
     GET /api/export/puzzles/<name>/xml
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
         xml_text = app.export_uc.export_puzzle_to_xml(1, name)
         _send_download(request_handler, xml_text, "application/xml", f"{name}.xml")
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except ExportError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
 
@@ -120,17 +144,23 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
     Export a puzzle in NYTimes submission format (ZIP containing .html + .svg).
     GET /api/export/puzzles/<name>/nytimes
     """
-    logger.debug("%s %s path_params=%s query_params=%s body_params=%s", request_handler.command, request_handler.path, path_params, query_params, body_params)
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     name = path_params[0] if path_params else None
     if not name:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
         zip_bytes = app.export_uc.export_puzzle_to_nytimes(1, name)
         _send_download(request_handler, zip_bytes, "application/zip", f"nytimes-{name}.zip")
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
     except ExportError as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
     except Exception as e:
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
