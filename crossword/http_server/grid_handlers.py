@@ -21,6 +21,18 @@ import traceback
 from crossword.ports.persistence import PersistenceError
 
 
+def _grid_response(grid):
+    cells = [False] * (grid.n * grid.n)
+    for r, c in grid.black_cells:
+        cells[(r - 1) * grid.n + (c - 1)] = True
+    return {
+        "size": grid.n,
+        "cells": cells,
+        "can_undo": bool(grid.undo_stack),
+        "can_redo": bool(grid.redo_stack),
+    }
+
+
 def handle_list_grids(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
     """
     List all grids for the current user.
@@ -240,17 +252,7 @@ def handle_toggle_black_cell(path_params, query_params, body_params, session_tok
 
         user_id = 1
         grid = app.grid_uc.toggle_black_cell(user_id, name, r, c)
-
-        # Convert black_cells set to cells array for frontend
-        cells = [False] * (grid.n * grid.n)
-        for r, c in grid.black_cells:
-            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
-            cells[cell_idx] = True
-
-        return {
-            "size": grid.n,
-            "cells": cells,
-        }
+        return _grid_response(grid)
 
     except PersistenceError:
         return {"error": f"Grid not found: {name}"}
@@ -272,17 +274,7 @@ def handle_rotate_grid(path_params, query_params, body_params, session_token, re
 
         user_id = 1
         grid = app.grid_uc.rotate_grid(user_id, name)
-
-        # Convert black_cells set to cells array for frontend
-        cells = [False] * (grid.n * grid.n)
-        for r, c in grid.black_cells:
-            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
-            cells[cell_idx] = True
-
-        return {
-            "size": grid.n,
-            "cells": cells,
-        }
+        return _grid_response(grid)
 
     except PersistenceError:
         return {"error": f"Grid not found: {name}"}
@@ -302,17 +294,7 @@ def handle_undo_grid(path_params, query_params, body_params, session_token, requ
 
         user_id = 1
         grid = app.grid_uc.undo_grid(user_id, name)
-
-        # Convert black_cells set to cells array for frontend
-        cells = [False] * (grid.n * grid.n)
-        for r, c in grid.black_cells:
-            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
-            cells[cell_idx] = True
-
-        return {
-            "size": grid.n,
-            "cells": cells,
-        }
+        return _grid_response(grid)
 
     except PersistenceError:
         return {"error": f"Grid not found: {name}"}
@@ -332,17 +314,7 @@ def handle_redo_grid(path_params, query_params, body_params, session_token, requ
 
         user_id = 1
         grid = app.grid_uc.redo_grid(user_id, name)
-
-        # Convert black_cells set to cells array for frontend
-        cells = [False] * (grid.n * grid.n)
-        for r, c in grid.black_cells:
-            cell_idx = (r - 1) * grid.n + (c - 1)  # Convert 1-indexed (r,c) to 0-indexed flat index
-            cells[cell_idx] = True
-
-        return {
-            "size": grid.n,
-            "cells": cells,
-        }
+        return _grid_response(grid)
 
     except PersistenceError:
         return {"error": f"Grid not found: {name}"}
