@@ -577,9 +577,9 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">title</i><span>Title</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
+    <a id="puzzle-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
       <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
+    <a id="puzzle-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
   </div>
 </div>`;
@@ -595,6 +595,7 @@ ${toolbar}
 
     const svg = document.getElementById('puzzle-svg');
     if (svg) svg.addEventListener('click', handlePuzzleClick);
+    _updatePuzzleUndoRedo();
 }
 
 function renderPuzzleEditorRhs() {
@@ -1142,6 +1143,15 @@ function renderStatsPanel(stats) {
 function closeStatsPanel() {
     AppState.showingStats = false;
     renderPuzzleEditorRhs();
+}
+
+function _updatePuzzleUndoRedo() {
+    const pd = AppState.puzzleData;
+    const ub = document.getElementById('puzzle-undo-btn');
+    const rb = document.getElementById('puzzle-redo-btn');
+    if (!ub || !rb) return;
+    ub.classList.toggle('w3-disabled', !pd || !pd.can_undo);
+    rb.classList.toggle('w3-disabled', !pd || !pd.can_redo);
 }
 
 async function do_puzzle_undo() { await _puzzleUndoRedo('undo'); }
