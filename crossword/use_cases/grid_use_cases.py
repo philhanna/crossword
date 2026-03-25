@@ -21,7 +21,7 @@ import uuid
 
 from crossword import Grid, GridToSVG
 from crossword.ports.persistence import PersistencePort, PersistenceError
-from crossword.use_cases._name_validation import validate_public_name
+from crossword.use_cases._name_validation import validate_new_public_name, validate_public_name
 
 
 class GridUseCases:
@@ -50,7 +50,7 @@ class GridUseCases:
         """
         if size < 1:
             raise ValueError(f"Grid size must be at least 1, got {size}")
-        validate_public_name("grid", name)
+        validate_new_public_name("grid", name, self.persistence.list_grids(user_id))
         grid = Grid(size)
         self.persistence.save_grid(user_id, name, grid)
 
@@ -239,7 +239,7 @@ class GridUseCases:
         """
         if not grid_name or not grid_name.strip():
             raise ValueError("grid_name must not be empty")
-        validate_public_name("grid", grid_name)
+        validate_new_public_name("grid", grid_name, self.persistence.list_grids(user_id))
         puzzle = self.persistence.load_puzzle(user_id, puzzle_name)
         grid = puzzle.grid
         grid.undo_stack = []

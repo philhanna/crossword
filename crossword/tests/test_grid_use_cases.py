@@ -12,7 +12,10 @@ from crossword.ports.persistence import PersistenceError
 @pytest.fixture
 def mock_persistence():
     """Create a mock persistence adapter"""
-    return Mock()
+    persistence = Mock()
+    persistence.list_grids.return_value = []
+    persistence.list_puzzles.return_value = []
+    return persistence
 
 
 @pytest.fixture
@@ -54,6 +57,15 @@ class TestGridUseCasesCreate:
         """Reject names reserved for internal working copies"""
         with pytest.raises(ValueError, match="reserved for internal working copies"):
             grid_uc.create_grid(1, "__wc__hidden", 15)
+
+        mock_persistence.save_grid.assert_not_called()
+
+    def test_create_grid_rejects_existing_name(self, grid_uc, mock_persistence):
+        """Reject creating a new grid over an existing saved grid"""
+        mock_persistence.list_grids.return_value = ["existing"]
+
+        with pytest.raises(ValueError, match="grid 'existing' already exists"):
+            grid_uc.create_grid(1, "existing", 15)
 
         mock_persistence.save_grid.assert_not_called()
 
@@ -212,6 +224,16 @@ class TestGridUseCasesCreateFromPuzzle:
         """Reject target names reserved for working copies"""
         with pytest.raises(ValueError, match="reserved for internal working copies"):
             grid_uc.create_grid_from_puzzle(1, "source-puzzle", "__wc__grid")
+
+        mock_persistence.load_puzzle.assert_not_called()
+        mock_persistence.save_grid.assert_not_called()
+
+    def test_create_grid_from_puzzle_rejects_existing_name(self, grid_uc, mock_persistence):
+        """Reject creating a new grid from a puzzle over an existing saved grid"""
+        mock_persistence.list_grids.return_value = ["newgrid"]
+
+        with pytest.raises(ValueError, match="grid 'newgrid' already exists"):
+            grid_uc.create_grid_from_puzzle(1, "source-puzzle", "newgrid")
 
         mock_persistence.load_puzzle.assert_not_called()
         mock_persistence.save_grid.assert_not_called()

@@ -125,6 +125,20 @@ function validateUserFacingName(kind, name) {
     return true;
 }
 
+async function rejectIfNameExists(kind, name, listExistingNames) {
+    const existingNames = await listExistingNames();
+    if (!existingNames.includes(name)) {
+        return false;
+    }
+    messageBox(
+        `Duplicate ${kind} name`,
+        `${kind.charAt(0).toUpperCase() + kind.slice(1)} <b>${escapeHtml(name)}</b> already exists. Choose a different ${kind} name when creating a new ${kind}.`,
+        null,
+        null
+    );
+    return true;
+}
+
 function showChooser(title, items, onSelect) {
     document.getElementById('ch-title').innerHTML = title;
     const listEl = document.getElementById('ch-list');
@@ -1042,6 +1056,7 @@ async function do_puzzle_new() {
                 if (!name) return;
                 if (!validateUserFacingName('puzzle', name)) return;
                 try {
+                    if (await rejectIfNameExists('puzzle', name, _listSavedPuzzleNames)) return;
                     const data = await apiFetch('POST', '/api/puzzles',
                         { name, grid_name: gridName });
                     if (data.error) { alert(`Error creating puzzle: ${data.error}`); return; }
@@ -1312,6 +1327,7 @@ function do_grid_new() {
                 if (!name) return;
                 if (!validateUserFacingName('grid', name)) return;
                 try {
+                    if (await rejectIfNameExists('grid', name, _listSavedGridNames)) return;
                     const data = await apiFetch('POST', '/api/grids', { name, size: n });
                     if (data.error) { alert(`Error creating grid: ${data.error}`); return; }
                     await _openGridInEditor(name);
@@ -1335,6 +1351,7 @@ async function do_grid_new_from_puzzle() {
                 if (!gridName) return;
                 if (!validateUserFacingName('grid', gridName)) return;
                 try {
+                    if (await rejectIfNameExists('grid', gridName, _listSavedGridNames)) return;
                     const data = await apiFetch('POST', '/api/grids/from-puzzle',
                         { grid_name: gridName, puzzle_name: puzzleName });
                     if (data.error) { alert(`Error: ${data.error}`); return; }

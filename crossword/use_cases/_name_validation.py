@@ -9,3 +9,10 @@ def validate_public_name(kind: str, name: str) -> None:
         raise ValueError(
             f"{kind} names starting with '{WORKING_COPY_PREFIX}' are reserved for internal working copies"
         )
+
+
+def validate_new_public_name(kind: str, name: str, existing_names: list[str]) -> None:
+    """Reject reserved names and duplicates for newly created entities."""
+    validate_public_name(kind, name)
+    if name in existing_names:
+        raise ValueError(f"{kind} '{name}' already exists")

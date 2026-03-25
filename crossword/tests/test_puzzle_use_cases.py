@@ -12,7 +12,10 @@ from crossword.ports.persistence import PersistenceError
 @pytest.fixture
 def mock_persistence():
     """Create a mock persistence adapter"""
-    return Mock()
+    persistence = Mock()
+    persistence.list_grids.return_value = []
+    persistence.list_puzzles.return_value = []
+    return persistence
 
 
 @pytest.fixture
@@ -62,6 +65,16 @@ class TestPuzzleUseCasesCreate:
         """Reject names reserved for internal working copies"""
         with pytest.raises(ValueError, match="reserved for internal working copies"):
             puzzle_uc.create_puzzle(1, "__wc__hidden", "test_grid")
+
+        mock_persistence.load_grid.assert_not_called()
+        mock_persistence.save_puzzle.assert_not_called()
+
+    def test_create_puzzle_rejects_existing_name(self, puzzle_uc, mock_persistence):
+        """Reject creating a new puzzle over an existing saved puzzle"""
+        mock_persistence.list_puzzles.return_value = ["existing"]
+
+        with pytest.raises(ValueError, match="puzzle 'existing' already exists"):
+            puzzle_uc.create_puzzle(1, "existing", "test_grid")
 
         mock_persistence.load_grid.assert_not_called()
         mock_persistence.save_puzzle.assert_not_called()
