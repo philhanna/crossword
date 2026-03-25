@@ -219,11 +219,6 @@ class Grid:
         image = dict()
         image['n'] = self.n
         image['black_cells'] = self.get_black_cells()
-        nclist = list()
-        for numbered_cell in self.get_numbered_cells():
-            ncdict = vars(numbered_cell)
-            nclist.append(ncdict)
-        image['numbered_cells'] = nclist
         image['undo_stack'] = self.undo_stack
         image['redo_stack'] = self.redo_stack
         jsonstr = json.dumps(image)
