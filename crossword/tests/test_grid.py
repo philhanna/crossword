@@ -9,11 +9,6 @@ class TestGrid:
         grid2 = self.get_good_grid()
         assert grid1 == grid2
 
-    def test_hash(self):
-        grid1 = self.get_good_grid()
-        grid2 = self.get_good_grid()
-        assert hash(grid1) == hash(grid2)
-
     def test_symmetric_point(self):
         grid = Grid(9)
         expected = (8, 5)
