@@ -61,10 +61,11 @@ async function apiFetch(method, path, body) {
 // Modal dialogs
 // ---------------------------------------------------------------------------
 
-function messageBox(title, prompt, ok, okCallback) {
+function messageBox(title, prompt, ok, okCallback, okLabel = 'OK') {
     document.getElementById('mb-title').innerHTML = title;
     document.getElementById('mb-prompt').innerHTML = prompt;
     const mbOk = document.getElementById('mb-ok');
+    mbOk.textContent = okLabel;
     if (okCallback) {
         mbOk.removeAttribute('href');
         mbOk.onclick = () => { hideElement('mb'); okCallback(); };
@@ -88,6 +89,27 @@ function inputBox(title, label, value, onSubmit) {
     };
     showElement('ib');
     document.getElementById('ib-input').focus();
+}
+
+async function confirmOverwriteIfExists(kind, name, listExistingNames, onConfirmSave) {
+    const existingNames = await listExistingNames();
+    if (!existingNames.includes(name)) {
+        await onConfirmSave();
+        return;
+    }
+    messageBox(
+        `Overwrite ${kind}`,
+        `${kind.charAt(0).toUpperCase() + kind.slice(1)} <b>${escapeHtml(name)}</b> already exists. Overwrite it?`,
+        null,
+        async () => {
+            try {
+                await onConfirmSave();
+            } catch (e) {
+                alert(`Save failed: ${e.message}`);
+            }
+        },
+        'Overwrite'
+    );
 }
 
 function showChooser(title, items, onSelect) {
@@ -1041,17 +1063,36 @@ async function do_puzzle_save() {
     } catch (e) { alert('Error saving puzzle'); }
 }
 
+async function _listSavedPuzzleNames() {
+    const listData = await apiFetch('GET', '/api/puzzles');
+    if (listData.error) {
+        throw new Error(listData.error);
+    }
+    return (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
+}
+
+async function _savePuzzleAsName(newName) {
+    const wn = AppState.puzzleWorkingName;
+    const data = await apiFetch('POST',
+        `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: newName });
+    if (data.error) {
+        throw new Error(data.error);
+    }
+    AppState.puzzleName      = newName;
+    AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
+    renderPuzzleEditorLhs();
+}
+
 async function do_puzzle_save_as() {
     inputBox('Save puzzle as', 'Puzzle name:', AppState.puzzleName || '', async (newName) => {
         if (!newName) return;
-        const wn = AppState.puzzleWorkingName;
         try {
-            const data = await apiFetch('POST',
-                `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: newName });
-            if (data.error) { alert(`Save failed: ${data.error}`); return; }
-            AppState.puzzleName      = newName;
-            AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
-            renderPuzzleEditorLhs();
+            await confirmOverwriteIfExists(
+                'puzzle',
+                newName,
+                _listSavedPuzzleNames,
+                () => _savePuzzleAsName(newName)
+            );
         } catch (e) { alert('Error saving puzzle'); }
     });
 }
@@ -1315,17 +1356,36 @@ async function do_grid_save() {
     } catch (e) { alert('Error saving grid'); }
 }
 
+async function _listSavedGridNames() {
+    const listData = await apiFetch('GET', '/api/grids');
+    if (listData.error) {
+        throw new Error(listData.error);
+    }
+    return (listData.grids || []).filter(g => g && !g.startsWith('__wc__'));
+}
+
+async function _saveGridAsName(newName) {
+    const wn = AppState.gridWorkingName;
+    const data = await apiFetch('POST',
+        `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: newName });
+    if (data.error) {
+        throw new Error(data.error);
+    }
+    AppState.gridOriginalName = newName;
+    AppState.gridSavedHash    = _hash(AppState.gridData.cells);
+    renderGridEditor();
+}
+
 async function do_grid_save_as() {
     inputBox('Save grid as', 'Grid name:', AppState.gridOriginalName || '', async (newName) => {
         if (!newName) return;
-        const wn = AppState.gridWorkingName;
         try {
-            const data = await apiFetch('POST',
-                `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: newName });
-            if (data.error) { alert(`Save failed: ${data.error}`); return; }
-            AppState.gridOriginalName = newName;
-            AppState.gridSavedHash    = _hash(AppState.gridData.cells);
-            renderGridEditor();
+            await confirmOverwriteIfExists(
+                'grid',
+                newName,
+                _listSavedGridNames,
+                () => _saveGridAsName(newName)
+            );
         } catch (e) { alert('Error saving grid'); }
     });
 }
