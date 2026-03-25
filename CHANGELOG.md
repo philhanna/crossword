@@ -6,6 +6,11 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Changed
+
+- Removed unused methods: `get_numbered_cell_across()` and `get_numbered_cell_down()` from Puzzle class
+- Removed unused methods: `__id__()` and `__hash__()` from Grid class
+
 ### Fixed
 
 - Issue #185: Corrected toolbar button ordering in grid and puzzle editors
