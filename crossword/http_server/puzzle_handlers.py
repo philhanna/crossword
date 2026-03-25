@@ -127,6 +127,10 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
 
+    except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
     except PersistenceError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)

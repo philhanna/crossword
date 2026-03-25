@@ -26,6 +26,7 @@ import uuid
 from crossword import Puzzle, PuzzleToSVG
 from crossword.domain.word import Word
 from crossword.ports.persistence import PersistencePort, PersistenceError
+from crossword.use_cases._name_validation import validate_public_name
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If grid not found or save fails
         """
+        validate_public_name("puzzle", name)
         grid = self.persistence.load_grid(user_id, grid_name)
         puzzle = Puzzle(grid)
         self.persistence.save_puzzle(user_id, name, puzzle)
@@ -118,6 +120,7 @@ class PuzzleUseCases:
         """
         if not new_name or not new_name.strip():
             raise ValueError("new_name must not be empty")
+        validate_public_name("puzzle", new_name)
         puzzle = self.persistence.load_puzzle(user_id, source_name)
         puzzle.undo_stack = []
         puzzle.redo_stack = []

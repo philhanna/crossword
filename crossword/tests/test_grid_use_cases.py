@@ -50,6 +50,13 @@ class TestGridUseCasesCreate:
         with pytest.raises(PersistenceError, match="Disk full"):
             grid_uc.create_grid(1, "test", 15)
 
+    def test_create_grid_rejects_working_copy_prefix(self, grid_uc, mock_persistence):
+        """Reject names reserved for internal working copies"""
+        with pytest.raises(ValueError, match="reserved for internal working copies"):
+            grid_uc.create_grid(1, "__wc__hidden", 15)
+
+        mock_persistence.save_grid.assert_not_called()
+
 
 class TestGridUseCasesLoad:
     """Tests for load_grid"""
@@ -139,6 +146,14 @@ class TestGridUseCasesCopy:
         with pytest.raises(ValueError, match="new_name must not be empty"):
             grid_uc.copy_grid(1, "original", "   ")
 
+    def test_copy_grid_rejects_working_copy_prefix(self, grid_uc, mock_persistence):
+        """Reject copy targets reserved for working copies"""
+        with pytest.raises(ValueError, match="reserved for internal working copies"):
+            grid_uc.copy_grid(1, "original", "__wc__copy")
+
+        mock_persistence.load_grid.assert_not_called()
+        mock_persistence.save_grid.assert_not_called()
+
     def test_copy_grid_preserves_black_cells(self, grid_uc, mock_persistence):
         """Copied grid retains the source's black cells"""
         source = Grid(15)
@@ -188,6 +203,18 @@ class TestGridUseCasesOpenForEditing:
 
         with pytest.raises(PersistenceError, match="Grid not found"):
             grid_uc.open_grid_for_editing(1, "nonexistent")
+
+
+class TestGridUseCasesCreateFromPuzzle:
+    """Tests for create_grid_from_puzzle"""
+
+    def test_create_grid_from_puzzle_rejects_working_copy_prefix(self, grid_uc, mock_persistence):
+        """Reject target names reserved for working copies"""
+        with pytest.raises(ValueError, match="reserved for internal working copies"):
+            grid_uc.create_grid_from_puzzle(1, "source-puzzle", "__wc__grid")
+
+        mock_persistence.load_puzzle.assert_not_called()
+        mock_persistence.save_grid.assert_not_called()
 
 
 class TestGridUseCasesToggleBlackCell:

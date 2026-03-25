@@ -58,6 +58,14 @@ class TestPuzzleUseCasesCreate:
         with pytest.raises(PersistenceError, match="Grid not found"):
             puzzle_uc.create_puzzle(1, "test_puzzle", "nonexistent_grid")
 
+    def test_create_puzzle_rejects_working_copy_prefix(self, puzzle_uc, mock_persistence):
+        """Reject names reserved for internal working copies"""
+        with pytest.raises(ValueError, match="reserved for internal working copies"):
+            puzzle_uc.create_puzzle(1, "__wc__hidden", "test_grid")
+
+        mock_persistence.load_grid.assert_not_called()
+        mock_persistence.save_puzzle.assert_not_called()
+
 
 class TestPuzzleUseCasesCopy:
     """Tests for copy_puzzle"""
@@ -88,6 +96,14 @@ class TestPuzzleUseCasesCopy:
         """Reject a whitespace-only new_name"""
         with pytest.raises(ValueError, match="new_name must not be empty"):
             puzzle_uc.copy_puzzle(1, "original", "   ")
+
+    def test_copy_puzzle_rejects_working_copy_prefix(self, puzzle_uc, mock_persistence):
+        """Reject copy targets reserved for working copies"""
+        with pytest.raises(ValueError, match="reserved for internal working copies"):
+            puzzle_uc.copy_puzzle(1, "original", "__wc__copy")
+
+        mock_persistence.load_puzzle.assert_not_called()
+        mock_persistence.save_puzzle.assert_not_called()
 
     def test_copy_puzzle_preserves_clues(self, puzzle_uc, mock_persistence, test_puzzle):
         """Copied puzzle retains clues from the source"""

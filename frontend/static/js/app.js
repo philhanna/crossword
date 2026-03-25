@@ -112,6 +112,19 @@ async function confirmOverwriteIfExists(kind, name, listExistingNames, onConfirm
     );
 }
 
+function validateUserFacingName(kind, name) {
+    if (name.startsWith('__wc__')) {
+        messageBox(
+            `Invalid ${kind} name`,
+            `Names starting with <b>__wc__</b> are reserved for internal working copies used while editing a ${kind}. Please choose a different ${kind} name.`,
+            null,
+            null
+        );
+        return false;
+    }
+    return true;
+}
+
 function showChooser(title, items, onSelect) {
     document.getElementById('ch-title').innerHTML = title;
     const listEl = document.getElementById('ch-list');
@@ -1027,6 +1040,7 @@ async function do_puzzle_new() {
         showPreviewChooser('Choose a grid', grids, '/api/grids', (gridName) => {
             inputBox('New puzzle', '<b>Puzzle name:</b>', '', async (name) => {
                 if (!name) return;
+                if (!validateUserFacingName('puzzle', name)) return;
                 try {
                     const data = await apiFetch('POST', '/api/puzzles',
                         { name, grid_name: gridName });
@@ -1086,6 +1100,7 @@ async function _savePuzzleAsName(newName) {
 async function do_puzzle_save_as() {
     inputBox('Save puzzle as', 'Puzzle name:', AppState.puzzleName || '', async (newName) => {
         if (!newName) return;
+        if (!validateUserFacingName('puzzle', newName)) return;
         try {
             await confirmOverwriteIfExists(
                 'puzzle',
@@ -1295,6 +1310,7 @@ function do_grid_new() {
             if (n < 1)                 { alert(n + ' is not a positive number'); return; }
             inputBox('New grid', '<b>Grid name:</b>', '', async (name) => {
                 if (!name) return;
+                if (!validateUserFacingName('grid', name)) return;
                 try {
                     const data = await apiFetch('POST', '/api/grids', { name, size: n });
                     if (data.error) { alert(`Error creating grid: ${data.error}`); return; }
@@ -1317,6 +1333,7 @@ async function do_grid_new_from_puzzle() {
         showPreviewChooser('Choose a puzzle', puzzles, '/api/puzzles', (puzzleName) => {
             inputBox('New grid from puzzle', '<b>New grid name:</b>', '', async (gridName) => {
                 if (!gridName) return;
+                if (!validateUserFacingName('grid', gridName)) return;
                 try {
                     const data = await apiFetch('POST', '/api/grids/from-puzzle',
                         { grid_name: gridName, puzzle_name: puzzleName });
@@ -1379,6 +1396,7 @@ async function _saveGridAsName(newName) {
 async function do_grid_save_as() {
     inputBox('Save grid as', 'Grid name:', AppState.gridOriginalName || '', async (newName) => {
         if (!newName) return;
+        if (!validateUserFacingName('grid', newName)) return;
         try {
             await confirmOverwriteIfExists(
                 'grid',
