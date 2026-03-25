@@ -19,8 +19,6 @@ class Puzzle:
         """
         self.grid = grid
         self.n = grid.n
-        self.black_cells = grid.get_black_cells()
-        self.numbered_cells = grid.get_numbered_cells()
         self.across_words = None
         self.down_words = None
         self.undo_stack = None
@@ -48,8 +46,6 @@ class Puzzle:
         self.grid = newgrid
         for bc in self.black_cells:
             self.cells[bc] = Puzzle.WHITE
-        self.black_cells = newgrid.get_black_cells()
-        self.numbered_cells = newgrid.get_numbered_cells()
         for bc in self.black_cells:
             self.cells[bc] = Puzzle.BLACK
         self.initialize_words()
@@ -145,6 +141,16 @@ class Puzzle:
         """ Sets the clue of the word at <seq><direction> """
         word = self.get_word(seq, direction)
         word.set_clue(clue)
+
+    @property
+    def black_cells(self):
+        """ Returns black cells from the grid """
+        return self.grid.get_black_cells()
+
+    @property
+    def numbered_cells(self):
+        """ Returns numbered cells from the grid """
+        return self.grid.get_numbered_cells()
 
     @property
     def title(self):
@@ -265,13 +271,6 @@ class Puzzle:
         image['title'] = self.title
         image['cells'] = [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = [black_cell for black_cell in self.black_cells]
-
-        # Numbered cells
-        nclist = list()
-        for numbered_cell in self.numbered_cells:
-            ncdict = vars(numbered_cell)
-            nclist.append(ncdict)
-        image['numbered_cells'] = nclist
 
         # Across words
         awlist = list()
