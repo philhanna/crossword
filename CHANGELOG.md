@@ -6,6 +6,10 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-03-24
+
+First stable release. Cleanup: removed dead code.
+
 ### Changed
 
 - Removed unused methods: `get_numbered_cell_across()` and `get_numbered_cell_down()` from Puzzle class

@@ -2,6 +2,8 @@
 
 A web-based application for creating and editing crossword puzzles.
 
+**Version: 3.0.0** — First stable release
+
 ## Table of contents
 - [Requirements](#requirements)
 - [Setup](#setup)
