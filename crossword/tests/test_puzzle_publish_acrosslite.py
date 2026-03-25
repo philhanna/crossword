@@ -1,18 +1,16 @@
-import pytest
+import zipfile
+from io import BytesIO
 
-# Skip these tests - they test the old Flask-based UI which is being replaced
-# in Phase 2 with a Flask-free HTTP server architecture
-pytestmark = pytest.mark.skip(reason="Legacy Flask UI - being replaced in Phase 2")
+from crossword.adapters.export_adapter import ExportAdapter
+from crossword.tests import TestPuzzle
 
 
 class TestPuzzlePublishAcrossLite:
 
     def test_get_text(self):
-        from crossword.tests import MockUser, TestPuzzle
-        from crossword.ui import PuzzlePublishAcrossLite
-
-        user = MockUser()
         puzzle = TestPuzzle.create_nyt_daily()
-        publisher = PuzzlePublishAcrossLite(user, puzzle, "nyt0920")
-        text = publisher.get_txt()
+        adapter = ExportAdapter()
+        zip_bytes = adapter.export_puzzle_to_acrosslite(puzzle)
+        with zipfile.ZipFile(BytesIO(zip_bytes)) as zf:
+            text = zf.read("puzzle.txt").decode()
         assert "NINE.USUAL.IRON" in text

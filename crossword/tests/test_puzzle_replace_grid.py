@@ -67,11 +67,7 @@ class TestPuzzleReplaceGrid:
             NumberedCell(seq=25, r=9, c=1, a=4, d=0),
             NumberedCell(seq=26, r=9, c=7, a=3, d=0),
         ]
-        actual = []
-        for x in new['numbered_cells']:
-            jsonstr = json.dumps(x)
-            nc = NumberedCell.from_json(jsonstr)
-            actual.append(nc)
+        actual = puzzle.numbered_cells
         assert expected == actual
 
         # Compare clues

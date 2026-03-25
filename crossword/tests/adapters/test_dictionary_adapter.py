@@ -90,7 +90,7 @@ class TestDictionaryAdapter:
 
     def test_load_from_database(self):
         """Test loading words from the samples.db database"""
-        db_path = Path(__file__).parent.parent.parent / "samples.db"
+        db_path = Path(__file__).resolve().parents[3] / "samples.db"
         if not db_path.exists():
             pytest.skip(f"samples.db not found at {db_path}")
 
@@ -103,7 +103,7 @@ class TestDictionaryAdapter:
 
     def test_word_pattern_search_crossword(self):
         """Test realistic crossword pattern search"""
-        db_path = Path(__file__).parent.parent.parent / "samples.db"
+        db_path = Path(__file__).resolve().parents[3] / "samples.db"
         if not db_path.exists():
             pytest.skip(f"samples.db not found at {db_path}")
 
@@ -111,7 +111,7 @@ class TestDictionaryAdapter:
         adapter.load_from_database(str(db_path))
 
         # Pattern: 5-letter words starting with A
-        matches = adapter.get_matches("^a.{3}$")
+        matches = adapter.get_matches("^a.{4}$")
         assert len(matches) > 0
         assert all(len(w) == 5 for w in matches)
         assert all(w.startswith('a') for w in matches)

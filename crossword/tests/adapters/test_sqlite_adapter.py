@@ -151,7 +151,7 @@ class TestSQLiteAdapter:
         Integration test: Load a grid from the production samples.db
         This validates the schema hasn't drifted.
         """
-        db_path = Path(__file__).parent.parent.parent / "samples.db"
+        db_path = Path(__file__).resolve().parents[3] / "samples.db"
         if not db_path.exists():
             pytest.skip(f"samples.db not found at {db_path}")
 
