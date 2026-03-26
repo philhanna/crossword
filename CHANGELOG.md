@@ -6,6 +6,8 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-03-26
+
 ### Changed
 
 - Renamed port modules to include `_port` suffix for clarity:
@@ -16,6 +18,11 @@ and the format is based on [Keep a Changelog].
   `sqlite_adapter.py` / `SQLiteAdapter` → `sqlite_persistence_adapter.py` / `SQLitePersistenceAdapter`,
   `dictionary_adapter.py` / `DictionaryAdapter` → `sqlite_dictionary_adapter.py` / `SQLiteDictionaryAdapter`,
   `export_adapter.py` / `ExportAdapter` → `basic_export_adapter.py` / `BasicExportAdapter`
+- Replaced `LetterList` static class with module-level functions in `letter_list.py`
+
+### Fixed
+
+- Test suite updated to use `words.db` instead of the removed `words` table in `samples.db`
 
 ## [3.0.0] - 2026-03-24
 

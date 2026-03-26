@@ -3,6 +3,7 @@
 *.pyo
 *.db
 !samples.db
+!words.db
 __pycache__
 flask_session
 .idea/*

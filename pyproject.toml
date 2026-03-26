@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crossword"
-version = "3.0.0"
+version = "3.0.1"
 description = "Crossword Puzzle Editor"
 license = { text = "MIT" }
 authors = [{ name = "Phil Hanna" }]
