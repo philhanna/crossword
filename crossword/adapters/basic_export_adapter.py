@@ -1,14 +1,14 @@
-# crossword.adapters.export_adapter
+# crossword.adapters.basic_export_adapter
 import re
 import xml.etree.ElementTree as ET
 from io import BytesIO, StringIO
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from crossword import Grid, Puzzle, PuzzleToSVG, Word
-from crossword.ports.export import ExportError, ExportPort
+from crossword.ports.export_port import ExportError, ExportPort
 
 
-class ExportAdapter(ExportPort):
+class BasicExportAdapter(ExportPort):
     """
     Concrete implementation of ExportPort.
 

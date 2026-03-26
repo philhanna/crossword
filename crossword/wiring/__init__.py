@@ -7,9 +7,9 @@ ready for HTTP handlers or CLI commands to call.
 
 import logging
 
-from crossword.adapters.sqlite_adapter import SQLiteAdapter
-from crossword.adapters.dictionary_adapter import DictionaryAdapter
-from crossword.adapters.export_adapter import ExportAdapter
+from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
+from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
+from crossword.adapters.basic_export_adapter import BasicExportAdapter
 from crossword.use_cases.grid_use_cases import GridUseCases
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
@@ -65,10 +65,10 @@ def make_app(config=None):
     dbfile = config.get("dbfile")
     if not dbfile:
         raise ValueError("config['dbfile'] is required")
-    persistence = SQLiteAdapter(dbfile)
+    persistence = SQLitePersistenceAdapter(dbfile)
 
     # Word list adapter (Dictionary)
-    word_adapter = DictionaryAdapter()
+    word_adapter = SQLiteDictionaryAdapter()
     # Try to load from database first (most common case)
     try:
         word_adapter.load_from_database(dbfile)
@@ -82,7 +82,7 @@ def make_app(config=None):
             pass
 
     # Export adapter
-    export_adapter = ExportAdapter()
+    export_adapter = BasicExportAdapter()
 
     # ========================================================================
     # Instantiate Use Cases (with constructor injection)

@@ -8,9 +8,9 @@ but not how they are implemented.
 Adapters implement these ports to provide concrete implementations (e.g., SQLite, file system).
 """
 
-from .persistence import PersistencePort, PersistenceError
-from .word_list import WordListPort
-from .export import ExportPort, ExportError
+from .persistence_port import PersistencePort, PersistenceError
+from .word_list_port import WordListPort
+from .export_port import ExportPort, ExportError
 
 __all__ = [
     "PersistencePort",

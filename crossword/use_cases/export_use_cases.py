@@ -9,8 +9,8 @@ Public interface:
   export_puzzle_to_nytimes(user_id, name) -> bytes
 """
 
-from crossword.ports.persistence import PersistencePort, PersistenceError
-from crossword.ports.export import ExportPort, ExportError
+from crossword.ports.persistence_port import PersistencePort, PersistenceError
+from crossword.ports.export_port import ExportPort, ExportError
 
 
 class ExportUseCases:

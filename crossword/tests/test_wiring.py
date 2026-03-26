@@ -6,7 +6,7 @@ import pytest
 import tempfile
 import os
 from crossword.wiring import make_app, AppContainer
-from crossword.ports.persistence import PersistenceError
+from crossword.ports.persistence_port import PersistenceError
 
 
 @pytest.fixture
@@ -16,8 +16,8 @@ def temp_db():
     os.close(fd)
 
     # Initialize schema
-    from crossword.adapters.sqlite_adapter import SQLiteAdapter
-    adapter = SQLiteAdapter(path)
+    from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
+    adapter = SQLitePersistenceAdapter(path)
     adapter.init_schema()
 
     yield path

@@ -10,7 +10,7 @@ Public interface:
 
 import re
 from crossword import LetterList
-from crossword.ports.word_list import WordListPort
+from crossword.ports.word_list_port import WordListPort
 
 
 class WordUseCases:

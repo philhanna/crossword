@@ -6,8 +6,8 @@ import pytest
 from unittest.mock import Mock
 from crossword import Grid, Puzzle
 from crossword.use_cases.export_use_cases import ExportUseCases
-from crossword.ports.persistence import PersistenceError
-from crossword.ports.export import ExportError
+from crossword.ports.persistence_port import PersistenceError
+from crossword.ports.export_port import ExportError
 
 
 @pytest.fixture

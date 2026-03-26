@@ -19,7 +19,7 @@ Routes:
 
 import logging
 import traceback
-from crossword.ports.persistence import PersistenceError
+from crossword.ports.persistence_port import PersistenceError
 
 logger = logging.getLogger(__name__)
 

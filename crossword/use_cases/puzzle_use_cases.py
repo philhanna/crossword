@@ -25,7 +25,7 @@ import uuid
 
 from crossword import Puzzle, PuzzleToSVG
 from crossword.domain.word import Word
-from crossword.ports.persistence import PersistencePort, PersistenceError
+from crossword.ports.persistence_port import PersistencePort, PersistenceError
 from crossword.use_cases._name_validation import validate_new_public_name, validate_public_name
 
 logger = logging.getLogger(__name__)

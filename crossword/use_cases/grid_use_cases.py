@@ -20,7 +20,7 @@ Public interface:
 import uuid
 
 from crossword import Grid, GridToSVG
-from crossword.ports.persistence import PersistencePort, PersistenceError
+from crossword.ports.persistence_port import PersistencePort, PersistenceError
 from crossword.use_cases._name_validation import validate_new_public_name, validate_public_name
 
 

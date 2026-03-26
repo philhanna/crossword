@@ -1,5 +1,5 @@
 """
-SQLiteAdapter - SQLite implementation of the Persistence Port
+SQLitePersistenceAdapter - SQLite implementation of the Persistence Port
 
 Uses sqlite3 directly (no ORM). Assumes the database schema is already created.
 """
@@ -7,10 +7,10 @@ Uses sqlite3 directly (no ORM). Assumes the database schema is already created.
 import sqlite3
 from datetime import datetime
 from crossword import Grid, Puzzle
-from crossword.ports.persistence import PersistencePort, PersistenceError
+from crossword.ports.persistence_port import PersistencePort, PersistenceError
 
 
-class SQLiteAdapter(PersistencePort):
+class SQLitePersistenceAdapter(PersistencePort):
     """
     SQLite adapter for persistent storage of grids and puzzles.
 

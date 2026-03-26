@@ -1,15 +1,15 @@
 """
-DictionaryAdapter - Word list implementation of the Word List Port
+SQLiteDictionaryAdapter - Word list implementation of the Word List Port
 
 Loads a dictionary into memory and provides word matching via regex patterns.
 """
 
 import re
 import sqlite3
-from crossword.ports.word_list import WordListPort
+from crossword.ports.word_list_port import WordListPort
 
 
-class DictionaryAdapter(WordListPort):
+class SQLiteDictionaryAdapter(WordListPort):
     """
     In-memory word dictionary adapter.
 

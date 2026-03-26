@@ -1,19 +1,19 @@
 """
-Tests for DictionaryAdapter - Word list adapter tests
+Tests for SQLiteDictionaryAdapter - Word list adapter tests
 """
 
 import pytest
 from pathlib import Path
-from crossword.adapters.dictionary_adapter import DictionaryAdapter
+from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
 
 
-class TestDictionaryAdapter:
-    """Test suite for DictionaryAdapter"""
+class TestSQLiteDictionaryAdapter:
+    """Test suite for SQLiteDictionaryAdapter"""
 
     @pytest.fixture
     def adapter(self):
         """Create a dictionary adapter with test words"""
-        adapter = DictionaryAdapter()
+        adapter = SQLiteDictionaryAdapter()
         adapter._words = {
             'hello', 'world', 'python', 'test', 'apple', 'application',
             'cat', 'dog', 'bird', 'bear', 'books', 'book'
@@ -78,7 +78,7 @@ class TestDictionaryAdapter:
         if not test_file.exists():
             pytest.skip(f"Test words file not found at {test_file}")
 
-        adapter = DictionaryAdapter()
+        adapter = SQLiteDictionaryAdapter()
         adapter.load_from_file(str(test_file))
 
         # Should have loaded many words
@@ -94,7 +94,7 @@ class TestDictionaryAdapter:
         if not db_path.exists():
             pytest.skip(f"samples.db not found at {db_path}")
 
-        adapter = DictionaryAdapter()
+        adapter = SQLiteDictionaryAdapter()
         adapter.load_from_database(str(db_path))
 
         # Should have loaded 72,106 words
@@ -107,7 +107,7 @@ class TestDictionaryAdapter:
         if not db_path.exists():
             pytest.skip(f"samples.db not found at {db_path}")
 
-        adapter = DictionaryAdapter()
+        adapter = SQLiteDictionaryAdapter()
         adapter.load_from_database(str(db_path))
 
         # Pattern: 5-letter words starting with A

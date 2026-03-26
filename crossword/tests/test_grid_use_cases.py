@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import Mock, MagicMock, call
 from crossword import Grid, Puzzle
 from crossword.use_cases.grid_use_cases import GridUseCases
-from crossword.ports.persistence import PersistenceError
+from crossword.ports.persistence_port import PersistenceError
 
 
 @pytest.fixture

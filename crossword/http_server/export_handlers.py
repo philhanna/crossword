@@ -10,8 +10,8 @@ Routes:
 """
 
 import logging
-from crossword.ports.persistence import PersistenceError
-from crossword.ports.export import ExportError
+from crossword.ports.persistence_port import PersistenceError
+from crossword.ports.export_port import ExportError
 
 logger = logging.getLogger(__name__)
 

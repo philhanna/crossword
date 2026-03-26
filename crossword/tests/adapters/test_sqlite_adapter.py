@@ -1,21 +1,21 @@
 """
-Tests for SQLiteAdapter - Persistence adapter tests
+Tests for SQLitePersistenceAdapter - Persistence adapter tests
 """
 
 import pytest
 from pathlib import Path
 from crossword import Grid, Puzzle
-from crossword.adapters.sqlite_adapter import SQLiteAdapter
-from crossword.ports.persistence import PersistenceError
+from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
+from crossword.ports.persistence_port import PersistenceError
 
 
-class TestSQLiteAdapter:
-    """Test suite for SQLiteAdapter"""
+class TestSQLitePersistenceAdapter:
+    """Test suite for SQLitePersistenceAdapter"""
 
     @pytest.fixture
     def adapter(self):
         """Create an in-memory SQLite adapter for testing"""
-        adapter = SQLiteAdapter(":memory:")
+        adapter = SQLitePersistenceAdapter(":memory:")
         adapter.init_schema()
         return adapter
 
@@ -155,7 +155,7 @@ class TestSQLiteAdapter:
         if not db_path.exists():
             pytest.skip(f"samples.db not found at {db_path}")
 
-        adapter = SQLiteAdapter(str(db_path))
+        adapter = SQLitePersistenceAdapter(str(db_path))
 
         # Try to load a grid (there should be at least one)
         grids = adapter.list_grids(user_id=1)

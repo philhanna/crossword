@@ -5,13 +5,13 @@ from io import BytesIO
 import pytest
 
 from crossword import Grid, Puzzle, Word
-from crossword.adapters.export_adapter import ExportAdapter
-from crossword.ports.export import ExportError
+from crossword.adapters.basic_export_adapter import BasicExportAdapter
+from crossword.ports.export_port import ExportError
 
 
 @pytest.fixture
 def adapter():
-    return ExportAdapter()
+    return BasicExportAdapter()
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def puzzle():
     return p
 
 
-class TestExportAdapterGridStubs:
+class TestBasicExportAdapterGridStubs:
     def test_grid_pdf_raises(self, adapter):
         with pytest.raises(ExportError, match="not implemented"):
             adapter.export_grid_to_pdf(Grid(15))
@@ -40,7 +40,7 @@ class TestExportAdapterGridStubs:
             adapter.export_grid_to_png(Grid(15))
 
 
-class TestExportAdapterAcrossLite:
+class TestBasicExportAdapterAcrossLite:
     def test_returns_bytes(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
         assert isinstance(result, bytes)
@@ -88,7 +88,7 @@ class TestExportAdapterAcrossLite:
         assert "Test Puzzle" in txt
 
 
-class TestExportAdapterXML:
+class TestBasicExportAdapterXML:
     def test_returns_string(self, adapter, puzzle):
         result = adapter.export_puzzle_to_xml(puzzle)
         assert isinstance(result, str)
@@ -119,7 +119,7 @@ class TestExportAdapterXML:
         assert 'type="block"' in result
 
 
-class TestExportAdapterNYTimes:
+class TestBasicExportAdapterNYTimes:
     def test_returns_bytes(self, adapter, puzzle):
         result = adapter.export_puzzle_to_nytimes(puzzle)
         assert isinstance(result, bytes)
