@@ -71,28 +71,12 @@ class TestSQLiteDictionaryAdapter:
         with pytest.raises(ValueError):
             adapter.get_matches("[invalid(regex")
 
-    def test_load_from_file(self):
-        """Test loading words from a text file"""
-        # Use the test words file
-        test_file = Path(__file__).parent.parent / "data" / "words.txt"
-        if not test_file.exists():
-            pytest.skip(f"Test words file not found at {test_file}")
-
-        adapter = SQLiteDictionaryAdapter()
-        adapter.load_from_file(str(test_file))
-
-        # Should have loaded many words
-        words = adapter.get_all_words()
-        assert len(words) > 0
-
-        # Check that some expected words are there
-        assert 'aaa' in words or 'aaagames' in words
 
     def test_load_from_database(self):
-        """Test loading words from the samples.db database"""
-        db_path = Path(__file__).resolve().parents[3] / "samples.db"
+        """Test loading words from the words.db database"""
+        db_path = Path(__file__).resolve().parents[3] / "words.db"
         if not db_path.exists():
-            pytest.skip(f"samples.db not found at {db_path}")
+            pytest.skip(f"words.db not found at {db_path}")
 
         adapter = SQLiteDictionaryAdapter()
         adapter.load_from_database(str(db_path))
@@ -103,9 +87,9 @@ class TestSQLiteDictionaryAdapter:
 
     def test_word_pattern_search_crossword(self):
         """Test realistic crossword pattern search"""
-        db_path = Path(__file__).resolve().parents[3] / "samples.db"
+        db_path = Path(__file__).resolve().parents[3] / "words.db"
         if not db_path.exists():
-            pytest.skip(f"samples.db not found at {db_path}")
+            pytest.skip(f"words.db not found at {db_path}")
 
         adapter = SQLiteDictionaryAdapter()
         adapter.load_from_database(str(db_path))

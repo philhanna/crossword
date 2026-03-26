@@ -5,7 +5,7 @@ __all__ = [
     'NumberedCell',
     'Puzzle',
     'ToSVG', 'GridToSVG', 'PuzzleToSVG',
-    'LetterList',
+    'regexp',
     'Word', 'AcrossWord', 'DownWord',
     'dbfile',
     'sha256',
@@ -64,4 +64,3 @@ def sha256(s):
 
 
 from .domain import *
-from .domain import LetterList

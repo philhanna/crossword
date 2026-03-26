@@ -9,7 +9,7 @@ Public interface:
 """
 
 import re
-from crossword import LetterList
+from crossword.domain.letter_list import regexp as letter_regexp
 from crossword.ports.word_list_port import WordListPort
 
 
@@ -118,7 +118,7 @@ class WordUseCases:
             letter_set = set(letter_freq.keys())
             nchoices = len(matches)
 
-            regexp = LetterList.regexp(letter_set)
+            regexp = letter_regexp(letter_set)
             if not regexp:
                 # Crossing word not in dictionary — fall back to current letter
                 regexp = word_text[i] if word_text[i] != " " else "."
