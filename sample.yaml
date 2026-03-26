@@ -5,5 +5,8 @@
 # dbfile: fully qualified path to the SQLite 3 database
 dbfile: /path/to/crossword.db
 
+# word_dbfile: fully qualified path to the word list SQLite database
+word_dbfile: /path/to/words.db
+
 # log_level: one of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 log_level: INFO
