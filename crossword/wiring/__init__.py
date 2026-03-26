@@ -36,7 +36,7 @@ def make_app(config=None):
     Assemble adapters and wire them into use cases.
 
     Args:
-        config: Dict with keys 'dbfile' and 'word_file' (or None to use defaults from ~/.crossword.ini)
+        config: Dict with keys 'dbfile' and 'word_file' (or None to use defaults from ~/.config/crossword/config.yaml)
 
     Returns:
         AppContainer instance with all use cases ready to use

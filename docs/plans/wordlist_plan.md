@@ -6,7 +6,7 @@ Implements the design in [docs/design/wordlist.md](../design/wordlist.md).
 
 ## Phase 1 — Migration script
 
-- [ ] Create `tools/migrate_wordlist.py`
+- [x] Create `tools/migrate_wordlist.py`
   - Reads `words` table from puzzle DB (path from argv or `~/.crossword.ini`)
   - Creates `words.db` with identical schema
   - Inserts all rows; prints count on success

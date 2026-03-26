@@ -139,7 +139,7 @@ if __name__ == "__main__":
     import os
 
     # Optionally read config from env or default
-    config = None  # Will use defaults from ~/.crossword.ini
+    config = None  # Will use defaults from ~/.config/crossword/config.yaml
 
     # Optional: accept port from command line
     port = int(os.environ.get("CROSSWORD_PORT", "5000"))
