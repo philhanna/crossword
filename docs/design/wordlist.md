@@ -77,7 +77,6 @@ No new adapter. No new port methods. `sqlite_dictionary_adapter.py` and `word_li
 
 ```sql
 CREATE TABLE words (
-    id    INTEGER PRIMARY KEY,
     word  TEXT UNIQUE NOT NULL
 );
 ```
