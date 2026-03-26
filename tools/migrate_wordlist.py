@@ -22,7 +22,6 @@ import sys
 
 WORDS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS words (
-    id    INTEGER PRIMARY KEY,
     word  TEXT UNIQUE NOT NULL
 );
 """
@@ -65,7 +64,7 @@ def migrate(src_db, dest_db):
     # Read words from source
     src_conn = sqlite3.connect(src_db)
     try:
-        rows = src_conn.execute("SELECT id, word FROM words ORDER BY id").fetchall()
+        rows = src_conn.execute("SELECT word FROM words ORDER BY word").fetchall()
     except sqlite3.OperationalError as e:
         print(f"error: could not read words from {src_db}: {e}", file=sys.stderr)
         src_conn.close()
@@ -75,7 +74,7 @@ def migrate(src_db, dest_db):
     # Write to destination
     dest_conn = sqlite3.connect(dest_db)
     dest_conn.execute(WORDS_SCHEMA)
-    dest_conn.executemany("INSERT INTO words (id, word) VALUES (?, ?)", rows)
+    dest_conn.executemany("INSERT INTO words (word) VALUES (?)", rows)
     dest_conn.commit()
     dest_conn.close()
 
