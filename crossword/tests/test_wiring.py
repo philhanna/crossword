@@ -3,10 +3,43 @@ Unit tests for dependency wiring - verify make_app() assembles and injected corr
 """
 
 import pytest
+import sqlite3
 import tempfile
 import os
 from crossword.wiring import make_app, AppContainer
 from crossword.ports.persistence_port import PersistenceError
+
+
+@pytest.fixture
+def temp_word_db():
+    """Create a temporary word-list database with a handful of words."""
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE words (word TEXT UNIQUE NOT NULL)")
+    conn.executemany("INSERT INTO words (word) VALUES (?)", [
+        ("apple",), ("banana",), ("cherry",),
+    ])
+    conn.commit()
+    conn.close()
+    yield path
+    try:
+        os.remove(path)
+    except Exception:
+        pass
+
+
+@pytest.fixture
+def temp_word_file():
+    """Create a temporary word-list text file with a handful of words."""
+    fd, path = tempfile.mkstemp(suffix=".txt")
+    os.write(fd, b"delta\necho\nfoxtrot\n")
+    os.close(fd)
+    yield path
+    try:
+        os.remove(path)
+    except Exception:
+        pass
 
 
 @pytest.fixture
@@ -77,6 +110,49 @@ class TestMakeApp:
         config = {"dbfile": "/nonexistent/path/to/database.db"}
         with pytest.raises(Exception):  # PersistenceError
             make_app(config)
+
+
+class TestWordListWiring:
+    """Tests for word list loading priority in make_app()"""
+
+    def test_loads_word_dbfile(self, temp_db, temp_word_db):
+        """word_dbfile present → adapter populated from dedicated word DB"""
+        config = {"dbfile": temp_db, "word_dbfile": temp_word_db}
+        app = make_app(config)
+        words = app.word_uc.get_all_words()
+        assert set(words) == {"apple", "banana", "cherry"}
+
+    def test_word_dbfile_takes_priority_over_dbfile(self, temp_db, temp_word_db):
+        """word_dbfile wins over dbfile even when dbfile has a words table"""
+        # temp_db (puzzle DB) has no words — word_dbfile should still be used
+        config = {"dbfile": temp_db, "word_dbfile": temp_word_db}
+        app = make_app(config)
+        assert set(app.word_uc.get_all_words()) == {"apple", "banana", "cherry"}
+
+    def test_falls_back_to_word_file(self, temp_db, temp_word_file):
+        """No word_dbfile, word_file present → adapter loads from text file"""
+        config = {"dbfile": temp_db, "word_file": temp_word_file}
+        app = make_app(config)
+        assert set(app.word_uc.get_all_words()) == {"delta", "echo", "foxtrot"}
+
+    def test_falls_back_to_dbfile(self, temp_db):
+        """No word_dbfile or word_file → adapter falls back to puzzle DB"""
+        # Insert a word directly into the puzzle DB's words table
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE IF NOT EXISTS words (word TEXT UNIQUE NOT NULL)")
+        conn.execute("INSERT INTO words (word) VALUES ('golf')")
+        conn.commit()
+        conn.close()
+
+        config = {"dbfile": temp_db}
+        app = make_app(config)
+        assert "golf" in app.word_uc.get_all_words()
+
+    def test_empty_adapter_when_no_word_sources(self, temp_db):
+        """No word sources configured → adapter is empty, no exception raised"""
+        config = {"dbfile": temp_db}
+        app = make_app(config)
+        assert app.word_uc.get_all_words() == []
 
 
 class TestEndToEndWiring:

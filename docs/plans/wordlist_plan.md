@@ -27,12 +27,12 @@ Implements the design in [docs/design/wordlist.md](../design/wordlist.md).
 
 ## Phase 3 — Tests
 
-- [ ] Add `temp_word_db` fixture to `test_wiring.py` (separate SQLite DB with `words` table + a few rows)
-- [ ] `test_make_app_loads_word_dbfile` — `word_dbfile` present → adapter populated from it
-- [ ] `test_make_app_word_dbfile_takes_priority` — both `word_dbfile` and `dbfile` present → adapter uses `word_dbfile`
-- [ ] `test_make_app_falls_back_to_word_file` — no `word_dbfile`, `word_file` present → adapter loads from file
-- [ ] `test_make_app_falls_back_to_dbfile` — no `word_dbfile`, no `word_file`, `dbfile` present → adapter loads from shared DB (old behaviour)
-- [ ] `test_make_app_empty_adapter_when_no_words` — none of the word sources present → adapter empty, no exception
+- [x] Add `temp_word_db` fixture to `test_wiring.py` (separate SQLite DB with `words` table + a few rows)
+- [x] `test_make_app_loads_word_dbfile` — `word_dbfile` present → adapter populated from it
+- [x] `test_make_app_word_dbfile_takes_priority` — both `word_dbfile` and `dbfile` present → adapter uses `word_dbfile`
+- [x] `test_make_app_falls_back_to_word_file` — no `word_dbfile`, `word_file` present → adapter loads from file
+- [x] `test_make_app_falls_back_to_dbfile` — no `word_dbfile`, no `word_file`, `dbfile` present → adapter loads from shared DB (old behaviour)
+- [x] `test_make_app_empty_adapter_when_no_words` — none of the word sources present → adapter empty, no exception
 
 ---
 
