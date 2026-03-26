@@ -283,7 +283,7 @@ Word routes
 │           ├── Word.get_crossing_words
 │           │   └── AcrossWord.get_crossing_word / DownWord.get_crossing_word
 │           ├── word_list.get_matches(crossing_pattern)   -> SQLiteDictionaryAdapter.get_matches
-│           └── LetterList.regexp(letter_set)
+│           └── regexp(letter_set)             [crossword/domain/letter_list.py]
 └── GET /api/puzzles/{name}/words/{seq}/{dir}/suggestions -> handle_get_ranked_suggestions
     ├── app.puzzle_uc.get_word_at(...)  -> PuzzleUseCases.get_word_at -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
     └── app.word_uc.get_ranked_suggestions(word)
