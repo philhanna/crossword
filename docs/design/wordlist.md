@@ -1,3 +1,9 @@
+## Question
+
+Tell me what you think.  Right now, I have the words list in the same sqlite database as the puzzles.  I'd like to separate that out, initially just to a different database.  My reasons are: 1. I can imagine that different word lists are useful, and I'd like to be able to swap them in and out.  2. In the future there may be more that the word list can do; it isn't enough to just consider it a passive search source.  It could be that it combines words into phrases or any number of things. It may even be an AI agent that I call.  So it most likely needs some work on the port and adapter.  Do you think this is a worthwhile change?  Sketch out a plan for conversion.
+
+---
+
 # Word List Separation Design
 
 ## Assessment: Is This Change Worthwhile?
