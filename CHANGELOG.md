@@ -6,6 +6,17 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed port modules to include `_port` suffix for clarity:
+  `persistence.py` → `persistence_port.py`,
+  `word_list.py` → `word_list_port.py`,
+  `export.py` → `export_port.py`
+- Renamed adapter modules and classes to reflect the technology and port they implement:
+  `sqlite_adapter.py` / `SQLiteAdapter` → `sqlite_persistence_adapter.py` / `SQLitePersistenceAdapter`,
+  `dictionary_adapter.py` / `DictionaryAdapter` → `sqlite_dictionary_adapter.py` / `SQLiteDictionaryAdapter`,
+  `export_adapter.py` / `ExportAdapter` → `basic_export_adapter.py` / `BasicExportAdapter`
+
 ## [3.0.0] - 2026-03-24
 
 First stable release. Cleanup: removed dead code.
@@ -28,7 +39,7 @@ Complete rewrite of the application backend and frontend.
 - Hexagonal (Ports & Adapters) architecture replacing the Flask/SQLAlchemy stack
   - Domain models (`Grid`, `Puzzle`, `Word`) with no framework dependencies
   - Port interfaces: `PersistencePort`, `WordListPort`, `ExportPort`
-  - Adapters: `SQLiteAdapter`, `DictionaryAdapter`
+  - Adapters: `SQLitePersistenceAdapter`, `SQLiteDictionaryAdapter`, `BasicExportAdapter`
   - Use cases: `GridUseCases`, `PuzzleUseCases`, `WordUseCases`, `ExportUseCases`
   - Wiring module assembles the app via constructor injection
 - Built-in HTTP server (Python `BaseHTTPRequestHandler`) replacing Flask
