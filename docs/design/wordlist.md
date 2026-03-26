@@ -19,7 +19,7 @@ Tell me what you think.  Right now, I have the words list in the same sqlite dat
    - The evolution you envision (phrases, composition, AI agents) points to word lists becoming **active components**, not just lookup tables
    - Future extensibility is built in from the start
 
-3. **Your architecture is already half-ready**: The `WordListPort` abstraction exists; `DictionaryAdapter` can load from file or database. You just need to decouple the storage.
+3. **Your architecture is already half-ready**: The `WordListPort` abstraction exists; `SQLiteDictionaryAdapter` can load from file or database. You just need to decouple the storage.
 
 4. **Low risk**: This is internally-facing infrastructure with clean interfaces.
 
@@ -33,13 +33,13 @@ Tell me what you think.  Right now, I have the words list in the same sqlite dat
    - Extends/implements `WordListPort`
    - Takes its own `db_path` parameter
    - Handles connection to a **separate SQLite database** with a `words` table
-   - Inherits the regex matching logic from current `DictionaryAdapter`
+   - Inherits the regex matching logic from current `SQLiteDictionaryAdapter`
 
-2. Keep `DictionaryAdapter` as an in-memory adapter (for testing, file-based lists)
+2. Keep `SQLiteDictionaryAdapter` as an in-memory adapter (for testing, file-based lists)
 
 3. Update wiring (`crossword/wiring/__init__.py`):
    - Add config keys: `word_dbfile` (separate from `dbfile`)
-   - Instantiate `WordListDatabaseAdapter` instead of `DictionaryAdapter`
+   - Instantiate `WordListDatabaseAdapter` instead of `SQLiteDictionaryAdapter`
    - Fall back to file loading if word DB missing (for backwards compatibility during migration)
 
 ### Phase 2: Migrate Data
@@ -75,9 +75,9 @@ Tell me what you think.  Right now, I have the words list in the same sqlite dat
 ```
 crossword/
   adapters/
-    dictionary_adapter.py       # Keep: in-memory loader
+    sqlite_dictionary_adapter.py       # Keep: in-memory loader
     wordlist_database_adapter.py  # NEW: database-backed adapter
-    sqlite_adapter.py           # Keep: puzzle/grid persistence
+    sqlite_persistence_adapter.py           # Keep: puzzle/grid persistence
   ports/
     word_list.py               # Keep: unchanged
   wiring/
@@ -93,7 +93,7 @@ New config keys:
 
 Load priority in `make_app()`:
 1. Try `WordListDatabaseAdapter(config['word_dbfile'])`
-2. Fall back to `DictionaryAdapter.load_from_file(config['word_file'])`
+2. Fall back to `SQLiteDictionaryAdapter.load_from_file(config['word_file'])`
 3. Fall back to empty in-memory adapter (testing only)
 
 ### Database Schema

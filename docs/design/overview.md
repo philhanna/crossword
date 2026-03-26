@@ -21,10 +21,11 @@ HTTP request
 └──────┬───────┘
        │ calls (through ports)
        ▼
-┌──────────────┐       ┌──────────────┐
-│ SQLiteAdapter│       │DictionaryAdpt│
-│ (persistence)│       │ (word list)  │
-└──────────────┘       └──────────────┘
+┌──────────────────────┐   ┌──────────────────────┐
+│ SQLitePersistence    │   │ SQLiteDictionary     │
+│    Adapter           │   │    Adapter           │
+│  (persistence)       │   │   (word list)        │
+└──────────────────────┘   └──────────────────────┘
 ```
 
 ---
@@ -65,12 +66,12 @@ implementation lives here.
 
 Concrete classes that implement the ports using real technology.
 
-**SQLiteAdapter** implements `PersistencePort`:
+**SQLitePersistenceAdapter** implements `PersistencePort`:
 - Connects to an SQLite file (`samples.db` by default)
 - Stores grids in a `grids` table, puzzles in a `puzzles` table
 - Serializes domain objects to JSON strings before writing; deserializes on read
 
-**DictionaryAdapter** implements `WordListPort`:
+**SQLiteDictionaryAdapter** implements `WordListPort`:
 - Loads a word list from the same SQLite database (`words` table)
 - Keeps words in memory as a Python set
 - Matches patterns using `re.fullmatch()` (full-word match, case-insensitive)
@@ -106,8 +107,8 @@ startup:
 
 ```python
 def make_app(config) -> AppContainer:
-    persistence = SQLiteAdapter(config['dbfile'])
-    words = DictionaryAdapter()
+    persistence = SQLitePersistenceAdapter(config['dbfile'])
+    words = SQLiteDictionaryAdapter()
     words.load_from_database(config['dbfile'])
 
     return AppContainer(
@@ -158,7 +159,7 @@ WordUseCases.get_suggestions
     (regex-syntax patterns like "[A-Z]..." also get ^...$ anchors added)
   → self.word_list.get_matches("^.HALE$")   ← calls the port
 
-DictionaryAdapter.get_matches
+SQLiteDictionaryAdapter.get_matches
   → filter in-memory word set with re.fullmatch("^.HALE$", word, re.IGNORECASE)
   → returns ["SHALE", "WHALE", ...]
 
