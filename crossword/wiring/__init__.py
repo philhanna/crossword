@@ -36,7 +36,9 @@ def make_app(config=None):
     Assemble adapters and wire them into use cases.
 
     Args:
-        config: Dict with keys 'dbfile' and 'word_file' (or None to use defaults from ~/.config/crossword/config.yaml)
+        config: Dict with optional keys 'dbfile', 'word_dbfile', 'word_file'
+                (or None to use defaults from ~/.config/crossword/config.yaml).
+                Word list load priority: word_dbfile → word_file → dbfile (legacy) → empty.
 
     Returns:
         AppContainer instance with all use cases ready to use
@@ -67,19 +69,19 @@ def make_app(config=None):
         raise ValueError("config['dbfile'] is required")
     persistence = SQLitePersistenceAdapter(dbfile)
 
-    # Word list adapter (Dictionary)
+    # Word list adapter — priority: word_dbfile → word_file → dbfile (legacy) → empty
     word_adapter = SQLiteDictionaryAdapter()
-    # Try to load from database first (most common case)
-    try:
-        word_adapter.load_from_database(dbfile)
-    except Exception:
-        # If that fails, try to load from a file if specified
-        word_file = config.get("word_file")
-        if word_file:
-            word_adapter.load_from_file(word_file)
-        else:
-            # If no word file, adapter will just have empty dict (acceptable for testing)
-            pass
+    word_dbfile = config.get("word_dbfile")
+    word_file = config.get("word_file")
+    if word_dbfile:
+        word_adapter.load_from_database(word_dbfile)
+    elif word_file:
+        word_adapter.load_from_file(word_file)
+    elif dbfile:
+        try:
+            word_adapter.load_from_database(dbfile)
+        except Exception:
+            pass  # words table absent in puzzle DB — leave adapter empty
 
     # Export adapter
     export_adapter = BasicExportAdapter()

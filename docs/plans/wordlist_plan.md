@@ -15,13 +15,13 @@ Implements the design in [docs/design/wordlist.md](../design/wordlist.md).
 
 ## Phase 2 — Wiring update
 
-- [ ] Add `word_dbfile` config key support to `crossword/wiring/__init__.py`
-- [ ] Replace current load logic with the priority chain:
+- [x] Add `word_dbfile` config key support to `crossword/wiring/__init__.py`
+- [x] Replace current load logic with the priority chain:
   1. `word_adapter.load_from_database(config['word_dbfile'])` — new dedicated word DB
   2. `word_adapter.load_from_file(config['word_file'])` — text file fallback
   3. `word_adapter.load_from_database(config['dbfile'])` — old shared DB (transition)
   4. Empty adapter (no config — tests only)
-- [ ] Update `make_app()` docstring to document `word_dbfile`
+- [x] Update `make_app()` docstring to document `word_dbfile`
 
 ---
 
