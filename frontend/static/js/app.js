@@ -20,8 +20,9 @@ const AppState = {
     puzzleWorkingName: null, // working copy name (e.g. '__wc__a1b2c3d4')
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
     puzzleSavedHash: null,   // checksum of puzzle at last open/save
-    editingWord: null,       // null | {seq, direction, cells, answer, clue}
-    weText: null,            // string — in-progress word text (spaces for blanks); set on open
+    editingWord: null,            // null | {seq, direction, cells, answer, clue}
+    weText: null,                 // string — in-progress word text (spaces for blanks); set on open
+    _weOriginalPuzzleData: null,  // snapshot of puzzleData at editor open; restored on Cancel
     showingStats: false,     // true = puzzle editor RHS shows stats panel
     showingGridStats: false, // true = grid editor RHS shows stats panel
     _gridStatsData: null,    // cached grid stats response
@@ -1060,7 +1061,8 @@ async function openWordEditor(seq, direction) {
             answer:    data.answer,
             clue:      data.clue,
         };
-        AppState.weText  = answer;
+        AppState.weText                = answer;
+        AppState._weOriginalPuzzleData = AppState.puzzleData;
         _weSuggestions   = [];
         _wePage          = 0;
         _weUndoStack     = [];
@@ -1079,9 +1081,14 @@ async function openWordEditor(seq, direction) {
 
 function closeWordEditor() {
     document.removeEventListener('keydown', _weKeydown);
-    AppState.editingWord  = null;
-    AppState.weText       = null;
-    AppState.showingStats = false;
+    // Restore puzzle data to state at open time (reverts any server-side Reset calls)
+    if (AppState._weOriginalPuzzleData) {
+        AppState.puzzleData = AppState._weOriginalPuzzleData;
+    }
+    AppState.editingWord           = null;
+    AppState.weText                = null;
+    AppState._weOriginalPuzzleData = null;
+    AppState.showingStats          = false;
     _weSuggestions        = [];
     _wePage               = 0;
     _weUndoStack          = [];
@@ -1311,11 +1318,13 @@ async function doWordEditOK() {
             `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}`,
             { text, clue });
         if (data.error) { alert(`Error saving word: ${data.error}`); return; }
-        AppState.puzzleData  = data;
-        AppState.editingWord = null;
-        AppState.weText      = null;
-        _weUndoStack         = [];
-        _weRedoStack         = [];
+        document.removeEventListener('keydown', _weKeydown);
+        AppState.puzzleData            = data;
+        AppState.editingWord           = null;
+        AppState.weText                = null;
+        AppState._weOriginalPuzzleData = null;
+        _weUndoStack                   = [];
+        _weRedoStack                   = [];
         renderPuzzleEditor();
     } catch (e) {
         alert('Error saving word');
