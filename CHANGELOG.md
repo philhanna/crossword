@@ -6,6 +6,32 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-03-27
+
+### Changed
+
+- Puzzle editor: clicking a cell now selects the word and places the cursor at
+  the clicked cell, without automatically opening the word editor
+- Letters can be typed directly into the puzzle grid; the cursor advances with
+  each keystroke; Space clears the current cell
+- Undo/redo in the puzzle editor now operates at word granularity: a single
+  undo entry is created when the user moves away from a word whose text changed
+- Word editor is now opened explicitly via a new **Edit word** toolbar button,
+  or by clicking a clue in the clue list
+- Word editor now shows a text input for the word (blank cells displayed as
+  `.`); nothing is written to the puzzle until OK is clicked
+- Word editor: dots in the word input are converted back to spaces on OK, so
+  the input doubles as a regex pattern for suggestions
+- Word editor: local undo/redo stack removed; Cancel discards all changes
+  including any Reset performed during the session
+
+### Fixed
+
+- Word editor: allow typing in the clue input while the word editor is open
+- Word editor: Enter in the clue input now triggers OK
+- Word editor: reset_word correctly stores `Word.ACROSS`/`Word.DOWN` in the
+  undo stack
+
 ## [3.0.1] - 2026-03-26
 
 ### Changed
