@@ -1304,6 +1304,17 @@ async function doWordEditOK() {
         AppState.editingWord = null;
         _weSuggestions       = [];
         _wePage              = 0;
+        // Sync selectedWord text from the response so the grid renders correctly
+        if (AppState.selectedWord) {
+            const sw = AppState.selectedWord;
+            const updated = (data.puzzle.words || []).find(
+                w => w.seq === sw.seq && w.direction === sw.direction);
+            if (updated) {
+                const newText = (updated.answer || '').padEnd(sw.cells.length).slice(0, sw.cells.length);
+                sw.initialText = newText;
+                sw.currentText = newText;
+            }
+        }
         renderPuzzleEditor();
     } catch (e) {
         alert('Error saving word');
