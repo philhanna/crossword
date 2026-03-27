@@ -1018,6 +1018,7 @@ function _weKeydown(e) {
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') {
         if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); }
+        if (e.key === 'Enter')  { doWordEditOK();    e.preventDefault(); }
         return;
     }
 
