@@ -21,6 +21,7 @@ const AppState = {
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
     puzzleSavedHash: null,   // checksum of puzzle at last open/save
     editingWord: null,       // null | {seq, direction, cells, answer, clue}
+    weText: null,            // string — in-progress word text (spaces for blanks); set on open
     showingStats: false,     // true = puzzle editor RHS shows stats panel
     showingGridStats: false, // true = grid editor RHS shows stats panel
     _gridStatsData: null,    // cached grid stats response
@@ -571,6 +572,14 @@ let _weSuggestionsConstrained = false; // true when last fetch was constrained (
 let _wePage                  = 0;     // current page (0-indexed)
 const WE_PAGE_SIZE           = 20;
 
+// ---------------------------------------------------------------------------
+// Word editor — local undo/redo state
+// ---------------------------------------------------------------------------
+
+let _weUndoStack      = [];  // [{type, ...}]
+let _weRedoStack      = [];
+let _weClueBeforeEdit = '';  // clue value on focus, for detecting changes on blur
+
 function handlePuzzleClick(event) {
     _clickEvent = event;
     if (_clickState === 0) {
@@ -725,7 +734,9 @@ function renderWordEditorPanel() {
         <p style="width:95%;margin:8px 0 0 0">
           <label>Clue:</label>
           <input class="w3-input w3-border" id="we-clue" type="text"
-                 value="${escapeHtml(clue)}"/>
+                 value="${escapeHtml(clue)}"
+                 onfocus="_weClueBeforeEdit=this.value"
+                 onblur="_weOnClueBlur(this.value)"/>
         </p>
 
         <!-- Suggestions section -->
@@ -805,17 +816,71 @@ function renderWordEditorPanel() {
 }
 
 function weListItemClick(word) {
-    const inp = document.getElementById('we-word');
-    if (inp) inp.value = word;
+    const len     = AppState.editingWord.cells.length;
+    const oldText = (AppState.weText || (AppState.editingWord.answer || '')).padEnd(len).slice(0, len);
+    const newText = word.padEnd(len).slice(0, len);
+    wePush({ type: 'word', oldText, newText });
+    _weSetText(newText);
     // Highlight selected item
     document.querySelectorAll('#we-suggestion-list li').forEach(li => {
         li.style.background = li.dataset.word === word ? '#d0e8ff' : '';
     });
 }
 
-// Stubs — fully implemented in Phase 2
-function weUndo() {}
-function weRedo() {}
+function wePush(entry) {
+    _weUndoStack.push(entry);
+    _weRedoStack = [];
+    _updateWeUndoRedo();
+}
+
+function weUndo() {
+    if (_weUndoStack.length === 0) return;
+    const entry = _weUndoStack.pop();
+    _weRedoStack.push(entry);
+    _weApplyEntry(entry, 'undo');
+    _updateWeUndoRedo();
+}
+
+function weRedo() {
+    if (_weRedoStack.length === 0) return;
+    const entry = _weRedoStack.pop();
+    _weUndoStack.push(entry);
+    _weApplyEntry(entry, 'redo');
+    _updateWeUndoRedo();
+}
+
+function _weApplyEntry(entry, direction) {
+    if (entry.type === 'word') {
+        _weSetText(direction === 'undo' ? entry.oldText : entry.newText);
+    } else if (entry.type === 'clue') {
+        const val = direction === 'undo' ? entry.old : entry.new;
+        const inp = document.getElementById('we-clue');
+        if (inp) inp.value = val;
+        if (AppState.editingWord) AppState.editingWord.clue = val;
+    }
+}
+
+function _weSetText(text) {
+    AppState.weText = text;
+    if (AppState.editingWord) AppState.editingWord.answer = text;
+    const inp = document.getElementById('we-word');
+    if (inp) inp.value = text.replace(/ /g, '.');
+}
+
+function _updateWeUndoRedo() {
+    const ub = document.getElementById('we-undo-btn');
+    const rb = document.getElementById('we-redo-btn');
+    if (ub) ub.classList.toggle('w3-disabled', _weUndoStack.length === 0);
+    if (rb) rb.classList.toggle('w3-disabled', _weRedoStack.length === 0);
+}
+
+function _weOnClueBlur(newVal) {
+    if (newVal !== _weClueBeforeEdit) {
+        wePush({ type: 'clue', old: _weClueBeforeEdit, new: newVal });
+        _weClueBeforeEdit = newVal;
+        if (AppState.editingWord) AppState.editingWord.clue = newVal;
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Word editor — open / close
@@ -827,6 +892,7 @@ async function openWordEditor(seq, direction) {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(wn)}/words/${seq}/${direction}`);
         if (data.error) { alert(`Word not found: ${data.error}`); return; }
+        const len = data.cells.length;
         AppState.editingWord = {
             seq:       data.seq,
             direction: data.direction,
@@ -834,9 +900,13 @@ async function openWordEditor(seq, direction) {
             answer:    data.answer,
             clue:      data.clue,
         };
-        _weSuggestions = [];
-        _wePage        = 0;
+        AppState.weText  = (data.answer || '').padEnd(len).slice(0, len);
+        _weSuggestions   = [];
+        _wePage          = 0;
+        _weUndoStack     = [];
+        _weRedoStack     = [];
         renderPuzzleEditorRhs();
+        _updatePuzzleUndoRedo();
     } catch (e) {
         alert('Error opening word editor');
     }
@@ -844,10 +914,14 @@ async function openWordEditor(seq, direction) {
 
 function closeWordEditor() {
     AppState.editingWord  = null;
+    AppState.weText       = null;
     AppState.showingStats = false;
     _weSuggestions        = [];
     _wePage               = 0;
+    _weUndoStack          = [];
+    _weRedoStack          = [];
     renderPuzzleEditorRhs();
+    _updatePuzzleUndoRedo();
 }
 
 // ---------------------------------------------------------------------------
@@ -1038,9 +1112,12 @@ async function doWordReset() {
             w => w.seq === ew.seq && w.direction === ew.direction
         );
         if (updated) {
+            const len     = ew.cells.length;
+            const oldText = (AppState.weText || ew.answer || '').padEnd(len).slice(0, len);
+            const newText = (updated.answer || '').padEnd(len).slice(0, len);
+            wePush({ type: 'word', oldText, newText });
             AppState.editingWord = { ...ew, answer: updated.answer };
-            const inp = document.getElementById('we-word');
-            if (inp) inp.value = (updated.answer || '').replace(/ /g, '.');
+            _weSetText(newText);
         }
     } catch (e) {
         alert('Error resetting word');
@@ -1077,6 +1154,9 @@ async function doWordEditOK() {
         if (data.error) { alert(`Error saving word: ${data.error}`); return; }
         AppState.puzzleData  = data;
         AppState.editingWord = null;
+        AppState.weText      = null;
+        _weUndoStack         = [];
+        _weRedoStack         = [];
         renderPuzzleEditor();
     } catch (e) {
         alert('Error saving word');
@@ -1330,12 +1410,13 @@ function closeStatsPanel() {
 }
 
 function _updatePuzzleUndoRedo() {
-    const pd = AppState.puzzleData;
-    const ub = document.getElementById('puzzle-undo-btn');
-    const rb = document.getElementById('puzzle-redo-btn');
-if (!ub || !rb) return;
-    ub.classList.toggle('w3-disabled', !pd || !pd.can_undo);
-    rb.classList.toggle('w3-disabled', !pd || !pd.can_redo);
+    const pd      = AppState.puzzleData;
+    const editing = !!AppState.editingWord;
+    const ub      = document.getElementById('puzzle-undo-btn');
+    const rb      = document.getElementById('puzzle-redo-btn');
+    if (!ub || !rb) return;
+    ub.classList.toggle('w3-disabled', editing || !pd || !pd.can_undo);
+    rb.classList.toggle('w3-disabled', editing || !pd || !pd.can_redo);
 }
 
 async function do_puzzle_undo() { await _puzzleUndoRedo('undo'); }
