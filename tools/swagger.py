@@ -111,6 +111,44 @@ SPEC = {
                                       "description": "Temporary working copy name. Target all edits here until Save/Close."},
                 },
             },
+            "PreviewData": {
+                "type": "object",
+                "properties": {
+                    "name":    {"type": "string"},
+                    "heading": {"type": "string", "description": "Summary line, e.g. 'mygrid (42 words, 15-letter: 4)'"},
+                    "width":   {"type": "number",  "description": "Scaled SVG width in pixels"},
+                    "svgstr":  {"type": "string",  "description": "SVG XML string for thumbnail rendering"},
+                },
+            },
+            "StatsData": {
+                "type": "object",
+                "properties": {
+                    "valid":       {"type": "boolean"},
+                    "errors":      {
+                        "type": "object",
+                        "description": "Validation error lists keyed by rule name",
+                        "properties": {
+                            "interlock":   {"type": "array", "items": {"type": "string"}},
+                            "unchecked":   {"type": "array", "items": {"type": "string"}},
+                            "wordlength":  {"type": "array", "items": {"type": "string"}},
+                        },
+                    },
+                    "size":        {"type": "string", "example": "15 x 15"},
+                    "wordcount":   {"type": "integer"},
+                    "blockcount":  {"type": "integer"},
+                    "wordlengths": {
+                        "type": "object",
+                        "description": "Map of word-length → {alist: [...], dlist: [...]}",
+                        "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                                "alist": {"type": "array", "items": {"type": "integer"}},
+                                "dlist": {"type": "array", "items": {"type": "integer"}},
+                            },
+                        },
+                    },
+                },
+            },
         }
     },
 
@@ -282,6 +320,60 @@ SPEC = {
                 "responses": {
                     "200": {"description": "Updated grid data",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridData"}}}},
+                },
+            },
+        },
+
+        "/api/grids/{name}/preview": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["grids"],
+                "summary": "Get a scaled-down SVG thumbnail and heading for a grid",
+                "responses": {
+                    "200": {"description": "Preview data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PreviewData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/grids/{name}/stats": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["grids"],
+                "summary": "Get statistics and validation results for a grid",
+                "responses": {
+                    "200": {"description": "Stats data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/StatsData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/grids/from-puzzle": {
+            "post": {
+                "tags": ["grids"],
+                "summary": "Create a grid extracted from an existing puzzle",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "required": ["puzzle_name", "grid_name"],
+                        "properties": {
+                            "puzzle_name": {"type": "string", "example": "mypuzzle"},
+                            "grid_name":   {"type": "string", "example": "mygrid"},
+                        },
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Created grid data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridDataNamed"}}}},
+                    "400": {"description": "Validation error",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                    "404": {"description": "Puzzle not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },
         },
@@ -473,14 +565,16 @@ SPEC = {
             },
             "put": {
                 "tags": ["puzzles"],
-                "summary": "Set a word's clue",
+                "summary": "Set a word's text and/or clue",
                 "requestBody": {
                     "required": True,
                     "content": {"application/json": {"schema": {
                         "type": "object",
-                        "required": ["clue"],
                         "properties": {
-                            "clue": {"type": "string", "example": "A greeting"},
+                            "text": {"type": "string", "example": "HELLO",
+                                     "description": "Answer text (undo-tracked). Optional."},
+                            "clue": {"type": "string", "example": "A greeting",
+                                     "description": "Clue text. Optional."},
                         },
                     }}},
                 },
@@ -495,6 +589,72 @@ SPEC = {
                                     "clue":      {"type": "string"},
                                 },
                             }}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/words/{seq}/{direction}/suggestions": {
+            "parameters": [
+                {"name": "name",      "in": "path", "required": True, "schema": {"type": "string"}},
+                {"name": "seq",       "in": "path", "required": True, "schema": {"type": "integer"}},
+                {"name": "direction", "in": "path", "required": True, "schema": {"type": "string", "enum": ["across", "down"]}},
+            ],
+            "get": {
+                "tags": ["puzzles"],
+                "summary": "Get ranked word suggestions for a puzzle word based on crossing constraints",
+                "responses": {
+                    "200": {"description": "Suggestions",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "suggestions": {"type": "array", "items": {"type": "string"}},
+                                    "count":       {"type": "integer"},
+                                },
+                            }}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/words/{seq}/{direction}/constraints": {
+            "parameters": [
+                {"name": "name",      "in": "path", "required": True, "schema": {"type": "string"}},
+                {"name": "seq",       "in": "path", "required": True, "schema": {"type": "integer"}},
+                {"name": "direction", "in": "path", "required": True, "schema": {"type": "string", "enum": ["across", "down"]}},
+            ],
+            "get": {
+                "tags": ["puzzles"],
+                "summary": "Get per-position letter constraints derived from crossing words",
+                "responses": {
+                    "200": {"description": "Constraint data",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "word":     {"type": "string",  "description": "Current word text (spaces as '.')"},
+                                    "length":   {"type": "integer"},
+                                    "pattern":  {"type": "string",  "description": "Regex pattern for suggestions query"},
+                                    "crossers": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "pos":              {"type": "integer", "description": "0-indexed position in this word"},
+                                                "letter":          {"type": "string"},
+                                                "crossing_text":   {"type": "string"},
+                                                "crossing_location": {"type": "string"},
+                                                "crossing_index":  {"type": "integer", "description": "1-indexed position in crossing word"},
+                                                "regexp":          {"type": "string"},
+                                                "choices":         {"type": "array", "items": {"type": "string"}},
+                                                "letter_freq":     {"type": "object",
+                                                                    "additionalProperties": {"type": "integer"}},
+                                            },
+                                        },
+                                    },
+                                },
+                            }}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },
         },
@@ -535,6 +695,34 @@ SPEC = {
                 "responses": {
                     "200": {"description": "Updated puzzle data",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/preview": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["puzzles"],
+                "summary": "Get a scaled-down SVG thumbnail and heading for a puzzle",
+                "responses": {
+                    "200": {"description": "Preview data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PreviewData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/stats": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["puzzles"],
+                "summary": "Get statistics and validation results for a puzzle",
+                "responses": {
+                    "200": {"description": "Stats data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/StatsData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },
         },
@@ -653,14 +841,30 @@ SPEC = {
             },
         },
 
-        "/api/export/puzzles/{name}/puz": {
+        "/api/export/puzzles/{name}/acrosslite": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "get": {
                 "tags": ["export"],
-                "summary": "Export puzzle to Across Lite .puz format",
+                "summary": "Export puzzle to Across Lite format (ZIP containing .txt and .json)",
                 "responses": {
-                    "200": {"description": ".puz bytes",
-                            "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}}},
+                    "200": {"description": "ZIP archive",
+                            "content": {"application/zip": {"schema": {"type": "string", "format": "binary"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/export/puzzles/{name}/nytimes": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["export"],
+                "summary": "Export puzzle to NYTimes submission format (ZIP containing .html and .svg)",
+                "responses": {
+                    "200": {"description": "ZIP archive",
+                            "content": {"application/zip": {"schema": {"type": "string", "format": "binary"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },
         },
