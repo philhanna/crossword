@@ -936,7 +936,7 @@ function renderWordEditorPanel() {
         <p style="width:95%;margin:8px 0 0 0">
           <label>Word:</label>
           <input class="w3-input w3-border" id="we-text" type="text"
-                 maxlength="${len}" value="${escapeHtml(text.trimEnd())}"
+                 maxlength="${len}" value="${escapeHtml(text.replace(/ /g, '.'))}"
                  style="font-family:monospace;letter-spacing:0.2em;text-transform:uppercase"/>
         </p>
 
@@ -1291,7 +1291,7 @@ async function doWordEditOK() {
     const wn   = AppState.puzzleWorkingName;
     const clue = document.getElementById('we-clue').value || '';
     const len  = ew.cells.length;
-    const text = (document.getElementById('we-text').value || '').toUpperCase().padEnd(len).slice(0, len);
+    const text = (document.getElementById('we-text').value || '').toUpperCase().replace(/\./g, ' ').padEnd(len).slice(0, len);
 
     try {
         const data = await apiFetch('PUT',
