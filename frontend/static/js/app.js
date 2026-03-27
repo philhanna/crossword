@@ -976,29 +976,19 @@ function renderWordEditorPanel() {
           </div>
         </div>
 
-        <!-- Crossing constraints (collapsible) -->
-        <details style="margin-top:10px">
-          <summary style="cursor:pointer;color:#555;font-size:small;user-select:none">
-            Show crossing constraints
-          </summary>
-          <div style="margin-top:6px">
-            <button class="w3-button w3-small w3-round w3-light-gray" type="button"
-                    onclick="doWordConstraints()">
-              <i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i>
-              Load constraints
-            </button>
-            <div id="we-constraints-table"
-                 style="overflow:auto;overflow-x:hidden;margin-top:4px"></div>
-          </div>
-        </details>
-
-        <!-- Reset / OK / Cancel -->
+        <!-- Show constraints / Reset row -->
         <div style="margin-top:14px;display:flex;gap:6px">
+          <button class="w3-button w3-border w3-round w3-small w3-light-gray"
+                  type="button" onclick="doWordConstraints()">
+            <i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Show constraints
+          </button>
           <button class="w3-button w3-border w3-round w3-small w3-light-gray"
                   type="button" onclick="doWordReset()">
             <i class="material-icons" style="font-size:14px;vertical-align:middle">cached</i> Reset
           </button>
         </div>
+        <div id="we-constraints-table"
+             style="overflow:auto;overflow-x:hidden;margin-top:8px"></div>
 
         <!-- OK / Cancel -->
         <div style="margin-top:12px">
