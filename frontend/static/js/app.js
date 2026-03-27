@@ -667,6 +667,20 @@ function _weHandleGridClick(event) {
     if (idx !== -1) {
         _weCursorIdx = idx;
         _weRenderLhs();
+    } else {
+        closeWordEditor();
+        _clickEvent = event;
+        if (_clickState === 0) {
+            _clickState = 1;
+            _clickTimeout = setTimeout(() => {
+                _clickState = 0;
+                puzzleClickAt(_clickEvent, 'across');
+            }, CLICK_DELAY);
+        } else {
+            _clickState = 0;
+            clearTimeout(_clickTimeout);
+            puzzleClickAt(event, 'down');
+        }
     }
 }
 
