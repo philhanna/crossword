@@ -201,11 +201,17 @@ These map to the same rendering path; the `editState` object is populated from `
 
 ## 9. Open issues
 
-**1. Clue list links invoke `openWordEditor` directly.**
-The clue lists rendered in the RHS panel (app.js:783) have per-word links with `onclick="openWordEditor(${w.seq}, '${direction}')"`. These need to be changed to `onclick="selectWord(${w.seq}, '${direction}')"` so that clicking a clue selects the word in the grid (committing any current word first) without opening the word editor.
+**1. Clue list links must commit before opening the word editor.**
+The clue lists rendered in the RHS panel (app.js:783) have per-word links with `onclick="openWordEditor(${w.seq}, '${direction}')"`. Clicking a clue should continue to open the word editor for that word, but `_peCommitWord()` must be called first to flush any pending keyboard input for the currently selected word. The simplest fix is a small wrapper, e.g. `onclick="do_puzzle_edit_word(${w.seq}, '${direction}')"`, that commits then opens.
+
+**Choice:** Clicking a clue list item opens the word editor for that word, exactly as if the "Edit word" toolbar button had been clicked for that word. It does not change the currently selected word in the grid.
 
 **2. `AppState.weText` is referenced in the SVG rendering path.**
 `AppState.weText` is read at app.js:516–524 to overlay in-progress letters onto the puzzle grid. These references must be updated to read from `selectedWord.currentText` (when the word editor is closed) or from `document.getElementById('we-text').value` (when it is open). Since `AppState.weText` is removed entirely, all its uses should be located before deletion.
 
+**Choice:** Agreed.
+
 **3. Behavior change: Reset then Cancel.**
 In the current model, Reset fires `POST .../reset` immediately on the backend, and `_weOriginalPuzzleData` is used to restore the puzzle to its pre-open state if the user then cancels. Under the new model, Reset calls `POST .../reset`, reads the cleared text from the response, and places it in `#we-text` — but does not write anything to the backend. Cancelling after Reset therefore truly cancels: the puzzle remains at the committed state from before the word editor was opened. This is a deliberate improvement, but it is a behavior change that should be noted during testing.
+
+**Choice:** Agreed.
