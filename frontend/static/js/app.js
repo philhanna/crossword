@@ -979,7 +979,7 @@ function renderWordEditorPanel() {
         <!-- Show constraints / Reset row -->
         <div style="margin-top:14px;display:flex;gap:6px">
           <button class="w3-button w3-border w3-round w3-small w3-light-gray"
-                  type="button" onclick="doWordConstraints()">
+                  id="we-constraints-btn" type="button" onclick="doWordConstraints()">
             <i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Show constraints
           </button>
           <button class="w3-button w3-border w3-round w3-small w3-light-gray"
@@ -1209,9 +1209,18 @@ function wePageNext() {
 // ---------------------------------------------------------------------------
 
 async function doWordConstraints() {
-    const ew      = AppState.editingWord;
-    const wn      = AppState.puzzleWorkingName;
     const tableEl = document.getElementById('we-constraints-table');
+    const btn     = document.getElementById('we-constraints-btn');
+
+    // Toggle: if already showing, hide
+    if (tableEl.innerHTML.trim() !== '') {
+        tableEl.innerHTML = '';
+        if (btn) btn.innerHTML = '<i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Show constraints';
+        return;
+    }
+
+    const ew = AppState.editingWord;
+    const wn = AppState.puzzleWorkingName;
     tableEl.innerHTML = 'Loading…';
 
     try {
@@ -1219,7 +1228,7 @@ async function doWordConstraints() {
             `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/constraints`);
         if (data.error) { tableEl.innerHTML = `Error: ${escapeHtml(data.error)}`; return; }
 
-        const colNames   = ['Pos', 'Letter', 'Location', 'Text', 'Index', 'Regexp', 'Choices'];
+        const colNames    = ['Pos', 'Letter', 'Location', 'Text', 'Index', 'Regexp', 'Choices'];
         const crosserKeys = ['pos', 'letter', 'crossing_location', 'crossing_text',
                              'crossing_index', 'regexp', 'choices'];
 
@@ -1232,15 +1241,12 @@ async function doWordConstraints() {
 <div class="w3-padding w3-center">
   <b>Overall pattern:</b>
   <code style="margin:0 8px">${escapeHtml(data.pattern)}</code>
-  <button type="button" class="w3-margin-left"
-          onclick="document.getElementById('we-constrained').checked=true;doWordSuggestFetch()">
-    Suggest &rsaquo;
-  </button>
 </div>
 <table class="w3-table w3-small w3-bordered">
   <tr>${headerRow}</tr>
   ${bodyRows}
 </table>`;
+        if (btn) btn.innerHTML = '<i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Hide constraints';
     } catch (e) {
         tableEl.innerHTML = 'Error fetching constraints';
     }
