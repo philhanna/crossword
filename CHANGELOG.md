@@ -6,6 +6,16 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-03-27
+
+### Changed
+
+- Word editor: "Show constraints" and "Reset" buttons now appear on the same
+  row; the collapsible dropdown is removed
+- Word editor: "Show constraints" toggles to "Hide constraints" while the
+  table is visible; clicking again closes it
+- Word editor: "Suggest ›" button removed from the constraints display
+
 ## [3.1.0] - 2026-03-27
 
 ### Changed
