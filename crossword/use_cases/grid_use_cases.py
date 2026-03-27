@@ -116,7 +116,7 @@ class GridUseCases:
         Raises:
             PersistenceError: If grid not found or save fails
         """
-        working_name = f"__wc__{uuid.uuid4().hex[:8]}"
+        working_name = f"__wc__{name}__{uuid.uuid4().hex[:8]}"
         grid = self.persistence.load_grid(user_id, name)
         grid.undo_stack = []
         grid.redo_stack = []

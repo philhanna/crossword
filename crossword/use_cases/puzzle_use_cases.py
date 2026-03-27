@@ -145,7 +145,7 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If puzzle not found or save fails
         """
-        working_name = f"__wc__{uuid.uuid4().hex[:8]}"
+        working_name = f"__wc__{name}__{uuid.uuid4().hex[:8]}"
         puzzle = self.persistence.load_puzzle(user_id, name)
         puzzle.undo_stack = []
         puzzle.redo_stack = []
