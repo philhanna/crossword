@@ -562,6 +562,15 @@ let _clickTimeout = null;
 let _clickEvent   = null;
 const CLICK_DELAY = 280;
 
+// ---------------------------------------------------------------------------
+// Word editor — suggestion state
+// ---------------------------------------------------------------------------
+
+let _weSuggestions           = [];    // full list from last fetch: string[] or {word,score}[]
+let _weSuggestionsConstrained = false; // true when last fetch was constrained (has scores)
+let _wePage                  = 0;     // current page (0-indexed)
+const WE_PAGE_SIZE           = 20;
+
 function handlePuzzleClick(event) {
     _clickEvent = event;
     if (_clickState === 0) {
@@ -712,56 +721,6 @@ function renderWordEditorPanel() {
     <div class="w3-card-4">
       <div class="w3-section" style="padding:0 8px 8px 8px">
 
-        <!-- Tab bar -->
-        <div class="w3-bar w3-blue-gray">
-          <button class="w3-bar-item w3-button" type="button"
-                  onclick="openWordEditTab('we-tab-suggest')">Suggest</button>
-          <button class="w3-bar-item w3-button" type="button"
-                  onclick="openWordEditTab('we-tab-constraints')">Constraints</button>
-          <button class="w3-bar-item w3-button" type="button"
-                  onclick="openWordEditTab('we-tab-reset')">Reset</button>
-        </div>
-
-        <!-- Tab 1: Suggest -->
-        <div id="we-tab-suggest" class="w3-bar w3-margin-top we-tab">
-          <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb"
-             onclick="doWordSuggest()">
-            <i class="material-icons crosstb-icon">search</i>
-            <span>Suggest words that match pattern</span>
-          </a>
-          <div id="we-match" style="display:none;padding:4px 0" class="w3-bar-item"></div>
-          <select id="we-select" class="w3-bar-item" style="display:none"
-                  onchange="weSelectChanged()" onclick="weSelectChanged()"></select>
-        </div>
-
-        <!-- Tab 2: Constraints -->
-        <div id="we-tab-constraints" class="we-tab" style="display:none">
-          <div class="w3-bar w3-margin-top">
-            <a class="w3-button w3-small w3-round w3-light-gray crosstb"
-               onclick="doWordConstraints()">
-              <i class="material-icons crosstb-icon">assignment</i>
-              <span>Find constraints imposed by crossing words</span>
-            </a>
-          </div>
-          <div id="we-constraints-table" style="overflow:auto;overflow-x:hidden;margin-top:4px"></div>
-        </div>
-
-        <!-- Tab 3: Reset -->
-        <div id="we-tab-reset" class="w3-bar w3-margin-top we-tab" style="display:none">
-          <a class="w3-bar-item w3-button w3-small w3-round w3-light-gray crosstb"
-             onclick="doWordReset()">
-            <i class="material-icons crosstb-icon">cached</i>
-            <span>Clear letters not shared with full words</span>
-          </a>
-        </div>
-
-        <!-- Word input -->
-        <p style="width:55%;margin:12px 0 0 0">
-          <label>Word:</label>
-          <input class="w3-input w3-border" id="we-word" type="text"
-                 style="font-family:Courier;font-size:large" value="${escapeHtml(text)}"/>
-        </p>
-
         <!-- Clue input -->
         <p style="width:95%;margin:8px 0 0 0">
           <label>Clue:</label>
@@ -769,7 +728,69 @@ function renderWordEditorPanel() {
                  value="${escapeHtml(clue)}"/>
         </p>
 
-        <!-- Buttons -->
+        <!-- Suggestions section -->
+        <div style="margin-top:12px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
+                    onclick="doWordSuggestFetch()">
+              <i class="material-icons crosstb-icon">search</i>
+              <span>Suggest</span>
+            </button>
+            <label style="margin:0;cursor:pointer;font-size:small">
+              <input type="checkbox" id="we-constrained" checked> Use constraints
+            </label>
+          </div>
+          <div id="we-match" style="display:none;font-size:small;color:#666;margin-bottom:4px"></div>
+          <ul id="we-suggestion-list"
+              style="list-style:none;margin:0;padding:0;max-height:220px;overflow-y:auto;
+                     border:1px solid #ddd;display:none"></ul>
+          <div id="we-pagination"
+               style="display:none;margin-top:4px;font-size:small;
+                      align-items:center;gap:8px">
+            <button class="w3-button w3-small w3-border" type="button"
+                    id="we-page-prev" onclick="wePagePrev()">&#9664;</button>
+            <span id="we-page-label" style="flex:1;text-align:center"></span>
+            <button class="w3-button w3-small w3-border" type="button"
+                    id="we-page-next" onclick="wePageNext()">&#9654;</button>
+          </div>
+        </div>
+
+        <!-- Crossing constraints (collapsible) -->
+        <details style="margin-top:10px">
+          <summary style="cursor:pointer;color:#555;font-size:small;user-select:none">
+            Show crossing constraints
+          </summary>
+          <div style="margin-top:6px">
+            <button class="w3-button w3-small w3-round w3-light-gray" type="button"
+                    onclick="doWordConstraints()">
+              <i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i>
+              Load constraints
+            </button>
+            <div id="we-constraints-table"
+                 style="overflow:auto;overflow-x:hidden;margin-top:4px"></div>
+          </div>
+        </details>
+
+        <!-- Hidden word value (read by doWordEditOK; set by suggestion clicks) -->
+        <input type="hidden" id="we-word" value="${escapeHtml(text)}"/>
+
+        <!-- Undo / Redo / Reset row -->
+        <div style="margin-top:14px;display:flex;gap:6px">
+          <button class="w3-button w3-border w3-round w3-small w3-disabled"
+                  id="we-undo-btn" type="button" onclick="weUndo()">
+            <i class="material-icons" style="font-size:14px;vertical-align:middle">undo</i> Undo
+          </button>
+          <button class="w3-button w3-border w3-round w3-small w3-disabled"
+                  id="we-redo-btn" type="button" onclick="weRedo()">
+            <i class="material-icons" style="font-size:14px;vertical-align:middle">redo</i> Redo
+          </button>
+          <button class="w3-button w3-border w3-round w3-small w3-light-gray"
+                  type="button" onclick="doWordReset()">
+            <i class="material-icons" style="font-size:14px;vertical-align:middle">cached</i> Reset
+          </button>
+        </div>
+
+        <!-- OK / Cancel -->
         <div style="margin-top:12px">
           <button class="w3-button w3-border w3-round w3-gray" style="width:100px"
                   onclick="doWordEditOK()">OK</button>
@@ -783,16 +804,18 @@ function renderWordEditorPanel() {
 </div>`;
 }
 
-function openWordEditTab(tabname) {
-    document.querySelectorAll('.we-tab').forEach(t => t.style.display = 'none');
-    document.getElementById(tabname).style.display = 'block';
+function weListItemClick(word) {
+    const inp = document.getElementById('we-word');
+    if (inp) inp.value = word;
+    // Highlight selected item
+    document.querySelectorAll('#we-suggestion-list li').forEach(li => {
+        li.style.background = li.dataset.word === word ? '#d0e8ff' : '';
+    });
 }
 
-function weSelectChanged() {
-    const sel = document.getElementById('we-select');
-    const inp = document.getElementById('we-word');
-    if (sel && inp) inp.value = sel.value;
-}
+// Stubs — fully implemented in Phase 2
+function weUndo() {}
+function weRedo() {}
 
 // ---------------------------------------------------------------------------
 // Word editor — open / close
@@ -811,6 +834,8 @@ async function openWordEditor(seq, direction) {
             answer:    data.answer,
             clue:      data.clue,
         };
+        _weSuggestions = [];
+        _wePage        = 0;
         renderPuzzleEditorRhs();
     } catch (e) {
         alert('Error opening word editor');
@@ -820,85 +845,137 @@ async function openWordEditor(seq, direction) {
 function closeWordEditor() {
     AppState.editingWord  = null;
     AppState.showingStats = false;
+    _weSuggestions        = [];
+    _wePage               = 0;
     renderPuzzleEditorRhs();
 }
 
 // ---------------------------------------------------------------------------
-// Word editor — Suggest tab
+// Word editor — suggestions (fetch + pagination)
 // ---------------------------------------------------------------------------
 
-async function doWordSuggest() {
-    const matchEl  = document.getElementById('we-match');
-    const selectEl = document.getElementById('we-select');
-    const pattern  = (document.getElementById('we-word').value || '').trim();
+async function doWordSuggestFetch() {
+    const constrained = document.getElementById('we-constrained')?.checked ?? true;
+    if (constrained) {
+        await _fetchConstrainedSuggestions();
+    } else {
+        await _fetchPatternSuggestions();
+    }
+}
 
-    matchEl.style.display  = 'none';
-    selectEl.style.display = 'none';
+async function _fetchPatternSuggestions() {
+    const matchEl = document.getElementById('we-match');
+    matchEl.style.display = 'none';
+    const ew      = AppState.editingWord;
+    const pattern = (ew.answer || '').replace(/ /g, '.').toUpperCase();
     if (!pattern) return;
-
     try {
         const data = await apiFetch('GET',
             `/api/words/suggestions?pattern=${encodeURIComponent(pattern)}`);
-        selectEl.innerHTML = '';
         if (!data.suggestions || data.suggestions.length === 0) {
-            matchEl.innerHTML      = 'No matches found';
-            matchEl.style.display  = 'block';
-        } else {
-            matchEl.innerHTML     = `${data.suggestions.length} matches found:`;
-            matchEl.style.display = 'block';
-            for (const word of data.suggestions) {
-                const opt       = document.createElement('option');
-                opt.value       = word.toUpperCase();
-                opt.textContent = word.toUpperCase();
-                selectEl.appendChild(opt);
-            }
-            selectEl.style.display = 'block';
-        }
-    } catch (e) {
-        matchEl.innerHTML     = 'Error fetching suggestions';
-        matchEl.style.display = 'block';
-    }
-}
-
-function doFastpath(pattern) {
-    const inp = document.getElementById('we-word');
-    if (inp && pattern) inp.value = pattern;
-    openWordEditTab('we-tab-suggest');
-    doWordSuggest();
-}
-
-async function doConstrainedSuggest() {
-    const ew      = AppState.editingWord;
-    const wn      = AppState.puzzleWorkingName;
-    const matchEl  = document.getElementById('we-match');
-    const selectEl = document.getElementById('we-select');
-
-    openWordEditTab('we-tab-suggest');
-    matchEl.style.display  = 'none';
-    selectEl.style.display = 'none';
-
-    try {
-        const data = await apiFetch('GET',
-            `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/suggestions`);
-        selectEl.innerHTML = '';
-        if (!data.suggestions || data.suggestions.length === 0) {
+            _weSuggestions = [];
             matchEl.innerHTML     = 'No matches found';
             matchEl.style.display = 'block';
         } else {
-            matchEl.innerHTML     = `${data.suggestions.length} matches found (ranked by fit):`;
-            matchEl.style.display = 'block';
-            for (const item of data.suggestions) {
-                const opt       = document.createElement('option');
-                opt.value       = item.word.toUpperCase();
-                opt.textContent = `${item.word.toUpperCase()}  (${item.score})`;
-                selectEl.appendChild(opt);
-            }
-            selectEl.style.display = 'block';
+            _weSuggestions            = data.suggestions.map(w => w.toUpperCase());
+            _weSuggestionsConstrained = false;
+            _wePage                   = 0;
+            _weRenderSuggestionList();
         }
     } catch (e) {
         matchEl.innerHTML     = 'Error fetching suggestions';
         matchEl.style.display = 'block';
     }
+}
+
+async function _fetchConstrainedSuggestions() {
+    const ew      = AppState.editingWord;
+    const wn      = AppState.puzzleWorkingName;
+    const matchEl = document.getElementById('we-match');
+    matchEl.style.display = 'none';
+    try {
+        const data = await apiFetch('GET',
+            `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/suggestions`);
+        if (!data.suggestions || data.suggestions.length === 0) {
+            _weSuggestions = [];
+            matchEl.innerHTML     = 'No matches found';
+            matchEl.style.display = 'block';
+        } else {
+            _weSuggestions            = data.suggestions.map(
+                item => typeof item === 'string'
+                    ? { word: item.toUpperCase(), score: null }
+                    : { word: item.word.toUpperCase(), score: item.score }
+            );
+            _weSuggestionsConstrained = true;
+            _wePage                   = 0;
+            _weRenderSuggestionList();
+        }
+    } catch (e) {
+        matchEl.innerHTML     = 'Error fetching suggestions';
+        matchEl.style.display = 'block';
+    }
+}
+
+function _weRenderSuggestionList() {
+    const matchEl  = document.getElementById('we-match');
+    const listEl   = document.getElementById('we-suggestion-list');
+    const pageDiv  = document.getElementById('we-pagination');
+    const prevBtn  = document.getElementById('we-page-prev');
+    const nextBtn  = document.getElementById('we-page-next');
+    const labelEl  = document.getElementById('we-page-label');
+
+    const total     = _weSuggestions.length;
+    const pageStart = _wePage * WE_PAGE_SIZE;
+    const pageEnd   = Math.min(pageStart + WE_PAGE_SIZE, total);
+    const pageItems = _weSuggestions.slice(pageStart, pageEnd);
+
+    matchEl.innerHTML     = `${total} match${total === 1 ? '' : 'es'} found:`;
+    matchEl.style.display = 'block';
+
+    const maxScore = _weSuggestionsConstrained
+        ? Math.max(1, ..._weSuggestions.map(s => s.score || 0))
+        : 0;
+
+    listEl.innerHTML = '';
+    for (const item of pageItems) {
+        const word  = _weSuggestionsConstrained ? item.word : item;
+        const score = _weSuggestionsConstrained ? item.score : null;
+        const li    = document.createElement('li');
+        li.dataset.word  = word;
+        li.style.cssText = 'padding:4px 8px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid #eee';
+        li.onmouseover = () => { if (li.style.background !== 'rgb(208, 232, 255)') li.style.background = '#f5f5f5'; };
+        li.onmouseout  = () => { if (li.style.background !== 'rgb(208, 232, 255)') li.style.background = ''; };
+        li.onclick     = () => weListItemClick(word);
+
+        let inner = `<span style="font-family:Courier;font-size:14px;min-width:${word.length * 9}px">${escapeHtml(word)}</span>`;
+        if (score !== null) {
+            const pct = Math.round((score / maxScore) * 100);
+            inner += `<span style="display:inline-block;width:60px;height:8px;background:#ddd;border-radius:3px;flex-shrink:0">` +
+                     `<span style="display:block;width:${pct}%;height:100%;background:#5b9bd5;border-radius:3px"></span></span>` +
+                     `<span style="font-size:11px;color:#888">${score}</span>`;
+        }
+        li.innerHTML = inner;
+        listEl.appendChild(li);
+    }
+    listEl.style.display = 'block';
+
+    // Pagination controls
+    if (total > WE_PAGE_SIZE) {
+        labelEl.textContent    = `${pageStart + 1}–${pageEnd} of ${total}`;
+        prevBtn.disabled       = _wePage === 0;
+        nextBtn.disabled       = pageEnd >= total;
+        pageDiv.style.display  = 'flex';
+    } else {
+        pageDiv.style.display  = 'none';
+    }
+}
+
+function wePagePrev() {
+    if (_wePage > 0) { _wePage--; _weRenderSuggestionList(); }
+}
+
+function wePageNext() {
+    if ((_wePage + 1) * WE_PAGE_SIZE < _weSuggestions.length) { _wePage++; _weRenderSuggestionList(); }
 }
 
 // ---------------------------------------------------------------------------
@@ -928,10 +1005,9 @@ async function doWordConstraints() {
         tableEl.innerHTML = `
 <div class="w3-padding w3-center">
   <b>Overall pattern:</b>
-  <input class="w3-border" id="we-pattern-input"
-         value="${escapeHtml(data.pattern)}" style="width:120px;margin:0 8px"/>
+  <code style="margin:0 8px">${escapeHtml(data.pattern)}</code>
   <button type="button" class="w3-margin-left"
-          onclick="doConstrainedSuggest()">
+          onclick="document.getElementById('we-constrained').checked=true;doWordSuggestFetch()">
     Suggest &rsaquo;
   </button>
 </div>
