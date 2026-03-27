@@ -214,13 +214,13 @@ Manual checks:
 
 ## Implementation Order
 
-- [ ] Phase 1: Add `#ml` markup to `frontend/index.html`
-- [ ] Phase 2: Add message-line CSS to `frontend/static/css/style.css`
-- [ ] Phase 3: Add `showMessageLine()` / `clearMessageLine()` to `frontend/static/js/app.js`
-- [ ] Phase 4: Migrate `do_puzzle_save()` and `do_grid_save()` from modal to message line
-- [ ] Phase 5: Migrate Save As success paths
-- [ ] Phase 6: Convert other passive `messageBox(...)` call sites that do not require input
-- [ ] Phase 7: Update `docs/design/frontend.md`
+- [x] Phase 1: Add `#ml` markup to `frontend/index.html`
+- [x] Phase 2: Add message-line CSS to `frontend/static/css/style.css`
+- [x] Phase 3: Add `showMessageLine()` / `clearMessageLine()` to `frontend/static/js/app.js`
+- [x] Phase 4: Migrate `do_puzzle_save()` and `do_grid_save()` from modal to message line
+- [x] Phase 5: Migrate Save As success paths
+- [x] Phase 6: Convert other passive `messageBox(...)` call sites that do not require input
+- [x] Phase 7: Update `docs/design/frontend.md`
 - [ ] Phase 8: Run a quick manual UI pass for save, empty-list, and confirm flows
 
 ## Progress Tracking
@@ -230,7 +230,8 @@ Update the checkboxes above as each phase lands.
 Current status:
 
 - [x] Planning document created
-- [ ] Feature implementation started
+- [x] Feature implementation completed
+- [ ] Manual UI verification completed
 
 ---
 

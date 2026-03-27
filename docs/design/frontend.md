@@ -72,13 +72,19 @@ Dirty-checking uses a djb2 hash (`_hash()`) over `JSON.stringify` of the relevan
 
 Items are toggled with `w3-disabled` CSS class.
 
-## Modal Dialogs
+## Notifications And Dialogs
 
-Three permanent modals are declared in `index.html` and shown/hidden via `display:block/none`:
+A permanent message line and three permanent modals are declared in `index.html`.
+
+- **`#ml` — Message line** (`showMessageLine(text, level, timeoutMs)` / `clearMessageLine()`) — single-line notification strip shown below the menu bar. `level` is `notice` or `error`; notice renders green and error renders red. This is used for passive status messages that do not require any user action.
+
+Three permanent modals are shown/hidden via `display:block/none`:
 
 - **`#mb` — Message box** (`messageBox(title, prompt, ok, okCallback)`) — shows a message with OK/Cancel. OK can be a URL link or a callback.
 - **`#ib` — Input box** (`inputBox(title, label, value, onSubmit)`) — prompts for a text string; submits via form `onsubmit`.
 - **`#ch` — Chooser** (`showChooser` / `showPreviewChooser`) — scrollable list of items to pick from. `showPreviewChooser` fetches `GET /api/{grids|puzzles}/{name}/preview` in parallel for all items and renders SVG thumbnails alongside each name.
+
+The modal message box is now reserved for confirmations and flows where the user must explicitly respond before the app proceeds.
 
 ## SVG Rendering
 

@@ -5,6 +5,7 @@
 // ---------------------------------------------------------------------------
 
 const BOXSIZE = 32;
+const MESSAGE_LINE_TIMEOUT_MS = 3000;
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -61,6 +62,36 @@ async function apiFetch(method, path, body) {
 // ---------------------------------------------------------------------------
 // Modal dialogs
 // ---------------------------------------------------------------------------
+
+let _messageLineTimer = null;
+
+function clearMessageLine() {
+    const ml = document.getElementById('ml');
+    ml.style.display = 'none';
+    ml.classList.remove('message-line-notice', 'message-line-error');
+    document.getElementById('ml-text').textContent = '';
+    if (_messageLineTimer) {
+        clearTimeout(_messageLineTimer);
+        _messageLineTimer = null;
+    }
+}
+
+function showMessageLine(text, level = 'notice', timeoutMs = MESSAGE_LINE_TIMEOUT_MS) {
+    const ml = document.getElementById('ml');
+    document.getElementById('ml-text').textContent = text;
+    ml.classList.remove('message-line-notice', 'message-line-error');
+    ml.classList.add(level === 'error' ? 'message-line-error' : 'message-line-notice');
+    ml.style.display = 'flex';
+    if (_messageLineTimer) {
+        clearTimeout(_messageLineTimer);
+        _messageLineTimer = null;
+    }
+    if (timeoutMs > 0) {
+        _messageLineTimer = setTimeout(() => {
+            clearMessageLine();
+        }, timeoutMs);
+    }
+}
 
 function messageBox(title, prompt, ok, okCallback, okLabel = 'OK') {
     document.getElementById('mb-title').innerHTML = title;
@@ -1327,7 +1358,7 @@ async function do_puzzle_open() {
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
         const puzzles = (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
         if (puzzles.length === 0) {
-            messageBox('Open puzzle', 'No saved puzzles found.', null, null);
+            showMessageLine('No saved puzzles found.', 'notice');
             return;
         }
         showPreviewChooser('Open puzzle', puzzles, '/api/puzzles', async (name) => {
@@ -1358,7 +1389,7 @@ async function do_puzzle_new() {
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
         const grids = (listData.grids || []).filter(g => g && !g.startsWith('__wc__'));
         if (grids.length === 0) {
-            messageBox('New puzzle', 'No saved grids found. Create a grid first.', null, null);
+            showMessageLine('No saved grids found. Create a grid first.', 'notice');
             return;
         }
         showPreviewChooser('Choose a grid', grids, '/api/grids', (gridName) => {
@@ -1398,7 +1429,7 @@ async function do_puzzle_save() {
             `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { alert(`Save failed: ${data.error}`); return; }
         AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
-        messageBox('Save puzzle', `Puzzle <b>${escapeHtml(name)}</b> saved.`, null, () => {});
+        showMessageLine(`Puzzle ${name} saved.`, 'notice');
     } catch (e) { alert('Error saving puzzle'); }
 }
 
@@ -1420,6 +1451,7 @@ async function _savePuzzleAsName(newName) {
     AppState.puzzleName      = newName;
     AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
     renderPuzzleEditorLhs();
+    showMessageLine(`Puzzle ${newName} saved.`, 'notice');
 }
 
 async function do_puzzle_save_as() {
@@ -1665,7 +1697,7 @@ async function do_grid_new_from_puzzle() {
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
         const puzzles = (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
         if (puzzles.length === 0) {
-            messageBox('New grid from puzzle', 'No saved puzzles found.', null, null);
+            showMessageLine('No saved puzzles found.', 'notice');
             return;
         }
         showPreviewChooser('Choose a puzzle', puzzles, '/api/puzzles', (puzzleName) => {
@@ -1690,7 +1722,7 @@ async function do_grid_open() {
         if (listData.error) { alert(`Error: ${listData.error}`); return; }
         const grids = (listData.grids || []).filter(g => g && !g.startsWith('__wc__'));
         if (grids.length === 0) {
-            messageBox('Open grid', 'No saved grids found.', null, null);
+            showMessageLine('No saved grids found.', 'notice');
             return;
         }
         showPreviewChooser('Open grid', grids, '/api/grids', async (name) => {
@@ -1708,7 +1740,7 @@ async function do_grid_save() {
             `/api/grids/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { alert(`Save failed: ${data.error}`); return; }
         AppState.gridSavedHash = _hash(AppState.gridData.cells);
-        messageBox('Save grid', `Grid <b>${escapeHtml(name)}</b> saved.`, null, () => {});
+        showMessageLine(`Grid ${name} saved.`, 'notice');
     } catch (e) { alert('Error saving grid'); }
 }
 
@@ -1730,6 +1762,7 @@ async function _saveGridAsName(newName) {
     AppState.gridOriginalName = newName;
     AppState.gridSavedHash    = _hash(AppState.gridData.cells);
     renderGridEditor();
+    showMessageLine(`Grid ${newName} saved.`, 'notice');
 }
 
 async function do_grid_save_as() {
@@ -1807,7 +1840,7 @@ async function _downloadExport(name, format) {
         const resp = await fetch(`/api/export/puzzles/${encodeURIComponent(name)}/${endpoint}`);
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            messageBox('Publish error', err.error || `HTTP ${resp.status}`, null, null);
+            showMessageLine(err.error || `Publish failed: HTTP ${resp.status}`, 'error');
             return;
         }
         const blob = await resp.blob();
@@ -1820,7 +1853,7 @@ async function _downloadExport(name, format) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     } catch (e) {
-        messageBox('Publish error', 'Export request failed.', null, null);
+        showMessageLine('Export request failed.', 'error');
     }
 }
 
@@ -1833,7 +1866,7 @@ async function do_publish(format) {
             if (listData.error) { alert(`Error: ${listData.error}`); return; }
             const puzzles = (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
             if (puzzles.length === 0) {
-                messageBox('Publish', 'No saved puzzles found.', null, null);
+                showMessageLine('No saved puzzles found.', 'notice');
                 return;
             }
             showPreviewChooser('Choose a puzzle to publish', puzzles, '/api/puzzles', async (name) => {
