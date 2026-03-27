@@ -70,6 +70,12 @@ class RequestHandler(BaseHTTPRequestHandler):
     # Class-level app container (set by start_server)
     app = None
 
+    def do_OPTIONS(self):
+        """Handle CORS preflight request"""
+        self.send_response(204)
+        self._send_cors_headers()
+        self.end_headers()
+
     def do_GET(self):
         """Handle GET request"""
         self._handle_request("GET")
@@ -162,12 +168,19 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return value.strip()
         return None
 
+    def _send_cors_headers(self):
+        """Add CORS headers to allow cross-origin requests (e.g. from Swagger UI)"""
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
+
     def _send_json(self, data: dict, status: int = 200):
         """Send JSON response"""
         response_body = json.dumps(data).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", len(response_body))
+        self._send_cors_headers()
         self.end_headers()
         self.wfile.write(response_body)
 
@@ -176,6 +189,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", len(data))
+        self._send_cors_headers()
         self.end_headers()
         self.wfile.write(data)
 
@@ -185,6 +199,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "text/plain")
         self.send_header("Content-Length", len(response_body))
+        self._send_cors_headers()
         self.end_headers()
         self.wfile.write(response_body)
 

@@ -27,6 +27,7 @@ def _send_download(request_handler, data, content_type, filename):
     rh.send_header("Content-Type", content_type)
     rh.send_header("Content-Disposition", f'attachment; filename="{filename}"')
     rh.send_header("Content-Length", str(len(body)))
+    rh._send_cors_headers()
     rh.end_headers()
     rh.wfile.write(body)
 
