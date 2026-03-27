@@ -503,11 +503,29 @@ function closeGridStatsPanel() {
 // Puzzle SVG renderer (client-side)
 // ---------------------------------------------------------------------------
 
-function buildPuzzleSvg(puzzleData) {
+function buildPuzzleSvg(puzzleData, editState = null) {
     const n           = puzzleData.grid.size;
     const blackCells  = puzzleData.grid.cells;        // bool[], true = black
     const puzzleCells = puzzleData.puzzle.cells;      // {"idx": {number?, letter?}}
     const totalPx     = n * BOXSIZE + 1;
+
+    // Build edit-mode lookup structures
+    let wordCellSet   = null;  // Set of flat indices belonging to the word
+    let cursorFlatIdx = -1;
+    let wordLetterMap = {};    // flat index -> letter from AppState.weText
+
+    if (editState) {
+        wordCellSet = new Set();
+        const weText = AppState.weText || '';
+        editState.cells.forEach(([r, c], i) => {
+            const fi = (r - 1) * n + (c - 1);
+            wordCellSet.add(fi);
+            const ch = weText[i];
+            if (ch && ch !== ' ') wordLetterMap[fi] = ch;
+        });
+        const [cr, cc] = editState.cells[editState.cursorIdx];
+        cursorFlatIdx = (cr - 1) * n + (cc - 1);
+    }
 
     const parts = [
         `<svg xmlns="http://www.w3.org/2000/svg" id="puzzle-svg" ` +
@@ -521,9 +539,20 @@ function buildPuzzleSvg(puzzleData) {
             const y     = (r - 1) * BOXSIZE;
             const black = blackCells[idx];
 
+            let fill;
+            if (black) {
+                fill = 'black';
+            } else if (editState) {
+                if (idx === cursorFlatIdx)      fill = '#4fa3e0';  // cursor cell
+                else if (wordCellSet.has(idx))  fill = '#c8e6fa';  // other word cells
+                else                            fill = '#e8e8e8';  // dimmed
+            } else {
+                fill = 'white';
+            }
+
             parts.push(
                 `<rect x="${x}" y="${y}" width="${BOXSIZE}" height="${BOXSIZE}" ` +
-                `fill="${black ? 'black' : 'white'}" stroke="#999" stroke-width="0.5"/>`
+                `fill="${fill}" stroke="#999" stroke-width="0.5"/>`
             );
 
             if (!black) {
@@ -534,22 +563,38 @@ function buildPuzzleSvg(puzzleData) {
                         `font-size="9" font-family="sans-serif">${cd.number}</text>`
                     );
                 }
-                if (cd.letter) {
+                // In edit mode show weText letters for word cells; otherwise use puzzle data
+                const letter = (editState && wordCellSet.has(idx))
+                    ? (wordLetterMap[idx] || '')
+                    : (cd.letter || '');
+                if (letter) {
                     parts.push(
                         `<text x="${x + BOXSIZE / 2}" y="${y + BOXSIZE - 6}" ` +
                         `font-size="15" font-family="sans-serif" ` +
-                        `text-anchor="middle">${escapeHtml(cd.letter)}</text>`
+                        `text-anchor="middle">${escapeHtml(letter)}</text>`
                     );
                 }
             }
         }
     }
 
-    // Outer border drawn last
+    // Outer border
     parts.push(
         `<rect x="0" y="0" width="${totalPx - 1}" height="${totalPx - 1}" ` +
         `fill="none" stroke="black" stroke-width="2"/>`
     );
+
+    // Cursor indicator: bold inner border on cursor cell
+    if (editState && cursorFlatIdx >= 0) {
+        const cc_ = (cursorFlatIdx % n);
+        const cr_ = Math.floor(cursorFlatIdx / n);
+        parts.push(
+            `<rect x="${cc_ * BOXSIZE + 2}" y="${cr_ * BOXSIZE + 2}" ` +
+            `width="${BOXSIZE - 4}" height="${BOXSIZE - 4}" ` +
+            `fill="none" stroke="#1565c0" stroke-width="2"/>`
+        );
+    }
+
     parts.push('</svg>');
     return parts.join('');
 }
@@ -579,8 +624,23 @@ const WE_PAGE_SIZE           = 20;
 let _weUndoStack      = [];  // [{type, ...}]
 let _weRedoStack      = [];
 let _weClueBeforeEdit = '';  // clue value on focus, for detecting changes on blur
+let _weCursorIdx      = 0;   // position of typing cursor within the word cells
+
+function _weRenderLhs() {
+    const container = document.getElementById('puzzle-svg-container');
+    if (!container || !AppState.puzzleData) return;
+    const ew        = AppState.editingWord;
+    const editState = ew ? { cells: ew.cells, cursorIdx: _weCursorIdx } : null;
+    container.innerHTML = buildPuzzleSvg(AppState.puzzleData, editState);
+    const svg = document.getElementById('puzzle-svg');
+    if (svg) svg.addEventListener('click', handlePuzzleClick);
+}
 
 function handlePuzzleClick(event) {
+    if (AppState.editingWord) {
+        _weHandleGridClick(event);
+        return;
+    }
     _clickEvent = event;
     if (_clickState === 0) {
         _clickState = 1;
@@ -592,6 +652,20 @@ function handlePuzzleClick(event) {
         _clickState = 0;
         clearTimeout(_clickTimeout);
         puzzleClickAt(event, 'down');
+    }
+}
+
+function _weHandleGridClick(event) {
+    const svg = document.getElementById('puzzle-svg');
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const r    = Math.floor(1 + (event.clientY - rect.top)  / BOXSIZE);
+    const c    = Math.floor(1 + (event.clientX - rect.left) / BOXSIZE);
+    const ew   = AppState.editingWord;
+    const idx  = ew.cells.findIndex(([wr, wc]) => wr === r && wc === c);
+    if (idx !== -1) {
+        _weCursorIdx = idx;
+        _weRenderLhs();
     }
 }
 
@@ -654,13 +728,16 @@ function renderPuzzleEditorLhs() {
   </div>
 </div>`;
 
+    const ew       = AppState.editingWord;
+    const editState = ew ? { cells: ew.cells, cursorIdx: _weCursorIdx } : null;
+
     document.getElementById('lhs').innerHTML = `
 <div class="w3-container">
   <h3>Editing puzzle <b>${escapeHtml(name)}</b>${title}</h3>
 </div>
 ${toolbar}
 <div id="puzzle-svg-container" class="w3-container" style="padding-top:4px">
-  ${pd ? buildPuzzleSvg(pd) : ''}
+  ${pd ? buildPuzzleSvg(pd, editState) : ''}
 </div>`;
 
     const svg = document.getElementById('puzzle-svg');
@@ -712,7 +789,6 @@ function renderClues() {
 
 function renderWordEditorPanel() {
     const ew       = AppState.editingWord;
-    const text     = (ew.answer || '').replace(/ /g, '.');
     const clue     = ew.clue || '';
     const dirLabel = ew.direction.charAt(0).toUpperCase() + ew.direction.slice(1);
     const len      = ew.cells.length;
@@ -782,9 +858,6 @@ function renderWordEditorPanel() {
           </div>
         </details>
 
-        <!-- Hidden word value (read by doWordEditOK; set by suggestion clicks) -->
-        <input type="hidden" id="we-word" value="${escapeHtml(text)}"/>
-
         <!-- Undo / Redo / Reset row -->
         <div style="margin-top:14px;display:flex;gap:6px">
           <button class="w3-button w3-border w3-round w3-small w3-disabled"
@@ -821,6 +894,7 @@ function weListItemClick(word) {
     const newText = word.padEnd(len).slice(0, len);
     wePush({ type: 'word', oldText, newText });
     _weSetText(newText);
+    _weRenderLhs();
     // Highlight selected item
     document.querySelectorAll('#we-suggestion-list li').forEach(li => {
         li.style.background = li.dataset.word === word ? '#d0e8ff' : '';
@@ -852,6 +926,12 @@ function weRedo() {
 function _weApplyEntry(entry, direction) {
     if (entry.type === 'word') {
         _weSetText(direction === 'undo' ? entry.oldText : entry.newText);
+        _weRenderLhs();
+    } else if (entry.type === 'cell') {
+        const ch = direction === 'undo' ? entry.old : entry.new;
+        _weCellSet(entry.idx, ch);
+        _weCursorIdx = entry.idx;
+        _weRenderLhs();
     } else if (entry.type === 'clue') {
         const val = direction === 'undo' ? entry.old : entry.new;
         const inp = document.getElementById('we-clue');
@@ -863,8 +943,6 @@ function _weApplyEntry(entry, direction) {
 function _weSetText(text) {
     AppState.weText = text;
     if (AppState.editingWord) AppState.editingWord.answer = text;
-    const inp = document.getElementById('we-word');
-    if (inp) inp.value = text.replace(/ /g, '.');
 }
 
 function _updateWeUndoRedo() {
@@ -883,6 +961,87 @@ function _weOnClueBlur(newVal) {
 }
 
 // ---------------------------------------------------------------------------
+// Word editor — grid keyboard editing helpers
+// ---------------------------------------------------------------------------
+
+function _weCellSet(idx, ch) {
+    const t = AppState.weText || '';
+    AppState.weText = t.slice(0, idx) + ch + t.slice(idx + 1);
+    if (AppState.editingWord) AppState.editingWord.answer = AppState.weText;
+}
+
+function _weAdvanceCursor() {
+    const len  = AppState.editingWord.cells.length;
+    const text = AppState.weText || '';
+    // Advance to next blank cell; if none, move one step forward
+    for (let i = _weCursorIdx + 1; i < len; i++) {
+        if (text[i] === ' ') { _weCursorIdx = i; return; }
+    }
+    if (_weCursorIdx < len - 1) _weCursorIdx++;
+}
+
+function _weTypeLetter(ch) {
+    const old = (AppState.weText || '')[_weCursorIdx] || ' ';
+    _weCellSet(_weCursorIdx, ch);
+    wePush({ type: 'cell', idx: _weCursorIdx, old, new: ch });
+    _weAdvanceCursor();
+    _weRenderLhs();
+}
+
+function _weClearAtCursor() {
+    const old = (AppState.weText || '')[_weCursorIdx] || ' ';
+    if (old === ' ') return;
+    _weCellSet(_weCursorIdx, ' ');
+    wePush({ type: 'cell', idx: _weCursorIdx, old, new: ' ' });
+    _weRenderLhs();
+}
+
+function _weKeydown(e) {
+    if (!AppState.editingWord) return;
+    const ew  = AppState.editingWord;
+    const len = ew.cells.length;
+
+    if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); return; }
+    if (e.key === 'Enter')  { doWordEditOK();    e.preventDefault(); return; }
+
+    if (e.key === 'Home') {
+        _weCursorIdx = 0; _weRenderLhs(); e.preventDefault(); return;
+    }
+    if (e.key === 'End') {
+        _weCursorIdx = len - 1; _weRenderLhs(); e.preventDefault(); return;
+    }
+
+    const isAcross = ew.direction === 'across';
+    if ((isAcross && e.key === 'ArrowRight') || (!isAcross && e.key === 'ArrowDown')) {
+        _weCursorIdx = Math.min(_weCursorIdx + 1, len - 1);
+        _weRenderLhs(); e.preventDefault(); return;
+    }
+    if ((isAcross && e.key === 'ArrowLeft') || (!isAcross && e.key === 'ArrowUp')) {
+        _weCursorIdx = Math.max(_weCursorIdx - 1, 0);
+        _weRenderLhs(); e.preventDefault(); return;
+    }
+
+    if (e.key === 'Delete') {
+        _weClearAtCursor(); e.preventDefault(); return;
+    }
+
+    if (e.key === 'Backspace') {
+        const ch = (AppState.weText || '')[_weCursorIdx] || ' ';
+        if (ch !== ' ') {
+            _weClearAtCursor();
+        } else if (_weCursorIdx > 0) {
+            _weCursorIdx--;
+            _weClearAtCursor();
+        }
+        e.preventDefault(); return;
+    }
+
+    if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+        _weTypeLetter(e.key.toUpperCase()); e.preventDefault();
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Word editor — open / close
 // ---------------------------------------------------------------------------
 
@@ -892,7 +1051,8 @@ async function openWordEditor(seq, direction) {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(wn)}/words/${seq}/${direction}`);
         if (data.error) { alert(`Word not found: ${data.error}`); return; }
-        const len = data.cells.length;
+        const len    = data.cells.length;
+        const answer = (data.answer || '').padEnd(len).slice(0, len);
         AppState.editingWord = {
             seq:       data.seq,
             direction: data.direction,
@@ -900,11 +1060,16 @@ async function openWordEditor(seq, direction) {
             answer:    data.answer,
             clue:      data.clue,
         };
-        AppState.weText  = (data.answer || '').padEnd(len).slice(0, len);
+        AppState.weText  = answer;
         _weSuggestions   = [];
         _wePage          = 0;
         _weUndoStack     = [];
         _weRedoStack     = [];
+        // Position cursor at first blank, or 0
+        const firstBlank = answer.indexOf(' ');
+        _weCursorIdx     = firstBlank >= 0 ? firstBlank : 0;
+        document.addEventListener('keydown', _weKeydown);
+        renderPuzzleEditorLhs();
         renderPuzzleEditorRhs();
         _updatePuzzleUndoRedo();
     } catch (e) {
@@ -913,6 +1078,7 @@ async function openWordEditor(seq, direction) {
 }
 
 function closeWordEditor() {
+    document.removeEventListener('keydown', _weKeydown);
     AppState.editingWord  = null;
     AppState.weText       = null;
     AppState.showingStats = false;
@@ -920,6 +1086,7 @@ function closeWordEditor() {
     _wePage               = 0;
     _weUndoStack          = [];
     _weRedoStack          = [];
+    renderPuzzleEditorLhs();
     renderPuzzleEditorRhs();
     _updatePuzzleUndoRedo();
 }
@@ -1118,6 +1285,7 @@ async function doWordReset() {
             wePush({ type: 'word', oldText, newText });
             AppState.editingWord = { ...ew, answer: updated.answer };
             _weSetText(newText);
+            _weRenderLhs();
         }
     } catch (e) {
         alert('Error resetting word');
@@ -1129,22 +1297,13 @@ async function doWordReset() {
 // ---------------------------------------------------------------------------
 
 async function doWordEditOK() {
-    const ew  = AppState.editingWord;
-    const wn  = AppState.puzzleWorkingName;
-    let text  = (document.getElementById('we-word').value || '').toUpperCase();
+    const ew   = AppState.editingWord;
+    const wn   = AppState.puzzleWorkingName;
     const clue = document.getElementById('we-clue').value || '';
 
-    // Validate characters
-    for (const ch of text) {
-        if (!' ABCDEFGHIJKLMNOPQRSTUVWXYZ.'.includes(ch)) {
-            alert(`"${text}" contains invalid characters`);
-            return;
-        }
-    }
-
-    // Pad/trim to word length; treat dot as blank
-    const len = ew.cells.length;
-    text = text.padEnd(len).slice(0, len).replace(/\./g, ' ');
+    // Read text from AppState.weText (controlled by grid keyboard editing)
+    const len  = ew.cells.length;
+    const text = (AppState.weText || '').padEnd(len).slice(0, len);
 
     try {
         // Save text (undo-tracked) and clue in one request
