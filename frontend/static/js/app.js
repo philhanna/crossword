@@ -782,15 +782,12 @@ function _peKeydown(e) {
         return;
     }
 
-    if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+    if (e.key === ' ' || (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key))) {
+        const ch = e.key === ' ' ? ' ' : e.key.toUpperCase();
         const t = sw.currentText;
-        sw.currentText = t.slice(0, _peCursorIdx) + e.key.toUpperCase() + t.slice(_peCursorIdx + 1);
-        // Advance cursor to next blank, or one step forward
-        let advanced = false;
-        for (let i = _peCursorIdx + 1; i < len; i++) {
-            if (sw.currentText[i] === ' ') { _peCursorIdx = i; advanced = true; break; }
-        }
-        if (!advanced && _peCursorIdx < len - 1) _peCursorIdx++;
+        sw.currentText = t.slice(0, _peCursorIdx) + ch + t.slice(_peCursorIdx + 1);
+        // Advance cursor one step forward
+        if (_peCursorIdx < len - 1) _peCursorIdx++;
         renderPuzzleEditorLhs(); e.preventDefault();
     }
 }
