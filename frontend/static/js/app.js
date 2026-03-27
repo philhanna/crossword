@@ -999,6 +999,14 @@ function _weClearAtCursor() {
 
 function _weKeydown(e) {
     if (!AppState.editingWord) return;
+
+    // Let the clue input (and any other text field) handle its own keystrokes
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); }
+        return;
+    }
+
     const ew  = AppState.editingWord;
     const len = ew.cells.length;
 
