@@ -186,8 +186,7 @@ class TestGridUseCasesOpenForEditing:
 
         working_name = grid_uc.open_grid_for_editing(1, "mygrid")
 
-        assert working_name.startswith("__wc__")
-        assert len(working_name) == len("__wc__") + 8
+        assert working_name.startswith("__wc__mygrid__")
 
     def test_open_grid_creates_working_copy(self, grid_uc, mock_persistence):
         """Saves a working copy under the returned name"""

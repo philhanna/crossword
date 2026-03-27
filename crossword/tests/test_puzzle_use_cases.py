@@ -200,8 +200,7 @@ class TestPuzzleUseCasesOpenForEditing:
 
         working_name = puzzle_uc.open_puzzle_for_editing(1, "mypuzzle")
 
-        assert working_name.startswith("__wc__")
-        assert len(working_name) == len("__wc__") + 8
+        assert working_name.startswith("__wc__mypuzzle__")
 
     def test_open_puzzle_creates_working_copy(self, puzzle_uc, mock_persistence, test_puzzle):
         """Saves a working copy under the returned name"""
