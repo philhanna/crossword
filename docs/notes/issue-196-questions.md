@@ -10,11 +10,13 @@ These are the open questions I have after reviewing GitHub issue `#196` and comp
 
    The code currently treats them as separate objects end-to-end: separate domain classes, separate use cases, and separate database tables. This answer means the implementation should likely converge those layers rather than only adding a mode toggle in the frontend.
 
-## Remaining Questions
-
 2. Should "new puzzle starts in grid mode" replace the concept of creating standalone grids entirely?
 
-   The UI currently has distinct entry points for `New grid`, `Open grid`, `New puzzle`, and `Open puzzle`. Since this is now a true model merge, it is unclear whether saved grids remain a first-class concept or become just an early-stage puzzle.
+   Answer: Yes. Grids are just early-stage puzzles.
+
+   The UI currently has distinct entry points for `New grid`, `Open grid`, `New puzzle`, and `Open puzzle`, but this answer implies the standalone grid concept should be folded into the puzzle lifecycle rather than preserved as a separate saved object type. And remove those distinct entry points and the whole Grid menu
+
+## Remaining Questions
 
 3. What should happen to existing saved grids?
 
