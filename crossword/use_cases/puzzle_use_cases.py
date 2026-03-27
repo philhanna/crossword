@@ -205,7 +205,8 @@ class PuzzleUseCases:
         cleared_text = word.get_clear_word()
         old_text = word.get_text()
         if old_text != cleared_text:
-            puzzle.undo_stack.append(["text", seq, direction.lower(), old_text])
+            word_dir = Word.ACROSS if direction.lower() == "across" else Word.DOWN
+            puzzle.undo_stack.append(["text", seq, word_dir, old_text])
         word.set_text(cleared_text)
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle
