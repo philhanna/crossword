@@ -1,4 +1,4 @@
-# Word Editor Redesign — Implementation Plan
+'# Word Editor Redesign — Implementation Plan
 
 Design spec: `~/Desktop/newai.md`
 
