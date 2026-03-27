@@ -16,15 +16,21 @@ These are the open questions I have after reviewing GitHub issue `#196` and comp
 
    The UI currently has distinct entry points for `New grid`, `Open grid`, `New puzzle`, and `Open puzzle`, but this answer implies the standalone grid concept should be folded into the puzzle lifecycle rather than preserved as a separate saved object type. And remove those distinct entry points and the whole Grid menu
 
-## Remaining Questions
-
 3. What should happen to existing saved grids?
 
-   If the model is unified, should old grids open as draft puzzles in grid mode, or should they remain available through a separate legacy path?
+   Answer: Use a one-time migration tool and treat each saved grid as an early-stage puzzle in `grid` mode.
+
+   The migration should be non-destructive on the first pass: convert saved public grids into merged puzzle records, skip working-copy rows, preserve names when possible, and keep the original `grids` rows until the new flow is verified.
+
+   See [issue-196-migration-design.md](/home/saspeh/dev/python/crossword/docs/notes/issue-196-migration-design.md) for the concrete rollout and migration design.
 
 4. When switching back to grid mode and changing black cells, what exactly should happen to letters in affected cells?
 
-   The issue says it is OK to chop words in two and clear the clue, but it does not say whether letters in newly black cells are discarded immediately, and whether newly white cells start blank.
+   Answer: Forget the former letters.
+
+   Any letters affected by the grid change should be discarded rather than preserved. Newly black cells lose their contents, and any reshaped word should be treated as new fill rather than an attempt to retain prior letter state.
+
+## Remaining Questions
 
 5. What is the exact preservation rule for answers and clues after a grid edit?
 
@@ -50,4 +56,4 @@ These are the open questions I have after reviewing GitHub issue `#196` and comp
 
     The issue says "clear the clue," but it is ambiguous whether that applies only to changed words in general, or to every resulting fragment after a split.
 
-The main open design questions now are migration, persistence shape, unified save semantics, shared undo and redo, and how existing standalone grids should map into the merged model.
+The main open design questions now are persistence shape, unified save semantics, shared undo and redo, and the exact preservation rules for clues and reshaped words after grid edits.
