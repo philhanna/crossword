@@ -672,7 +672,7 @@ async function puzzleClickAt(event, direction) {
     const word = findWordAtCell(r, c, direction);
     if (word) {
         await _peCommitWord();
-        selectWord(word.seq, word.direction);
+        selectWord(word.seq, word.direction, r, c);
     }
 }
 
@@ -690,7 +690,7 @@ function findWordAtCell(r, c, direction) {
 // Puzzle editor — word selection and direct keyboard entry
 // ---------------------------------------------------------------------------
 
-function selectWord(seq, direction) {
+function selectWord(seq, direction, clickR, clickC) {
     const word = AppState.puzzleData.puzzle.words.find(
         w => w.seq === seq && w.direction === direction
     );
@@ -703,8 +703,13 @@ function selectWord(seq, direction) {
         initialText: text,
         currentText: text,
     };
-    const firstBlank = text.indexOf(' ');
-    _peCursorIdx = firstBlank >= 0 ? firstBlank : 0;
+    if (clickR !== undefined) {
+        const clickedIdx = word.cells.findIndex(([r, c]) => r === clickR && c === clickC);
+        _peCursorIdx = clickedIdx >= 0 ? clickedIdx : 0;
+    } else {
+        const firstBlank = text.indexOf(' ');
+        _peCursorIdx = firstBlank >= 0 ? firstBlank : 0;
+    }
     _updatePuzzleToolbar();
     renderPuzzleEditorLhs();
 }
