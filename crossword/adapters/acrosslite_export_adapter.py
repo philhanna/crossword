@@ -1,4 +1,5 @@
 # crossword.adapters.acrosslite_export_adapter
+from datetime import date
 from io import StringIO
 
 from crossword import Puzzle
@@ -9,6 +10,9 @@ class AcrossLiteExportAdapter:
     """
     Exports a puzzle to AcrossLite text format (.txt).
     """
+
+    def __init__(self, author_name=None):
+        self.author_name = author_name
 
     def export_puzzle_to_acrosslite(self, puzzle: Puzzle) -> str:
         try:
@@ -27,10 +31,10 @@ class AcrossLiteExportAdapter:
             fp.write(indent + (puzzle.title or "") + "\n")
 
             fp.write("<AUTHOR>\n")
-            fp.write(indent + "\n")
+            fp.write(indent + (self.author_name or "") + "\n")
 
             fp.write("<COPYRIGHT>\n")
-            fp.write(indent + "\n")
+            fp.write(indent + str(date.today().year) + "\n")
 
             fp.write("<SIZE>\n")
             fp.write(indent + f"{n}x{n}\n")

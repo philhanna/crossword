@@ -84,7 +84,7 @@ def make_app(config=None):
             pass  # words table absent in puzzle DB — leave adapter empty
 
     # Export adapters
-    acrosslite_adapter = AcrossLiteExportAdapter()
+    acrosslite_adapter = AcrossLiteExportAdapter(author_name=config.get("author_name"))
     xml_adapter = CcxmlExportAdapter(author_name=config.get("author_name"))
     nytimes_adapter = NYTimesExportAdapter(
         author_name=config.get("author_name"),
