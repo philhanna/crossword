@@ -1,6 +1,5 @@
 # crossword.adapters.acrosslite_export_adapter
-from io import BytesIO, StringIO
-from zipfile import ZIP_DEFLATED, ZipFile
+from io import StringIO
 
 from crossword import Puzzle
 from crossword.ports.export_port import ExportError
@@ -8,23 +7,12 @@ from crossword.ports.export_port import ExportError
 
 class AcrossLiteExportAdapter:
     """
-    Exports a puzzle to AcrossLite text format.
-
-    Produces a ZIP archive containing:
-      - puzzle.txt  (AcrossLite text format)
-      - puzzle.json (full JSON backup)
+    Exports a puzzle to AcrossLite text format (.txt).
     """
 
-    def export_puzzle_to_acrosslite(self, puzzle: Puzzle) -> bytes:
+    def export_puzzle_to_acrosslite(self, puzzle: Puzzle) -> str:
         try:
-            txt = self._build_acrosslite_txt(puzzle)
-            json_str = puzzle.to_json()
-
-            buf = BytesIO()
-            with ZipFile(buf, mode="w", compression=ZIP_DEFLATED) as zf:
-                zf.writestr("puzzle.txt", txt)
-                zf.writestr("puzzle.json", json_str)
-            return buf.getvalue()
+            return self._build_acrosslite_txt(puzzle)
         except Exception as e:
             raise ExportError(f"AcrossLite export failed: {e}") from e
 

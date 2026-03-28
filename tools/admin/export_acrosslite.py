@@ -1,10 +1,10 @@
 """
-Export a puzzle to AcrossLite format (.zip containing puzzle.txt and puzzle.json).
+Export a puzzle to AcrossLite text format (.txt).
 
 Usage:
-    python tools/admin/export_acrosslite.py <puzzle_name> [output.zip]
+    python tools/admin/export_acrosslite.py <puzzle_name> [output.txt]
 
-If output path is omitted, writes <puzzle_name>.zip in the current directory.
+If output path is omitted, writes <puzzle_name>.txt in the current directory.
 """
 
 import sys
@@ -18,15 +18,15 @@ from crossword.wiring import make_app
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: export_acrosslite.py <puzzle_name> [output.zip]", file=sys.stderr)
+        print("Usage: export_acrosslite.py <puzzle_name> [output.txt]", file=sys.stderr)
         sys.exit(1)
 
     name = sys.argv[1]
-    out_path = Path(sys.argv[2]) if len(sys.argv) >= 3 else Path(f"{name}.zip")
+    out_path = Path(sys.argv[2]) if len(sys.argv) >= 3 else Path(f"{name}.txt")
 
     app = make_app()
-    zip_bytes = app.export_uc.export_puzzle_to_acrosslite(user_id=1, name=name)
-    out_path.write_bytes(zip_bytes)
+    txt = app.export_uc.export_puzzle_to_acrosslite(user_id=1, name=name)
+    out_path.write_text(txt, encoding="utf-8")
     print(f"Written: {out_path}")
 
 

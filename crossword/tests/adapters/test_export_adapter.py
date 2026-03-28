@@ -32,51 +32,31 @@ class TestAcrossLiteExportAdapter:
     def adapter(self):
         return AcrossLiteExportAdapter()
 
-    def test_returns_bytes(self, adapter, puzzle):
+    def test_returns_string(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
-        assert isinstance(result, bytes)
+        assert isinstance(result, str)
 
-    def test_is_zip(self, adapter, puzzle):
+    def test_has_required_sections(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
-        assert result[:2] == b"PK"
-
-    def test_zip_contains_txt_and_json(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_acrosslite(puzzle)
-        with zipfile.ZipFile(BytesIO(result)) as zf:
-            names = zf.namelist()
-        assert "puzzle.txt" in names
-        assert "puzzle.json" in names
-
-    def test_txt_has_required_sections(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_acrosslite(puzzle)
-        with zipfile.ZipFile(BytesIO(result)) as zf:
-            txt = zf.read("puzzle.txt").decode()
         for tag in ("<ACROSS PUZZLE>", "<TITLE>", "<SIZE>", "<GRID>", "<ACROSS>", "<DOWN>"):
-            assert tag in txt, f"Missing section: {tag}"
+            assert tag in result, f"Missing section: {tag}"
 
-    def test_txt_grid_has_correct_row_count(self, adapter, puzzle):
+    def test_grid_has_correct_row_count(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
-        with zipfile.ZipFile(BytesIO(result)) as zf:
-            txt = zf.read("puzzle.txt").decode()
-        # Extract grid lines between <GRID> and <ACROSS>
-        grid_section = txt.split("<GRID>")[1].split("<ACROSS>")[0]
+        grid_section = result.split("<GRID>")[1].split("<ACROSS>")[0]
         rows = [line.strip() for line in grid_section.splitlines() if line.strip()]
         assert len(rows) == puzzle.n
 
-    def test_txt_black_cells_are_dots(self, adapter, puzzle):
+    def test_black_cells_are_dots(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
-        with zipfile.ZipFile(BytesIO(result)) as zf:
-            txt = zf.read("puzzle.txt").decode()
-        grid_section = txt.split("<GRID>")[1].split("<ACROSS>")[0]
+        grid_section = result.split("<GRID>")[1].split("<ACROSS>")[0]
         rows = [line.strip() for line in grid_section.splitlines() if line.strip()]
         # (2,2) is black → row index 1, col index 1 should be '.'
         assert rows[1][1] == "."
 
-    def test_txt_title_present(self, adapter, puzzle):
+    def test_title_present(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
-        with zipfile.ZipFile(BytesIO(result)) as zf:
-            txt = zf.read("puzzle.txt").decode()
-        assert "Test Puzzle" in txt
+        assert "Test Puzzle" in result
 
 
 class TestXmlExportAdapter:
