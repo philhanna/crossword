@@ -12,11 +12,7 @@ const MESSAGE_LINE_TIMEOUT_MS = 3000;
 // ---------------------------------------------------------------------------
 
 const AppState = {
-    view: 'home',            // 'home' | 'grid-editor' | 'puzzle-editor'
-    gridOriginalName: null,  // name of currently-open grid (original)
-    gridWorkingName: null,   // grid working copy name (e.g. '__wc__a1b2c3d4')
-    gridData: null,          // { size, cells[] } from API
-    gridSavedHash: null,     // checksum of cells[] at last open/save
+    view: 'home',            // 'home' | 'editor'
     puzzleName: null,        // name of currently-open puzzle (original)
     puzzleWorkingName: null, // working copy name (e.g. '__wc__a1b2c3d4')
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
@@ -24,8 +20,7 @@ const AppState = {
     editingWord: null,       // null | {seq, direction, cells, answer, clue}
     selectedWord: null,      // null | {seq, direction, cells, initialText, currentText}
     showingStats: false,     // true = puzzle editor RHS shows stats panel
-    showingGridStats: false, // true = grid editor RHS shows stats panel
-    _gridStatsData: null,    // cached grid stats response
+    _statsData: null,        // cached puzzle stats response
 };
 
 // ---------------------------------------------------------------------------
@@ -228,8 +223,6 @@ async function showPreviewChooser(title, names, apiPrefix, onSelect) {
 // ---------------------------------------------------------------------------
 
 const MENU_ITEMS = [
-    'menu-grid-new', 'menu-grid-new-from-puzzle', 'menu-grid-open',
-    'menu-grid-save', 'menu-grid-save-as', 'menu-grid-close', 'menu-grid-delete',
     'menu-puzzle-new', 'menu-puzzle-open',
     'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-close', 'menu-puzzle-delete',
     'menu-publish-acrosslite', 'menu-publish-cwcompiler', 'menu-publish-nytimes',
@@ -240,23 +233,14 @@ function menuDisable(id) { document.getElementById(id).classList.add('w3-disable
 
 function updateMenu() {
     const home   = AppState.view === 'home';
-    const grid   = AppState.view === 'grid-editor';
-    const puzzle = AppState.view === 'puzzle-editor';
+    const editor = AppState.view === 'editor';
 
-    home  ? menuEnable('menu-grid-new')             : menuDisable('menu-grid-new');
-    home  ? menuEnable('menu-grid-new-from-puzzle') : menuDisable('menu-grid-new-from-puzzle');
-    home  ? menuEnable('menu-grid-open')            : menuDisable('menu-grid-open');
-    grid  ? menuEnable('menu-grid-save')            : menuDisable('menu-grid-save');
-    grid  ? menuEnable('menu-grid-save-as')         : menuDisable('menu-grid-save-as');
-    grid  ? menuEnable('menu-grid-close')           : menuDisable('menu-grid-close');
-    grid  ? menuEnable('menu-grid-delete')  : menuDisable('menu-grid-delete');
-
-    home   ? menuEnable('menu-puzzle-new')          : menuDisable('menu-puzzle-new');
-    home   ? menuEnable('menu-puzzle-open')         : menuDisable('menu-puzzle-open');
-    puzzle ? menuEnable('menu-puzzle-save')         : menuDisable('menu-puzzle-save');
-    puzzle ? menuEnable('menu-puzzle-save-as')      : menuDisable('menu-puzzle-save-as');
-    puzzle ? menuEnable('menu-puzzle-close')        : menuDisable('menu-puzzle-close');
-    puzzle ? menuEnable('menu-puzzle-delete')       : menuDisable('menu-puzzle-delete');
+    home   ? menuEnable('menu-puzzle-new')     : menuDisable('menu-puzzle-new');
+    home   ? menuEnable('menu-puzzle-open')    : menuDisable('menu-puzzle-open');
+    editor ? menuEnable('menu-puzzle-save')    : menuDisable('menu-puzzle-save');
+    editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
+    editor ? menuEnable('menu-puzzle-close')   : menuDisable('menu-puzzle-close');
+    editor ? menuEnable('menu-puzzle-delete')  : menuDisable('menu-puzzle-delete');
 
     menuEnable('menu-publish-acrosslite');
     menuEnable('menu-publish-cwcompiler');
@@ -273,9 +257,8 @@ function showView(view) {
     document.getElementById('lhs').innerHTML = '';
     document.getElementById('rhs').innerHTML = '';
     switch (view) {
-        case 'home':          renderHome();         break;
-        case 'grid-editor':   renderGridEditor();   break;
-        case 'puzzle-editor': renderPuzzleEditor(); break;
+        case 'home':   renderHome();   break;
+        case 'editor': renderPuzzleEditor(); break;
         default:
             document.getElementById('lhs').innerHTML =
                 `<div class="w3-container"><p>Unknown view: ${view}</p></div>`;
@@ -284,7 +267,7 @@ function showView(view) {
 
 function renderHome() {
     document.getElementById('lhs').innerHTML =
-        '<div class="w3-container"><p>Use the Grid or Puzzle menu to get started.</p></div>';
+        '<div class="w3-container"><p>Use the Puzzle menu to create or open a crossword for editing.</p></div>';
 }
 
 // ---------------------------------------------------------------------------
@@ -845,9 +828,19 @@ async function do_puzzle_edit_word(seq, direction) {
 // Puzzle editor — rendering
 // ---------------------------------------------------------------------------
 
+function _currentEditorMode() {
+    return (AppState.puzzleData && AppState.puzzleData.mode) || 'puzzle';
+}
+
+function _modeButtonClass(mode) {
+    return _currentEditorMode() === mode ? 'w3-blue-gray' : 'w3-light-gray';
+}
+
 function renderPuzzleEditor() {
     document.removeEventListener('keydown', _peKeydown);
-    document.addEventListener('keydown', _peKeydown);
+    if (_currentEditorMode() === 'puzzle') {
+        document.addEventListener('keydown', _peKeydown);
+    }
     renderPuzzleEditorLhs();
     renderPuzzleEditorRhs();
 }
@@ -856,8 +849,35 @@ function renderPuzzleEditorLhs() {
     const pd    = AppState.puzzleData;
     const name  = AppState.puzzleName || '(untitled)';
     const title = pd && pd.puzzle.title ? `: &ldquo;${escapeHtml(pd.puzzle.title)}&rdquo;` : '';
+    const mode  = _currentEditorMode();
 
-    const toolbar = `
+    const modeToolbar = `
+<div class="w3-container w3-margin-bottom" style="height:36px">
+  <div class="w3-bar w3-border">
+    <a class="w3-bar-item w3-button crosstb ${_modeButtonClass('grid')}" onclick="do_switch_to_grid_mode()">
+      <i class="material-icons crosstb-icon">grid_on</i><span>Grid Mode</span></a>
+    <a class="w3-bar-item w3-button crosstb ${_modeButtonClass('puzzle')}" onclick="do_switch_to_puzzle_mode()">
+      <i class="material-icons crosstb-icon">edit_note</i><span>Puzzle Mode</span></a>
+  </div>
+</div>`;
+
+    const toolbar = mode === 'grid' ? `
+<div class="w3-container w3-margin-bottom" style="height:36px">
+  <div class="w3-bar w3-border">
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save()">
+      <i class="material-icons crosstb-icon">save</i><span>Save</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save_as()">
+      <i class="material-icons crosstb-icon">save_alt</i><span>Save As</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_close()">
+      <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
+    <a id="puzzle-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
+      <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
+    <a id="puzzle-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
+      <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
+      <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
+  </div>
+</div>` : `
 <div class="w3-container w3-margin-bottom" style="height:36px">
   <div class="w3-bar w3-border">
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save()">
@@ -872,38 +892,48 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
     <a id="puzzle-editword-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_edit_word()">
       <i class="material-icons crosstb-icon">edit</i><span>Edit word</span></a>
-        <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
-            <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
-        <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_title()">
-            <i class="material-icons crosstb-icon">title</i><span>Title</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
+      <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_title()">
+      <i class="material-icons crosstb-icon">title</i><span>Title</span></a>
   </div>
 </div>`;
 
     const ew  = AppState.editingWord;
     const sw  = AppState.selectedWord;
-    const editState = ew
+    const editState = mode === 'puzzle' && ew
         ? { cells: ew.cells, cursorIdx: _weCursorIdx, text: ew.answer || '' }
-        : sw
+        : mode === 'puzzle' && sw
         ? { cells: sw.cells, cursorIdx: _peCursorIdx, text: sw.currentText }
         : null;
+    const clickHelp = mode === 'grid'
+        ? '<div class="w3-container w3-text-gray" style="margin-top:8px;font-style:italic">Grid-mode cell editing comes next in Phase 6.</div>'
+        : '';
 
     document.getElementById('lhs').innerHTML = `
 <div class="w3-container">
   <h3>Editing puzzle <b>${escapeHtml(name)}</b>${title}</h3>
 </div>
+${modeToolbar}
 ${toolbar}
 <div id="puzzle-svg-container" class="w3-container" style="padding-top:4px">
   ${pd ? buildPuzzleSvg(pd, editState) : ''}
-</div>`;
+</div>
+${clickHelp}`;
 
     const svg = document.getElementById('puzzle-svg');
-    if (svg) svg.addEventListener('click', handlePuzzleClick);
+    if (svg && mode === 'puzzle') svg.addEventListener('click', handlePuzzleClick);
     _updatePuzzleUndoRedo();
 }
 
 function renderPuzzleEditorRhs() {
+    const mode = _currentEditorMode();
     let html;
-    if (AppState.editingWord) {
+    if (mode === 'grid') {
+        html = AppState.showingStats && AppState._statsData
+            ? renderStatsPanel(AppState._statsData)
+            : renderGridModePanel();
+    } else if (AppState.editingWord) {
         html = renderWordEditorPanel();
     } else if (AppState.showingStats) {
         html = AppState._statsData ? renderStatsPanel(AppState._statsData) : '';
@@ -911,6 +941,22 @@ function renderPuzzleEditorRhs() {
         html = renderClues();
     }
     document.getElementById('rhs').innerHTML = html;
+}
+
+function renderGridModePanel() {
+    return `
+<div class="w3-margin-right">
+  <header class="w3-container w3-blue-gray" style="padding:7px">
+    <h3>Grid Mode</h3>
+  </header>
+  <div class="w3-card-4">
+    <div class="w3-container" style="padding-bottom:12px">
+      <p>Grid mode is now part of the puzzle editor.</p>
+      <p>The shared puzzle statistics panel is available from the toolbar in either mode.</p>
+      <p>Black-cell editing controls land in the next phase.</p>
+    </div>
+  </div>
+</div>`;
 }
 
 function renderClues() {
@@ -1352,6 +1398,27 @@ async function doWordEditOK() {
 // Menu actions — Puzzle
 // ---------------------------------------------------------------------------
 
+async function _openPuzzleInEditor(name) {
+    const openData = await apiFetch('POST', `/api/puzzles/${encodeURIComponent(name)}/open`);
+    if (openData.error) {
+        throw new Error(openData.error);
+    }
+    const wn = openData.working_name;
+    const puzzleData = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}`);
+    if (puzzleData.error) {
+        throw new Error(puzzleData.error);
+    }
+    AppState.puzzleName        = name;
+    AppState.puzzleWorkingName = wn;
+    AppState.puzzleData        = puzzleData;
+    AppState.puzzleSavedHash   = _hash(puzzleData.puzzle);
+    AppState.editingWord       = null;
+    AppState.selectedWord      = null;
+    AppState.showingStats      = false;
+    AppState._statsData        = null;
+    showView('editor');
+}
+
 async function do_puzzle_open() {
     try {
         const listData = await apiFetch('GET', '/api/puzzles');
@@ -1363,19 +1430,7 @@ async function do_puzzle_open() {
         }
         showPreviewChooser('Open puzzle', puzzles, '/api/puzzles', async (name) => {
             try {
-                const openData = await apiFetch('POST',
-                    `/api/puzzles/${encodeURIComponent(name)}/open`);
-                if (openData.error) { alert(`Error opening: ${openData.error}`); return; }
-                const wn = openData.working_name;
-                const puzzleData = await apiFetch('GET',
-                    `/api/puzzles/${encodeURIComponent(wn)}`);
-                if (puzzleData.error) { alert(`Error loading: ${puzzleData.error}`); return; }
-                AppState.puzzleName        = name;
-                AppState.puzzleWorkingName = wn;
-                AppState.puzzleData        = puzzleData;
-                AppState.puzzleSavedHash   = _hash(puzzleData.puzzle);
-                AppState.editingWord       = null;
-                showView('puzzle-editor');
+                await _openPuzzleInEditor(name);
             } catch (e) { alert('Error opening puzzle'); }
         });
     } catch (e) {
@@ -1384,40 +1439,27 @@ async function do_puzzle_open() {
 }
 
 async function do_puzzle_new() {
-    try {
-        const listData = await apiFetch('GET', '/api/grids');
-        if (listData.error) { alert(`Error: ${listData.error}`); return; }
-        const grids = (listData.grids || []).filter(g => g && !g.startsWith('__wc__'));
-        if (grids.length === 0) {
-            showMessageLine('No saved grids found. Create a grid first.', 'notice');
-            return;
-        }
-        showPreviewChooser('Choose a grid', grids, '/api/grids', (gridName) => {
+    inputBox(
+        'New puzzle',
+        '<b>Puzzle size:</b> <em>(an odd positive integer, e.g. 15)</em>',
+        '',
+        (sizeVal) => {
+            const n = Number(sizeVal);
+            if (!sizeVal || isNaN(n))  { alert(sizeVal + ' is not a number'); return; }
+            if (n % 2 === 0)           { alert(n + ' is not an odd number'); return; }
+            if (n < 1)                 { alert(n + ' is not a positive number'); return; }
             inputBox('New puzzle', '<b>Puzzle name:</b>', '', async (name) => {
                 if (!name) return;
                 if (!validateUserFacingName('puzzle', name)) return;
                 try {
                     if (await rejectIfNameExists('puzzle', name, _listSavedPuzzleNames)) return;
-                    const data = await apiFetch('POST', '/api/puzzles',
-                        { name, grid_name: gridName });
+                    const data = await apiFetch('POST', '/api/puzzles', { name, size: n });
                     if (data.error) { alert(`Error creating puzzle: ${data.error}`); return; }
-                    const openData = await apiFetch('POST',
-                        `/api/puzzles/${encodeURIComponent(name)}/open`);
-                    if (openData.error) { alert(`Error opening puzzle: ${openData.error}`); return; }
-                    const wn = openData.working_name;
-                    const puzzleData = await apiFetch('GET',
-                        `/api/puzzles/${encodeURIComponent(wn)}`);
-                    if (puzzleData.error) { alert(`Error loading puzzle: ${puzzleData.error}`); return; }
-                    AppState.puzzleName        = name;
-                    AppState.puzzleWorkingName = wn;
-                    AppState.puzzleData        = puzzleData;
-                    AppState.puzzleSavedHash   = _hash(puzzleData.puzzle);
-                    AppState.editingWord       = null;
-                    showView('puzzle-editor');
+                    await _openPuzzleInEditor(name);
                 } catch (e) { alert('Error creating puzzle'); }
             });
-        });
-    } catch (e) { alert('Error listing grids'); }
+        }
+    );
 }
 
 async function do_puzzle_save() {
@@ -1471,6 +1513,7 @@ async function do_puzzle_save_as() {
 
 async function _doPuzzleCloseConfirmed() {
     document.removeEventListener('keydown', _peKeydown);
+    document.removeEventListener('keydown', _weKeydown);
     const wn = AppState.puzzleWorkingName;
     AppState.puzzleName        = null;
     AppState.puzzleWorkingName = null;
@@ -1478,6 +1521,8 @@ async function _doPuzzleCloseConfirmed() {
     AppState.puzzleSavedHash   = null;
     AppState.editingWord       = null;
     AppState.selectedWord      = null;
+    AppState.showingStats      = false;
+    AppState._statsData        = null;
     if (wn) {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
         catch (e) { /* ignore cleanup errors */ }
@@ -1599,37 +1644,76 @@ function closeStatsPanel() {
 
 function _updatePuzzleUndoRedo() {
     const pd      = AppState.puzzleData;
+    const mode    = _currentEditorMode();
     const editing = !!AppState.editingWord;
     const ub      = document.getElementById('puzzle-undo-btn');
     const rb      = document.getElementById('puzzle-redo-btn');
     if (!ub || !rb) return;
-    ub.classList.toggle('w3-disabled', editing || !pd || !pd.can_undo);
-    rb.classList.toggle('w3-disabled', editing || !pd || !pd.can_redo);
+    const canUndo = !pd ? false : (mode === 'grid' ? !!pd.grid_can_undo : !!pd.puzzle_can_undo);
+    const canRedo = !pd ? false : (mode === 'grid' ? !!pd.grid_can_redo : !!pd.puzzle_can_redo);
+    ub.classList.toggle('w3-disabled', editing || !canUndo);
+    rb.classList.toggle('w3-disabled', editing || !canRedo);
     _updatePuzzleToolbar();
 }
 
 function _updatePuzzleToolbar() {
+    const mode = _currentEditorMode();
     const eb = document.getElementById('puzzle-editword-btn');
     if (!eb) return;
-    eb.classList.toggle('w3-disabled', !AppState.selectedWord || !!AppState.editingWord);
+    eb.classList.toggle('w3-disabled', mode !== 'puzzle' || !AppState.selectedWord || !!AppState.editingWord);
 }
 
 async function do_puzzle_undo() { await _puzzleUndoRedo('undo'); }
 async function do_puzzle_redo() { await _puzzleUndoRedo('redo'); }
 
 async function _puzzleUndoRedo(action) {
-    await _peCommitWord();
+    if (_currentEditorMode() === 'puzzle') {
+        await _peCommitWord();
+    }
     const wn = AppState.puzzleWorkingName;
+    const path = _currentEditorMode() === 'grid'
+        ? `/api/puzzles/${encodeURIComponent(wn)}/grid/${action}`
+        : `/api/puzzles/${encodeURIComponent(wn)}/${action}`;
     try {
-        const data = await apiFetch('POST',
-            `/api/puzzles/${encodeURIComponent(wn)}/${action}`);
+        const data = await apiFetch('POST', path);
         if (data.error) { alert(`${action} failed: ${data.error}`); return; }
         AppState.puzzleData   = data;
         AppState.editingWord  = null;
         AppState.selectedWord = null;
         AppState.showingStats = false;
+        AppState._statsData   = null;
         renderPuzzleEditor();
     } catch (e) { alert(`Error during ${action}`); }
+}
+
+async function do_switch_to_grid_mode() {
+    if (!AppState.puzzleWorkingName || _currentEditorMode() === 'grid') return;
+    try {
+        const data = await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/grid`);
+        if (data.error) { alert(`Error switching modes: ${data.error}`); return; }
+        AppState.puzzleData   = data;
+        AppState.editingWord  = null;
+        AppState.selectedWord = null;
+        AppState.showingStats = false;
+        AppState._statsData   = null;
+        renderPuzzleEditor();
+    } catch (e) { alert('Error switching to Grid mode'); }
+}
+
+async function do_switch_to_puzzle_mode() {
+    if (!AppState.puzzleWorkingName || _currentEditorMode() === 'puzzle') return;
+    try {
+        const data = await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/puzzle`);
+        if (data.error) { alert(`Error switching modes: ${data.error}`); return; }
+        AppState.puzzleData   = data;
+        AppState.editingWord  = null;
+        AppState.selectedWord = null;
+        AppState.showingStats = false;
+        AppState._statsData   = null;
+        renderPuzzleEditor();
+    } catch (e) { alert('Error switching to Puzzle mode'); }
 }
 
 async function do_puzzle_delete() {
@@ -1858,7 +1942,7 @@ async function _downloadExport(name, format) {
 }
 
 async function do_publish(format) {
-    if (AppState.view === 'puzzle-editor' && AppState.puzzleName) {
+    if (AppState.view === 'editor' && AppState.puzzleName) {
         await _downloadExport(AppState.puzzleName, format);
     } else {
         try {

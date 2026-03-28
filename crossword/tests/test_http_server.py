@@ -6,6 +6,15 @@ import pytest
 import json
 from unittest.mock import Mock, patch, MagicMock
 from crossword.http_server.server import Route, Router, RequestHandler, create_server
+from crossword.http_server.main import register_routes
+from crossword.http_server.puzzle_handlers import (
+    _puzzle_response,
+    handle_create_puzzle,
+    handle_switch_to_grid_mode,
+    handle_switch_to_puzzle_mode,
+    handle_toggle_puzzle_black_cell,
+)
+from crossword.tests import TestPuzzle
 
 
 class TestRoute:
@@ -219,7 +228,10 @@ class TestCreateServer:
 
     def test_create_server_returns_tuple(self):
         """create_server returns (server, router) tuple"""
-        server, router = create_server(port=9999)
+        fake_server = Mock()
+        fake_server.server_address = ("127.0.0.1", 9999)
+        with patch("http.server.HTTPServer", return_value=fake_server):
+            server, router = create_server(port=9999)
 
         assert server is not None
         assert isinstance(router, Router)
@@ -227,13 +239,19 @@ class TestCreateServer:
 
     def test_create_server_router_attached(self):
         """create_server attaches router to RequestHandler"""
-        server, router = create_server(port=9998)
+        fake_server = Mock()
+        fake_server.server_address = ("127.0.0.1", 9998)
+        with patch("http.server.HTTPServer", return_value=fake_server):
+            server, router = create_server(port=9998)
 
         assert RequestHandler.router == router
 
     def test_create_server_custom_port_and_host(self):
         """create_server accepts custom port and host"""
-        server, router = create_server(port=8080, host="0.0.0.0")
+        fake_server = Mock()
+        fake_server.server_address = ("0.0.0.0", 8080)
+        with patch("http.server.HTTPServer", return_value=fake_server):
+            server, router = create_server(port=8080, host="0.0.0.0")
 
         assert server.server_address[1] == 8080
         assert server.server_address[0] == "0.0.0.0"
@@ -262,3 +280,95 @@ class TestRequestParsing:
 
         assert body_params["name"] == "test_grid"
         assert body_params["size"] == 15
+
+
+class TestMergedPuzzleRoutes:
+    """Tests for Phase 4 puzzle-centric route registration."""
+
+    def test_register_routes_adds_new_puzzle_mode_routes(self):
+        router = Router()
+        register_routes(router)
+
+        assert router.get_handler("POST", "/api/puzzles/demo/mode/grid") is not None
+        assert router.get_handler("POST", "/api/puzzles/demo/mode/puzzle") is not None
+        assert router.get_handler("PUT", "/api/puzzles/demo/grid/cells/0/1") is not None
+        assert router.get_handler("POST", "/api/puzzles/demo/grid/rotate") is not None
+        assert router.get_handler("POST", "/api/puzzles/demo/grid/undo") is not None
+        assert router.get_handler("POST", "/api/puzzles/demo/grid/redo") is not None
+
+
+class TestMergedPuzzleHandlers:
+    """Direct handler tests for the merged puzzle API."""
+
+    @pytest.fixture
+    def request_handler(self):
+        handler = Mock()
+        handler.command = "POST"
+        handler.path = "/api/test"
+        return handler
+
+    @pytest.fixture
+    def app(self):
+        app = Mock()
+        app.puzzle_uc = Mock()
+        return app
+
+    def test_puzzle_response_includes_mode_metadata(self):
+        puzzle = TestPuzzle.create_solved_atlantic_puzzle()
+        puzzle.enter_grid_mode()
+        puzzle.grid_undo_stack = ["old"]
+        response = _puzzle_response(puzzle)
+
+        assert response["mode"] == "grid"
+        assert response["grid_can_undo"] is True
+        assert response["grid_can_redo"] is False
+        assert response["puzzle_can_undo"] is False
+        assert response["puzzle_can_redo"] is False
+        assert response["can_undo"] is True
+
+    def test_handle_create_puzzle_accepts_size(self, request_handler, app):
+        puzzle = TestPuzzle.create_puzzle()
+        app.puzzle_uc.load_puzzle.return_value = puzzle
+
+        response = handle_create_puzzle(
+            (), {}, {"name": "demo", "size": 15}, None, request_handler, app=app
+        )
+
+        app.puzzle_uc.create_puzzle.assert_called_once_with(1, "demo", grid_name=None, size=15)
+        assert response["grid"]["size"] == puzzle.n
+
+    def test_handle_switch_to_grid_mode(self, request_handler, app):
+        puzzle = TestPuzzle.create_puzzle()
+        puzzle.enter_grid_mode()
+        app.puzzle_uc.switch_to_grid_mode.return_value = puzzle
+
+        response = handle_switch_to_grid_mode(
+            ("demo",), {}, {}, None, request_handler, app=app
+        )
+
+        app.puzzle_uc.switch_to_grid_mode.assert_called_once_with(1, "demo")
+        assert response["mode"] == "grid"
+
+    def test_handle_switch_to_puzzle_mode(self, request_handler, app):
+        puzzle = TestPuzzle.create_puzzle()
+        puzzle.enter_puzzle_mode()
+        app.puzzle_uc.switch_to_puzzle_mode.return_value = puzzle
+
+        response = handle_switch_to_puzzle_mode(
+            ("demo",), {}, {}, None, request_handler, app=app
+        )
+
+        app.puzzle_uc.switch_to_puzzle_mode.assert_called_once_with(1, "demo")
+        assert response["mode"] == "puzzle"
+
+    def test_handle_toggle_puzzle_black_cell(self, request_handler, app):
+        puzzle = TestPuzzle.create_puzzle()
+        puzzle.toggle_black_cell(1, 1)
+        app.puzzle_uc.toggle_black_cell.return_value = puzzle
+
+        response = handle_toggle_puzzle_black_cell(
+            ("demo", "0", "0"), {}, {}, None, request_handler, app=app
+        )
+
+        app.puzzle_uc.toggle_black_cell.assert_called_once_with(1, "demo", 1, 1)
+        assert response["grid"]["cells"][0] is True

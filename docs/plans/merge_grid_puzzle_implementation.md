@@ -219,18 +219,18 @@ Validation completed in this phase:
 
 ## Phase 4: Replace Grid HTTP Endpoints With Puzzle-Centric Endpoints
 
-- [ ] Define the target puzzle API surface for the merged editor.
-- [ ] Extend puzzle responses to include persisted mode and mode-specific undo/redo availability.
-- [ ] Add puzzle endpoints for:
-- [ ] switching modes
-- [ ] grid-mode black-cell edits
-- [ ] grid-mode undo/redo
-- [ ] puzzle-mode undo/redo
-- [ ] reading unified stats for either mode
-- [ ] Keep or reshape existing word/clue endpoints so Puzzle mode can continue using suggestion and constraint features.
-- [ ] Remove or deprecate HTTP routes that expose standalone grid editing.
-- [ ] Update any response builders so frontend consumers can render one merged editor instead of two separate editors.
-- [ ] Add handler tests for both legacy migration behavior and new merged-editor behavior.
+- [x] Define the target puzzle API surface for the merged editor.
+- [x] Extend puzzle responses to include persisted mode and mode-specific undo/redo availability.
+- [x] Add puzzle endpoints for:
+- [x] switching modes
+- [x] grid-mode black-cell edits
+- [x] grid-mode undo/redo
+- [x] puzzle-mode undo/redo
+- [x] reading unified stats for either mode
+- [x] Keep or reshape existing word/clue endpoints so Puzzle mode can continue using suggestion and constraint features.
+- [x] Remove or deprecate HTTP routes that expose standalone grid editing.
+- [x] Update any response builders so frontend consumers can render one merged editor instead of two separate editors.
+- [x] Add handler tests for both legacy migration behavior and new merged-editor behavior.
 
 **Primary files/modules**
 
@@ -241,26 +241,56 @@ Validation completed in this phase:
 
 **Checkpoint**
 
-- [ ] The frontend can drive both modes using puzzle endpoints only.
-- [ ] Grid-only editing routes are no longer required by the merged editor UI.
+- [x] The frontend can drive both modes using puzzle endpoints only.
+- [x] Grid-only editing routes are no longer required by the merged editor UI.
+
+### Phase 4 Notes
+
+Implemented in this phase:
+
+- `_puzzle_response` now includes:
+- persisted `mode`
+- `grid_can_undo` / `grid_can_redo`
+- `puzzle_can_undo` / `puzzle_can_redo`
+- `can_undo` / `can_redo` resolved for the current mode
+- `POST /api/puzzles` now supports puzzle-first creation with `size`, while still accepting legacy `grid_name`.
+- New puzzle-centric endpoints now exist for:
+- `POST /api/puzzles/<name>/mode/grid`
+- `POST /api/puzzles/<name>/mode/puzzle`
+- `PUT /api/puzzles/<name>/grid/cells/<r>/<c>`
+- `POST /api/puzzles/<name>/grid/rotate`
+- `POST /api/puzzles/<name>/grid/undo`
+- `POST /api/puzzles/<name>/grid/redo`
+- Route registration in `crossword/http_server/main.py` now exposes those endpoints.
+
+Compatibility decision in this phase:
+
+- Legacy `/api/grids/*` routes still exist temporarily so the current frontend can keep working until the merged-editor UI is implemented in Phase 5.
+- Legacy puzzle endpoints such as `/api/puzzles/<name>/grid` also remain temporarily for compatibility.
+- In that sense, the new API surface is complete for the merged editor, but old HTTP entry points are not deleted yet.
+
+Validation completed in this phase:
+
+- `./venv/bin/pytest -q crossword/tests/test_http_server.py crossword/tests/test_puzzle_use_cases.py`
+- `./venv/bin/pytest -q crossword/tests/test_wiring.py crossword/tests/test_puzzle_modes.py`
 
 ## Phase 5: Replace The Two SPA Editors With One Merged Editor
 
-- [ ] Redesign `AppState` to track one active puzzle editor rather than separate grid and puzzle editors.
-- [ ] Remove `gridWorkingName`, `gridData`, `gridSavedHash`, `showingGridStats`, and other state that exists only for standalone grid editing.
-- [ ] Introduce a single editor state model, for example:
-- [ ] current puzzle working name
-- [ ] current editor mode
-- [ ] unified puzzle payload
-- [ ] current selected word for Puzzle mode
-- [ ] grid-mode UI state
-- [ ] puzzle-mode UI state
-- [ ] Update menu logic so standalone Grid menu actions disappear or are rehomed under Puzzle workflows.
-- [ ] Replace `showView('grid-editor')` and `showView('puzzle-editor')` with one merged editor view.
-- [ ] Split rendering into one shared editor shell plus mode-specific panels/toolbars.
-- [ ] Ensure the toolbar changes with the mode, per requirements.
-- [ ] Use the puzzle statistics panel in both modes.
-- [ ] Remove the old grid statistics panel implementation from the active UI path.
+- [x] Redesign `AppState` to track one active puzzle editor rather than separate grid and puzzle editors.
+- [x] Remove `gridWorkingName`, `gridData`, `gridSavedHash`, `showingGridStats`, and other state that exists only for standalone grid editing.
+- [x] Introduce a single editor state model, for example:
+- [x] current puzzle working name
+- [x] current editor mode
+- [x] unified puzzle payload
+- [x] current selected word for Puzzle mode
+- [x] grid-mode UI state
+- [x] puzzle-mode UI state
+- [x] Update menu logic so standalone Grid menu actions disappear or are rehomed under Puzzle workflows.
+- [x] Replace `showView('grid-editor')` and `showView('puzzle-editor')` with one merged editor view.
+- [x] Split rendering into one shared editor shell plus mode-specific panels/toolbars.
+- [x] Ensure the toolbar changes with the mode, per requirements.
+- [x] Use the puzzle statistics panel in both modes.
+- [x] Remove the old grid statistics panel implementation from the active UI path.
 
 **Primary files/modules**
 
@@ -271,7 +301,31 @@ Validation completed in this phase:
 
 **Checkpoint**
 
-- [ ] The app renders one construction editor with mode switching rather than two independent editors.
+- [x] The app renders one construction editor with mode switching rather than two independent editors.
+
+### Phase 5 Notes
+
+Implemented in this phase:
+
+- The active SPA now uses a single `editor` view for puzzle construction.
+- `AppState` now keeps only puzzle-centered editor state on the active path.
+- The top-level menu no longer exposes standalone Grid actions.
+- `do_puzzle_new()` now creates a puzzle directly from a requested size instead of requiring a saved grid first.
+- Puzzle open/create flows now share `_openPuzzleInEditor()` so both paths land in the same merged editor shell.
+- The editor now renders a shared shell with explicit Grid/Puzzle mode buttons and mode-specific toolbars.
+- Grid mode now uses the shared puzzle statistics panel instead of the old grid statistics panel.
+- Undo/redo buttons now resolve against the current mode's availability flags from the puzzle payload.
+
+Intentional deferrals to Phase 6:
+
+- The old standalone grid functions still exist in the file as inactive compatibility code.
+- Grid-mode black-cell click handling, rotation controls, and entry invalidation messaging remain for the next phase.
+- The required confirmation dialog before switching into Grid mode has not been added yet.
+
+Validation completed in this phase:
+
+- `node --check frontend/static/js/app.js`
+- `./venv/bin/pytest -q crossword/tests/test_http_server.py crossword/tests/test_puzzle_use_cases.py crossword/tests/test_wiring.py`
 
 ## Phase 6: Implement Grid Mode In The Merged UI
 

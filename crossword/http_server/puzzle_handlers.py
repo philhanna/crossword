@@ -8,7 +8,13 @@ Routes:
   DELETE /api/puzzles/<name>       → delete_puzzle
   POST   /api/puzzles/<name>/copy          → copy_puzzle
   POST   /api/puzzles/<name>/open          → open_puzzle_for_editing
+  POST   /api/puzzles/<name>/mode/grid     → switch_to_grid_mode
+  POST   /api/puzzles/<name>/mode/puzzle   → switch_to_puzzle_mode
   PUT    /api/puzzles/<name>/title         → set_puzzle_title
+  PUT    /api/puzzles/<name>/grid/cells/<r>/<c>  → toggle_black_cell
+  POST   /api/puzzles/<name>/grid/rotate         → rotate_grid
+  POST   /api/puzzles/<name>/grid/undo           → undo_grid
+  POST   /api/puzzles/<name>/grid/redo           → redo_grid
   POST   /api/puzzles/<name>/words/<seq>/<direction>/reset  → reset_word
   PUT    /api/puzzles/<name>/cells/<r>/<c>  → set_cell_letter
   GET    /api/puzzles/<name>/words/<seq>/<direction>  → get_word_at
@@ -77,8 +83,13 @@ def _puzzle_response(puzzle):
     return {
         "grid": {"size": puzzle.n, "cells": grid_cells},
         "puzzle": {"title": puzzle.title or "", "cells": puzzle_cells, "words": words},
-        "can_undo": bool(puzzle.undo_stack),
-        "can_redo": bool(puzzle.redo_stack),
+        "mode": puzzle.last_mode,
+        "grid_can_undo": bool(puzzle.grid_undo_stack),
+        "grid_can_redo": bool(puzzle.grid_redo_stack),
+        "puzzle_can_undo": bool(puzzle.undo_stack),
+        "puzzle_can_redo": bool(puzzle.redo_stack),
+        "can_undo": bool(puzzle.grid_undo_stack) if puzzle.last_mode == "grid" else bool(puzzle.undo_stack),
+        "can_redo": bool(puzzle.grid_redo_stack) if puzzle.last_mode == "grid" else bool(puzzle.redo_stack),
     }
 
 
@@ -102,27 +113,36 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
 
 def handle_create_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
     """
-    Create a new puzzle from a grid.
+    Create a new puzzle.
     POST /api/puzzles
-    Body: { "name": "puzzle1", "grid_name": "grid1" }
+    Body: { "name": "puzzle1", "size": 15 } or { "name": "puzzle1", "grid_name": "grid1" }
     """
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = body_params.get("name")
         grid_name = body_params.get("grid_name")
+        size = body_params.get("size")
 
         if not name or not isinstance(name, str):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'name'"}
-        if not grid_name or not isinstance(grid_name, str):
+        if grid_name is None and not isinstance(size, int):
+            logger.debug("  returning: %s", {"error": "Missing or invalid puzzle source: provide integer 'size' or string 'grid_name'"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing or invalid puzzle source: provide integer 'size' or string 'grid_name'"}
+        if grid_name is not None and not isinstance(grid_name, str):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'grid_name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'grid_name'"}
+        if size is not None and not isinstance(size, int):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'size' (must be integer >= 1)"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing or invalid 'size' (must be integer >= 1)"}
 
         user_id = 1
-        app.puzzle_uc.create_puzzle(user_id, name, grid_name)
+        app.puzzle_uc.create_puzzle(user_id, name, grid_name=grid_name, size=size)
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -267,6 +287,125 @@ def handle_set_puzzle_title(path_params, query_params, body_params, session_toke
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_switch_to_grid_mode(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """Switch a puzzle working copy into Grid mode."""
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+        user_id = 1
+        puzzle = app.puzzle_uc.switch_to_grid_mode(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return _puzzle_response(puzzle)
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_switch_to_puzzle_mode(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """Switch a puzzle working copy into Puzzle mode."""
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+        user_id = 1
+        puzzle = app.puzzle_uc.switch_to_puzzle_mode(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return _puzzle_response(puzzle)
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_toggle_puzzle_black_cell(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Toggle a black cell in a puzzle grid.
+    PUT /api/puzzles/<name>/grid/cells/<r>/<c>
+    Note: Frontend sends 0-indexed coordinates, puzzle expects 1-indexed.
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if len(path_params) > 0 else None
+        r = path_params[1] if len(path_params) > 1 else None
+        c = path_params[2] if len(path_params) > 2 else None
+        if not name or r is None or c is None:
+            return {"error": "Missing name, r, or c"}
+        try:
+            r = int(r) + 1
+            c = int(c) + 1
+        except ValueError:
+            return {"error": "r and c must be integers"}
+        user_id = 1
+        puzzle = app.puzzle_uc.toggle_black_cell(user_id, name, r, c)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return _puzzle_response(puzzle)
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_rotate_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """Rotate a puzzle grid."""
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+        user_id = 1
+        puzzle = app.puzzle_uc.rotate_grid(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return _puzzle_response(puzzle)
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_undo_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """Undo the last Grid-mode operation on a puzzle."""
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+        user_id = 1
+        puzzle = app.puzzle_uc.undo_grid(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return _puzzle_response(puzzle)
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_redo_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """Redo the last undone Grid-mode operation on a puzzle."""
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+        user_id = 1
+        puzzle = app.puzzle_uc.redo_grid(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return _puzzle_response(puzzle)
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
         return {"error": str(e)}
 
 
