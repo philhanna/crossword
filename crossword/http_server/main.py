@@ -7,21 +7,6 @@ from crossword.wiring import make_app
 
 # Import all handlers
 from crossword.http_server.static_handlers import handle_get_index, handle_get_static
-from crossword.http_server.grid_handlers import (
-    handle_list_grids,
-    handle_create_grid,
-    handle_create_grid_from_puzzle,
-    handle_load_grid,
-    handle_delete_grid,
-    handle_copy_grid,
-    handle_open_grid_for_editing,
-    handle_toggle_black_cell,
-    handle_rotate_grid,
-    handle_undo_grid,
-    handle_redo_grid,
-    handle_get_grid_preview,
-    handle_get_grid_stats,
-)
 from crossword.http_server.puzzle_handlers import (
     handle_list_puzzles,
     handle_create_puzzle,
@@ -42,7 +27,6 @@ from crossword.http_server.puzzle_handlers import (
     handle_set_word_clue,
     handle_undo_puzzle,
     handle_redo_puzzle,
-    handle_replace_puzzle_grid,
     handle_get_puzzle_preview,
     handle_get_puzzle_stats,
 )
@@ -54,8 +38,6 @@ from crossword.http_server.word_handlers import (
     handle_get_ranked_suggestions,
 )
 from crossword.http_server.export_handlers import (
-    handle_export_grid_to_pdf,
-    handle_export_grid_to_png,
     handle_export_puzzle_to_acrosslite,
     handle_export_puzzle_to_xml,
     handle_export_puzzle_to_nytimes,
@@ -69,21 +51,6 @@ def register_routes(router):
     # Static file serving
     router.add_route("GET", r"^/$", handle_get_index)
     router.add_route("GET", r"^/static/(.+)$", handle_get_static)
-
-    # Grid routes
-    router.add_route("GET", r"^/api/grids$", handle_list_grids)
-    router.add_route("POST", r"^/api/grids$", handle_create_grid)
-    router.add_route("POST", r"^/api/grids/from-puzzle$", handle_create_grid_from_puzzle)
-    router.add_route("GET", r"^/api/grids/([^/]+)$", handle_load_grid)
-    router.add_route("DELETE", r"^/api/grids/([^/]+)$", handle_delete_grid)
-    router.add_route("POST", r"^/api/grids/([^/]+)/copy$", handle_copy_grid)
-    router.add_route("POST", r"^/api/grids/([^/]+)/open$", handle_open_grid_for_editing)
-    router.add_route("PUT", r"^/api/grids/([^/]+)/cells/(\d+)/(\d+)$", handle_toggle_black_cell)
-    router.add_route("POST", r"^/api/grids/([^/]+)/rotate$", handle_rotate_grid)
-    router.add_route("POST", r"^/api/grids/([^/]+)/undo$", handle_undo_grid)
-    router.add_route("POST", r"^/api/grids/([^/]+)/redo$", handle_redo_grid)
-    router.add_route("GET", r"^/api/grids/([^/]+)/preview$", handle_get_grid_preview)
-    router.add_route("GET", r"^/api/grids/([^/]+)/stats$", handle_get_grid_stats)
 
     # Puzzle routes
     router.add_route("GET", r"^/api/puzzles$", handle_list_puzzles)
@@ -105,7 +72,6 @@ def register_routes(router):
     router.add_route("POST", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/reset$", handle_reset_word)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/undo$", handle_undo_puzzle)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/redo$", handle_redo_puzzle)
-    router.add_route("PUT", r"^/api/puzzles/([^/]+)/grid$", handle_replace_puzzle_grid)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/preview$", handle_get_puzzle_preview)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/stats$", handle_get_puzzle_stats)
 
@@ -117,8 +83,6 @@ def register_routes(router):
     router.add_route("GET", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/suggestions$", handle_get_ranked_suggestions)
 
     # Export routes
-    router.add_route("GET", r"^/api/export/grids/([^/]+)/pdf$", handle_export_grid_to_pdf)
-    router.add_route("GET", r"^/api/export/grids/([^/]+)/png$", handle_export_grid_to_png)
     router.add_route("GET", r"^/api/export/puzzles/([^/]+)/acrosslite$", handle_export_puzzle_to_acrosslite)
     router.add_route("GET", r"^/api/export/puzzles/([^/]+)/xml$", handle_export_puzzle_to_xml)
     router.add_route("GET", r"^/api/export/puzzles/([^/]+)/nytimes$", handle_export_puzzle_to_nytimes)

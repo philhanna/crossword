@@ -419,14 +419,14 @@ Validation completed in this phase:
 
 ## Phase 8: Remove Standalone Grid Features
 
-- [ ] Remove dead frontend menu items for standalone grid creation, opening, saving, save-as, deletion, and `new grid from puzzle`.
-- [ ] Remove obsolete grid chooser and preview flows from the active UI.
-- [ ] Remove backend routes and handlers that exist only for standalone saved grids.
-- [ ] Remove unused `GridUseCases` methods and tests once migration is complete.
-- [ ] Remove persistence-port methods that are no longer part of the final architecture.
-- [ ] Remove `grids` table creation and any admin/documentation references that assume saved grids still exist.
-- [ ] Update exports if any still depend on loading standalone grids.
-- [ ] Update README and design docs to describe the merged editor as the only construction workflow.
+- [x] Remove dead frontend menu items for standalone grid creation, opening, saving, save-as, deletion, and `new grid from puzzle`.
+- [x] Remove obsolete grid chooser and preview flows from the active UI.
+- [x] Remove backend routes and handlers that exist only for standalone saved grids.
+- [x] Remove unused `GridUseCases` methods and tests once migration is complete.
+- [x] Remove persistence-port methods that are no longer part of the final architecture.
+- [x] Remove `grids` table creation and any admin/documentation references that assume saved grids still exist.
+- [x] Update exports if any still depend on loading standalone grids.
+- [x] Update README and design docs to describe the merged editor as the only construction workflow.
 
 **Primary files/modules**
 
@@ -440,7 +440,29 @@ Validation completed in this phase:
 
 **Checkpoint**
 
-- [ ] The codebase no longer presents standalone grids as a persisted user-facing concept.
+- [x] The codebase no longer presents standalone grids as a persisted user-facing concept.
+
+### Phase 8 Notes
+
+Implemented in this phase:
+
+- Removed the dead standalone-grid editor and grid menu action code from `frontend/static/js/app.js`.
+- Removed standalone-grid routes from `crossword/http_server/main.py`.
+- Removed legacy standalone-grid compatibility from `PersistencePort`, `SQLitePersistenceAdapter`, and `PuzzleUseCases.create_puzzle(...)`.
+- Deleted `crossword/http_server/grid_handlers.py`, `crossword/use_cases/grid_use_cases.py`, and `crossword/tests/test_grid_use_cases.py`.
+- Removed grid-export use-case support and stopped registering grid export endpoints.
+- Updated wiring so the application container no longer exposes `grid_uc`.
+- Updated README and key design docs to describe the merged editor and puzzle-only persistence model.
+
+Scope notes:
+
+- The runtime codebase and active tests no longer reference `/api/grids`, `GridUseCases`, or standalone grid persistence methods.
+- Some older generated or archival design documents outside the active Phase 8 target set may still mention the historical grid architecture and can be regenerated or refreshed later if needed.
+
+Validation completed in this phase:
+
+- `node --check frontend/static/js/app.js`
+- `./venv/bin/pytest -q crossword/tests/test_http_server.py crossword/tests/test_puzzle_use_cases.py crossword/tests/test_puzzle_modes.py crossword/tests/test_wiring.py crossword/tests/test_ports.py crossword/tests/test_export_use_cases.py crossword/tests/adapters/test_sqlite_adapter.py`
 
 ## Phase 9: End-To-End Verification And Cleanup
 

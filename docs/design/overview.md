@@ -84,8 +84,7 @@ One class per domain concept. They receive port objects via their constructor
 (dependency injection) and coordinate the work:
 
 ```
-GridUseCases(persistence)      — load, save, rotate, undo/redo, open-for-editing
-PuzzleUseCases(persistence)    — load, save, set cell, set clue, undo/redo
+PuzzleUseCases(persistence)    — create/load/save puzzles, switch modes, edit grid, set cell, set clue, undo/redo
 WordUseCases(word_list)        — suggest words, validate, compute constraints
 ExportUseCases(persistence)    — load then delegate to ExportPort
 ```
@@ -112,14 +111,13 @@ def make_app(config) -> AppContainer:
     words.load_from_database(config['dbfile'])
 
     return AppContainer(
-        grid_uc   = GridUseCases(persistence),
         puzzle_uc = PuzzleUseCases(persistence),
         word_uc   = WordUseCases(words),
         export_uc = ExportUseCases(persistence, export_adapter=None),
     )
 ```
 
-`AppContainer` is a plain data object that carries the four use-case instances.
+`AppContainer` is a plain data object that carries the three active use-case instances.
 
 ---
 
@@ -130,7 +128,7 @@ Built on Python's built-in `BaseHTTPRequestHandler`. No web framework.
 **Startup sequence** (`main.py`):
 1. Read config from `~/.crossword.ini`
 2. Call `make_app(config)` to build the wired container
-3. Register ~40 URL routes (method + regex → handler function)
+3. Register the puzzle, word, export, and static URL routes (method + regex → handler function)
 4. Start the server, attaching the container as `handler.app`
 
 **Per-request flow:**
@@ -138,7 +136,7 @@ Built on Python's built-in `BaseHTTPRequestHandler`. No web framework.
 2. Router matches path, extracts path params
 3. Handler function is called with `path_params`, `query_params`, `body_params`,
    and `app` (the container)
-4. Handler calls `app.grid_uc.some_method(...)` or similar
+4. Handler calls `app.puzzle_uc.some_method(...)` or similar
 5. Returns a dict (serialized to JSON) or raw bytes
 
 ---

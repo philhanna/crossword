@@ -1,18 +1,18 @@
 """
-SQLitePersistenceAdapter - SQLite implementation of the Persistence Port
+SQLitePersistenceAdapter - SQLite implementation of the Persistence Port.
 
-Uses sqlite3 directly (no ORM). Assumes the database schema is already created.
+Uses sqlite3 directly (no ORM). The persisted construction unit is a puzzle.
 """
 
 import sqlite3
 from datetime import datetime
-from crossword import Grid, Puzzle
+from crossword import Puzzle
 from crossword.ports.persistence_port import PersistencePort, PersistenceError
 
 
 class SQLitePersistenceAdapter(PersistencePort):
     """
-    SQLite adapter for persistent storage of grids and puzzles.
+    SQLite adapter for persistent storage of unified puzzles.
 
     Connects to a SQLite database and implements CRUD operations.
     All operations are synchronous and single-threaded.
@@ -53,22 +53,10 @@ class SQLitePersistenceAdapter(PersistencePort):
     def _ensure_schema_compatibility(self) -> None:
         """
         Bring the SQLite schema forward to the puzzle-centric layout expected
-        by the merged editor work, while keeping legacy grid tables available
-        temporarily for compatibility.
+        by the merged editor work.
         """
         try:
             cursor = self.conn.cursor()
-
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS grids (
-                    id              INTEGER PRIMARY KEY,
-                    userid          INTEGER,
-                    gridname        TEXT,
-                    created         TEXT,
-                    modified        TEXT,
-                    jsonstr         TEXT
-                )
-            """)
 
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS puzzles (
@@ -114,98 +102,6 @@ class SQLitePersistenceAdapter(PersistencePort):
             raise
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to initialize schema: {e}")
-
-    # ======================================================================
-    # Grid Operations
-    # ======================================================================
-
-    def save_grid(self, user_id: int, name: str, grid: Grid) -> None:
-        """Save a grid to the database."""
-        try:
-            jsonstr = grid.to_json()
-            now = datetime.now().isoformat()
-            cursor = self.conn.cursor()
-
-            # Check if grid already exists
-            cursor.execute(
-                "SELECT id FROM grids WHERE userid = ? AND gridname = ?",
-                (user_id, name)
-            )
-            existing = cursor.fetchone()
-
-            if existing:
-                # Update existing grid
-                cursor.execute(
-                    """UPDATE grids
-                       SET jsonstr = ?, modified = ?
-                       WHERE userid = ? AND gridname = ?""",
-                    (jsonstr, now, user_id, name)
-                )
-            else:
-                # Insert new grid
-                cursor.execute(
-                    """INSERT INTO grids (userid, gridname, created, modified, jsonstr)
-                       VALUES (?, ?, ?, ?, ?)""",
-                    (user_id, name, now, now, jsonstr)
-                )
-
-            self.conn.commit()
-        except sqlite3.Error as e:
-            raise PersistenceError(f"Failed to save grid: {e}")
-
-    def load_grid(self, user_id: int, name: str) -> Grid:
-        """Load a grid from the database."""
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                "SELECT jsonstr FROM grids WHERE userid = ? AND gridname = ?",
-                (user_id, name)
-            )
-            row = cursor.fetchone()
-
-            if not row:
-                raise PersistenceError(f"Grid '{name}' not found for user {user_id}")
-
-            return Grid.from_json(row['jsonstr'])
-        except PersistenceError:
-            raise
-        except sqlite3.Error as e:
-            raise PersistenceError(f"Failed to load grid: {e}")
-        except Exception as e:
-            raise PersistenceError(f"Failed to deserialize grid: {e}")
-
-    def delete_grid(self, user_id: int, name: str) -> None:
-        """Delete a grid from the database."""
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                "DELETE FROM grids WHERE userid = ? AND gridname = ?",
-                (user_id, name)
-            )
-
-            if cursor.rowcount == 0:
-                raise PersistenceError(f"Grid '{name}' not found for user {user_id}")
-
-            self.conn.commit()
-        except PersistenceError:
-            raise
-        except sqlite3.Error as e:
-            raise PersistenceError(f"Failed to delete grid: {e}")
-
-    def list_grids(self, user_id: int) -> list[str]:
-        """Get list of grid names for a user, sorted by most recently modified."""
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """SELECT gridname FROM grids
-                   WHERE userid = ?
-                   ORDER BY modified DESC""",
-                (user_id,)
-            )
-            rows = cursor.fetchall()
-            return [row['gridname'] for row in rows if row['gridname'] is not None]
-        except sqlite3.Error as e:
-            raise PersistenceError(f"Failed to list grids: {e}")
 
     # ======================================================================
     # Puzzle Operations

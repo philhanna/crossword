@@ -10,7 +10,6 @@ import logging
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
 from crossword.adapters.basic_export_adapter import BasicExportAdapter
-from crossword.use_cases.grid_use_cases import GridUseCases
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
 from crossword.use_cases.export_use_cases import ExportUseCases
@@ -24,8 +23,7 @@ class AppContainer:
     Single-threaded; one container per process.
     """
 
-    def __init__(self, grid_uc, puzzle_uc, word_uc, export_uc=None):
-        self.grid_uc = grid_uc
+    def __init__(self, puzzle_uc, word_uc, export_uc=None):
         self.puzzle_uc = puzzle_uc
         self.word_uc = word_uc
         self.export_uc = export_uc
@@ -90,7 +88,6 @@ def make_app(config=None):
     # Instantiate Use Cases (with constructor injection)
     # ========================================================================
 
-    grid_uc = GridUseCases(persistence)
     puzzle_uc = PuzzleUseCases(persistence)
     word_uc = WordUseCases(word_adapter)
     export_uc = ExportUseCases(persistence, export_adapter) if export_adapter else None
@@ -99,4 +96,4 @@ def make_app(config=None):
     # Assemble Container
     # ========================================================================
 
-    return AppContainer(grid_uc, puzzle_uc, word_uc, export_uc)
+    return AppContainer(puzzle_uc, word_uc, export_uc)

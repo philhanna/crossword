@@ -82,7 +82,7 @@ Three permanent modals are shown/hidden via `display:block/none`:
 
 - **`#mb` — Message box** (`messageBox(title, prompt, ok, okCallback)`) — shows a message with OK/Cancel. OK can be a URL link or a callback.
 - **`#ib` — Input box** (`inputBox(title, label, value, onSubmit)`) — prompts for a text string; submits via form `onsubmit`.
-- **`#ch` — Chooser** (`showChooser` / `showPreviewChooser`) — scrollable list of items to pick from. `showPreviewChooser` fetches `GET /api/{grids|puzzles}/{name}/preview` in parallel for all items and renders SVG thumbnails alongside each name.
+- **`#ch` — Chooser** (`showChooser` / `showPreviewChooser`) — scrollable list of items to pick from. `showPreviewChooser` fetches `GET /api/puzzles/{name}/preview` for puzzle choosers and renders SVG thumbnails alongside each name.
 
 The modal message box is now reserved for confirmations and flows where the user must explicitly respond before the app proceeds.
 
@@ -102,45 +102,38 @@ Both grid and puzzle SVGs are built client-side from API data (no server-rendere
 
 Both SVGs use `BOXSIZE = 32` pixels per cell.
 
-## Grid Editor
-
-Rendered by `renderGridEditor()`. LHS shows the SVG; RHS shows the stats panel when open.
-
-**Toolbar actions:**
-- **Rotate** — `POST /api/grids/{wn}/rotate`
-- **Undo / Redo** — `POST /api/grids/{wn}/undo` and `/redo`; buttons are disabled when `gridData.can_undo / can_redo` is false
-- **Info** — fetches `GET /api/grids/{wn}/stats` and renders the stats panel on RHS
-- **Save / Close** — call the corresponding menu actions
-
-**Click handling** (`handleGridClick`):
-- Converts click coordinates to `(row, col)` using `BOXSIZE`
-- Calls `PUT /api/grids/{wn}/cells/{r}/{c}` to toggle the cell
-- Re-renders SVG in place (replaces `#grid-svg-container` innerHTML)
-
-**Working copy pattern:**
-- Opening a grid calls `POST /api/grids/{name}/open` → returns a `working_name` (`__wc__<uuid8>`)
-- All edits target the working copy
-- Save = `POST /api/grids/{wn}/copy` with `{new_name: originalName}`
-- Close = delete the working copy, return to `home`
-
-## Puzzle Editor
+## Merged Editor
 
 Rendered by `renderPuzzleEditor()`, which calls `renderPuzzleEditorLhs()` + `renderPuzzleEditorRhs()`.
 
+The editor has two modes:
+
+- **Grid mode** — edits black cells through puzzle endpoints
+- **Puzzle mode** — edits answers and clues against the same working puzzle
+
 **Toolbar actions** (LHS):
-- **Save / Save As / Close** — same working copy pattern as grids
+- **Mode switch** — toggles between Grid mode and Puzzle mode
+- **Save / Save As / Close** — same working copy pattern for the working puzzle
 - **Title** — `PUT /api/puzzles/{wn}/title`
 - **Info** — fetches stats and toggles the stats panel on RHS
-- **Undo / Redo** — `POST /api/puzzles/{wn}/undo` and `/redo`
+- **Undo / Redo** — `POST /api/puzzles/{wn}/undo` and `/redo` in Puzzle mode, `POST /api/puzzles/{wn}/grid/undo` and `/redo` in Grid mode
+- **Rotate** — in Grid mode only, `POST /api/puzzles/{wn}/grid/rotate`
+
+**Grid-mode click handling**
+- Converts click coordinates to `(row, col)` using `BOXSIZE`
+- Calls `PUT /api/puzzles/{wn}/grid/cells/{r}/{c}` to toggle the cell
+- Re-renders the shared puzzle SVG in place
+- If stats are visible, refreshes them after the edit
 
 **Click handling** — single-click = across word, double-click = down word (280 ms timer). `puzzleClickAt()` calls `findWordAtCell()` to locate the word from `puzzleData.puzzle.words`, then calls `openWordEditor(seq, direction)`.
 
 **RHS content** is mutually exclusive:
-1. Word editor panel (when `editingWord` is set)
-2. Stats panel (when `showingStats` is true)
-3. Clue lists (default)
+1. Grid-mode guidance / stats panel (Grid mode)
+2. Word editor panel (Puzzle mode when `editingWord` is set)
+3. Stats panel (Puzzle mode when `showingStats` is true)
+4. Clue lists (Puzzle mode default)
 
-**Clue lists** — two columns (Across / Down), each a clickable `<ul>`. Clicking a clue opens the word editor for that word.
+**Clue lists** — two columns (Across / Down), each a clickable `<ul>`. Clicking the clue text selects the word; clicking `edit` opens the word editor.
 
 ## Word Editor Panel
 

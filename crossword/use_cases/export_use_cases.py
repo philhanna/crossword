@@ -1,9 +1,7 @@
 """
-Export use cases - Exporting grids and puzzles to various formats.
+Export use cases - exporting puzzles to various formats.
 
 Public interface:
-  export_grid_to_pdf(user_id, name) -> bytes
-  export_grid_to_png(user_id, name) -> bytes
   export_puzzle_to_acrosslite(user_id, name) -> bytes
   export_puzzle_to_xml(user_id, name) -> str
   export_puzzle_to_nytimes(user_id, name) -> bytes
@@ -23,42 +21,6 @@ class ExportUseCases:
     def __init__(self, persistence: PersistencePort, export: ExportPort):
         self.persistence = persistence
         self.export = export
-
-    def export_grid_to_pdf(self, user_id: int, name: str) -> bytes:
-        """
-        Export a grid to PDF format.
-
-        Args:
-            user_id: The user who owns this grid
-            name: Name/identifier for the grid
-
-        Returns:
-            PDF file contents as bytes
-
-        Raises:
-            PersistenceError: If grid not found
-            ExportError: If export fails
-        """
-        grid = self.persistence.load_grid(user_id, name)
-        return self.export.export_grid_to_pdf(grid)
-
-    def export_grid_to_png(self, user_id: int, name: str) -> bytes:
-        """
-        Export a grid to PNG image format.
-
-        Args:
-            user_id: The user who owns this grid
-            name: Name/identifier for the grid
-
-        Returns:
-            PNG file contents as bytes
-
-        Raises:
-            PersistenceError: If grid not found
-            ExportError: If export fails
-        """
-        grid = self.persistence.load_grid(user_id, name)
-        return self.export.export_grid_to_png(grid)
 
     def export_puzzle_to_acrosslite(self, user_id: int, name: str) -> bytes:
         """

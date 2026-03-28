@@ -2,7 +2,7 @@
 Puzzle use cases - CRUD operations on puzzles and word editing.
 
 Public interface:
-  create_puzzle(user_id, name, grid_name=None, size=None) -> None
+  create_puzzle(user_id, name, size) -> None
   load_puzzle(user_id, name) -> Puzzle
   delete_puzzle(user_id, name) -> None
   list_puzzles(user_id) -> list[str]
@@ -21,7 +21,6 @@ Public interface:
   set_word_clue(user_id, name, seq, direction, clue) -> Puzzle
   undo_puzzle(user_id, name) -> Puzzle
   redo_puzzle(user_id, name) -> Puzzle
-  replace_puzzle_grid(user_id, name, new_grid_name) -> Puzzle
   get_puzzle_preview(user_id, name) -> dict
   get_puzzle_stats(user_id, name) -> dict
 """
@@ -47,33 +46,23 @@ class PuzzleUseCases:
     def __init__(self, persistence: PersistencePort):
         self.persistence = persistence
 
-    def create_puzzle(self, user_id: int, name: str, grid_name: str = None,
-                      size: int = None) -> None:
+    def create_puzzle(self, user_id: int, name: str, size: int) -> None:
         """
         Create a new puzzle and save it.
 
         Args:
             user_id: The user who owns this puzzle
             name: Name/identifier for the puzzle
-            grid_name: Optional legacy grid name to base the puzzle on
-            size: Optional new puzzle size for puzzle-first creation
+            size: New puzzle size
 
         Raises:
-            PersistenceError: If grid not found or save fails
+            PersistenceError: If save fails
         """
         validate_new_public_name("puzzle", name, self.persistence.list_puzzles(user_id))
+        if size < 1:
+            raise ValueError(f"Grid size must be at least 1, got {size}")
 
-        if size is not None and grid_name is not None:
-            raise ValueError("Specify either grid_name or size, not both")
-        if size is None and grid_name is None:
-            raise ValueError("Either grid_name or size is required")
-
-        if size is not None:
-            if size < 1:
-                raise ValueError(f"Grid size must be at least 1, got {size}")
-            grid = Grid(size)
-        else:
-            grid = self.persistence.load_grid(user_id, grid_name)
+        grid = Grid(size)
 
         puzzle = Puzzle(grid)
         puzzle.enter_grid_mode()
@@ -432,30 +421,6 @@ class PuzzleUseCases:
         if puzzle.redo_stack:
             puzzle.redo()
             self.persistence.save_puzzle(user_id, name, puzzle)
-
-        return puzzle
-
-    def replace_puzzle_grid(self, user_id: int, name: str, new_grid_name: str) -> Puzzle:
-        """
-        Replace the grid of a puzzle with a new grid, preserving clues where possible.
-
-        Args:
-            user_id: The user who owns this puzzle
-            name: Name/identifier for the puzzle
-            new_grid_name: Name of the new grid to use
-
-        Returns:
-            Updated Puzzle object
-
-        Raises:
-            PersistenceError: If puzzle/grid not found or save fails
-            ValueError: If grids have incompatible sizes
-        """
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        new_grid = self.persistence.load_grid(user_id, new_grid_name)
-
-        puzzle.replace_grid(new_grid)
-        self.persistence.save_puzzle(user_id, name, puzzle)
 
         return puzzle
 

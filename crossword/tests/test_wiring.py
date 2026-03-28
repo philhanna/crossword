@@ -71,17 +71,8 @@ class TestMakeApp:
         app = make_app(config)
 
         assert isinstance(app, AppContainer)
-        assert app.grid_uc is not None
         assert app.puzzle_uc is not None
         assert app.word_uc is not None
-
-    def test_make_app_initializes_grid_use_case(self, temp_db):
-        """Grid use case is wired correctly"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
-
-        # Grid use case should have a persistence port
-        assert app.grid_uc.persistence is not None
 
     def test_make_app_initializes_puzzle_use_case(self, temp_db):
         """Puzzle use case is wired correctly"""
@@ -158,37 +149,13 @@ class TestWordListWiring:
 class TestEndToEndWiring:
     """End-to-end tests with wired app"""
 
-    def test_grid_crud_end_to_end(self, temp_db):
-        """Can create, load, delete grids via wired app"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
-
-        # Create grid
-        app.grid_uc.create_grid(1, "test_grid", 15)
-
-        # Load grid
-        grid = app.grid_uc.load_grid(1, "test_grid")
-        assert grid.n == 15
-
-        # List grids
-        grids = app.grid_uc.list_grids(1)
-        assert "test_grid" in grids
-
-        # Delete grid
-        app.grid_uc.delete_grid(1, "test_grid")
-        grids = app.grid_uc.list_grids(1)
-        assert "test_grid" not in grids
-
     def test_puzzle_crud_end_to_end(self, temp_db):
         """Can create, load, delete puzzles via wired app"""
         config = {"dbfile": temp_db}
         app = make_app(config)
 
-        # Create grid first
-        app.grid_uc.create_grid(1, "grid1", 15)
-
-        # Create puzzle from grid
-        app.puzzle_uc.create_puzzle(1, "puzzle1", "grid1")
+        # Create puzzle directly
+        app.puzzle_uc.create_puzzle(1, "puzzle1", size=15)
 
         # Load puzzle
         puzzle = app.puzzle_uc.load_puzzle(1, "puzzle1")
@@ -203,30 +170,13 @@ class TestEndToEndWiring:
         puzzles = app.puzzle_uc.list_puzzles(1)
         assert "puzzle1" not in puzzles
 
-    def test_grid_toggle_cell_end_to_end(self, temp_db):
-        """Can toggle black cells via wired app"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
-
-        # Create grid
-        app.grid_uc.create_grid(1, "grid1", 15)
-
-        # Toggle a cell
-        grid = app.grid_uc.toggle_black_cell(1, "grid1", 5, 5)
-        assert (5, 5) in grid.black_cells
-
-        # Load again to verify persistence
-        grid = app.grid_uc.load_grid(1, "grid1")
-        assert (5, 5) in grid.black_cells
-
     def test_puzzle_set_cell_letter_end_to_end(self, temp_db):
         """Can set cell letters in puzzle via wired app"""
         config = {"dbfile": temp_db}
         app = make_app(config)
 
-        # Create grid and puzzle
-        app.grid_uc.create_grid(1, "grid1", 15)
-        app.puzzle_uc.create_puzzle(1, "puzzle1", "grid1")
+        # Create puzzle
+        app.puzzle_uc.create_puzzle(1, "puzzle1", size=15)
 
         # Set cell letter
         puzzle = app.puzzle_uc.set_cell_letter(1, "puzzle1", 2, 2, "A")

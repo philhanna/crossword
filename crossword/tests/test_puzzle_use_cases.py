@@ -13,7 +13,6 @@ from crossword.ports.persistence_port import PersistenceError
 def mock_persistence():
     """Create a mock persistence adapter"""
     persistence = Mock()
-    persistence.list_grids.return_value = []
     persistence.list_puzzles.return_value = []
     return persistence
 
@@ -41,23 +40,9 @@ def test_puzzle(test_grid):
 class TestPuzzleUseCasesCreate:
     """Tests for create_puzzle"""
 
-    def test_create_puzzle_success(self, puzzle_uc, mock_persistence, test_grid):
-        """Create puzzle successfully"""
-        mock_persistence.load_grid.return_value = test_grid
-
-        puzzle_uc.create_puzzle(1, "test_puzzle", "test_grid")
-
-        mock_persistence.load_grid.assert_called_once_with(1, "test_grid")
-        mock_persistence.save_puzzle.assert_called_once()
-        args = mock_persistence.save_puzzle.call_args[0]
-        assert args[0] == 1  # user_id
-        assert args[1] == "test_puzzle"
-        assert isinstance(args[2], Puzzle)
-
     def test_create_puzzle_from_size_success(self, puzzle_uc, mock_persistence):
         puzzle_uc.create_puzzle(1, "test_puzzle", size=15)
 
-        mock_persistence.load_grid.assert_not_called()
         mock_persistence.save_puzzle.assert_called_once()
         args = mock_persistence.save_puzzle.call_args[0]
         assert args[1] == "test_puzzle"
@@ -65,27 +50,15 @@ class TestPuzzleUseCasesCreate:
         assert args[2].n == 15
         assert args[2].last_mode == "grid"
 
-    def test_create_puzzle_grid_not_found(self, puzzle_uc, mock_persistence):
-        """Create puzzle with nonexistent grid"""
-        mock_persistence.load_grid.side_effect = PersistenceError("Grid not found")
-
-        with pytest.raises(PersistenceError, match="Grid not found"):
-            puzzle_uc.create_puzzle(1, "test_puzzle", "nonexistent_grid")
-
-    def test_create_puzzle_requires_size_or_grid_name(self, puzzle_uc):
-        with pytest.raises(ValueError, match="Either grid_name or size is required"):
-            puzzle_uc.create_puzzle(1, "test_puzzle")
-
-    def test_create_puzzle_rejects_both_size_and_grid_name(self, puzzle_uc):
-        with pytest.raises(ValueError, match="Specify either grid_name or size, not both"):
-            puzzle_uc.create_puzzle(1, "test_puzzle", grid_name="legacy_grid", size=15)
+    def test_create_puzzle_rejects_invalid_size(self, puzzle_uc):
+        with pytest.raises(ValueError, match="Grid size must be at least 1"):
+            puzzle_uc.create_puzzle(1, "test_puzzle", size=0)
 
     def test_create_puzzle_rejects_working_copy_prefix(self, puzzle_uc, mock_persistence):
         """Reject names reserved for internal working copies"""
         with pytest.raises(ValueError, match="reserved for internal working copies"):
-            puzzle_uc.create_puzzle(1, "__wc__hidden", "test_grid")
+            puzzle_uc.create_puzzle(1, "__wc__hidden", size=15)
 
-        mock_persistence.load_grid.assert_not_called()
         mock_persistence.save_puzzle.assert_not_called()
 
     def test_create_puzzle_rejects_existing_name(self, puzzle_uc, mock_persistence):
@@ -93,9 +66,8 @@ class TestPuzzleUseCasesCreate:
         mock_persistence.list_puzzles.return_value = ["existing"]
 
         with pytest.raises(ValueError, match="puzzle 'existing' already exists"):
-            puzzle_uc.create_puzzle(1, "existing", "test_grid")
+            puzzle_uc.create_puzzle(1, "existing", size=15)
 
-        mock_persistence.load_grid.assert_not_called()
         mock_persistence.save_puzzle.assert_not_called()
 
 
@@ -584,30 +556,6 @@ class TestPuzzleUseCasesRedo:
         assert result == test_puzzle
         # save_puzzle is NOT called when redo_stack is empty
         mock_persistence.save_puzzle.assert_not_called()
-
-
-class TestPuzzleUseCasesReplacGrid:
-    """Tests for replace_puzzle_grid"""
-
-    def test_replace_puzzle_grid_success(self, puzzle_uc, mock_persistence, test_puzzle, test_grid):
-        """Replace puzzle grid successfully"""
-        mock_persistence.load_puzzle.return_value = test_puzzle
-        mock_persistence.load_grid.return_value = test_grid
-
-        result = puzzle_uc.replace_puzzle_grid(1, "test_puzzle", "new_grid")
-
-        mock_persistence.load_puzzle.assert_called_once_with(1, "test_puzzle")
-        mock_persistence.load_grid.assert_called_once_with(1, "new_grid")
-        mock_persistence.save_puzzle.assert_called_once()
-
-    def test_replace_puzzle_grid_incompatible_size(self, puzzle_uc, mock_persistence, test_puzzle):
-        """Replace grid with incompatible size"""
-        new_grid = Grid(10)  # Different size
-        mock_persistence.load_puzzle.return_value = test_puzzle
-        mock_persistence.load_grid.return_value = new_grid
-
-        with pytest.raises(ValueError, match="Incompatible grid sizes"):
-            puzzle_uc.replace_puzzle_grid(1, "test_puzzle", "new_grid")
 
 
 class TestPuzzleUseCasesGetPreview:

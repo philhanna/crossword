@@ -46,10 +46,6 @@ class TestPortSignatures:
     def test_persistence_port_has_required_methods(self):
         """PersistencePort should have all required methods"""
         required_methods = [
-            "save_grid",
-            "load_grid",
-            "delete_grid",
-            "list_grids",
             "save_puzzle",
             "load_puzzle",
             "delete_puzzle",
@@ -70,8 +66,6 @@ class TestPortSignatures:
     def test_export_port_has_required_methods(self):
         """ExportPort should have all required methods"""
         required_methods = [
-            "export_grid_to_pdf",
-            "export_grid_to_png",
             "export_puzzle_to_acrosslite",
             "export_puzzle_to_xml",
             "export_puzzle_to_nytimes",

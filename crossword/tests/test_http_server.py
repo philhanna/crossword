@@ -334,7 +334,7 @@ class TestMergedPuzzleHandlers:
             (), {}, {"name": "demo", "size": 15}, None, request_handler, app=app
         )
 
-        app.puzzle_uc.create_puzzle.assert_called_once_with(1, "demo", grid_name=None, size=15)
+        app.puzzle_uc.create_puzzle.assert_called_once_with(1, "demo", size=15)
         assert response["grid"]["size"] == puzzle.n
 
     def test_handle_switch_to_grid_mode(self, request_handler, app):

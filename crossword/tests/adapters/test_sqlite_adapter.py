@@ -35,70 +35,6 @@ class TestSQLitePersistenceAdapter:
         return puzzle
 
     # ======================================================================
-    # Grid Tests
-    # ======================================================================
-
-    def test_save_and_load_grid(self, adapter, sample_grid):
-        """Test saving and loading a grid"""
-        adapter.save_grid(user_id=1, name="test_grid", grid=sample_grid)
-        loaded = adapter.load_grid(user_id=1, name="test_grid")
-
-        assert loaded.n == sample_grid.n
-        assert loaded.black_cells == sample_grid.black_cells
-
-    def test_save_grid_overwrites(self, adapter, sample_grid):
-        """Test that saving a grid with same name overwrites it"""
-        adapter.save_grid(user_id=1, name="test_grid", grid=sample_grid)
-
-        # Modify and save again
-        sample_grid.add_black_cell(3, 3)
-        adapter.save_grid(user_id=1, name="test_grid", grid=sample_grid)
-
-        loaded = adapter.load_grid(user_id=1, name="test_grid")
-        assert (3, 3) in loaded.black_cells
-
-    def test_load_nonexistent_grid(self, adapter):
-        """Test that loading a nonexistent grid raises error"""
-        with pytest.raises(PersistenceError):
-            adapter.load_grid(user_id=1, name="nonexistent")
-
-    def test_delete_grid(self, adapter, sample_grid):
-        """Test deleting a grid"""
-        adapter.save_grid(user_id=1, name="test_grid", grid=sample_grid)
-        adapter.delete_grid(user_id=1, name="test_grid")
-
-        with pytest.raises(PersistenceError):
-            adapter.load_grid(user_id=1, name="test_grid")
-
-    def test_delete_nonexistent_grid(self, adapter):
-        """Test that deleting a nonexistent grid raises error"""
-        with pytest.raises(PersistenceError):
-            adapter.delete_grid(user_id=1, name="nonexistent")
-
-    def test_list_grids(self, adapter, sample_grid):
-        """Test listing grids for a user"""
-        adapter.save_grid(user_id=1, name="grid1", grid=sample_grid)
-        adapter.save_grid(user_id=1, name="grid2", grid=sample_grid)
-
-        grids = adapter.list_grids(user_id=1)
-        assert len(grids) == 2
-        assert "grid1" in grids
-        assert "grid2" in grids
-
-    def test_list_grids_different_users(self, adapter, sample_grid):
-        """Test that grids are isolated by user"""
-        adapter.save_grid(user_id=1, name="grid1", grid=sample_grid)
-        adapter.save_grid(user_id=2, name="grid2", grid=sample_grid)
-
-        grids_user1 = adapter.list_grids(user_id=1)
-        grids_user2 = adapter.list_grids(user_id=2)
-
-        assert len(grids_user1) == 1
-        assert "grid1" in grids_user1
-        assert len(grids_user2) == 1
-        assert "grid2" in grids_user2
-
-    # ======================================================================
     # Puzzle Tests
     # ======================================================================
 
@@ -205,9 +141,9 @@ class TestSQLitePersistenceAdapter:
     # Integration with Production Database
     # ======================================================================
 
-    def test_load_grid_from_samples_db(self):
+    def test_load_puzzle_from_samples_db(self):
         """
-        Integration test: Load a grid from the production samples.db
+        Integration test: Load a puzzle from the production samples.db.
         This validates the schema hasn't drifted.
         """
         db_path = Path(__file__).resolve().parents[3] / "samples.db"
@@ -216,15 +152,12 @@ class TestSQLitePersistenceAdapter:
 
         adapter = SQLitePersistenceAdapter(str(db_path))
 
-        # Try to load a grid (there should be at least one)
-        grids = adapter.list_grids(user_id=1)
-        if not grids:
-            pytest.skip("No grids found in samples.db")
+        puzzles = adapter.list_puzzles(user_id=1)
+        if not puzzles:
+            pytest.skip("No puzzles found in samples.db")
 
-        # Load the first grid
-        loaded = adapter.load_grid(user_id=1, name=grids[0])
+        loaded = adapter.load_puzzle(user_id=1, name=puzzles[0])
 
-        # Validate it's a valid Grid object
-        assert isinstance(loaded, Grid)
+        assert isinstance(loaded, Puzzle)
         assert loaded.n > 0
-        assert isinstance(loaded.black_cells, set)
+        assert loaded.last_mode in {"grid", "puzzle"}

@@ -40,68 +40,6 @@ def test_puzzle(test_grid):
     return Puzzle(test_grid, title="Test Puzzle")
 
 
-class TestExportUseCasesGridToPdf:
-    """Tests for export_grid_to_pdf"""
-
-    def test_export_grid_to_pdf_success(self, export_uc, mock_persistence, mock_export, test_grid):
-        """Export grid to PDF successfully"""
-        pdf_bytes = b"%PDF-1.4\n... PDF content ..."
-        mock_persistence.load_grid.return_value = test_grid
-        mock_export.export_grid_to_pdf.return_value = pdf_bytes
-
-        result = export_uc.export_grid_to_pdf(1, "test_grid")
-
-        assert result == pdf_bytes
-        mock_persistence.load_grid.assert_called_once_with(1, "test_grid")
-        mock_export.export_grid_to_pdf.assert_called_once_with(test_grid)
-
-    def test_export_grid_to_pdf_grid_not_found(self, export_uc, mock_persistence, mock_export):
-        """Export grid to PDF when grid not found"""
-        mock_persistence.load_grid.side_effect = PersistenceError("Grid not found")
-
-        with pytest.raises(PersistenceError, match="Grid not found"):
-            export_uc.export_grid_to_pdf(1, "nonexistent")
-
-    def test_export_grid_to_pdf_export_error(self, export_uc, mock_persistence, mock_export, test_grid):
-        """Export grid to PDF when export fails"""
-        mock_persistence.load_grid.return_value = test_grid
-        mock_export.export_grid_to_pdf.side_effect = ExportError("Export failed")
-
-        with pytest.raises(ExportError, match="Export failed"):
-            export_uc.export_grid_to_pdf(1, "test_grid")
-
-
-class TestExportUseCasesGridToPng:
-    """Tests for export_grid_to_png"""
-
-    def test_export_grid_to_png_success(self, export_uc, mock_persistence, mock_export, test_grid):
-        """Export grid to PNG successfully"""
-        png_bytes = b"\x89PNG\r\n\x1a\n... PNG content ..."
-        mock_persistence.load_grid.return_value = test_grid
-        mock_export.export_grid_to_png.return_value = png_bytes
-
-        result = export_uc.export_grid_to_png(1, "test_grid")
-
-        assert result == png_bytes
-        mock_persistence.load_grid.assert_called_once_with(1, "test_grid")
-        mock_export.export_grid_to_png.assert_called_once_with(test_grid)
-
-    def test_export_grid_to_png_grid_not_found(self, export_uc, mock_persistence, mock_export):
-        """Export grid to PNG when grid not found"""
-        mock_persistence.load_grid.side_effect = PersistenceError("Grid not found")
-
-        with pytest.raises(PersistenceError, match="Grid not found"):
-            export_uc.export_grid_to_png(1, "nonexistent")
-
-    def test_export_grid_to_png_export_error(self, export_uc, mock_persistence, mock_export, test_grid):
-        """Export grid to PNG when export fails"""
-        mock_persistence.load_grid.return_value = test_grid
-        mock_export.export_grid_to_png.side_effect = ExportError("Export failed")
-
-        with pytest.raises(ExportError, match="Export failed"):
-            export_uc.export_grid_to_png(1, "test_grid")
-
-
 class TestExportUseCasesPuzzleToAcrosslite:
     """Tests for export_puzzle_to_acrosslite"""
 

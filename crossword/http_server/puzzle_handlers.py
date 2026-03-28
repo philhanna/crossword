@@ -21,7 +21,6 @@ Routes:
   PUT    /api/puzzles/<name>/words/<seq>/<direction>  → set_word_clue
   POST   /api/puzzles/<name>/undo          → undo_puzzle
   POST   /api/puzzles/<name>/redo          → redo_puzzle
-  PUT    /api/puzzles/<name>/grid          → replace_puzzle_grid
   GET    /api/puzzles/<name>/preview       → get_puzzle_preview
   GET    /api/puzzles/<name>/stats         → get_puzzle_stats
 """
@@ -115,34 +114,25 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
     """
     Create a new puzzle.
     POST /api/puzzles
-    Body: { "name": "puzzle1", "size": 15 } or { "name": "puzzle1", "grid_name": "grid1" }
+    Body: { "name": "puzzle1", "size": 15 }
     """
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         name = body_params.get("name")
-        grid_name = body_params.get("grid_name")
         size = body_params.get("size")
 
         if not name or not isinstance(name, str):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'name'"}
-        if grid_name is None and not isinstance(size, int):
-            logger.debug("  returning: %s", {"error": "Missing or invalid puzzle source: provide integer 'size' or string 'grid_name'"})
-            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid puzzle source: provide integer 'size' or string 'grid_name'"}
-        if grid_name is not None and not isinstance(grid_name, str):
-            logger.debug("  returning: %s", {"error": "Missing or invalid 'grid_name'"})
-            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'grid_name'"}
-        if size is not None and not isinstance(size, int):
+        if not isinstance(size, int):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'size' (must be integer >= 1)"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'size' (must be integer >= 1)"}
 
         user_id = 1
-        app.puzzle_uc.create_puzzle(user_id, name, grid_name=grid_name, size=size)
+        app.puzzle_uc.create_puzzle(user_id, name, size=size)
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -662,52 +652,6 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
-
-
-def handle_replace_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
-    """
-    Replace the grid of a puzzle with a new grid.
-    PUT /api/puzzles/<name>/grid
-    Body: { "new_grid_name": "grid2" }
-    """
-    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
-    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
-    try:
-        name = path_params[0] if path_params else None
-        new_grid_name = body_params.get("new_grid_name")
-
-        if not name:
-            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
-            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
-        if not new_grid_name or not isinstance(new_grid_name, str):
-            logger.debug("  returning: %s", {"error": "Missing or invalid 'new_grid_name'"})
-            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'new_grid_name'"}
-
-        user_id = 1
-        puzzle = app.puzzle_uc.replace_puzzle_grid(user_id, name, new_grid_name)
-
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {
-            "name": name,
-            "new_grid_name": new_grid_name,
-            "puzzle_json": puzzle.to_json(),
-        }
-
-    except ValueError as e:
-        logger.debug("  returning: %s", {"error": str(e)})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
-    except PersistenceError as e:
-        logger.debug("  returning: %s", {"error": str(e)})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
-    except Exception as e:
-        logger.debug("  returning: %s", {"error": str(e)})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
-
 
 def handle_copy_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
     """

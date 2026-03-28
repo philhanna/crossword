@@ -86,30 +86,25 @@ This starts an HTTP server on port 5000. Stop it at any time with `Ctrl-C`.
 
 Open a browser and go to **http://localhost:5000**.
 
-The application is a single-page app with three modes:
+The application is a single-page app with a home screen plus one merged construction editor:
 
 ### Home
-Starting state. Choose to create or open a grid or puzzle.
+Starting state. Choose to create or open a puzzle.
 
-### Grid editor
-Create and edit the black-cell pattern of a crossword grid.
+### Merged editor
+Create the grid and fill the puzzle in one editor, switching modes as needed.
 
-- **Toolbar:** Rotate, Undo, Redo, Info, Save, Close
-- **Menu (Grid):** New, New from puzzle, Open, Save, Save As, Close, Delete
-- Click a cell to toggle it black/white. The grid is kept symmetric automatically.
-- Undo/redo history is maintained per session.
-
-### Puzzle editor
-Fill in answers and clues for a grid.
-
-- **Toolbar:** Save, Save As, Close, Title, Info, Undo, Redo
-- **Menu (Puzzle):** New, Open, Save, Save As, Close, Delete
+- **Grid mode:** edit black cells, rotate the grid, inspect stats, and use mode-local undo/redo.
+- **Puzzle mode:** fill answers and clues, set the title, inspect stats, and use mode-local undo/redo.
+- New puzzles begin in Grid mode.
+- Existing puzzles reopen in the last mode used for that puzzle.
+- Clicking a cell in Grid mode toggles it black/white. The grid is kept symmetric automatically.
 - Click a cell or clue to select a word.
 - The word editor panel offers three tabs: **Suggest** (word suggestions), **Constraints** (pattern matching), and **Reset**.
-- A statistics panel shows fill progress.
+- The statistics panel is shared across both modes.
 
 ### Publish
-Available from any mode via the **Publish** menu:
+Available from anywhere via the **Publish** menu:
 
 | Format | Description |
 |--------|-------------|
@@ -119,7 +114,7 @@ Available from any mode via the **Publish** menu:
 
 ### Working copy pattern
 All edits target an invisible working copy (`__wc__<uuid>`). Choosing **Save** commits
-the working copy back to the named puzzle/grid. Choosing **Close** without saving
+the working copy back to the named puzzle. Choosing **Close** without saving
 discards it. This means every keystroke is auto-persisted without overwriting the
 last saved version until you explicitly save.
 
@@ -132,7 +127,7 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 | Domain | `grid`, `puzzle`, `word` — pure Python, no framework deps |
 | Ports | `persistence`, `word_list`, `export` |
 | Adapters | `SQLiteAdapter`, `DictionaryAdapter`, `ExportAdapter` |
-| Use Cases | `GridUseCases`, `PuzzleUseCases`, `WordUseCases`, `ExportUseCases` |
+| Use Cases | `PuzzleUseCases`, `WordUseCases`, `ExportUseCases` |
 | HTTP Server | `BaseHTTPRequestHandler` with regex router (no Flask) |
 | Frontend | Single `index.html` + `static/js/app.js` + `static/css/style.css` |
 
