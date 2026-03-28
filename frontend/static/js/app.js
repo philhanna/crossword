@@ -381,7 +381,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
                 fill = 'black';
             } else if (editState) {
                 if (wordCellSet.has(idx))       fill = '#c8e6fa';  // selected word cells
-                else                            fill = '#e8e8e8';  // dimmed
+                else                            fill = 'white';
             } else {
                 fill = 'white';
             }
