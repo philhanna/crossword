@@ -54,12 +54,31 @@ class TestPuzzleUseCasesCreate:
         assert args[1] == "test_puzzle"
         assert isinstance(args[2], Puzzle)
 
+    def test_create_puzzle_from_size_success(self, puzzle_uc, mock_persistence):
+        puzzle_uc.create_puzzle(1, "test_puzzle", size=15)
+
+        mock_persistence.load_grid.assert_not_called()
+        mock_persistence.save_puzzle.assert_called_once()
+        args = mock_persistence.save_puzzle.call_args[0]
+        assert args[1] == "test_puzzle"
+        assert isinstance(args[2], Puzzle)
+        assert args[2].n == 15
+        assert args[2].last_mode == "grid"
+
     def test_create_puzzle_grid_not_found(self, puzzle_uc, mock_persistence):
         """Create puzzle with nonexistent grid"""
         mock_persistence.load_grid.side_effect = PersistenceError("Grid not found")
 
         with pytest.raises(PersistenceError, match="Grid not found"):
             puzzle_uc.create_puzzle(1, "test_puzzle", "nonexistent_grid")
+
+    def test_create_puzzle_requires_size_or_grid_name(self, puzzle_uc):
+        with pytest.raises(ValueError, match="Either grid_name or size is required"):
+            puzzle_uc.create_puzzle(1, "test_puzzle")
+
+    def test_create_puzzle_rejects_both_size_and_grid_name(self, puzzle_uc):
+        with pytest.raises(ValueError, match="Specify either grid_name or size, not both"):
+            puzzle_uc.create_puzzle(1, "test_puzzle", grid_name="legacy_grid", size=15)
 
     def test_create_puzzle_rejects_working_copy_prefix(self, puzzle_uc, mock_persistence):
         """Reject names reserved for internal working copies"""
@@ -204,12 +223,20 @@ class TestPuzzleUseCasesOpenForEditing:
 
     def test_open_puzzle_creates_working_copy(self, puzzle_uc, mock_persistence, test_puzzle):
         """Saves a working copy under the returned name"""
+        test_puzzle.grid_undo_stack = ["old"]
+        test_puzzle.grid_redo_stack = ["old"]
+        test_puzzle.undo_stack = [["text", 1, "A", "OLD"]]
+        test_puzzle.redo_stack = [["text", 1, "A", "NEW"]]
         mock_persistence.load_puzzle.return_value = test_puzzle
 
         working_name = puzzle_uc.open_puzzle_for_editing(1, "mypuzzle")
 
         mock_persistence.load_puzzle.assert_called_once_with(1, "mypuzzle")
         mock_persistence.save_puzzle.assert_called_once_with(1, working_name, test_puzzle)
+        assert test_puzzle.grid_undo_stack == []
+        assert test_puzzle.grid_redo_stack == []
+        assert test_puzzle.undo_stack == []
+        assert test_puzzle.redo_stack == []
 
     def test_open_puzzle_unique_names(self, puzzle_uc, mock_persistence, test_puzzle):
         """Each call returns a different working name"""
@@ -256,6 +283,68 @@ class TestPuzzleUseCasesSetTitle:
 
         with pytest.raises(PersistenceError, match="Puzzle not found"):
             puzzle_uc.set_puzzle_title(1, "nonexistent", "Title")
+
+
+class TestPuzzleUseCasesModes:
+    """Tests for puzzle mode switching and grid-mode editing"""
+
+    def test_switch_to_grid_mode(self, puzzle_uc, mock_persistence, test_puzzle):
+        test_puzzle.last_mode = "puzzle"
+        test_puzzle.grid_undo_stack = ["old"]
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.switch_to_grid_mode(1, "test_puzzle")
+
+        assert result.last_mode == "grid"
+        assert result.grid_undo_stack == []
+        mock_persistence.save_puzzle.assert_called_once_with(1, "test_puzzle", test_puzzle)
+
+    def test_switch_to_puzzle_mode(self, puzzle_uc, mock_persistence, test_puzzle):
+        test_puzzle.last_mode = "grid"
+        test_puzzle.undo_stack = [["text", 1, "A", "OLD"]]
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.switch_to_puzzle_mode(1, "test_puzzle")
+
+        assert result.last_mode == "puzzle"
+        assert result.undo_stack == []
+        assert result.redo_stack == []
+        mock_persistence.save_puzzle.assert_called_once_with(1, "test_puzzle", test_puzzle)
+
+    def test_toggle_black_cell_on_puzzle(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.toggle_black_cell(1, "test_puzzle", 2, 2)
+
+        assert result.is_black_cell(2, 2)
+        mock_persistence.save_puzzle.assert_called_once_with(1, "test_puzzle", test_puzzle)
+
+    def test_rotate_grid_on_puzzle(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.rotate_grid(1, "test_puzzle")
+
+        assert result is test_puzzle
+        mock_persistence.save_puzzle.assert_called_once_with(1, "test_puzzle", test_puzzle)
+
+    def test_undo_grid_on_puzzle(self, puzzle_uc, mock_persistence, test_puzzle):
+        test_puzzle.toggle_black_cell(2, 2)
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.undo_grid(1, "test_puzzle")
+
+        assert not result.is_black_cell(2, 2)
+        mock_persistence.save_puzzle.assert_called_once_with(1, "test_puzzle", test_puzzle)
+
+    def test_redo_grid_on_puzzle(self, puzzle_uc, mock_persistence, test_puzzle):
+        test_puzzle.toggle_black_cell(2, 2)
+        test_puzzle.undo_grid_change()
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.redo_grid(1, "test_puzzle")
+
+        assert result.is_black_cell(2, 2)
+        mock_persistence.save_puzzle.assert_called_once_with(1, "test_puzzle", test_puzzle)
 
 
 class TestPuzzleUseCasesResetWord:

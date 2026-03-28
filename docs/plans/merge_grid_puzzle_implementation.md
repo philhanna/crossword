@@ -160,24 +160,24 @@ Validation completed in this phase:
 
 ## Phase 3: Collapse Use Cases Into Puzzle-Centered Workflows
 
-- [ ] Redesign `PuzzleUseCases` so puzzle creation no longer requires an existing saved grid.
-- [ ] Introduce a puzzle creation path that accepts a size and creates a new puzzle directly in Grid mode.
-- [ ] Add explicit use cases for mode switching, including persisted `last_mode`.
-- [ ] Move standalone grid-editing operations into puzzle use cases:
-- [ ] toggle black cell
-- [ ] rotate grid if retained
-- [ ] grid-mode undo/redo
-- [ ] puzzle-mode undo/redo
-- [ ] stats retrieval for both modes via puzzle stats
-- [ ] Remove or deprecate puzzle operations that depend on `replace_puzzle_grid(new_grid_name)`.
-- [ ] Remove or deprecate `GridUseCases` methods that exist only to manage standalone saved grids.
-- [ ] Keep any temporary adapter methods only as long as needed to support migration or compatibility.
-- [ ] Add use-case tests for:
-- [ ] create new puzzle in Grid mode
-- [ ] open existing puzzle in persisted mode
-- [ ] switching Puzzle mode -> Grid mode with confirmation handled at higher layers
-- [ ] mode-local undo/redo reset on mode switch
-- [ ] grid edit aftermath on clues and answers
+- [x] Redesign `PuzzleUseCases` so puzzle creation no longer requires an existing saved grid.
+- [x] Introduce a puzzle creation path that accepts a size and creates a new puzzle directly in Grid mode.
+- [x] Add explicit use cases for mode switching, including persisted `last_mode`.
+- [x] Move standalone grid-editing operations into puzzle use cases:
+- [x] toggle black cell
+- [x] rotate grid if retained
+- [x] grid-mode undo/redo
+- [x] puzzle-mode undo/redo
+- [x] stats retrieval for both modes via puzzle stats
+- [x] Remove or deprecate puzzle operations that depend on `replace_puzzle_grid(new_grid_name)`.
+- [x] Remove or deprecate `GridUseCases` methods that exist only to manage standalone saved grids.
+- [x] Keep any temporary adapter methods only as long as needed to support migration or compatibility.
+- [x] Add use-case tests for:
+- [x] create new puzzle in Grid mode
+- [x] open existing puzzle in persisted mode
+- [x] switching Puzzle mode -> Grid mode with confirmation handled at higher layers
+- [x] mode-local undo/redo reset on mode switch
+- [x] grid edit aftermath on clues and answers
 
 **Primary files/modules**
 
@@ -188,8 +188,34 @@ Validation completed in this phase:
 
 **Checkpoint**
 
-- [ ] All editing behavior needed by the UI is available through puzzle-focused use cases.
-- [ ] No required user flow depends on creating or opening a standalone saved grid.
+- [x] All editing behavior needed by the UI is available through puzzle-focused use cases.
+- [x] No required user flow depends on creating or opening a standalone saved grid.
+
+### Phase 3 Notes
+
+Implemented in this phase:
+
+- `PuzzleUseCases.create_puzzle` now supports puzzle-first creation by `size`, while still accepting `grid_name` as a legacy compatibility path.
+- New puzzle-first use cases now exist for:
+- `switch_to_grid_mode`
+- `switch_to_puzzle_mode`
+- `toggle_black_cell`
+- `rotate_grid`
+- `undo_grid`
+- `redo_grid`
+- Existing `copy_puzzle` and `open_puzzle_for_editing` now reset both Puzzle-mode and Grid-mode histories when creating a new working session.
+- `get_puzzle_stats` already serves both modes, so no separate grid stats use case is needed.
+
+Compatibility decision in this phase:
+
+- `replace_puzzle_grid(new_grid_name)` remains in place temporarily as a legacy compatibility path.
+- `GridUseCases` remains in place temporarily because the HTTP layer and frontend still call it in later phases.
+- In that sense, the Phase 3 goal is complete at the application-service level, but not yet complete as total old-code removal.
+
+Validation completed in this phase:
+
+- `./venv/bin/pytest -q crossword/tests/test_puzzle_use_cases.py crossword/tests/test_wiring.py`
+- `./venv/bin/pytest -q crossword/tests/test_puzzle_modes.py crossword/tests/adapters/test_sqlite_adapter.py`
 
 ## Phase 4: Replace Grid HTTP Endpoints With Puzzle-Centric Endpoints
 

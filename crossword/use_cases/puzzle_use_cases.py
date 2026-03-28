@@ -2,12 +2,18 @@
 Puzzle use cases - CRUD operations on puzzles and word editing.
 
 Public interface:
-  create_puzzle(user_id, name, grid_name) -> None
+  create_puzzle(user_id, name, grid_name=None, size=None) -> None
   load_puzzle(user_id, name) -> Puzzle
   delete_puzzle(user_id, name) -> None
   list_puzzles(user_id) -> list[str]
   copy_puzzle(user_id, source_name, new_name) -> Puzzle
   open_puzzle_for_editing(user_id, name) -> str
+  switch_to_grid_mode(user_id, name) -> Puzzle
+  switch_to_puzzle_mode(user_id, name) -> Puzzle
+  toggle_black_cell(user_id, name, r, c) -> Puzzle
+  rotate_grid(user_id, name) -> Puzzle
+  undo_grid(user_id, name) -> Puzzle
+  redo_grid(user_id, name) -> Puzzle
   set_puzzle_title(user_id, name, title) -> Puzzle
   reset_word(user_id, name, seq, direction) -> Puzzle
   set_cell_letter(user_id, name, r, c, letter) -> Puzzle
@@ -23,7 +29,7 @@ Public interface:
 import logging
 import uuid
 
-from crossword import Puzzle, PuzzleToSVG
+from crossword import Grid, Puzzle, PuzzleToSVG
 from crossword.domain.word import Word
 from crossword.ports.persistence_port import PersistencePort, PersistenceError
 from crossword.use_cases._name_validation import validate_new_public_name, validate_public_name
@@ -41,21 +47,36 @@ class PuzzleUseCases:
     def __init__(self, persistence: PersistencePort):
         self.persistence = persistence
 
-    def create_puzzle(self, user_id: int, name: str, grid_name: str) -> None:
+    def create_puzzle(self, user_id: int, name: str, grid_name: str = None,
+                      size: int = None) -> None:
         """
-        Create a new puzzle from a grid and save it.
+        Create a new puzzle and save it.
 
         Args:
             user_id: The user who owns this puzzle
             name: Name/identifier for the puzzle
-            grid_name: Name of the grid to base the puzzle on
+            grid_name: Optional legacy grid name to base the puzzle on
+            size: Optional new puzzle size for puzzle-first creation
 
         Raises:
             PersistenceError: If grid not found or save fails
         """
         validate_new_public_name("puzzle", name, self.persistence.list_puzzles(user_id))
-        grid = self.persistence.load_grid(user_id, grid_name)
+
+        if size is not None and grid_name is not None:
+            raise ValueError("Specify either grid_name or size, not both")
+        if size is None and grid_name is None:
+            raise ValueError("Either grid_name or size is required")
+
+        if size is not None:
+            if size < 1:
+                raise ValueError(f"Grid size must be at least 1, got {size}")
+            grid = Grid(size)
+        else:
+            grid = self.persistence.load_grid(user_id, grid_name)
+
         puzzle = Puzzle(grid)
+        puzzle.enter_grid_mode()
         self.persistence.save_puzzle(user_id, name, puzzle)
 
     def load_puzzle(self, user_id: int, name: str) -> Puzzle:
@@ -122,6 +143,8 @@ class PuzzleUseCases:
             raise ValueError("new_name must not be empty")
         validate_public_name("puzzle", new_name)
         puzzle = self.persistence.load_puzzle(user_id, source_name)
+        puzzle.grid_undo_stack = []
+        puzzle.grid_redo_stack = []
         puzzle.undo_stack = []
         puzzle.redo_stack = []
         self.persistence.save_puzzle(user_id, new_name, puzzle)
@@ -147,10 +170,56 @@ class PuzzleUseCases:
         """
         working_name = f"__wc__{name}__{uuid.uuid4().hex[:8]}"
         puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.grid_undo_stack = []
+        puzzle.grid_redo_stack = []
         puzzle.undo_stack = []
         puzzle.redo_stack = []
         self.persistence.save_puzzle(user_id, working_name, puzzle)
         return working_name
+
+    def switch_to_grid_mode(self, user_id: int, name: str) -> Puzzle:
+        """Enter Grid mode and reset Grid-mode history for this session."""
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.enter_grid_mode()
+        self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
+    def switch_to_puzzle_mode(self, user_id: int, name: str) -> Puzzle:
+        """Enter Puzzle mode and reset Puzzle-mode history for this session."""
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.enter_puzzle_mode()
+        self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
+    def toggle_black_cell(self, user_id: int, name: str, r: int, c: int) -> Puzzle:
+        """Toggle a black cell in the puzzle grid and save the change."""
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.toggle_black_cell(r, c)
+        self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
+    def rotate_grid(self, user_id: int, name: str) -> Puzzle:
+        """Rotate the puzzle grid and save the change."""
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.rotate_grid()
+        self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
+    def undo_grid(self, user_id: int, name: str) -> Puzzle:
+        """Undo the last Grid-mode operation."""
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        if puzzle.grid_undo_stack:
+            puzzle.undo_grid_change()
+            self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
+    def redo_grid(self, user_id: int, name: str) -> Puzzle:
+        """Redo the last undone Grid-mode operation."""
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        if puzzle.grid_redo_stack:
+            puzzle.redo_grid_change()
+            self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
 
     def set_puzzle_title(self, user_id: int, name: str, title: str) -> Puzzle:
         """
