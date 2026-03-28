@@ -74,7 +74,7 @@ class TestSQLiteDictionaryAdapter:
 
     def test_load_from_database(self):
         """Test loading words from the words.db database"""
-        db_path = Path(__file__).resolve().parents[3] / "words.db"
+        db_path = Path(__file__).resolve().parents[3] / "examples" / "words.db"
         if not db_path.exists():
             pytest.skip(f"words.db not found at {db_path}")
 
@@ -87,7 +87,7 @@ class TestSQLiteDictionaryAdapter:
 
     def test_word_pattern_search_crossword(self):
         """Test realistic crossword pattern search"""
-        db_path = Path(__file__).resolve().parents[3] / "words.db"
+        db_path = Path(__file__).resolve().parents[3] / "examples" / "words.db"
         if not db_path.exists():
             pytest.skip(f"words.db not found at {db_path}")
 
