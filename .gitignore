@@ -2,7 +2,7 @@
 *.pyc
 *.pyo
 *.db
-!samples.db
+!sample.crossword.db
 !words.db
 __pycache__
 flask_session

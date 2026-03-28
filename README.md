@@ -64,7 +64,7 @@ dbfile: /path/to/crossword.db
 log_level: INFO
 ```
 
-If the file does not exist, the application uses `examples/samples.db`
+If the file does not exist, the application uses `examples/sample.crossword.db`
 and a log level of `INFO`.
 
 ## Running the server
