@@ -32,8 +32,72 @@ class SQLitePersistenceAdapter(PersistencePort):
         try:
             self.conn = sqlite3.connect(db_path)
             self.conn.row_factory = sqlite3.Row  # Enable column access by name
+            self._ensure_schema_compatibility()
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to connect to database {db_path}: {e}")
+
+    def _table_exists(self, table_name: str) -> bool:
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table_name,)
+        )
+        return cursor.fetchone() is not None
+
+    def _column_exists(self, table_name: str, column_name: str) -> bool:
+        cursor = self.conn.cursor()
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        rows = cursor.fetchall()
+        return any(row["name"] == column_name for row in rows)
+
+    def _ensure_schema_compatibility(self) -> None:
+        """
+        Bring the SQLite schema forward to the puzzle-centric layout expected
+        by the merged editor work, while keeping legacy grid tables available
+        temporarily for compatibility.
+        """
+        try:
+            cursor = self.conn.cursor()
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS grids (
+                    id              INTEGER PRIMARY KEY,
+                    userid          INTEGER,
+                    gridname        TEXT,
+                    created         TEXT,
+                    modified        TEXT,
+                    jsonstr         TEXT
+                )
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS puzzles (
+                    id              INTEGER PRIMARY KEY,
+                    userid          INTEGER NOT NULL,
+                    puzzlename      TEXT NOT NULL,
+                    created         TEXT NOT NULL,
+                    modified        TEXT NOT NULL,
+                    last_mode       TEXT NOT NULL DEFAULT 'puzzle'
+                                        CHECK (last_mode IN ('grid', 'puzzle')),
+                    jsonstr         TEXT NOT NULL
+                )
+            """)
+
+            if self._table_exists("puzzles") and not self._column_exists("puzzles", "last_mode"):
+                cursor.execute("""
+                    ALTER TABLE puzzles
+                    ADD COLUMN last_mode TEXT NOT NULL DEFAULT 'puzzle'
+                        CHECK (last_mode IN ('grid', 'puzzle'))
+                """)
+
+            cursor.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_userid_puzzlename
+                ON puzzles(userid, puzzlename)
+            """)
+
+            self.conn.commit()
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Failed to ensure schema compatibility: {e}")
 
     def init_schema(self) -> None:
         """
@@ -45,28 +109,9 @@ class SQLitePersistenceAdapter(PersistencePort):
             PersistenceError: If schema creation fails
         """
         try:
-            cursor = self.conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS grids (
-                    id              INTEGER PRIMARY KEY,
-                    userid          INTEGER,
-                    gridname        TEXT,
-                    created         TEXT,
-                    modified        TEXT,
-                    jsonstr         TEXT
-                )
-            """)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS puzzles (
-                    id              INTEGER PRIMARY KEY,
-                    userid          INTEGER,
-                    puzzlename      TEXT,
-                    created         TEXT,
-                    modified        TEXT,
-                    jsonstr         TEXT
-                )
-            """)
-            self.conn.commit()
+            self._ensure_schema_compatibility()
+        except PersistenceError:
+            raise
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to initialize schema: {e}")
 
@@ -171,6 +216,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         try:
             jsonstr = puzzle.to_json()
             now = datetime.now().isoformat()
+            last_mode = getattr(puzzle, "last_mode", "puzzle")
             cursor = self.conn.cursor()
 
             # Check if puzzle already exists
@@ -184,16 +230,16 @@ class SQLitePersistenceAdapter(PersistencePort):
                 # Update existing puzzle
                 cursor.execute(
                     """UPDATE puzzles
-                       SET jsonstr = ?, modified = ?
+                       SET jsonstr = ?, modified = ?, last_mode = ?
                        WHERE userid = ? AND puzzlename = ?""",
-                    (jsonstr, now, user_id, name)
+                    (jsonstr, now, last_mode, user_id, name)
                 )
             else:
                 # Insert new puzzle
                 cursor.execute(
-                    """INSERT INTO puzzles (userid, puzzlename, created, modified, jsonstr)
-                       VALUES (?, ?, ?, ?, ?)""",
-                    (user_id, name, now, now, jsonstr)
+                    """INSERT INTO puzzles (userid, puzzlename, created, modified, last_mode, jsonstr)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (user_id, name, now, now, last_mode, jsonstr)
                 )
 
             self.conn.commit()
@@ -205,7 +251,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         try:
             cursor = self.conn.cursor()
             cursor.execute(
-                "SELECT jsonstr FROM puzzles WHERE userid = ? AND puzzlename = ?",
+                "SELECT jsonstr, last_mode FROM puzzles WHERE userid = ? AND puzzlename = ?",
                 (user_id, name)
             )
             row = cursor.fetchone()
@@ -213,7 +259,11 @@ class SQLitePersistenceAdapter(PersistencePort):
             if not row:
                 raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
 
-            return Puzzle.from_json(row['jsonstr'])
+            puzzle = Puzzle.from_json(row['jsonstr'])
+            row_last_mode = row["last_mode"] if "last_mode" in row.keys() else None
+            if row_last_mode:
+                puzzle.last_mode = row_last_mode
+            return puzzle
         except PersistenceError:
             raise
         except sqlite3.Error as e:

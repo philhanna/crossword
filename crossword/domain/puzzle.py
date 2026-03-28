@@ -21,8 +21,11 @@ class Puzzle:
         self.n = grid.n
         self.across_words = None
         self.down_words = None
-        self.undo_stack = None
-        self.redo_stack = None
+        self._puzzle_undo_stack = []
+        self._puzzle_redo_stack = []
+        self.grid_undo_stack = []
+        self.grid_redo_stack = []
+        self.last_mode = "grid"
         self.cells = {}
         self._title = title
 
@@ -40,36 +43,7 @@ class Puzzle:
     def replace_grid(self, newgrid):
         if newgrid.n != self.n:
             raise ValueError("Incompatible grid sizes")
-        # Save the JSON image so that clues can be reconstructed
-        oldjson = self.to_json()
-
-        self.grid = newgrid
-        for bc in self.black_cells:
-            self.cells[bc] = Puzzle.WHITE
-        for bc in self.black_cells:
-            self.cells[bc] = Puzzle.BLACK
-        self.initialize_words()
-
-        # Now set the clues for words that have not changed
-        obj = json.loads(oldjson)
-
-        across_clues = {x['text']:x['clue'] for x in obj['across_words']}
-        down_clues = {x['text']:x['clue'] for x in obj['down_words']}
-        cluemap = {**across_clues, **down_clues}
-
-        for word in self.across_words.values():
-            text = word.get_text()
-            clue = cluemap.get(text, None)
-            if clue:
-                word.set_clue(clue)
-
-        for word in self.down_words.values():
-            text = word.get_text()
-            clue = cluemap.get(text, None)
-            if clue:
-                word.set_clue(clue)
-
-        pass  # TODO replace the clues
+        self._apply_new_grid(newgrid)
 
     def initialize_words(self):
         # Now populate the across and down words
@@ -84,9 +58,6 @@ class Puzzle:
             # Yes, this is a down word
             if numbered_cell.d:
                 self.down_words[numbered_cell.seq] = DownWord(self, numbered_cell.seq)
-
-        self.undo_stack = []
-        self.redo_stack = []
 
     def __eq__(self, other):
         return self.to_json() == other.to_json()
@@ -143,6 +114,24 @@ class Puzzle:
         word.set_clue(clue)
 
     @property
+    def undo_stack(self):
+        """Compatibility alias for the Puzzle-mode undo stack."""
+        return self._puzzle_undo_stack
+
+    @undo_stack.setter
+    def undo_stack(self, value):
+        self._puzzle_undo_stack = value
+
+    @property
+    def redo_stack(self):
+        """Compatibility alias for the Puzzle-mode redo stack."""
+        return self._puzzle_redo_stack
+
+    @redo_stack.setter
+    def redo_stack(self, value):
+        self._puzzle_redo_stack = value
+
+    @property
     def black_cells(self):
         """ Returns black cells from the grid """
         return self.grid.get_black_cells()
@@ -189,6 +178,50 @@ class Puzzle:
     def get_word_lengths(self):
         """ Returns a list of word lengths and words of that length """
         return self.grid.get_word_lengths()
+
+    def symmetric_point(self, r, c):
+        return self.grid.symmetric_point(r, c)
+
+    def enter_grid_mode(self):
+        self.last_mode = "grid"
+        self.grid_undo_stack = []
+        self.grid_redo_stack = []
+
+    def enter_puzzle_mode(self):
+        self.last_mode = "puzzle"
+        self.undo_stack = []
+        self.redo_stack = []
+
+    def toggle_black_cell(self, r, c):
+        newgrid = Grid.from_json(self.grid.to_json())
+        self.grid_undo_stack.append(self.grid.to_json())
+        self.grid_redo_stack = []
+        if newgrid.is_black_cell(r, c):
+            newgrid.remove_black_cell(r, c)
+        else:
+            newgrid.add_black_cell(r, c)
+        self._apply_new_grid(newgrid)
+
+    def rotate_grid(self):
+        newgrid = Grid.from_json(self.grid.to_json())
+        self.grid_undo_stack.append(self.grid.to_json())
+        self.grid_redo_stack = []
+        newgrid.rotate()
+        self._apply_new_grid(newgrid)
+
+    def undo_grid_change(self):
+        if len(self.grid_undo_stack) == 0:
+            return
+        oldgrid_json = self.grid_undo_stack.pop()
+        self.grid_redo_stack.append(self.grid.to_json())
+        self._apply_new_grid(Grid.from_json(oldgrid_json))
+
+    def redo_grid_change(self):
+        if len(self.grid_redo_stack) == 0:
+            return
+        oldgrid_json = self.grid_redo_stack.pop()
+        self.grid_undo_stack.append(self.grid.to_json())
+        self._apply_new_grid(Grid.from_json(oldgrid_json))
 
     #   ========================================================
     #   undo / redo logic
@@ -252,6 +285,7 @@ class Puzzle:
         image = dict()
         image['n'] = self.n
         image['title'] = self.title
+        image['last_mode'] = self.last_mode
         image['cells'] = [cellsrow for cellsrow in str(self).split('\n')]
         image['black_cells'] = [black_cell for black_cell in self.black_cells]
 
@@ -280,6 +314,10 @@ class Puzzle:
         image['down_words'] = dwlist
         image['undo_stack'] = self.undo_stack
         image['redo_stack'] = self.redo_stack
+        image['puzzle_undo_stack'] = self.undo_stack
+        image['puzzle_redo_stack'] = self.redo_stack
+        image['grid_undo_stack'] = self.grid_undo_stack
+        image['grid_redo_stack'] = self.grid_redo_stack
 
         # Create string in JSON format
         jsonstr = json.dumps(image)
@@ -302,6 +340,7 @@ class Puzzle:
         # Create the puzzle
         puzzle = Puzzle(grid)
         title = image.get('title', None)
+        puzzle.last_mode = image.get('last_mode', 'puzzle')
         puzzle._title = title   # Can't use the undo/redo here yet
 
         # Reload the "ACROSS" words
@@ -324,14 +363,61 @@ class Puzzle:
             word.set_text(text)     # TODO: Can't do this - undo/redo
             word.set_clue(clue)     # TODO: Can't do this - undo/redo
 
-        puzzle.undo_stack = image.get('undo_stack', [])
-        puzzle.redo_stack = image.get('redo_stack', [])
+        puzzle.undo_stack = image.get('puzzle_undo_stack', image.get('undo_stack', []))
+        puzzle.redo_stack = image.get('puzzle_redo_stack', image.get('redo_stack', []))
+        puzzle.grid_undo_stack = image.get('grid_undo_stack', [])
+        puzzle.grid_redo_stack = image.get('grid_redo_stack', [])
 
         return puzzle
 
     #   ========================================================
     #   Internal methods
     #   ========================================================
+
+    def _word_identity(self, direction, word):
+        cells = list(word.cell_iterator())
+        return (
+            direction,
+            (word.numbered_cell.r, word.numbered_cell.c),
+            tuple(cells),
+            word.get_text(),
+        )
+
+    def _capture_clues_by_identity(self):
+        clues = {}
+        for word in self.across_words.values():
+            clue = word.get_clue()
+            if clue:
+                clues[self._word_identity(Word.ACROSS, word)] = clue
+        for word in self.down_words.values():
+            clue = word.get_clue()
+            if clue:
+                clues[self._word_identity(Word.DOWN, word)] = clue
+        return clues
+
+    def _apply_new_grid(self, newgrid):
+        old_black_cells = set(self.black_cells)
+        clues_by_identity = self._capture_clues_by_identity()
+
+        self.grid = newgrid
+
+        new_black_cells = set(self.black_cells)
+        for cell in old_black_cells - new_black_cells:
+            self.cells[cell] = Puzzle.WHITE
+        for cell in new_black_cells:
+            self.cells[cell] = Puzzle.BLACK
+
+        self.initialize_words()
+
+        for word in self.across_words.values():
+            clue = clues_by_identity.get(self._word_identity(Word.ACROSS, word))
+            if clue:
+                word.set_clue(clue)
+
+        for word in self.down_words.values():
+            clue = clues_by_identity.get(self._word_identity(Word.DOWN, word))
+            if clue:
+                word.set_clue(clue)
 
     def validate(self):
         """ Validates puzzle for errors """

@@ -14,12 +14,12 @@ The plan below retires those assumptions in controlled steps rather than trying 
 
 ## Phase 0: Prep And Guardrails
 
-- [ ] Re-read `docs/plans/merge_grid_puzzle_requirements.md` and freeze the implementation contract.
-- [ ] Identify every user-visible grid workflow that currently depends on standalone saved grids.
-- [ ] Inventory all code paths that call `load_grid`, `save_grid`, `list_grids`, or `delete_grid`.
-- [ ] Inventory all code paths that assume `AppState.view` can be `grid-editor` or `puzzle-editor`.
-- [ ] Decide whether this work will land behind a temporary feature branch only, or behind a runtime flag.
-- [ ] Add a short implementation note listing any intentionally deferred cleanup items.
+- [x] Re-read `docs/plans/merge_grid_puzzle_requirements.md` and freeze the implementation contract.
+- [x] Identify every user-visible grid workflow that currently depends on standalone saved grids.
+- [x] Inventory all code paths that call `load_grid`, `save_grid`, `list_grids`, or `delete_grid`.
+- [x] Inventory all code paths that assume `AppState.view` can be `grid-editor` or `puzzle-editor`.
+- [x] Decide whether this work will land behind a temporary feature branch only, or behind a runtime flag.
+- [x] Add a short implementation note listing any intentionally deferred cleanup items.
 
 **Primary files/modules**
 
@@ -33,25 +33,46 @@ The plan below retires those assumptions in controlled steps rather than trying 
 
 **Checkpoint**
 
-- [ ] The team agrees on phase boundaries, rollout order, and any temporary compatibility strategy.
+- [x] The team agrees on phase boundaries, rollout order, and any temporary compatibility strategy.
+
+### Phase 0 Notes
+
+Implementation findings from the Phase 0 inventory:
+
+- Standalone saved-grid behavior is deeply wired into the backend through `PersistencePort`, `SQLitePersistenceAdapter`, `GridUseCases`, `grid_handlers`, route registration in `crossword/http_server/main.py`, export use cases, and a large dedicated test surface.
+- The frontend still has a full parallel grid editor flow in `frontend/static/js/app.js` and `frontend/index.html`, including Grid menu items, grid working-copy state, a grid-specific toolbar, and a separate grid statistics panel.
+- Documentation also assumes the old split architecture, especially [frontend.md](/home/saspeh/dev/python/crossword/docs/design/frontend.md), [README.md](/home/saspeh/dev/python/crossword/README.md), and [calltree.md](/home/saspeh/dev/python/crossword/docs/design/calltree.md).
+
+Rollout decision:
+
+- Use a compatibility-first branch rollout, not a runtime feature flag.
+- The change is architectural enough that maintaining both the old and new editor flows behind a UI flag would add too much temporary complexity across persistence, API shape, and frontend state.
+- We should keep temporary compatibility code only where it reduces migration risk during intermediate phases.
+
+Intentionally deferred cleanup items:
+
+- Remove legacy grid export endpoints only after the merged puzzle model is stable.
+- Remove `GridUseCases` and grid-specific tests only after puzzle-centered replacements exist.
+- Update secondary design docs after the main implementation lands, not during the first backend refactor.
+- Decide whether any short-lived JSON backward-compatibility loader is needed during schema migration when Phase 2 begins.
 
 ## Phase 1: Unify The Domain Model Around Puzzle
 
-- [ ] Extend `Puzzle` so it directly owns all grid structure needed for black-cell editing, numbering, and stats.
-- [ ] Move or absorb relevant behavior from `Grid` into `Puzzle`.
-- [ ] Add explicit persisted mode state to `Puzzle`, for example `last_mode`.
-- [ ] Add mode-local undo/redo state to `Puzzle`, separating Grid-mode history from Puzzle-mode history.
-- [ ] Define clear `Puzzle` methods for:
-- [ ] toggling a black cell with symmetry handling
-- [ ] rotating the grid if rotation is still retained
-- [ ] entering Grid mode
-- [ ] entering Puzzle mode
-- [ ] resetting per-mode undo/redo stacks on mode switch
-- [ ] recalculating numbering and words after grid edits
-- [ ] preserving or clearing clues according to the requirements
-- [ ] preserving surviving letters when entries split, shrink, or merge
-- [ ] Keep `Grid` temporarily only as a compatibility wrapper if needed during the refactor, but make `Puzzle` the real owner of the behavior.
-- [ ] Add or update domain tests for all new `Puzzle` behavior before removing compatibility scaffolding.
+- [x] Extend `Puzzle` so it directly owns all grid structure needed for black-cell editing, numbering, and stats.
+- [x] Move or absorb relevant behavior from `Grid` into `Puzzle`.
+- [x] Add explicit persisted mode state to `Puzzle`, for example `last_mode`.
+- [x] Add mode-local undo/redo state to `Puzzle`, separating Grid-mode history from Puzzle-mode history.
+- [x] Define clear `Puzzle` methods for:
+- [x] toggling a black cell with symmetry handling
+- [x] rotating the grid if rotation is still retained
+- [x] entering Grid mode
+- [x] entering Puzzle mode
+- [x] resetting per-mode undo/redo stacks on mode switch
+- [x] recalculating numbering and words after grid edits
+- [x] preserving or clearing clues according to the requirements
+- [x] preserving surviving letters when entries split, shrink, or merge
+- [x] Keep `Grid` temporarily only as a compatibility wrapper if needed during the refactor, but make `Puzzle` the real owner of the behavior.
+- [x] Add or update domain tests for all new `Puzzle` behavior before removing compatibility scaffolding.
 
 **Primary files/modules**
 
@@ -65,25 +86,44 @@ The plan below retires those assumptions in controlled steps rather than trying 
 
 **Checkpoint**
 
-- [ ] `Puzzle` can represent the full merged state without depending on a separately persisted grid object.
-- [ ] Domain tests cover split, shrink, merge, clue clearing, and mode-local undo/redo.
+- [x] `Puzzle` can represent the full merged state without depending on a separately persisted grid object.
+- [x] Domain tests cover split, shrink, merge, clue clearing, and mode-local undo/redo.
+
+### Phase 1 Notes
+
+Implemented in this phase:
+
+- `Puzzle` now owns merged-editor domain state for `last_mode`, `grid_undo_stack`, and `grid_redo_stack`.
+- Legacy `undo_stack` and `redo_stack` remain as compatibility aliases for Puzzle-mode text history so existing use cases continue to work.
+- `Puzzle` now exposes domain methods for `enter_grid_mode`, `enter_puzzle_mode`, `toggle_black_cell`, `rotate_grid`, `undo_grid_change`, and `redo_grid_change`.
+- Grid changes now flow through a shared `_apply_new_grid` path that:
+- preserves surviving letters in still-white cells
+- turns removed black cells into blank spaces
+- reinitializes numbering and entries
+- preserves clues only when the exact identity rule matches
+- clears clues for affected entries by default
+
+Validation completed in this phase:
+
+- `./venv/bin/pytest -q crossword/tests/test_puzzle.py crossword/tests/test_puzzle_undo.py crossword/tests/test_puzzle_replace_grid.py crossword/tests/test_puzzle_modes.py`
+- `./venv/bin/pytest -q crossword/tests/test_grid.py crossword/tests/test_grid_rotate.py crossword/tests/test_grid_undo_redo.py`
 
 ## Phase 2: Redesign Persistence And Schema
 
-- [ ] Update the persistence contract so puzzles are the only persisted construction object.
-- [ ] Add persisted mode support to puzzle load/save operations.
-- [ ] Remove grid CRUD responsibilities from the long-term `PersistencePort`.
-- [ ] Update the SQLite adapter schema to the target `puzzles` table layout, including `last_mode`.
-- [ ] Implement migration support for old rows whose puzzle JSON does not yet contain embedded unified grid state.
-- [ ] Decide whether migration happens eagerly at startup, lazily on first load, or via a one-off admin script.
-- [ ] Ensure working-copy persistence still functions for puzzles after the schema change.
-- [ ] Remove dependence on the `grids` table once migration is complete.
-- [ ] Add adapter tests covering:
-- [ ] new schema initialization
-- [ ] save/load of unified puzzles
-- [ ] persisted `last_mode`
-- [ ] migration of legacy rows
-- [ ] absence of standalone grid persistence in the new model
+- [x] Update the persistence contract so puzzles are the only persisted construction object.
+- [x] Add persisted mode support to puzzle load/save operations.
+- [x] Remove grid CRUD responsibilities from the long-term `PersistencePort`.
+- [x] Update the SQLite adapter schema to the target `puzzles` table layout, including `last_mode`.
+- [x] Implement migration support for old rows whose puzzle JSON does not yet contain embedded unified grid state.
+- [x] Decide whether migration happens eagerly at startup, lazily on first load, or via a one-off admin script.
+- [x] Ensure working-copy persistence still functions for puzzles after the schema change.
+- [x] Remove dependence on the `grids` table once migration is complete.
+- [x] Add adapter tests covering:
+- [x] new schema initialization
+- [x] save/load of unified puzzles
+- [x] persisted `last_mode`
+- [x] migration of legacy rows
+- [x] absence of standalone grid persistence in the new model
 
 **Primary files/modules**
 
@@ -94,8 +134,29 @@ The plan below retires those assumptions in controlled steps rather than trying 
 
 **Checkpoint**
 
-- [ ] One database row in `puzzles` is sufficient to reconstruct both Grid mode and Puzzle mode.
-- [ ] Legacy data migration path is implemented and tested.
+- [x] One database row in `puzzles` is sufficient to reconstruct both Grid mode and Puzzle mode.
+- [x] Legacy data migration path is implemented and tested.
+
+### Phase 2 Notes
+
+Implemented in this phase:
+
+- `PersistencePort` now documents unified puzzle persistence as the target architecture, while explicitly treating standalone grid methods as temporary legacy compatibility surface.
+- `SQLitePersistenceAdapter` now ensures schema compatibility on connect.
+- The `puzzles` table is now created or migrated forward with a persisted `last_mode` column.
+- Puzzle save/load now persists `last_mode` both in the dedicated SQL column and in the serialized puzzle JSON.
+- Legacy puzzle rows without `last_mode` continue to load successfully and default to `puzzle` mode until rewritten in the new format.
+- Migration is eager on adapter initialization rather than deferred to first load.
+
+Compatibility decision in this phase:
+
+- The legacy `grids` table and grid persistence methods are still present temporarily so the rest of the application can keep working while later phases replace grid-specific use cases and routes.
+- In that sense, “remove grid CRUD responsibilities from the long-term port” is implemented architecturally and in documentation, but not yet as total code deletion.
+
+Validation completed in this phase:
+
+- `./venv/bin/pytest -q crossword/tests/adapters/test_sqlite_adapter.py crossword/tests/test_wiring.py`
+- `./venv/bin/pytest -q crossword/tests/test_puzzle.py crossword/tests/test_puzzle_undo.py crossword/tests/test_puzzle_replace_grid.py crossword/tests/test_puzzle_modes.py crossword/tests/test_grid.py crossword/tests/test_grid_rotate.py crossword/tests/test_grid_undo_redo.py`
 
 ## Phase 3: Collapse Use Cases Into Puzzle-Centered Workflows
 

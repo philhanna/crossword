@@ -1,8 +1,9 @@
 """
-Persistence Port - CRUD operations for grids and puzzles
+Persistence Port - CRUD operations for persisted crossword data.
 
-This port defines the contract that any persistence adapter (SQLite, file-based, etc.)
-must implement to save and load grids and puzzles.
+The long-term architecture centers persistence on unified Puzzle objects.
+Grid persistence methods remain here temporarily as legacy-compatibility
+surface while the standalone grid workflow is being removed.
 
 Single-threaded access is assumed. No transactions are defined.
 """
@@ -18,7 +19,7 @@ class PersistenceError(Exception):
 
 class PersistencePort(ABC):
     """
-    Abstract interface for persistent storage of grids and puzzles.
+    Abstract interface for persistent storage.
 
     Assumes single-threaded access and a single hardcoded user (user_id).
     All operations are synchronous.
@@ -31,7 +32,7 @@ class PersistencePort(ABC):
     @abstractmethod
     def save_grid(self, user_id: int, name: str, grid: Grid) -> None:
         """
-        Save a grid to persistent storage.
+        Legacy-compatibility method: save a standalone grid to persistent storage.
 
         If a grid with the same name already exists, it is overwritten.
         Updated timestamps should be maintained by the adapter.
@@ -49,7 +50,7 @@ class PersistencePort(ABC):
     @abstractmethod
     def load_grid(self, user_id: int, name: str) -> Grid:
         """
-        Load a grid from persistent storage.
+        Legacy-compatibility method: load a standalone grid from persistent storage.
 
         Args:
             user_id: The user who owns this grid
@@ -66,7 +67,7 @@ class PersistencePort(ABC):
     @abstractmethod
     def delete_grid(self, user_id: int, name: str) -> None:
         """
-        Delete a grid from persistent storage.
+        Legacy-compatibility method: delete a standalone grid from persistent storage.
 
         Args:
             user_id: The user who owns this grid
@@ -80,7 +81,7 @@ class PersistencePort(ABC):
     @abstractmethod
     def list_grids(self, user_id: int) -> list[str]:
         """
-        Get list of grid names for a user.
+        Legacy-compatibility method: get list of standalone grid names for a user.
 
         Results are sorted with most recently modified first.
 
@@ -105,7 +106,8 @@ class PersistencePort(ABC):
         Save a puzzle to persistent storage.
 
         If a puzzle with the same name already exists, it is overwritten.
-        Updated timestamps should be maintained by the adapter.
+        Updated timestamps and persisted mode metadata should be maintained
+        by the adapter.
 
         Args:
             user_id: The user who owns this puzzle
