@@ -92,3 +92,54 @@ h3 {
     cursor: pointer;
     padding: 0 4px;
 }
+
+/* Home-view activity log */
+.activity-log-panel {
+    margin-top: 18px;
+    max-width: 720px;
+}
+
+.activity-log-header {
+    padding: 7px;
+}
+
+.activity-log-body {
+    padding-top: 10px;
+    padding-bottom: 12px;
+}
+
+.activity-log-list {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.activity-log-entry {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.activity-log-entry:last-child {
+    border-bottom: 0;
+}
+
+.activity-log-time {
+    flex: 0 0 72px;
+    color: #666;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.activity-log-text {
+    flex: 1 1 auto;
+    line-height: 1.4;
+}
+
+.activity-log-empty {
+    color: #666;
+    font-style: italic;
+    padding: 4px 0;
+}

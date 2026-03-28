@@ -22,6 +22,7 @@ const AppState = {
     showingStats: false,     // true = puzzle editor RHS shows stats panel
     _statsData: null,        // cached puzzle stats response
     gridStructureChanged: false, // true after Grid-mode edits until user returns to Puzzle mode
+    activityLog: [],         // [{time, text}]
 };
 
 // ---------------------------------------------------------------------------
@@ -46,6 +47,37 @@ function escapeHtml(s) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+function formatActivityTime(date = new Date()) {
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function appendActivityLog(text) {
+    AppState.activityLog.unshift({
+        time: formatActivityTime(),
+        text,
+    });
+}
+
+function renderActivityLog() {
+    if (AppState.activityLog.length === 0) {
+        return `
+<div class="activity-log-empty">
+  No puzzle activity yet in this session.
+</div>`;
+    }
+
+    const rows = AppState.activityLog.map(entry => `
+<div class="activity-log-entry">
+  <div class="activity-log-time">${escapeHtml(entry.time)}</div>
+  <div class="activity-log-text">${escapeHtml(entry.text)}</div>
+</div>`).join('');
+
+    return `
+<div class="activity-log-list">
+  ${rows}
+</div>`;
 }
 
 async function apiFetch(method, path, body) {
@@ -268,7 +300,17 @@ function showView(view) {
 
 function renderHome() {
     document.getElementById('lhs').innerHTML =
-        '<div class="w3-container"><p>Use the Puzzle menu to create or open a crossword for editing.</p></div>';
+        `<div class="w3-container">
+  <p>Use the Puzzle menu to create or open a crossword for editing.</p>
+  <div class="w3-card-4 activity-log-panel">
+    <header class="w3-container w3-blue-gray activity-log-header">
+      <h3>Recent puzzle activity</h3>
+    </header>
+    <div class="w3-container activity-log-body">
+      ${renderActivityLog()}
+    </div>
+  </div>
+</div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1224,7 +1266,7 @@ async function doWordEditOK() {
 // Menu actions — Puzzle
 // ---------------------------------------------------------------------------
 
-async function _openPuzzleInEditor(name) {
+async function _openPuzzleInEditor(name, { logOpen = true } = {}) {
     const openData = await apiFetch('POST', `/api/puzzles/${encodeURIComponent(name)}/open`);
     if (openData.error) {
         throw new Error(openData.error);
@@ -1243,6 +1285,9 @@ async function _openPuzzleInEditor(name) {
     AppState.showingStats      = false;
     AppState._statsData        = null;
     AppState.gridStructureChanged = false;
+    if (logOpen) {
+        appendActivityLog(`Opened puzzle "${name}".`);
+    }
     showView('editor');
 }
 
@@ -1282,7 +1327,8 @@ async function do_puzzle_new() {
                     if (await rejectIfNameExists('puzzle', name, _listSavedPuzzleNames)) return;
                     const data = await apiFetch('POST', '/api/puzzles', { name, size: n });
                     if (data.error) { alert(`Error creating puzzle: ${data.error}`); return; }
-                    await _openPuzzleInEditor(name);
+                    appendActivityLog(`Created puzzle "${name}".`);
+                    await _openPuzzleInEditor(name, { logOpen: false });
                 } catch (e) { alert('Error creating puzzle'); }
             });
         }
@@ -1298,6 +1344,7 @@ async function do_puzzle_save() {
             `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { alert(`Save failed: ${data.error}`); return; }
         AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
+        appendActivityLog(`Saved puzzle "${name}".`);
         showMessageLine(`Puzzle ${name} saved.`, 'notice');
     } catch (e) { alert('Error saving puzzle'); }
 }
@@ -1319,6 +1366,7 @@ async function _savePuzzleAsName(newName) {
     }
     AppState.puzzleName      = newName;
     AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
+    appendActivityLog(`Saved puzzle as "${newName}".`);
     renderPuzzleEditorLhs();
     showMessageLine(`Puzzle ${newName} saved.`, 'notice');
 }
@@ -1338,10 +1386,11 @@ async function do_puzzle_save_as() {
     });
 }
 
-async function _doPuzzleCloseConfirmed() {
+async function _doPuzzleCloseConfirmed(withoutSaving = false, { suppressLog = false } = {}) {
     document.removeEventListener('keydown', _peKeydown);
     document.removeEventListener('keydown', _weKeydown);
     const wn = AppState.puzzleWorkingName;
+    const name = AppState.puzzleName;
     AppState.puzzleName        = null;
     AppState.puzzleWorkingName = null;
     AppState.puzzleData        = null;
@@ -1355,6 +1404,13 @@ async function _doPuzzleCloseConfirmed() {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
         catch (e) { /* ignore cleanup errors */ }
     }
+    if (name && !suppressLog) {
+        appendActivityLog(
+            withoutSaving
+                ? `Closed puzzle "${name}" without saving changes.`
+                : `Closed puzzle "${name}".`
+        );
+    }
     showView('home');
 }
 
@@ -1367,7 +1423,7 @@ async function do_puzzle_close() {
             'Close puzzle',
             `Puzzle <b>${escapeHtml(name)}</b> has unsaved changes. Close without saving?`,
             null,
-            () => _doPuzzleCloseConfirmed()
+            () => _doPuzzleCloseConfirmed(true)
         );
     } else {
         await _doPuzzleCloseConfirmed();
@@ -1638,8 +1694,10 @@ async function do_puzzle_delete() {
         null,
         async () => {
             try {
-                await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
-                await do_puzzle_close();
+                const data = await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
+                if (data && data.error) { alert(`Error deleting puzzle: ${data.error}`); return; }
+                appendActivityLog(`Deleted puzzle "${name}".`);
+                await _doPuzzleCloseConfirmed(false, { suppressLog: true });
             } catch (e) { alert('Error deleting puzzle'); }
         }
     );

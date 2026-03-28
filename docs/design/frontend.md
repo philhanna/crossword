@@ -23,6 +23,8 @@ The page has three regions:
 
 Everything in `#lhs` and `#rhs` is replaced via `innerHTML` on every view transition.
 
+In the `home` view, `#lhs` also contains the session activity log panel that summarizes recent Puzzle-menu actions.
+
 ## Application State
 
 A single global object `AppState` holds all runtime state:
@@ -43,6 +45,7 @@ const AppState = {
     showingGridStats: false,
     _gridStatsData: null,
     _statsData: null,
+    activityLog: [],        // session-only recent puzzle actions for the home view
 };
 ```
 
@@ -77,6 +80,8 @@ Items are toggled with `w3-disabled` CSS class.
 A permanent message line and three permanent modals are declared in `index.html`.
 
 - **`#ml` — Message line** (`showMessageLine(text, level, timeoutMs)` / `clearMessageLine()`) — single-line notification strip shown below the menu bar. `level` is `notice` or `error`; notice renders green and error renders red. This is used for passive status messages that do not require any user action.
+
+Separately, the SPA keeps an in-memory activity log in `AppState.activityLog` for completed Puzzle-menu actions during the current browser session. That log is rendered only on the `home` view and is intentionally session-scoped: it survives view changes inside the SPA, but it is lost on full page reload or browser/tab close.
 
 Three permanent modals are shown/hidden via `display:block/none`:
 
@@ -211,6 +216,29 @@ if (AppState.editingWord)
 ```
 
 `renderWordEditorPanel()` builds the word editor HTML from `AppState.editingWord` and assigns it to `rhs.innerHTML`.
+
+## Session Activity Log
+
+The home view includes a **Recent puzzle activity** panel rendered from `AppState.activityLog`.
+
+The log is:
+
+- user-facing rather than diagnostic
+- session-only and frontend-only
+- ordered newest-first
+- limited to completed actions that correspond to Puzzle-menu commands
+
+Typical entries include:
+
+- created puzzle
+- opened puzzle
+- saved puzzle
+- saved puzzle as
+- closed puzzle
+- closed puzzle without saving changes
+- deleted puzzle
+
+Entries are appended only after the action succeeds. Opening a chooser or input dialog does not itself create a log entry.
 
 ### Summary
 
