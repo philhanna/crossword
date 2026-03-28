@@ -85,7 +85,7 @@ def make_app(config=None):
 
     # Export adapters
     acrosslite_adapter = AcrossLiteExportAdapter()
-    xml_adapter = CcxmlExportAdapter()
+    xml_adapter = CcxmlExportAdapter(author_name=config.get("author_name"))
     nytimes_adapter = NYTimesExportAdapter(
         author_name=config.get("author_name"),
         author_address=config.get("author_address"),

@@ -11,6 +11,9 @@ class CcxmlExportAdapter:
     Exports a puzzle to Crossword Compiler XML format.
     """
 
+    def __init__(self, author_name=None):
+        self.author_name = author_name
+
     def export_puzzle_to_xml(self, puzzle: Puzzle) -> str:
         try:
             return self._build_xml(puzzle)
@@ -28,7 +31,7 @@ class CcxmlExportAdapter:
         # <metadata>
         elem_meta = ET.SubElement(elem_rect, "metadata")
         ET.SubElement(elem_meta, "title").text = puzzle.title or ""
-        ET.SubElement(elem_meta, "creator").text = ""
+        ET.SubElement(elem_meta, "creator").text = self.author_name or ""
         ET.SubElement(elem_meta, "copyright").text = ""
         ET.SubElement(elem_meta, "description").text = (
             "Created with Crossword Puzzle Editor, by Phil Hanna\n"
