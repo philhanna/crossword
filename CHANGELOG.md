@@ -6,6 +6,36 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-03-27
+
+### Added
+
+- Message line: single-line notification bar below the menu for success/error
+  feedback (issue #195); styled with distinct notice and error variants
+- Merged editor: puzzle working copies now support a Grid mode alongside Puzzle
+  mode, with separate undo/redo history for each (issue #196)
+- New puzzle routes: `POST /mode/grid`, `POST /mode/puzzle`,
+  `PUT /grid/cells/{r}/{c}`, `POST /grid/rotate`, `POST /grid/undo`,
+  `POST /grid/redo` — puzzle grid can be edited in-place without opening the
+  standalone grid editor
+
+### Changed
+
+- Standalone grid editor and all grid-only routes removed; grids are now edited
+  exclusively through the puzzle editor's Grid mode
+- `GridUseCases`, `grid_use_cases.py`, and `grid_handlers.py` removed; grid
+  operations on puzzles delegated to `PuzzleUseCases`
+- `samples.db` migrated to remove legacy standalone grid rows (issue #196)
+- Message line moved to the bottom of the page (fixed to viewport)
+- Puzzle editor: selected cursor cell is now light blue (same as word highlight)
+  with only a bounding border to mark the active cell; dark blue fill removed
+
+### Fixed
+
+- `tools/dev/gen_endpoints_doc.py`: `ROOT` path calculation used one too few
+  `dirname()` calls, producing a doubled `tools/tools/dev/` path when loading
+  `swagger.py`
+
 ## [3.1.1] - 2026-03-27
 
 ### Changed
