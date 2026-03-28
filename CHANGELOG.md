@@ -6,6 +6,13 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Changed
+
+- Home view: removed the session activity log and its related frontend state,
+  rendering, and styles
+- Message line now appears as an overlay anchored below the top menu, so
+  notifications no longer shift the editor layout during editing sessions
+
 ## [3.2.0] - 2026-03-27
 
 ### Added
