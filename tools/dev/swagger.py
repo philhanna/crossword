@@ -26,10 +26,9 @@ SPEC = {
     },
     "servers": [{"url": "http://localhost:5000", "description": "Local dev server"}],
     "tags": [
-        {"name": "grids",   "description": "Grid CRUD and editing"},
         {"name": "puzzles", "description": "Puzzle CRUD and editing"},
         {"name": "words",   "description": "Word list / dictionary"},
-        {"name": "export",  "description": "Export grids and puzzles"},
+        {"name": "export",  "description": "Export puzzles"},
     ],
 
     # ---- reusable schemas -----------------------------------------------
@@ -44,12 +43,6 @@ SPEC = {
                         "items": {"type": "boolean"},
                         "description": "Flat row-major array (0-indexed). true = black cell.",
                     },
-                },
-            },
-            "GridDataNamed": {
-                "allOf": [{"$ref": "#/components/schemas/GridData"}],
-                "properties": {
-                    "name": {"type": "string", "example": "mygrid"},
                 },
             },
             "PuzzleData": {
@@ -106,8 +99,8 @@ SPEC = {
             "WorkingCopySession": {
                 "type": "object",
                 "properties": {
-                    "original_name": {"type": "string", "example": "mygrid"},
-                    "working_name":  {"type": "string", "example": "__wc__a1b2c3d4",
+                    "original_name": {"type": "string", "example": "mypuzzle"},
+                    "working_name":  {"type": "string", "example": "__wc__mypuzzle__a1b2c3d4",
                                       "description": "Temporary working copy name. Target all edits here until Save/Close."},
                 },
             },
@@ -115,7 +108,7 @@ SPEC = {
                 "type": "object",
                 "properties": {
                     "name":    {"type": "string"},
-                    "heading": {"type": "string", "description": "Summary line, e.g. 'mygrid (42 words, 15-letter: 4)'"},
+                    "heading": {"type": "string", "description": "Summary line, e.g. 'mypuzzle (42 words, 15-letter: 4)'"},
                     "width":   {"type": "number",  "description": "Scaled SVG width in pixels"},
                     "svgstr":  {"type": "string",  "description": "SVG XML string for thumbnail rendering"},
                 },
@@ -156,229 +149,6 @@ SPEC = {
     "paths": {
 
         # ================================================================
-        # GRIDS
-        # ================================================================
-        "/api/grids": {
-            "get": {
-                "tags": ["grids"],
-                "summary": "List all grids",
-                "responses": {
-                    "200": {
-                        "description": "List of grid names",
-                        "content": {"application/json": {"schema": {
-                            "type": "object",
-                            "properties": {
-                                "grids": {"type": "array", "items": {"type": "string"}},
-                            },
-                        }}},
-                    },
-                },
-            },
-            "post": {
-                "tags": ["grids"],
-                "summary": "Create a new grid",
-                "requestBody": {
-                    "required": True,
-                    "content": {"application/json": {"schema": {
-                        "type": "object",
-                        "required": ["name", "size"],
-                        "properties": {
-                            "name": {"type": "string", "example": "mygrid"},
-                            "size": {"type": "integer", "example": 15},
-                        },
-                    }}},
-                },
-                "responses": {
-                    "200": {"description": "Created grid data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridData"}}}},
-                    "400": {"description": "Validation error",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "get": {
-                "tags": ["grids"],
-                "summary": "Load a grid by name",
-                "responses": {
-                    "200": {"description": "Grid data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridData"}}}},
-                    "404": {"description": "Not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-            "delete": {
-                "tags": ["grids"],
-                "summary": "Delete a grid",
-                "responses": {
-                    "200": {"description": "Deleted",
-                            "content": {"application/json": {"schema": {
-                                "type": "object",
-                                "properties": {
-                                    "status": {"type": "string", "example": "deleted"},
-                                    "name":   {"type": "string"},
-                                },
-                            }}}},
-                    "404": {"description": "Not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}/copy": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "post": {
-                "tags": ["grids"],
-                "summary": "Copy a grid to a new name (Save As)",
-                "requestBody": {
-                    "required": True,
-                    "content": {"application/json": {"schema": {
-                        "type": "object",
-                        "required": ["new_name"],
-                        "properties": {
-                            "new_name": {"type": "string", "example": "mygrid-copy"},
-                        },
-                    }}},
-                },
-                "responses": {
-                    "200": {"description": "Copied grid data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridDataNamed"}}}},
-                    "400": {"description": "Validation error",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                    "404": {"description": "Source not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}/open": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "post": {
-                "tags": ["grids"],
-                "summary": "Open a grid for editing (creates working copy)",
-                "description": "Creates a temporary working copy of the grid. Direct all edits at `working_name`. On Save, copy `working_name` back to `original_name` then delete it. On Close without saving, just delete `working_name`.",
-                "responses": {
-                    "200": {"description": "Working copy session info",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WorkingCopySession"}}}},
-                    "404": {"description": "Grid not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}/cells/{r}/{c}": {
-            "parameters": [
-                {"name": "name", "in": "path", "required": True,  "schema": {"type": "string"}},
-                {"name": "r",    "in": "path", "required": True,  "schema": {"type": "integer"},
-                 "description": "Row (0-indexed, converted to 1-indexed internally)"},
-                {"name": "c",    "in": "path", "required": True,  "schema": {"type": "integer"},
-                 "description": "Column (0-indexed, converted to 1-indexed internally)"},
-            ],
-            "put": {
-                "tags": ["grids"],
-                "summary": "Toggle a black cell (and its 180° symmetric cell)",
-                "responses": {
-                    "200": {"description": "Updated grid data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridData"}}}},
-                    "404": {"description": "Not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}/rotate": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "post": {
-                "tags": ["grids"],
-                "summary": "Rotate grid 90° counterclockwise",
-                "responses": {
-                    "200": {"description": "Updated grid data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridData"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}/undo": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "post": {
-                "tags": ["grids"],
-                "summary": "Undo last black-cell operation",
-                "responses": {
-                    "200": {"description": "Updated grid data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridData"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}/redo": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "post": {
-                "tags": ["grids"],
-                "summary": "Redo last undone black-cell operation",
-                "responses": {
-                    "200": {"description": "Updated grid data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridData"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}/preview": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "get": {
-                "tags": ["grids"],
-                "summary": "Get a scaled-down SVG thumbnail and heading for a grid",
-                "responses": {
-                    "200": {"description": "Preview data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PreviewData"}}}},
-                    "404": {"description": "Not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
-        "/api/grids/{name}/stats": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "get": {
-                "tags": ["grids"],
-                "summary": "Get statistics and validation results for a grid",
-                "responses": {
-                    "200": {"description": "Stats data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/StatsData"}}}},
-                    "404": {"description": "Not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
-        "/api/grids/from-puzzle": {
-            "post": {
-                "tags": ["grids"],
-                "summary": "Create a grid extracted from an existing puzzle",
-                "requestBody": {
-                    "required": True,
-                    "content": {"application/json": {"schema": {
-                        "type": "object",
-                        "required": ["puzzle_name", "grid_name"],
-                        "properties": {
-                            "puzzle_name": {"type": "string", "example": "mypuzzle"},
-                            "grid_name":   {"type": "string", "example": "mygrid"},
-                        },
-                    }}},
-                },
-                "responses": {
-                    "200": {"description": "Created grid data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GridDataNamed"}}}},
-                    "400": {"description": "Validation error",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                    "404": {"description": "Puzzle not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
-        # ================================================================
         # PUZZLES
         # ================================================================
         "/api/puzzles": {
@@ -397,15 +167,15 @@ SPEC = {
             },
             "post": {
                 "tags": ["puzzles"],
-                "summary": "Create a new puzzle from an existing grid",
+                "summary": "Create a new blank puzzle",
                 "requestBody": {
                     "required": True,
                     "content": {"application/json": {"schema": {
                         "type": "object",
-                        "required": ["name", "grid_name"],
+                        "required": ["name", "size"],
                         "properties": {
-                            "name":      {"type": "string", "example": "mypuzzle"},
-                            "grid_name": {"type": "string", "example": "mygrid"},
+                            "name": {"type": "string", "example": "mypuzzle"},
+                            "size": {"type": "integer", "example": 15},
                         },
                     }}},
                 },
@@ -485,6 +255,34 @@ SPEC = {
             },
         },
 
+        "/api/puzzles/{name}/mode/grid": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Switch a puzzle working copy into Grid editing mode",
+                "responses": {
+                    "200": {"description": "Updated puzzle data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/mode/puzzle": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Switch a puzzle working copy back into Puzzle editing mode",
+                "responses": {
+                    "200": {"description": "Updated puzzle data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
         "/api/puzzles/{name}/title": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "put": {
@@ -509,6 +307,62 @@ SPEC = {
                                     "title": {"type": "string"},
                                 },
                             }}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/grid/cells/{r}/{c}": {
+            "parameters": [
+                {"name": "name", "in": "path", "required": True,  "schema": {"type": "string"}},
+                {"name": "r",    "in": "path", "required": True,  "schema": {"type": "integer"},
+                 "description": "Row (0-indexed, converted to 1-indexed internally)"},
+                {"name": "c",    "in": "path", "required": True,  "schema": {"type": "integer"},
+                 "description": "Column (0-indexed, converted to 1-indexed internally)"},
+            ],
+            "put": {
+                "tags": ["puzzles"],
+                "summary": "Toggle a black cell in the puzzle grid (and its 180° symmetric cell)",
+                "responses": {
+                    "200": {"description": "Updated puzzle data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/grid/rotate": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Rotate the puzzle grid 90° counterclockwise",
+                "responses": {
+                    "200": {"description": "Updated puzzle data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/grid/undo": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Undo last Grid-mode black-cell operation",
+                "responses": {
+                    "200": {"description": "Updated puzzle data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/grid/redo": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Redo last undone Grid-mode black-cell operation",
+                "responses": {
+                    "200": {"description": "Updated puzzle data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
                 },
             },
         },
@@ -598,17 +452,29 @@ SPEC = {
                 {"name": "name",      "in": "path", "required": True, "schema": {"type": "string"}},
                 {"name": "seq",       "in": "path", "required": True, "schema": {"type": "integer"}},
                 {"name": "direction", "in": "path", "required": True, "schema": {"type": "string", "enum": ["across", "down"]}},
+                {"name": "pattern",   "in": "query", "required": False,
+                 "schema": {"type": "string"},
+                 "description": "Optional input pattern (letters and '.' wildcards). Letters override the crossing-word constraint at each position."},
             ],
             "get": {
                 "tags": ["puzzles"],
-                "summary": "Get ranked word suggestions for a puzzle word based on crossing constraints",
+                "summary": "Get ranked word suggestions based on crossing constraints, optionally filtered by input pattern",
                 "responses": {
                     "200": {"description": "Suggestions",
                             "content": {"application/json": {"schema": {
                                 "type": "object",
                                 "properties": {
-                                    "suggestions": {"type": "array", "items": {"type": "string"}},
-                                    "count":       {"type": "integer"},
+                                    "suggestions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "word":  {"type": "string"},
+                                                "score": {"type": "integer"},
+                                            },
+                                        },
+                                    },
+                                    "count": {"type": "integer"},
                                 },
                             }}}},
                     "404": {"description": "Not found",
@@ -727,28 +593,6 @@ SPEC = {
             },
         },
 
-        "/api/puzzles/{name}/grid": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "put": {
-                "tags": ["puzzles"],
-                "summary": "Replace the underlying grid (preserves matching clues)",
-                "requestBody": {
-                    "required": True,
-                    "content": {"application/json": {"schema": {
-                        "type": "object",
-                        "required": ["new_grid_name"],
-                        "properties": {
-                            "new_grid_name": {"type": "string"},
-                        },
-                    }}},
-                },
-                "responses": {
-                    "200": {"description": "Updated puzzle data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
-                },
-            },
-        },
-
         # ================================================================
         # WORDS
         # ================================================================
@@ -759,7 +603,7 @@ SPEC = {
                 "parameters": [{
                     "name": "pattern", "in": "query", "required": True,
                     "schema": {"type": "string"},
-                    "description": "Pattern using ? as wildcard, e.g. '?HALE'",
+                    "description": "Pattern using ? or . as wildcard, or a full regex. e.g. '?HALE'",
                     "example": "?HALE",
                 }],
                 "responses": {
@@ -817,30 +661,6 @@ SPEC = {
         # ================================================================
         # EXPORT
         # ================================================================
-        "/api/export/grids/{name}/pdf": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "get": {
-                "tags": ["export"],
-                "summary": "Export grid to PDF",
-                "responses": {
-                    "200": {"description": "PDF bytes",
-                            "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}},
-                },
-            },
-        },
-
-        "/api/export/grids/{name}/png": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "get": {
-                "tags": ["export"],
-                "summary": "Export grid to PNG",
-                "responses": {
-                    "200": {"description": "PNG bytes",
-                            "content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}},
-                },
-            },
-        },
-
         "/api/export/puzzles/{name}/acrosslite": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "get": {
@@ -943,8 +763,8 @@ class Handler(BaseHTTPRequestHandler):
 def _normalize(path: str) -> str:
     """Replace all path parameters with {} for comparison.
 
-    Works on both OpenAPI paths  (/api/grids/{name}/cells/{r}/{c})
-    and regex-derived paths      (/api/grids/{}/cells/{}/{}).
+    Works on both OpenAPI paths  (/api/puzzles/{name}/grid/cells/{r}/{c})
+    and regex-derived paths      (/api/puzzles/{}/grid/cells/{}/{}).
     """
     import re
     return re.sub(r"\{[^}]*\}", "{}", path)
