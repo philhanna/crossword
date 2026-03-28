@@ -86,7 +86,11 @@ def make_app(config=None):
     # Export adapters
     acrosslite_adapter = AcrossLiteExportAdapter()
     xml_adapter = XmlExportAdapter()
-    nytimes_adapter = NYTimesExportAdapter()
+    nytimes_adapter = NYTimesExportAdapter(
+        author_name=config.get("author_name"),
+        author_address=config.get("author_address"),
+        author_email=config.get("author_email"),
+    )
 
     # ========================================================================
     # Instantiate Use Cases (with constructor injection)

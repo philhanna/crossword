@@ -1,8 +1,8 @@
 # crossword.adapters.nytimes_export_adapter
+import os
 import re
-import xml.etree.ElementTree as ET
-from io import BytesIO
-from zipfile import ZIP_DEFLATED, ZipFile
+import subprocess
+import tempfile
 
 from crossword import Puzzle, PuzzleToSVG
 from crossword.ports.export_port import ExportError
@@ -10,74 +10,138 @@ from crossword.ports.export_port import ExportError
 
 class NYTimesExportAdapter:
     """
-    Exports a puzzle to NYTimes submission format.
+    Exports a puzzle to NYTimes submission format (PDF).
 
-    Produces a ZIP archive containing:
-      - puzzle.html  (clue sheet)
-      - puzzle.svg   (grid image)
+    Produces a PDF containing:
+      - Page 1: filled-in answer grid with numbers and author contact info
+      - Page 2+: clue sheet with ACROSS then DOWN (double-spaced, answers at far right)
+
+    Author info (name, address, email) is optional; omit fields that are not set.
     """
+
+    def __init__(self, author_name=None, author_address=None, author_email=None):
+        self.author_name = author_name
+        self.author_address = author_address
+        self.author_email = author_email
 
     def export_puzzle_to_nytimes(self, puzzle: Puzzle) -> bytes:
         try:
-            svg_str = PuzzleToSVG(puzzle).generate_xml()
-            html_str = self._build_nytimes_html(puzzle, svg_str)
-
-            buf = BytesIO()
-            with ZipFile(buf, mode="w", compression=ZIP_DEFLATED) as zf:
-                zf.writestr("puzzle.html", html_str)
-                zf.writestr("puzzle.svg", svg_str)
-            return buf.getvalue()
+            html = self._build_html(puzzle)
+            return self._html_to_pdf(html)
+        except ExportError:
+            raise
         except Exception as e:
             raise ExportError(f"NYTimes export failed: {e}") from e
 
-    def _build_nytimes_html(self, puzzle: Puzzle, svg_str: str) -> str:
-        svg_obj = PuzzleToSVG(puzzle)
-        gridsize = svg_obj.gridsize
+    # ------------------------------------------------------------------
+    # HTML builder
+    # ------------------------------------------------------------------
 
-        elem_root = ET.Element("html")
-        elem_head = ET.SubElement(elem_root, "head")
-        ET.SubElement(elem_head, "style").text = (
-            "td { vertical-align: top; }\n"
-            "h1 { text-align: center; }\n"
-            "tr.ds { height: 8mm; }\n"
-        )
+    def _build_html(self, puzzle: Puzzle) -> str:
+        svg_str = PuzzleToSVG(puzzle).generate_xml()
+        title = puzzle.title or ""
 
-        elem_body = ET.SubElement(elem_root, "body")
+        author_lines = []
+        if self.author_name:
+            author_lines.append(f"<strong>Name:</strong> {self.author_name}")
+        if self.author_address:
+            author_lines.append(f"<strong>Address:</strong> {self.author_address}")
+        if self.author_email:
+            author_lines.append(f"<strong>Email:</strong> {self.author_email}")
+        author_html = "<br>\n".join(author_lines)
 
-        if puzzle.title:
-            ET.SubElement(elem_body, "h1").text = puzzle.title
+        clue_rows = self._clue_rows(puzzle)
 
-        # SVG grid image (inline reference)
-        elem_img = ET.SubElement(elem_body, "img")
-        elem_img.set("src", "puzzle.svg")
-        elem_img.set("width", str(gridsize))
-        elem_img.set("height", str(gridsize))
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page {{ size: Letter; margin: 1in; }}
+  body {{ font-family: "Times New Roman", Times, serif; font-size: 12pt; }}
+  h1 {{ text-align: center; font-size: 18pt; margin: 0 0 0.75em 0; }}
+  .grid-page {{ text-align: center; page-break-after: always; }}
+  .author-info {{ margin-top: 1.5em; text-align: left; font-size: 11pt; line-height: 1.6; }}
+  table {{ width: 100%; border-collapse: collapse; }}
+  tr.ds {{ height: 8mm; }}
+  td, th {{ vertical-align: top; padding: 1px 4px; }}
+  .section-head {{ font-size: 14pt; font-weight: bold; padding-top: 1em; padding-bottom: 0.25em; }}
+  .answer {{ font-family: "Courier New", Courier, monospace; text-align: right; }}
+</style>
+</head>
+<body>
 
-        def _clue_table(parent, heading, words_dict):
-            elem_div = ET.SubElement(parent, "div")
-            elem_div.set("style", "page-break-before: always;")
-            elem_table = ET.SubElement(elem_div, "table")
-            elem_table.set("width", "95%")
-            elem_tr = ET.SubElement(elem_table, "tr")
-            elem_tr.set("class", "ds")
-            elem_th = ET.SubElement(elem_tr, "th")
-            elem_th.set("width", "80%")
-            elem_th.set("align", "left")
-            elem_th.text = heading
-            ET.SubElement(elem_tr, "th").set("width", "20%")
+<div class="grid-page">
+  {"<h1>" + title + "</h1>" if title else ""}
+  {svg_str}
+  {"<div class='author-info'>" + author_html + "</div>" if author_lines else ""}
+</div>
+
+<div class="clue-section">
+  <table>
+    <tr><td colspan="2" class="section-head">ACROSS</td></tr>
+{clue_rows["across"]}
+    <tr><td colspan="2" class="section-head">DOWN</td></tr>
+{clue_rows["down"]}
+  </table>
+</div>
+
+</body>
+</html>"""
+
+    def _clue_rows(self, puzzle: Puzzle) -> dict:
+        def rows(words_dict):
+            lines = []
             for seq in sorted(words_dict):
                 word = words_dict[seq]
-                text = re.sub(" ", ".", word.get_text() or "")
                 clue = word.get_clue() or ""
-                elem_tr = ET.SubElement(elem_table, "tr")
-                elem_tr.set("class", "ds")
-                ET.SubElement(elem_tr, "td").text = f"{seq} {clue}"
-                elem_td = ET.SubElement(elem_tr, "td")
-                elem_td.set("style", "font-family: monospace")
-                elem_td.text = text
+                answer = re.sub(" ", ".", word.get_text() or "")
+                lines.append(
+                    f'    <tr class="ds">'
+                    f'<td>{seq} {clue}</td>'
+                    f'<td class="answer">{answer}</td>'
+                    f'</tr>'
+                )
+            return "\n".join(lines)
 
-        _clue_table(elem_body, "ACROSS", puzzle.across_words)
-        _clue_table(elem_body, "DOWN", puzzle.down_words)
+        return {
+            "across": rows(puzzle.across_words),
+            "down": rows(puzzle.down_words),
+        }
 
-        htmlstr = ET.tostring(element=elem_root, encoding="utf-8").decode()
-        return re.sub("><", ">\n<", htmlstr)
+    # ------------------------------------------------------------------
+    # PDF generation via Chrome headless
+    # ------------------------------------------------------------------
+
+    def _html_to_pdf(self, html: str) -> bytes:
+        html_fd, html_path = tempfile.mkstemp(suffix=".html")
+        pdf_fd, pdf_path = tempfile.mkstemp(suffix=".pdf")
+        try:
+            os.close(pdf_fd)
+            with os.fdopen(html_fd, "w", encoding="utf-8") as f:
+                f.write(html)
+
+            result = subprocess.run(
+                [
+                    "google-chrome",
+                    "--headless=new",
+                    "--disable-gpu",
+                    "--no-sandbox",
+                    "--print-to-pdf-no-header",
+                    f"--print-to-pdf={pdf_path}",
+                    f"file://{html_path}",
+                ],
+                capture_output=True,
+                timeout=30,
+            )
+            if result.returncode != 0:
+                stderr = result.stderr.decode(errors="replace")
+                raise ExportError(f"Chrome PDF generation failed: {stderr}")
+
+            with open(pdf_path, "rb") as f:
+                return f.read()
+        finally:
+            if os.path.exists(html_path):
+                os.unlink(html_path)
+            if os.path.exists(pdf_path):
+                os.unlink(pdf_path)

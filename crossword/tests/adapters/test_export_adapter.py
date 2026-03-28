@@ -1,8 +1,6 @@
 # crossword.tests.adapters.test_export_adapter
-import zipfile
-from io import BytesIO
-
 import pytest
+from unittest.mock import patch
 
 from crossword import Grid, Puzzle, Word
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
@@ -97,32 +95,49 @@ class TestXmlExportAdapter:
 class TestNYTimesExportAdapter:
     @pytest.fixture
     def adapter(self):
-        return NYTimesExportAdapter()
-
-    def test_returns_bytes(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_nytimes(puzzle)
-        assert isinstance(result, bytes)
-
-    def test_is_zip(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_nytimes(puzzle)
-        assert result[:2] == b"PK"
-
-    def test_zip_contains_html_and_svg(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_nytimes(puzzle)
-        with zipfile.ZipFile(BytesIO(result)) as zf:
-            names = zf.namelist()
-        assert "puzzle.html" in names
-        assert "puzzle.svg" in names
+        return NYTimesExportAdapter(
+            author_name="Jane Smith",
+            author_address="123 Main St, Springfield, IL 62701",
+            author_email="jane@example.com",
+        )
 
     def test_html_has_across_and_down(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_nytimes(puzzle)
-        with zipfile.ZipFile(BytesIO(result)) as zf:
-            html = zf.read("puzzle.html").decode()
+        html = adapter._build_html(puzzle)
         assert "ACROSS" in html
         assert "DOWN" in html
 
-    def test_svg_has_svg_element(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_nytimes(puzzle)
-        with zipfile.ZipFile(BytesIO(result)) as zf:
-            svg = zf.read("puzzle.svg").decode()
-        assert "<svg" in svg
+    def test_html_has_inline_svg(self, adapter, puzzle):
+        html = adapter._build_html(puzzle)
+        assert "<svg" in html
+
+    def test_html_has_title(self, adapter, puzzle):
+        html = adapter._build_html(puzzle)
+        assert "Test Puzzle" in html
+
+    def test_html_has_author_info(self, adapter, puzzle):
+        html = adapter._build_html(puzzle)
+        assert "Jane Smith" in html
+        assert "123 Main St" in html
+        assert "jane@example.com" in html
+
+    def test_html_no_author_info_when_not_set(self, puzzle):
+        adapter = NYTimesExportAdapter()
+        html = adapter._build_html(puzzle)
+        # The author info block should not be rendered when fields are empty
+        assert "<strong>Name:</strong>" not in html
+        assert "<strong>Address:</strong>" not in html
+        assert "<strong>Email:</strong>" not in html
+
+    def test_down_clues_have_no_page_break(self, adapter, puzzle):
+        html = adapter._build_html(puzzle)
+        # No page-break should appear between the ACROSS and DOWN headings
+        body_start = html.index("</style>")
+        across_pos = html.index("ACROSS", body_start)
+        down_pos = html.index("DOWN", across_pos)
+        assert "page-break" not in html[across_pos:down_pos]
+
+    def test_export_returns_pdf_bytes(self, adapter, puzzle):
+        _fake_pdf = b"%PDF-1.4 fake"
+        with patch.object(adapter, "_html_to_pdf", return_value=_fake_pdf):
+            result = adapter.export_puzzle_to_nytimes(puzzle)
+        assert result == _fake_pdf

@@ -98,16 +98,18 @@ class ExportPort(ABC):
     @abstractmethod
     def export_puzzle_to_nytimes(self, puzzle: Puzzle) -> bytes:
         """
-        Export a puzzle in NYTimes submission format.
+        Export a puzzle in NYTimes submission format (PDF).
 
-        Produces a ZIP archive containing an HTML clue sheet and an SVG
-        grid image, as required for NYTimes crossword submissions.
+        Produces a PDF with:
+          - Page 1: filled-in answer grid with numbers and author contact info
+          - Page 2+: clue sheet with ACROSS then DOWN, double-spaced,
+            answer words in a column at far right
 
         Args:
             puzzle: Puzzle object to export
 
         Returns:
-            ZIP archive as bytes
+            PDF file contents as bytes
 
         Raises:
             ExportError: If export fails

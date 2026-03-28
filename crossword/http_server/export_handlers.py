@@ -105,8 +105,8 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
-        zip_bytes = app.export_uc.export_puzzle_to_nytimes(1, name)
-        _send_download(request_handler, zip_bytes, "application/zip", f"nytimes-{name}.zip")
+        pdf_bytes = app.export_uc.export_puzzle_to_nytimes(1, name)
+        _send_download(request_handler, pdf_bytes, "application/pdf", f"nytimes-{name}.pdf")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
