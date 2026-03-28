@@ -302,13 +302,8 @@ function renderHome() {
     document.getElementById('lhs').innerHTML =
         `<div class="w3-container">
   <p>Use the Puzzle menu to create or open a crossword for editing.</p>
-  <div class="w3-card-4 activity-log-panel">
-    <header class="w3-container w3-blue-gray activity-log-header">
-      <h3>Recent puzzle activity</h3>
-    </header>
-    <div class="w3-container activity-log-body">
-      ${renderActivityLog()}
-    </div>
+  <div class="activity-log-home">
+    ${renderActivityLog()}
   </div>
 </div>`;
 }
@@ -1286,7 +1281,7 @@ async function _openPuzzleInEditor(name, { logOpen = true } = {}) {
     AppState._statsData        = null;
     AppState.gridStructureChanged = false;
     if (logOpen) {
-        appendActivityLog(`Opened puzzle "${name}".`);
+        appendActivityLog(`Worked on puzzle "${name}".`);
     }
     showView('editor');
 }
@@ -1404,12 +1399,8 @@ async function _doPuzzleCloseConfirmed(withoutSaving = false, { suppressLog = fa
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
         catch (e) { /* ignore cleanup errors */ }
     }
-    if (name && !suppressLog) {
-        appendActivityLog(
-            withoutSaving
-                ? `Closed puzzle "${name}" without saving changes.`
-                : `Closed puzzle "${name}".`
-        );
+    if (name && !suppressLog && withoutSaving) {
+        appendActivityLog(`Closed puzzle "${name}" without saving changes.`);
     }
     showView('home');
 }

@@ -94,18 +94,9 @@ h3 {
 }
 
 /* Home-view activity log */
-.activity-log-panel {
+.activity-log-home {
     margin-top: 18px;
     max-width: 720px;
-}
-
-.activity-log-header {
-    padding: 7px;
-}
-
-.activity-log-body {
-    padding-top: 10px;
-    padding-bottom: 12px;
 }
 
 .activity-log-list {

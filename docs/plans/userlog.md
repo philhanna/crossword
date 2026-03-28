@@ -24,7 +24,6 @@ That means the log should emphasize user-recognizable puzzle actions such as:
 - opening an existing puzzle
 - saving a puzzle
 - saving a puzzle under a new name
-- closing a puzzle
 - deleting a puzzle
 - closing a dirty puzzle without saving
 
@@ -66,7 +65,6 @@ Show the activity log inside the home view, beneath the existing introductory te
 Suggested home-view structure:
 
 - short reminder text about using the Puzzle menu
-- a titled panel such as **Recent puzzle activity**
 - newest entries first so the most recent work is immediately visible
 
 ### Empty state
@@ -80,10 +78,9 @@ Before any puzzle activity occurs in the session, show a short empty-state messa
 Entries should be concise and action-focused. Suggested examples:
 
 - `Created puzzle "Sunday 15".`
-- `Opened puzzle "Themeless-03".`
+- `Worked on puzzle "Themeless-03".`
 - `Saved puzzle "Themeless-03".`
 - `Saved puzzle as "Themeless-03-rev2".`
-- `Closed puzzle "Themeless-03".`
 - `Closed puzzle "Themeless-03" without saving changes.`
 - `Deleted puzzle "Old Draft".`
 
@@ -128,11 +125,9 @@ Append one entry when these user actions complete successfully:
    - after save succeeds
 4. **Save puzzle as**
    - after the copy/save-as succeeds
-5. **Close puzzle**
-   - after a clean close succeeds
-6. **Close puzzle without saving**
+5. **Close puzzle without saving**
    - after the user confirms closing a dirty puzzle and the close completes
-7. **Delete puzzle**
+6. **Delete puzzle**
    - after deletion succeeds
 
 ### Important distinction
@@ -189,7 +184,7 @@ Suggested presentation:
 
 ### Phase 2: Render the log on the home view
 
-- update `renderHome()` to include a titled activity section
+- update `renderHome()` to include the activity log directly under the introductory text
 - add any required CSS for row spacing, timestamp text, and empty-state styling
 
 ### Phase 3: Hook Puzzle-menu success paths
@@ -203,12 +198,10 @@ Add log entries to the successful completion paths for:
 - `_doPuzzleCloseConfirmed()`
 - `do_puzzle_delete()`
 
-### Phase 4: Distinguish dirty-close wording
+### Phase 4: Dirty-close wording
 
 - when closing with unsaved changes after user confirmation, log the more specific message:
   - `Closed puzzle "Name" without saving changes.`
-- when closing normally, log:
-  - `Closed puzzle "Name".`
 
 ### Phase 5: Documentation update
 
@@ -225,10 +218,10 @@ Manual checks:
 1. Load the SPA and confirm the home view shows an empty-state activity panel.
 2. Create a new puzzle and confirm a `Created puzzle ...` entry appears.
 3. Return home and confirm the entry is still visible.
-4. Open an existing puzzle and confirm an `Opened puzzle ...` entry appears.
+4. Open an existing puzzle and confirm a `Worked on puzzle ...` entry appears.
 5. Save a puzzle and confirm a `Saved puzzle ...` entry appears.
 6. Use Save As and confirm a `Saved puzzle as ...` entry appears with the new name.
-7. Close a clean puzzle and confirm a `Closed puzzle ...` entry appears.
+7. Close a clean puzzle and confirm no new close entry is added.
 8. Close a dirty puzzle without saving and confirm the wording mentions unsaved changes.
 9. Delete a puzzle and confirm a `Deleted puzzle ...` entry appears.
 10. Refresh the page and confirm the session log is reset.

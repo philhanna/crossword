@@ -23,7 +23,7 @@ The page has three regions:
 
 Everything in `#lhs` and `#rhs` is replaced via `innerHTML` on every view transition.
 
-In the `home` view, `#lhs` also contains the session activity log panel that summarizes recent Puzzle-menu actions.
+In the `home` view, `#lhs` also contains the session activity log content under the introductory Puzzle-menu text.
 
 ## Application State
 
@@ -219,7 +219,7 @@ if (AppState.editingWord)
 
 ## Session Activity Log
 
-The home view includes a **Recent puzzle activity** panel rendered from `AppState.activityLog`.
+The home view includes session activity content rendered from `AppState.activityLog` directly beneath the introductory Puzzle-menu text.
 
 The log is:
 
@@ -231,10 +231,9 @@ The log is:
 Typical entries include:
 
 - created puzzle
-- opened puzzle
+- worked on puzzle
 - saved puzzle
 - saved puzzle as
-- closed puzzle
 - closed puzzle without saving changes
 - deleted puzzle
 
