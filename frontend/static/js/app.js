@@ -661,9 +661,6 @@ function _modeButtonClass(mode) {
     return _currentEditorMode() === mode ? 'w3-blue-gray' : 'w3-light-gray';
 }
 
-function _gridChangeMessage() {
-    return 'Grid updated. Entries were recomputed and affected clues were cleared.';
-}
 
 function renderPuzzleEditor() {
     document.removeEventListener('keydown', _peKeydown);
@@ -776,19 +773,7 @@ function renderPuzzleEditorRhs() {
 }
 
 function renderGridModePanel() {
-    return `
-<div class="w3-margin-right">
-  <header class="w3-container w3-blue-gray" style="padding:7px">
-    <h3>Grid Mode</h3>
-  </header>
-  <div class="w3-card-4">
-    <div class="w3-container" style="padding-bottom:12px">
-      <p>Click any cell in the grid to toggle it between white and black.</p>
-      <p>Use <b>Rotate</b> from the toolbar if you want to rotate the grid.</p>
-      <p>Affected entries are recomputed immediately, with affected clues cleared automatically.</p>
-    </div>
-  </div>
-</div>`;
+    return '';
 }
 
 function renderClues() {
@@ -1496,14 +1481,13 @@ async function _refreshPuzzleStatsIfVisible() {
     }
 }
 
-async function _applyGridModeUpdate(data, noticeText = _gridChangeMessage()) {
+async function _applyGridModeUpdate(data) {
     AppState.puzzleData   = data;
     AppState.editingWord  = null;
     AppState.selectedWord = null;
     AppState.gridStructureChanged = true;
     renderPuzzleEditor();
     await _refreshPuzzleStatsIfVisible();
-    showMessageLine(noticeText, 'notice');
 }
 
 async function handleGridModeClick(event) {
