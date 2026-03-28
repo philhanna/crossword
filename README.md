@@ -47,11 +47,11 @@ pip install .
 ## Configuration
 
 The application is configured via `~/.config/crossword/config.yaml`.
-A sample configuration file is provided at `sample.yaml` in the project root — copy it to get started:
+A sample configuration file is provided at `examples/sample.yaml` — copy it to get started:
 
 ```bash
 mkdir -p ~/.config/crossword
-cp sample.yaml ~/.config/crossword/config.yaml
+cp examples/sample.yaml ~/.config/crossword/config.yaml
 ```
 
 Then edit `~/.config/crossword/config.yaml`:
@@ -64,7 +64,7 @@ dbfile: /path/to/crossword.db
 log_level: INFO
 ```
 
-If the file does not exist, the application uses `samples.db` in the project directory
+If the file does not exist, the application uses `examples/samples.db`
 and a log level of `INFO`.
 
 ## Running the server
