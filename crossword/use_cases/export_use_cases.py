@@ -9,7 +9,7 @@ Public interface:
 
 from crossword.ports.persistence_port import PersistencePort
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
-from crossword.adapters.xml_export_adapter import XmlExportAdapter
+from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 
 
@@ -24,7 +24,7 @@ class ExportUseCases:
         self,
         persistence: PersistencePort,
         acrosslite: AcrossLiteExportAdapter,
-        xml: XmlExportAdapter,
+        xml: CcxmlExportAdapter,
         nytimes: NYTimesExportAdapter,
     ):
         self.persistence = persistence

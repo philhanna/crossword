@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from crossword import Grid, Puzzle, Word
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
-from crossword.adapters.xml_export_adapter import XmlExportAdapter
+from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.ports.export_port import ExportError
 
@@ -57,10 +57,10 @@ class TestAcrossLiteExportAdapter:
         assert "Test Puzzle" in result
 
 
-class TestXmlExportAdapter:
+class TestCcxmlExportAdapter:
     @pytest.fixture
     def adapter(self):
-        return XmlExportAdapter()
+        return CcxmlExportAdapter()
 
     def test_returns_string(self, adapter, puzzle):
         result = adapter.export_puzzle_to_xml(puzzle)

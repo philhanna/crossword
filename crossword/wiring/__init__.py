@@ -10,7 +10,7 @@ import logging
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
-from crossword.adapters.xml_export_adapter import XmlExportAdapter
+from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
@@ -85,7 +85,7 @@ def make_app(config=None):
 
     # Export adapters
     acrosslite_adapter = AcrossLiteExportAdapter()
-    xml_adapter = XmlExportAdapter()
+    xml_adapter = CcxmlExportAdapter()
     nytimes_adapter = NYTimesExportAdapter(
         author_name=config.get("author_name"),
         author_address=config.get("author_address"),

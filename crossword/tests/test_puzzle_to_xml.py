@@ -2,7 +2,7 @@ import re
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element
 
-from crossword.adapters.xml_export_adapter import XmlExportAdapter
+from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.tests import TestPuzzle
 
 
@@ -10,7 +10,7 @@ class TestPuzzleToXML:
 
     def test_xml(self):
         puzzle = TestPuzzle.create_nyt_daily()
-        adapter = XmlExportAdapter()
+        adapter = CcxmlExportAdapter()
         xmlstr = adapter.export_puzzle_to_xml(puzzle)
         root = ET.fromstring(xmlstr)
         path = ".//{http://crossword.info/xml/rectangular-puzzle}clue[@number = '50'][@word = '67']"

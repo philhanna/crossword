@@ -1,4 +1,4 @@
-# crossword.adapters.xml_export_adapter
+# crossword.adapters.ccxml_export_adapter
 import re
 import xml.etree.ElementTree as ET
 
@@ -6,7 +6,7 @@ from crossword import Puzzle, Word
 from crossword.ports.export_port import ExportError
 
 
-class XmlExportAdapter:
+class CcxmlExportAdapter:
     """
     Exports a puzzle to Crossword Compiler XML format.
     """
