@@ -8,6 +8,7 @@ import tempfile
 import os
 from crossword.wiring import make_app, AppContainer
 from crossword.ports.persistence_port import PersistenceError
+from crossword.tests import TestPuzzle
 
 
 @pytest.fixture
@@ -185,6 +186,99 @@ class TestEndToEndWiring:
         # Load again to verify persistence
         puzzle = app.puzzle_uc.load_puzzle(1, "puzzle1")
         assert puzzle.get_cell(2, 2) == "A"
+
+    def test_merged_editor_flow_end_to_end(self, temp_db):
+        """A new puzzle can move through Grid and Puzzle modes and persist last mode."""
+        config = {"dbfile": temp_db}
+        app = make_app(config)
+
+        app.puzzle_uc.create_puzzle(1, "merged", size=9)
+        original = app.puzzle_uc.load_puzzle(1, "merged")
+        assert original.last_mode == "grid"
+
+        working_name = app.puzzle_uc.open_puzzle_for_editing(1, "merged")
+        working = app.puzzle_uc.load_puzzle(1, working_name)
+        assert working.last_mode == "grid"
+
+        working = app.puzzle_uc.switch_to_puzzle_mode(1, working_name)
+        assert working.last_mode == "puzzle"
+
+        working = app.puzzle_uc.set_word_clue(
+            1, working_name, 1, "across", "Computer science topic", text="ALGORITHM"
+        )
+        assert working.get_across_word(1).get_text() == "ALGORITHM"
+        assert working.get_across_word(1).get_clue() == "Computer science topic"
+
+        undone = app.puzzle_uc.undo_puzzle(1, working_name)
+        assert undone.get_across_word(1).get_text().strip() == ""
+
+        redone = app.puzzle_uc.redo_puzzle(1, working_name)
+        assert redone.get_across_word(1).get_text() == "ALGORITHM"
+
+        grid_changed = app.puzzle_uc.switch_to_grid_mode(1, working_name)
+        assert grid_changed.last_mode == "grid"
+
+        grid_changed = app.puzzle_uc.toggle_black_cell(1, working_name, 2, 2)
+        assert grid_changed.is_black_cell(2, 2)
+
+        grid_undone = app.puzzle_uc.undo_grid(1, working_name)
+        assert not grid_undone.is_black_cell(2, 2)
+
+        grid_redone = app.puzzle_uc.redo_grid(1, working_name)
+        assert grid_redone.is_black_cell(2, 2)
+
+        final_working = app.puzzle_uc.switch_to_puzzle_mode(1, working_name)
+        assert final_working.last_mode == "puzzle"
+
+        app.puzzle_uc.copy_puzzle(1, working_name, "merged")
+        reopened = app.puzzle_uc.load_puzzle(1, "merged")
+        assert reopened.last_mode == "puzzle"
+        assert reopened.get_across_word(1).get_text() == "ALGORITHM"
+        assert reopened.get_across_word(1).get_clue() == "Computer science topic"
+
+    def test_late_grid_edit_recomputes_entries_end_to_end(self, temp_db):
+        """Late grid edits preserve letters, clear affected clues, and keep unaffected clues."""
+        config = {"dbfile": temp_db}
+        app = make_app(config)
+
+        seeded = TestPuzzle.create_solved_atlantic_puzzle()
+        seeded.enter_puzzle_mode()
+        app.puzzle_uc.persistence.save_puzzle(1, "atlantic", seeded)
+
+        working_name = app.puzzle_uc.open_puzzle_for_editing(1, "atlantic")
+        app.puzzle_uc.switch_to_grid_mode(1, working_name)
+
+        changed = app.puzzle_uc.toggle_black_cell(1, working_name, 4, 9)
+        merged_word = changed.get_across_word(13)
+        assert merged_word.get_text() == "REUNITED "
+        assert merged_word.get_clue() is None
+        assert changed.get_across_word(10).get_clue() == "Hit at the Comedy Cellar, say"
+
+        puzzle_mode = app.puzzle_uc.switch_to_puzzle_mode(1, working_name)
+        assert puzzle_mode.get_across_word(13).get_text() == "REUNITED "
+        assert puzzle_mode.get_across_word(13).get_clue() is None
+        assert puzzle_mode.last_mode == "puzzle"
+
+        app.puzzle_uc.copy_puzzle(1, working_name, "atlantic")
+        reloaded = app.puzzle_uc.load_puzzle(1, "atlantic")
+        assert reloaded.last_mode == "puzzle"
+        assert reloaded.get_across_word(13).get_text() == "REUNITED "
+
+    def test_working_copy_discard_does_not_modify_saved_puzzle(self, temp_db):
+        """Deleting a working copy discards unsaved edits to the original puzzle."""
+        config = {"dbfile": temp_db}
+        app = make_app(config)
+
+        app.puzzle_uc.create_puzzle(1, "discardme", size=9)
+        original = app.puzzle_uc.load_puzzle(1, "discardme")
+        assert original.title is None
+
+        working_name = app.puzzle_uc.open_puzzle_for_editing(1, "discardme")
+        app.puzzle_uc.set_puzzle_title(1, working_name, "Unsaved title")
+        app.puzzle_uc.delete_puzzle(1, working_name)
+
+        reloaded = app.puzzle_uc.load_puzzle(1, "discardme")
+        assert reloaded.title is None
 
     def test_word_validation_end_to_end(self, temp_db):
         """Can validate words via wired app"""

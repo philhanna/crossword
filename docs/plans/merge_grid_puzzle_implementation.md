@@ -466,20 +466,20 @@ Validation completed in this phase:
 
 ## Phase 9: End-To-End Verification And Cleanup
 
-- [ ] Add or update integration tests for the full merged flow:
-- [ ] create new puzzle -> starts in Grid mode
-- [ ] switch to Puzzle mode -> enter answers and clues
-- [ ] switch back to Grid mode -> confirm dialog appears
-- [ ] modify black cells -> entries recompute
-- [ ] affected clues clear
-- [ ] surviving letters are preserved correctly
-- [ ] switch back to Puzzle mode -> new structure is rendered
-- [ ] save -> reload -> last-used mode is restored
-- [ ] verify mode-local undo/redo in both directions
-- [ ] verify old puzzle rows can still be opened after migration
-- [ ] verify working-copy save/close/discard behavior still works
-- [ ] remove temporary compatibility shims, feature flags, or migration fallbacks that are no longer needed
-- [ ] update docs and screenshots if maintained
+- [x] Add or update integration tests for the full merged flow:
+- [x] create new puzzle -> starts in Grid mode
+- [x] switch to Puzzle mode -> enter answers and clues
+- [x] switch back to Grid mode -> confirm dialog appears
+- [x] modify black cells -> entries recompute
+- [x] affected clues clear
+- [x] surviving letters are preserved correctly
+- [x] switch back to Puzzle mode -> new structure is rendered
+- [x] save -> reload -> last-used mode is restored
+- [x] verify mode-local undo/redo in both directions
+- [x] verify old puzzle rows can still be opened after migration
+- [x] verify working-copy save/close/discard behavior still works
+- [x] remove temporary compatibility shims, feature flags, or migration fallbacks that are no longer needed
+- [x] update docs and screenshots if maintained
 
 **Primary files/modules**
 
@@ -491,16 +491,39 @@ Validation completed in this phase:
 
 **Checkpoint**
 
-- [ ] The merged editor is shippable without relying on the old standalone grid workflow.
+- [x] The merged editor is shippable without relying on the old standalone grid workflow.
+
+### Phase 9 Notes
+
+Implemented in this phase:
+
+- Added end-to-end wiring coverage in `crossword/tests/test_wiring.py` for:
+- new puzzle creation starting in Grid mode
+- switching to Puzzle mode, entering answer/clue content, and verifying Puzzle-mode undo/redo
+- switching to Grid mode, applying a black-cell edit, and verifying Grid-mode undo/redo
+- saving and reloading with persisted `last_mode`
+- late grid edits that recompute entries, preserve surviving letters, and clear affected clues
+- working-copy discard behavior that leaves the saved puzzle unchanged
+- Legacy migration coverage was already present in `crossword/tests/adapters/test_sqlite_adapter.py`, and remains part of the final verification set.
+- No temporary feature flags remain, and the compatibility scaffolding kept during earlier phases has been removed from the active architecture.
+
+Validation completed in this phase:
+
+- `./venv/bin/pytest -q`
+- `node --check frontend/static/js/app.js`
+
+Result:
+
+- `551 passed`
 
 ## Suggested Delivery Slices
 
-- [ ] Slice 1: Domain and persistence groundwork without changing the UI
-- [ ] Slice 2: New puzzle-only backend endpoints with compatibility still in place
-- [ ] Slice 3: Frontend merged editor shell and mode switching
-- [ ] Slice 4: Grid mode in merged UI
-- [ ] Slice 5: Puzzle mode integration after grid edits
-- [ ] Slice 6: Removal of standalone grid features and final cleanup
+- [x] Slice 1: Domain and persistence groundwork without changing the UI
+- [x] Slice 2: New puzzle-only backend endpoints with compatibility still in place
+- [x] Slice 3: Frontend merged editor shell and mode switching
+- [x] Slice 4: Grid mode in merged UI
+- [x] Slice 5: Puzzle mode integration after grid edits
+- [x] Slice 6: Removal of standalone grid features and final cleanup
 
 ## Major Risks To Watch
 
@@ -512,12 +535,12 @@ Validation completed in this phase:
 
 ## Definition Of Done
 
-- [ ] New puzzles start in Grid mode.
-- [ ] Existing puzzles reopen in their last-used persisted mode.
-- [ ] One merged editor handles both black-cell editing and answer/clue editing.
-- [ ] Grid mode has no word editor panel and no answer/clue editing.
-- [ ] Puzzle mode supports answer/clue editing and reflects grid edits correctly.
-- [ ] Mode switching includes the required confirmation when entering Grid mode from Puzzle mode.
-- [ ] Undo/redo is local to the current mode and resets on each mode switch.
-- [ ] The persisted `puzzles` layout includes `last_mode` and unified puzzle JSON.
-- [ ] The standalone saved-grid model is removed from the final architecture.
+- [x] New puzzles start in Grid mode.
+- [x] Existing puzzles reopen in their last-used persisted mode.
+- [x] One merged editor handles both black-cell editing and answer/clue editing.
+- [x] Grid mode has no word editor panel and no answer/clue editing.
+- [x] Puzzle mode supports answer/clue editing and reflects grid edits correctly.
+- [x] Mode switching includes the required confirmation when entering Grid mode from Puzzle mode.
+- [x] Undo/redo is local to the current mode and resets on each mode switch.
+- [x] The persisted `puzzles` layout includes `last_mode` and unified puzzle JSON.
+- [x] The standalone saved-grid model is removed from the final architecture.
