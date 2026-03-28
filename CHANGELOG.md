@@ -6,6 +6,33 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-03-28
+
+### Added
+
+- AcrossLite export: populated AUTHOR and COPYRIGHT fields from config
+- NYTimes XML (ccxml) export: `<creator>` from config author_name,
+  `<copyright>` with current year, `.xml` file extension
+- Export NYTimes submission as PDF via Chrome headless (`export_nytimes` tool)
+- `export_ccxml` admin tool
+- `export_acrosslite` admin tool
+- `docs/file_formats.md` — reference document for supported export formats
+
+### Changed
+
+- `BasicExportAdapter` split into three focused adapters
+- AcrossLite export simplified: returns plain text, no longer wraps in ZIP
+- `XmlExportAdapter` renamed to `CcxmlExportAdapter`
+- Swagger endpoint list updated
+- `clear_work_files.py`: removed stale grid references
+
+### Fixed
+
+- Issue #199
+- Publish menu: stale download filenames corrected
+- Publish menu: success notification shown after download completes
+- Test suite: `words.db` path corrected to `examples/words.db`
+
 ## [3.3.0] - 2026-03-28
 
 ### Changed
@@ -346,7 +373,8 @@ editing is done (see Issue #99).
 
 [Semantic Versioning]: https://semver.org/
 [Keep a Changelog]: https://keepachangelog.com/
-[Unreleased]: https://github.com/philhanna/crossword/compare/3.3.0..HEAD
+[Unreleased]: https://github.com/philhanna/crossword/compare/3.4.0..HEAD
+[3.4.0]: https://github.com/philhanna/crossword/compare/3.3.0..3.4.0
 [3.3.0]: https://github.com/philhanna/crossword/compare/3.2.0..3.3.0
 [3.2.0]: https://github.com/philhanna/crossword/compare/3.1.1..3.2.0
 [3.1.1]: https://github.com/philhanna/crossword/compare/3.1.0..3.1.1
