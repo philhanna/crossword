@@ -2,7 +2,7 @@
 
 A web-based application for creating and editing crossword puzzles.
 
-**Version: 3.0.0** — First stable release
+**Version: 3.4.0** — Added publish support
 
 ## Table of contents
 - [Requirements](#requirements)
@@ -16,8 +16,7 @@ A web-based application for creating and editing crossword puzzles.
 
 - Python 3.10 or greater
 - git
-
-The application has **no external Python dependencies** — it uses only the standard library.
+- PyYAML (`pip install pyyaml`)
 
 ## Setup
 
@@ -60,8 +59,16 @@ Then edit `~/.config/crossword/config.yaml`:
 # dbfile: fully qualified path to the SQLite 3 database
 dbfile: /path/to/crossword.db
 
+# word_dbfile: fully qualified path to the word list SQLite database
+word_dbfile: /path/to/words.db
+
 # log_level: one of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 log_level: INFO
+
+# NYTimes submission: author info printed on the grid page
+#author_name: Your Name
+#author_address: "123 Main St, City, ST 12345"
+#author_email: you@example.com
 ```
 
 If the file does not exist, the application uses `examples/sample.crossword.db`
