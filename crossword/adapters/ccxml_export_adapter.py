@@ -1,6 +1,7 @@
 # crossword.adapters.ccxml_export_adapter
 import re
 import xml.etree.ElementTree as ET
+from datetime import date
 
 from crossword import Puzzle, Word
 from crossword.ports.export_port import ExportError
@@ -32,7 +33,7 @@ class CcxmlExportAdapter:
         elem_meta = ET.SubElement(elem_rect, "metadata")
         ET.SubElement(elem_meta, "title").text = puzzle.title or ""
         ET.SubElement(elem_meta, "creator").text = self.author_name or ""
-        ET.SubElement(elem_meta, "copyright").text = ""
+        ET.SubElement(elem_meta, "copyright").text = str(date.today().year)
         ET.SubElement(elem_meta, "description").text = (
             "Created with Crossword Puzzle Editor, by Phil Hanna\n"
             "See https://github.com/philhanna/crossword"
