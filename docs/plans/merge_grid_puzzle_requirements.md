@@ -41,6 +41,7 @@ The merged editor edits a single puzzle working copy. That working copy always c
 - puzzle content derived from that grid, including numbered entries, answer text, and clues
 
 The user no longer opens one editor for grids and another for puzzles. Instead, the user opens one construction surface and changes modes within it.
+
 There is no longer any first-class saved standalone grid object.
 
 ## Primary User Flow
@@ -71,7 +72,7 @@ There is no longer any first-class saved standalone grid object.
 4. Creating a new puzzle shall always open the merged editor in Grid mode.
 5. Opening an existing puzzle shall restore the same mode in which that puzzle was last edited.
 6. The last-used mode for an existing puzzle shall be persisted as part of the saved puzzle data so that it survives close/reopen cycles.
-6. The toolbar must change back and forth with the mode.
+7. The toolbar must change back and forth with the mode.
 
 ### 3. Grid Mode
 
