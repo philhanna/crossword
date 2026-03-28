@@ -31,8 +31,13 @@ def mock_nytimes():
 
 
 @pytest.fixture
-def export_uc(mock_persistence, mock_acrosslite, mock_xml, mock_nytimes):
-    return ExportUseCases(mock_persistence, mock_acrosslite, mock_xml, mock_nytimes)
+def mock_json():
+    return Mock()
+
+
+@pytest.fixture
+def export_uc(mock_persistence, mock_acrosslite, mock_xml, mock_nytimes, mock_json):
+    return ExportUseCases(mock_persistence, mock_acrosslite, mock_xml, mock_nytimes, mock_json)
 
 
 @pytest.fixture
@@ -129,3 +134,31 @@ class TestExportUseCasesPuzzleToNytimes:
 
         with pytest.raises(ExportError, match="Export failed"):
             export_uc.export_puzzle_to_nytimes(1, "test_puzzle")
+
+
+class TestExportUseCasesPuzzleToJson:
+    """Tests for export_puzzle_to_json"""
+
+    def test_export_puzzle_to_json_success(self, export_uc, mock_persistence, mock_json, test_puzzle):
+        json_str = '{"title": "Test Puzzle"}'
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        mock_json.export_puzzle_to_json.return_value = json_str
+
+        result = export_uc.export_puzzle_to_json(1, "test_puzzle")
+
+        assert result == json_str
+        mock_persistence.load_puzzle.assert_called_once_with(1, "test_puzzle")
+        mock_json.export_puzzle_to_json.assert_called_once_with(test_puzzle)
+
+    def test_export_puzzle_to_json_puzzle_not_found(self, export_uc, mock_persistence):
+        mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
+
+        with pytest.raises(PersistenceError, match="Puzzle not found"):
+            export_uc.export_puzzle_to_json(1, "nonexistent")
+
+    def test_export_puzzle_to_json_export_error(self, export_uc, mock_persistence, mock_json, test_puzzle):
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        mock_json.export_puzzle_to_json.side_effect = ExportError("Export failed")
+
+        with pytest.raises(ExportError, match="Export failed"):
+            export_uc.export_puzzle_to_json(1, "test_puzzle")

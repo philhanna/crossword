@@ -5,6 +5,7 @@ Routes:
   GET /api/export/puzzles/<name>/acrosslite → export_puzzle_to_acrosslite
   GET /api/export/puzzles/<name>/xml        → export_puzzle_to_xml
   GET /api/export/puzzles/<name>/nytimes    → export_puzzle_to_nytimes
+  GET /api/export/puzzles/<name>/json       → export_puzzle_to_json
 """
 
 import logging
@@ -76,6 +77,37 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
     try:
         xml_text = app.export_uc.export_puzzle_to_xml(1, name)
         _send_download(request_handler, xml_text, "application/xml", f"{name}.xml")
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return None
+    except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"Puzzle not found: {name}"}
+    except ExportError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_export_puzzle_to_json(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Export a puzzle to JSON format.
+    GET /api/export/puzzles/<name>/json
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    name = path_params[0] if path_params else None
+    if not name:
+        logger.debug("  returning: %s", {"error": "Missing puzzle name"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": "Missing puzzle name"}
+    try:
+        json_text = app.export_uc.export_puzzle_to_json(1, name)
+        _send_download(request_handler, json_text, "application/json", f"{name}.json")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
