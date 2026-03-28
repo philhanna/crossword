@@ -329,22 +329,22 @@ Validation completed in this phase:
 
 ## Phase 6: Implement Grid Mode In The Merged UI
 
-- [ ] Make new puzzles open directly into Grid mode.
-- [ ] Make existing puzzles open in their persisted `last_mode`.
-- [ ] Implement the Puzzle mode -> Grid mode confirmation dialog with exact text:
-- [ ] `Are you sure you want to modify the grid?`
-- [ ] buttons `OK` and `Cancel`
-- [ ] On entry to Grid mode, reset Grid-mode undo/redo state for that session.
-- [ ] Render the puzzle grid in Grid mode using the unified puzzle payload.
-- [ ] Wire click handling for black-cell edits through puzzle endpoints, not grid endpoints.
-- [ ] Preserve symmetry behavior from the current grid editor.
-- [ ] Ensure Grid mode does not show:
-- [ ] word editor panel
-- [ ] clue list editing affordances
-- [ ] answer editing controls
-- [ ] If rotation is retained, add it to the Grid-mode toolbar only.
-- [ ] Use the unified stats panel on the RHS while in Grid mode.
-- [ ] Communicate clue/entry invalidation after edits, but do not show previews before the edit.
+- [x] Make new puzzles open directly into Grid mode.
+- [x] Make existing puzzles open in their persisted `last_mode`.
+- [x] Implement the Puzzle mode -> Grid mode confirmation dialog with exact text:
+- [x] `Are you sure you want to modify the grid?`
+- [x] buttons `OK` and `Cancel`
+- [x] On entry to Grid mode, reset Grid-mode undo/redo state for that session.
+- [x] Render the puzzle grid in Grid mode using the unified puzzle payload.
+- [x] Wire click handling for black-cell edits through puzzle endpoints, not grid endpoints.
+- [x] Preserve symmetry behavior from the current grid editor.
+- [x] Ensure Grid mode does not show:
+- [x] word editor panel
+- [x] clue list editing affordances
+- [x] answer editing controls
+- [x] If rotation is retained, add it to the Grid-mode toolbar only.
+- [x] Use the unified stats panel on the RHS while in Grid mode.
+- [x] Communicate clue/entry invalidation after edits, but do not show previews before the edit.
 
 **Primary files/modules**
 
@@ -353,7 +353,29 @@ Validation completed in this phase:
 
 **Checkpoint**
 
-- [ ] Grid mode behaves like the old grid editor where intended, but inside the merged puzzle editor.
+- [x] Grid mode behaves like the old grid editor where intended, but inside the merged puzzle editor.
+
+### Phase 6 Notes
+
+Implemented in this phase:
+
+- The merged editor now attaches click-to-toggle behavior in Grid mode through `PUT /api/puzzles/<working>/grid/cells/<r>/<c>`.
+- The Grid-mode toolbar now includes `Rotate`, wired through `POST /api/puzzles/<working>/grid/rotate`.
+- Puzzle-to-Grid mode switching now shows the required confirmation prompt text:
+- `Are you sure you want to modify the grid?`
+- When switching from Puzzle mode, in-progress puzzle edits are settled before the mode change request is sent.
+- Grid updates now show a notice explaining that entries were recomputed and affected clues were cleared.
+- If the shared stats panel is open while editing the grid, it is refreshed after each grid change so the panel stays current.
+
+Compatibility notes:
+
+- Old standalone-grid functions still remain in `frontend/static/js/app.js`, but they are no longer on the active UI path.
+- The active merged editor now satisfies the intended Grid-mode workflow; dead standalone-grid code removal stays in later cleanup phases.
+
+Validation completed in this phase:
+
+- `node --check frontend/static/js/app.js`
+- `./venv/bin/pytest -q crossword/tests/test_http_server.py crossword/tests/test_puzzle_use_cases.py crossword/tests/test_wiring.py`
 
 ## Phase 7: Implement Puzzle Mode In The Merged UI
 

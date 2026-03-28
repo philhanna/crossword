@@ -836,6 +836,10 @@ function _modeButtonClass(mode) {
     return _currentEditorMode() === mode ? 'w3-blue-gray' : 'w3-light-gray';
 }
 
+function _gridChangeMessage() {
+    return 'Grid updated. Entries were recomputed and affected clues were cleared.';
+}
+
 function renderPuzzleEditor() {
     document.removeEventListener('keydown', _peKeydown);
     if (_currentEditorMode() === 'puzzle') {
@@ -874,6 +878,8 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
     <a id="puzzle-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_rotate_grid()">
+      <i class="material-icons crosstb-icon">rotate_right</i><span>Rotate</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
   </div>
@@ -907,7 +913,7 @@ function renderPuzzleEditorLhs() {
         ? { cells: sw.cells, cursorIdx: _peCursorIdx, text: sw.currentText }
         : null;
     const clickHelp = mode === 'grid'
-        ? '<div class="w3-container w3-text-gray" style="margin-top:8px;font-style:italic">Grid-mode cell editing comes next in Phase 6.</div>'
+        ? '<div class="w3-container w3-text-gray" style="margin-top:8px;font-style:italic">Click cells to toggle black squares.</div>'
         : '';
 
     document.getElementById('lhs').innerHTML = `
@@ -923,6 +929,7 @@ ${clickHelp}`;
 
     const svg = document.getElementById('puzzle-svg');
     if (svg && mode === 'puzzle') svg.addEventListener('click', handlePuzzleClick);
+    if (svg && mode === 'grid') svg.addEventListener('click', handleGridModeClick);
     _updatePuzzleUndoRedo();
 }
 
@@ -951,9 +958,9 @@ function renderGridModePanel() {
   </header>
   <div class="w3-card-4">
     <div class="w3-container" style="padding-bottom:12px">
-      <p>Grid mode is now part of the puzzle editor.</p>
-      <p>The shared puzzle statistics panel is available from the toolbar in either mode.</p>
-      <p>Black-cell editing controls land in the next phase.</p>
+      <p>Click any cell in the grid to toggle it between white and black.</p>
+      <p>Use <b>Rotate</b> from the toolbar if you want to rotate the grid.</p>
+      <p>Affected entries are recomputed immediately, with affected clues cleared automatically.</p>
     </div>
   </div>
 </div>`;
@@ -1642,6 +1649,49 @@ function closeStatsPanel() {
     renderPuzzleEditorRhs();
 }
 
+async function _refreshPuzzleStatsIfVisible() {
+    if (!AppState.showingStats || !AppState.puzzleWorkingName) return;
+    try {
+        const data = await apiFetch('GET',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/stats`);
+        if (data.error) return;
+        AppState._statsData = data;
+        renderPuzzleEditorRhs();
+    } catch (e) {
+        // Keep the current panel if the refresh fails.
+    }
+}
+
+async function _applyGridModeUpdate(data, noticeText = _gridChangeMessage()) {
+    AppState.puzzleData   = data;
+    AppState.editingWord  = null;
+    AppState.selectedWord = null;
+    renderPuzzleEditor();
+    await _refreshPuzzleStatsIfVisible();
+    showMessageLine(noticeText, 'notice');
+}
+
+async function handleGridModeClick(event) {
+    const svg = document.getElementById('puzzle-svg');
+    const pd  = AppState.puzzleData;
+    if (!svg || !pd || _currentEditorMode() !== 'grid') return;
+    const rect = svg.getBoundingClientRect();
+    const x    = event.clientX - rect.left;
+    const y    = event.clientY - rect.top;
+    const n    = pd.grid.size;
+    const r    = Math.floor(y / BOXSIZE);
+    const c    = Math.floor(x / BOXSIZE);
+    if (r < 0 || r >= n || c < 0 || c >= n) return;
+    try {
+        const data = await apiFetch('PUT',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/cells/${r}/${c}`);
+        if (data.error) { alert(`Error updating grid: ${data.error}`); return; }
+        await _applyGridModeUpdate(data);
+    } catch (e) {
+        alert('Error updating grid');
+    }
+}
+
 function _updatePuzzleUndoRedo() {
     const pd      = AppState.puzzleData;
     const mode    = _currentEditorMode();
@@ -1686,9 +1736,22 @@ async function _puzzleUndoRedo(action) {
     } catch (e) { alert(`Error during ${action}`); }
 }
 
-async function do_switch_to_grid_mode() {
-    if (!AppState.puzzleWorkingName || _currentEditorMode() === 'grid') return;
+async function _settlePuzzleEditingBeforeModeSwitch() {
+    if (AppState.editingWord) {
+        await doWordEditOK();
+        if (AppState.editingWord) {
+            throw new Error('Could not save current word edit');
+        }
+        return;
+    }
+    if (AppState.selectedWord) {
+        await _peCommitWord();
+    }
+}
+
+async function _switchToGridModeConfirmed() {
     try {
+        await _settlePuzzleEditingBeforeModeSwitch();
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/grid`);
         if (data.error) { alert(`Error switching modes: ${data.error}`); return; }
@@ -1699,6 +1762,16 @@ async function do_switch_to_grid_mode() {
         AppState._statsData   = null;
         renderPuzzleEditor();
     } catch (e) { alert('Error switching to Grid mode'); }
+}
+
+async function do_switch_to_grid_mode() {
+    if (!AppState.puzzleWorkingName || _currentEditorMode() === 'grid') return;
+    messageBox(
+        'Modify grid',
+        'Are you sure you want to modify the grid?',
+        null,
+        async () => _switchToGridModeConfirmed()
+    );
 }
 
 async function do_switch_to_puzzle_mode() {
@@ -1714,6 +1787,16 @@ async function do_switch_to_puzzle_mode() {
         AppState._statsData   = null;
         renderPuzzleEditor();
     } catch (e) { alert('Error switching to Puzzle mode'); }
+}
+
+async function do_puzzle_rotate_grid() {
+    if (!AppState.puzzleWorkingName || _currentEditorMode() !== 'grid') return;
+    try {
+        const data = await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/rotate`);
+        if (data.error) { alert(`Error rotating grid: ${data.error}`); return; }
+        await _applyGridModeUpdate(data);
+    } catch (e) { alert('Error rotating grid'); }
 }
 
 async function do_puzzle_delete() {
