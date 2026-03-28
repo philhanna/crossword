@@ -6,12 +6,19 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-03-28
+
 ### Changed
 
 - Home view: removed the session activity log and its related frontend state,
   rendering, and styles
 - Message line now appears as an overlay anchored below the top menu, so
   notifications no longer shift the editor layout during editing sessions
+- Puzzle editor: non-selected cells in puzzle mode now use white background
+  instead of light gray, matching grid mode
+- Word editor: constrained Suggest now uses the word input box as the starting
+  pattern; typed letters override per-position crossing-word constraints, dots
+  defer to constraints
 
 ## [3.2.0] - 2026-03-27
 
@@ -339,7 +346,13 @@ editing is done (see Issue #99).
 
 [Semantic Versioning]: https://semver.org/
 [Keep a Changelog]: https://keepachangelog.com/
-[Unreleased]: https://github.com/philhanna/crossword/compare/2.5.0..HEAD
+[Unreleased]: https://github.com/philhanna/crossword/compare/3.3.0..HEAD
+[3.3.0]: https://github.com/philhanna/crossword/compare/3.2.0..3.3.0
+[3.2.0]: https://github.com/philhanna/crossword/compare/3.1.1..3.2.0
+[3.1.1]: https://github.com/philhanna/crossword/compare/3.1.0..3.1.1
+[3.1.0]: https://github.com/philhanna/crossword/compare/3.0.1..3.1.0
+[3.0.1]: https://github.com/philhanna/crossword/compare/3.0.0..3.0.1
+[3.0.0]: https://github.com/philhanna/crossword/compare/2.5.0..3.0.0
 [2.5.0]: https://github.com/philhanna/crossword/compare/2.4.0..2.5.0
 [2.4.0]: https://github.com/philhanna/crossword/compare/2.3.0..2.4.0
 [2.3.0]: https://github.com/philhanna/crossword/compare/2.2.0..2.3.0
