@@ -9,7 +9,9 @@ import logging
 
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
-from crossword.adapters.basic_export_adapter import BasicExportAdapter
+from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
+from crossword.adapters.xml_export_adapter import XmlExportAdapter
+from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
 from crossword.use_cases.export_use_cases import ExportUseCases
@@ -81,8 +83,10 @@ def make_app(config=None):
         except Exception:
             pass  # words table absent in puzzle DB — leave adapter empty
 
-    # Export adapter
-    export_adapter = BasicExportAdapter()
+    # Export adapters
+    acrosslite_adapter = AcrossLiteExportAdapter()
+    xml_adapter = XmlExportAdapter()
+    nytimes_adapter = NYTimesExportAdapter()
 
     # ========================================================================
     # Instantiate Use Cases (with constructor injection)
@@ -90,7 +94,7 @@ def make_app(config=None):
 
     puzzle_uc = PuzzleUseCases(persistence)
     word_uc = WordUseCases(word_adapter)
-    export_uc = ExportUseCases(persistence, export_adapter) if export_adapter else None
+    export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter)
 
     # ========================================================================
     # Assemble Container

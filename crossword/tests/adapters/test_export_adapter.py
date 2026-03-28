@@ -5,13 +5,10 @@ from io import BytesIO
 import pytest
 
 from crossword import Grid, Puzzle, Word
-from crossword.adapters.basic_export_adapter import BasicExportAdapter
+from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
+from crossword.adapters.xml_export_adapter import XmlExportAdapter
+from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.ports.export_port import ExportError
-
-
-@pytest.fixture
-def adapter():
-    return BasicExportAdapter()
 
 
 @pytest.fixture
@@ -30,17 +27,11 @@ def puzzle():
     return p
 
 
-class TestBasicExportAdapterGridStubs:
-    def test_grid_pdf_raises(self, adapter):
-        with pytest.raises(ExportError, match="not implemented"):
-            adapter.export_grid_to_pdf(Grid(15))
+class TestAcrossLiteExportAdapter:
+    @pytest.fixture
+    def adapter(self):
+        return AcrossLiteExportAdapter()
 
-    def test_grid_png_raises(self, adapter):
-        with pytest.raises(ExportError, match="not implemented"):
-            adapter.export_grid_to_png(Grid(15))
-
-
-class TestBasicExportAdapterAcrossLite:
     def test_returns_bytes(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
         assert isinstance(result, bytes)
@@ -88,7 +79,11 @@ class TestBasicExportAdapterAcrossLite:
         assert "Test Puzzle" in txt
 
 
-class TestBasicExportAdapterXML:
+class TestXmlExportAdapter:
+    @pytest.fixture
+    def adapter(self):
+        return XmlExportAdapter()
+
     def test_returns_string(self, adapter, puzzle):
         result = adapter.export_puzzle_to_xml(puzzle)
         assert isinstance(result, str)
@@ -119,7 +114,11 @@ class TestBasicExportAdapterXML:
         assert 'type="block"' in result
 
 
-class TestBasicExportAdapterNYTimes:
+class TestNYTimesExportAdapter:
+    @pytest.fixture
+    def adapter(self):
+        return NYTimesExportAdapter()
+
     def test_returns_bytes(self, adapter, puzzle):
         result = adapter.export_puzzle_to_nytimes(puzzle)
         assert isinstance(result, bytes)

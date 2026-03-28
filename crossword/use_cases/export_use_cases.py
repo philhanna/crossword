@@ -7,75 +7,39 @@ Public interface:
   export_puzzle_to_nytimes(user_id, name) -> bytes
 """
 
-from crossword.ports.persistence_port import PersistencePort, PersistenceError
-from crossword.ports.export_port import ExportPort, ExportError
+from crossword.ports.persistence_port import PersistencePort
+from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
+from crossword.adapters.xml_export_adapter import XmlExportAdapter
+from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 
 
 class ExportUseCases:
     """
-    Orchestrates export operations via persistence and export ports.
+    Orchestrates export operations via persistence and format-specific adapters.
 
-    Constructor injection: takes PersistencePort and ExportPort instances.
+    Constructor injection: takes PersistencePort and the three export adapters.
     """
 
-    def __init__(self, persistence: PersistencePort, export: ExportPort):
+    def __init__(
+        self,
+        persistence: PersistencePort,
+        acrosslite: AcrossLiteExportAdapter,
+        xml: XmlExportAdapter,
+        nytimes: NYTimesExportAdapter,
+    ):
         self.persistence = persistence
-        self.export = export
+        self._acrosslite = acrosslite
+        self._xml = xml
+        self._nytimes = nytimes
 
     def export_puzzle_to_acrosslite(self, user_id: int, name: str) -> bytes:
-        """
-        Export a puzzle to AcrossLite text format.
-
-        Returns a ZIP archive containing the .txt file and a .json backup.
-
-        Args:
-            user_id: The user who owns this puzzle
-            name: Name/identifier for the puzzle
-
-        Returns:
-            ZIP archive as bytes
-
-        Raises:
-            PersistenceError: If puzzle not found
-            ExportError: If export fails
-        """
         puzzle = self.persistence.load_puzzle(user_id, name)
-        return self.export.export_puzzle_to_acrosslite(puzzle)
+        return self._acrosslite.export_puzzle_to_acrosslite(puzzle)
 
     def export_puzzle_to_xml(self, user_id: int, name: str) -> str:
-        """
-        Export a puzzle to Crossword Compiler XML format.
-
-        Args:
-            user_id: The user who owns this puzzle
-            name: Name/identifier for the puzzle
-
-        Returns:
-            XML as a string
-
-        Raises:
-            PersistenceError: If puzzle not found
-            ExportError: If export fails
-        """
         puzzle = self.persistence.load_puzzle(user_id, name)
-        return self.export.export_puzzle_to_xml(puzzle)
+        return self._xml.export_puzzle_to_xml(puzzle)
 
     def export_puzzle_to_nytimes(self, user_id: int, name: str) -> bytes:
-        """
-        Export a puzzle in NYTimes submission format.
-
-        Returns a ZIP archive containing an HTML clue sheet and SVG grid image.
-
-        Args:
-            user_id: The user who owns this puzzle
-            name: Name/identifier for the puzzle
-
-        Returns:
-            ZIP archive as bytes
-
-        Raises:
-            PersistenceError: If puzzle not found
-            ExportError: If export fails
-        """
         puzzle = self.persistence.load_puzzle(user_id, name)
-        return self.export.export_puzzle_to_nytimes(puzzle)
+        return self._nytimes.export_puzzle_to_nytimes(puzzle)
