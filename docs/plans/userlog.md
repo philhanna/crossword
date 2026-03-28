@@ -65,6 +65,7 @@ Show the activity log inside the home view, beneath the existing introductory te
 Suggested home-view structure:
 
 - short reminder text about using the Puzzle menu
+- a small `Clear log` control near the reminder text
 - newest entries first so the most recent work is immediately visible
 
 ### Empty state
@@ -72,6 +73,8 @@ Suggested home-view structure:
 Before any puzzle activity occurs in the session, show a short empty-state message such as:
 
 - `No puzzle activity yet in this session.`
+
+The user should also be able to clear the current session log manually from the home view without reloading the page.
 
 ### Entry wording
 
@@ -185,6 +188,7 @@ Suggested presentation:
 ### Phase 2: Render the log on the home view
 
 - update `renderHome()` to include the activity log directly under the introductory text
+- add a small `Clear log` control near the introductory text
 - add any required CSS for row spacing, timestamp text, and empty-state styling
 
 ### Phase 3: Hook Puzzle-menu success paths
@@ -226,6 +230,7 @@ Manual checks:
 9. Delete a puzzle and confirm a `Deleted puzzle ...` entry appears.
 10. Refresh the page and confirm the session log is reset.
 11. Close the browser tab/window and reopen the app; confirm the previous session log is gone.
+12. Click `Clear log` and confirm the session entries disappear immediately without reloading the page.
 
 ## Risks And Decisions
 

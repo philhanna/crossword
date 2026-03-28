@@ -23,7 +23,7 @@ The page has three regions:
 
 Everything in `#lhs` and `#rhs` is replaced via `innerHTML` on every view transition.
 
-In the `home` view, `#lhs` also contains the session activity log content under the introductory Puzzle-menu text.
+In the `home` view, `#lhs` also contains the session activity log content under the introductory Puzzle-menu text, along with a small `Clear log` control for resetting the current session history.
 
 ## Application State
 
@@ -81,7 +81,7 @@ A permanent message line and three permanent modals are declared in `index.html`
 
 - **`#ml` — Message line** (`showMessageLine(text, level, timeoutMs)` / `clearMessageLine()`) — single-line notification strip shown below the menu bar. `level` is `notice` or `error`; notice renders green and error renders red. This is used for passive status messages that do not require any user action.
 
-Separately, the SPA keeps an in-memory activity log in `AppState.activityLog` for completed Puzzle-menu actions during the current browser session. That log is rendered only on the `home` view and is intentionally session-scoped: it survives view changes inside the SPA, but it is lost on full page reload or browser/tab close.
+Separately, the SPA keeps an in-memory activity log in `AppState.activityLog` for completed Puzzle-menu actions during the current browser session. That log is rendered only on the `home` view and is intentionally session-scoped: it survives view changes inside the SPA, but it is lost on full page reload or browser/tab close. The user can also clear it manually from the home view with the `Clear log` control.
 
 Three permanent modals are shown/hidden via `display:block/none`:
 
@@ -220,6 +220,8 @@ if (AppState.editingWord)
 ## Session Activity Log
 
 The home view includes session activity content rendered from `AppState.activityLog` directly beneath the introductory Puzzle-menu text.
+
+The introductory row also includes a small `Clear log` button that empties the session log immediately without affecting any saved puzzles.
 
 The log is:
 

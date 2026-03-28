@@ -94,9 +94,31 @@ h3 {
 }
 
 /* Home-view activity log */
+.activity-log-intro-text {
+    margin: 0;
+}
+
+.activity-log-clear-btn {
+    background: transparent;
+    border: 0;
+    color: #0645ad;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.activity-log-clear-btn:hover,
+.activity-log-clear-btn:focus {
+    color: #0b0080;
+}
+
 .activity-log-home {
     margin-top: 18px;
     max-width: 720px;
+}
+
+.activity-log-clear-wrap {
+    margin-top: 10px;
 }
 
 .activity-log-list {

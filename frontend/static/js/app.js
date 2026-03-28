@@ -60,6 +60,13 @@ function appendActivityLog(text) {
     });
 }
 
+function clearActivityLog() {
+    AppState.activityLog = [];
+    if (AppState.view === 'home') {
+        renderHome();
+    }
+}
+
 function renderActivityLog() {
     if (AppState.activityLog.length === 0) {
         return `
@@ -299,11 +306,22 @@ function showView(view) {
 }
 
 function renderHome() {
+    const clearLogLink = AppState.activityLog.length > 0
+        ? `<div class="activity-log-clear-wrap">
+    <button class="w3-button w3-small w3-border w3-round w3-light-gray activity-log-clear-btn"
+            type="button"
+            onclick="clearActivityLog()">
+      Clear log
+    </button>
+  </div>`
+        : '';
+
     document.getElementById('lhs').innerHTML =
         `<div class="w3-container">
-  <p>Use the Puzzle menu to create or open a crossword for editing.</p>
+  <p class="activity-log-intro-text">Use the Puzzle menu to create or open a crossword for editing.</p>
   <div class="activity-log-home">
     ${renderActivityLog()}
+    ${clearLogLink}
   </div>
 </div>`;
 }
@@ -1281,7 +1299,7 @@ async function _openPuzzleInEditor(name, { logOpen = true } = {}) {
     AppState._statsData        = null;
     AppState.gridStructureChanged = false;
     if (logOpen) {
-        appendActivityLog(`Worked on puzzle "${name}".`);
+        appendActivityLog(`Opened puzzle "${name}".`);
     }
     showView('editor');
 }
