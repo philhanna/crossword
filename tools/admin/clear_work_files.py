@@ -1,9 +1,9 @@
 """
-Clear working-copy rows from the grids and puzzles tables.
+Clear working-copy rows from the puzzles table.
 
 Working copies are rows whose name starts with '__wc__'. They are created
-when a grid or puzzle is opened for editing and should be cleaned up on
-close, but can accumulate if the app is killed or crashes.
+when a puzzle is opened for editing and should be cleaned up on close, but
+can accumulate if the app is killed or crashes.
 
 Usage:
     python3 tools/clear_work_files.py [--dry-run]
@@ -35,19 +35,14 @@ def source_name(wc_name: str) -> str:
     return "(unknown)"
 
 
-def find_work_files(conn: sqlite3.Connection) -> tuple[list[str], list[str]]:
+def find_work_files(conn: sqlite3.Connection) -> list[str]:
     cur = conn.cursor()
-    cur.execute("SELECT gridname FROM grids WHERE gridname LIKE ? ORDER BY gridname", (WC_PREFIX + "%",))
-    grids = [row[0] for row in cur.fetchall()]
     cur.execute("SELECT puzzlename FROM puzzles WHERE puzzlename LIKE ? ORDER BY puzzlename", (WC_PREFIX + "%",))
-    puzzles = [row[0] for row in cur.fetchall()]
-    return grids, puzzles
+    return [row[0] for row in cur.fetchall()]
 
 
-def delete_work_files(conn: sqlite3.Connection, grids: list[str], puzzles: list[str]) -> None:
+def delete_work_files(conn: sqlite3.Connection, puzzles: list[str]) -> None:
     cur = conn.cursor()
-    for name in grids:
-        cur.execute("DELETE FROM grids WHERE gridname = ?", (name,))
     for name in puzzles:
         cur.execute("DELETE FROM puzzles WHERE puzzlename = ?", (name,))
     conn.commit()
@@ -63,21 +58,15 @@ def main() -> None:
 
     conn = sqlite3.connect(db)
     try:
-        grids, puzzles = find_work_files(conn)
+        puzzles = find_work_files(conn)
 
-        print(f"Work-copy grids ({len(grids)}):")
-        for name in grids:
-            print(f"  {name}  (source: {source_name(name)})")
-        if not grids:
-            print("  (none)")
-
-        print(f"\nWork-copy puzzles ({len(puzzles)}):")
+        print(f"Work-copy puzzles ({len(puzzles)}):")
         for name in puzzles:
             print(f"  {name}  (source: {source_name(name)})")
         if not puzzles:
             print("  (none)")
 
-        total = len(grids) + len(puzzles)
+        total = len(puzzles)
         if total == 0:
             print("\nNothing to clean up.")
             return
@@ -91,7 +80,7 @@ def main() -> None:
             print("Cancelled.")
             return
 
-        delete_work_files(conn, grids, puzzles)
+        delete_work_files(conn, puzzles)
         print(f"\nDeleted {total} row(s).")
 
         print("Vacuuming database...", end=" ", flush=True)
