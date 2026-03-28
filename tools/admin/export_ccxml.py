@@ -1,10 +1,10 @@
 """
-Export a puzzle to Crossword Compiler XML format (.ccxml).
+Export a puzzle to Crossword Compiler XML format (.xml).
 
 Usage:
-    python tools/admin/export_ccxml.py <puzzle_name> [output.ccxml]
+    python tools/admin/export_ccxml.py <puzzle_name> [output.xml]
 
-If output path is omitted, writes <puzzle_name>.ccxml in the current directory.
+If output path is omitted, writes <puzzle_name>.xml in the current directory.
 """
 
 import sys
@@ -18,11 +18,11 @@ from crossword.wiring import make_app
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: export_ccxml.py <puzzle_name> [output.ccxml]", file=sys.stderr)
+        print("Usage: export_ccxml.py <puzzle_name> [output.xml]", file=sys.stderr)
         sys.exit(1)
 
     name = sys.argv[1]
-    out_path = Path(sys.argv[2]) if len(sys.argv) >= 3 else Path(f"{name}.ccxml")
+    out_path = Path(sys.argv[2]) if len(sys.argv) >= 3 else Path(f"{name}.xml")
 
     app = make_app()
     xml = app.export_uc.export_puzzle_to_xml(user_id=1, name=name)
