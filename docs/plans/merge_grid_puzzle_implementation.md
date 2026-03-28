@@ -379,14 +379,14 @@ Validation completed in this phase:
 
 ## Phase 7: Implement Puzzle Mode In The Merged UI
 
-- [ ] Keep direct word selection and keyboard fill in Puzzle mode.
-- [ ] Keep word/clue editing tools that are still in scope.
-- [ ] Persist `last_mode = 'puzzle'` when the user leaves the editor in Puzzle mode.
-- [ ] On entry to Puzzle mode, reset Puzzle-mode undo/redo state for that session.
-- [ ] Ensure Puzzle mode cannot accidentally toggle black cells.
-- [ ] Keep clue lists, word editing, suggestions, constraints, and reset behavior working against the merged puzzle backend.
-- [ ] Make sure switching back from Grid mode reflects any recomputed entries, preserved letters, and cleared clues correctly.
-- [ ] Confirm that unchanged entries preserve clues only when the exact identity rule passes.
+- [x] Keep direct word selection and keyboard fill in Puzzle mode.
+- [x] Keep word/clue editing tools that are still in scope.
+- [x] Persist `last_mode = 'puzzle'` when the user leaves the editor in Puzzle mode.
+- [x] On entry to Puzzle mode, reset Puzzle-mode undo/redo state for that session.
+- [x] Ensure Puzzle mode cannot accidentally toggle black cells.
+- [x] Keep clue lists, word editing, suggestions, constraints, and reset behavior working against the merged puzzle backend.
+- [x] Make sure switching back from Grid mode reflects any recomputed entries, preserved letters, and cleared clues correctly.
+- [x] Confirm that unchanged entries preserve clues only when the exact identity rule passes.
 
 **Primary files/modules**
 
@@ -396,7 +396,26 @@ Validation completed in this phase:
 
 **Checkpoint**
 
-- [ ] Puzzle mode remains fully usable after late grid edits and reflects the recomputed puzzle structure correctly.
+- [x] Puzzle mode remains fully usable after late grid edits and reflects the recomputed puzzle structure correctly.
+
+### Phase 7 Notes
+
+Implemented in this phase:
+
+- Selecting a word from the grid now dismisses the stats panel and brings the clue/editing side back into view, so direct selection remains reliable in Puzzle mode.
+- The clue lists now support direct word selection separately from explicit word editing, and cleared clues are shown as `(no clue)` to make post-grid invalidation visible.
+- Returning from Grid mode to Puzzle mode now shows a notice when the puzzle structure changed, prompting review of recomputed entries and cleared clues.
+- Puzzle-only actions such as opening the word editor are now explicitly guarded so Grid mode cannot trigger them accidentally.
+
+Notes on previously completed support that this phase depends on:
+
+- Persisting `last_mode = 'puzzle'` and resetting Puzzle-mode undo/redo on mode entry are handled by the domain and use-case work completed earlier.
+- The exact clue-preservation rule for unchanged entries is enforced by the Phase 1 domain behavior and remains covered by domain tests.
+
+Validation completed in this phase:
+
+- `node --check frontend/static/js/app.js`
+- `./venv/bin/pytest -q crossword/tests/test_http_server.py crossword/tests/test_puzzle_use_cases.py crossword/tests/test_puzzle_modes.py crossword/tests/test_wiring.py`
 
 ## Phase 8: Remove Standalone Grid Features
 

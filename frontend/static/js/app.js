@@ -21,6 +21,7 @@ const AppState = {
     selectedWord: null,      // null | {seq, direction, cells, initialText, currentText}
     showingStats: false,     // true = puzzle editor RHS shows stats panel
     _statsData: null,        // cached puzzle stats response
+    gridStructureChanged: false, // true after Grid-mode edits until user returns to Puzzle mode
 };
 
 // ---------------------------------------------------------------------------
@@ -717,6 +718,7 @@ function selectWord(seq, direction, clickR, clickC) {
         initialText: text,
         currentText: text,
     };
+    AppState.showingStats = false;
     if (clickR !== undefined) {
         const clickedIdx = word.cells.findIndex(([r, c]) => r === clickR && c === clickC);
         _peCursorIdx = clickedIdx >= 0 ? clickedIdx : 0;
@@ -726,6 +728,7 @@ function selectWord(seq, direction, clickR, clickC) {
     }
     _updatePuzzleToolbar();
     renderPuzzleEditorLhs();
+    renderPuzzleEditorRhs();
 }
 
 async function _peCommitWord() {
@@ -812,6 +815,7 @@ function _peKeydown(e) {
 }
 
 async function do_puzzle_edit_word(seq, direction) {
+    if (_currentEditorMode() !== 'puzzle') return;
     // Called from toolbar button (no args) or clue list (with args)
     const sw = AppState.selectedWord;
     let targetSeq = seq, targetDir = direction;
@@ -971,10 +975,14 @@ function renderClues() {
     const words = AppState.puzzleData.puzzle.words;
     const across = words.filter(w => w.direction === 'across').sort((a, b) => a.seq - b.seq);
     const down   = words.filter(w => w.direction === 'down').sort((a, b) => a.seq - b.seq);
+    const selected = AppState.selectedWord;
 
     function listHtml(wordList, direction, colorClass) {
         const items = wordList.map(w =>
-            `<li><a onclick="do_puzzle_edit_word(${w.seq}, '${direction}')">${w.seq}. ${escapeHtml(w.clue || '')}</a></li>`
+            `<li class="${selected && selected.seq === w.seq && selected.direction === direction ? 'w3-blue-gray' : ''}">` +
+            `<a onclick="selectWord(${w.seq}, '${direction}');return false;">${w.seq}. ${escapeHtml(w.clue || '(no clue)')}</a> ` +
+            `<span class="w3-small"><a onclick="do_puzzle_edit_word(${w.seq}, '${direction}');return false;">edit</a></span>` +
+            `</li>`
         ).join('');
         return `<ul class="w3-ul w3-card w3-border w3-hoverable ${colorClass} clue-list">${items}</ul>`;
     }
@@ -1123,6 +1131,7 @@ function _weKeydown(e) {
 // ---------------------------------------------------------------------------
 
 async function openWordEditor(seq, direction) {
+    if (_currentEditorMode() !== 'puzzle') return;
     const wn = AppState.puzzleWorkingName;
     try {
         const data = await apiFetch('GET',
@@ -1423,6 +1432,7 @@ async function _openPuzzleInEditor(name) {
     AppState.selectedWord      = null;
     AppState.showingStats      = false;
     AppState._statsData        = null;
+    AppState.gridStructureChanged = false;
     showView('editor');
 }
 
@@ -1530,6 +1540,7 @@ async function _doPuzzleCloseConfirmed() {
     AppState.selectedWord      = null;
     AppState.showingStats      = false;
     AppState._statsData        = null;
+    AppState.gridStructureChanged = false;
     if (wn) {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
         catch (e) { /* ignore cleanup errors */ }
@@ -1666,6 +1677,7 @@ async function _applyGridModeUpdate(data, noticeText = _gridChangeMessage()) {
     AppState.puzzleData   = data;
     AppState.editingWord  = null;
     AppState.selectedWord = null;
+    AppState.gridStructureChanged = true;
     renderPuzzleEditor();
     await _refreshPuzzleStatsIfVisible();
     showMessageLine(noticeText, 'notice');
@@ -1780,12 +1792,20 @@ async function do_switch_to_puzzle_mode() {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/puzzle`);
         if (data.error) { alert(`Error switching modes: ${data.error}`); return; }
+        const hadGridStructureChange = AppState.gridStructureChanged;
         AppState.puzzleData   = data;
         AppState.editingWord  = null;
         AppState.selectedWord = null;
         AppState.showingStats = false;
         AppState._statsData   = null;
+        AppState.gridStructureChanged = false;
         renderPuzzleEditor();
+        if (hadGridStructureChange) {
+            showMessageLine(
+                'Back in Puzzle mode. Review recomputed entries and any clues that were cleared.',
+                'notice'
+            );
+        }
     } catch (e) { alert('Error switching to Puzzle mode'); }
 }
 
