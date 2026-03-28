@@ -16,7 +16,7 @@ and the format is based on [Keep a Changelog].
 - Export NYTimes submission as PDF via Chrome headless (`export_nytimes` tool)
 - `export_ccxml` admin tool
 - `export_acrosslite` admin tool
-- `docs/file_formats.md` — reference document for supported export formats
+- `docs/design/AcrossTextFormat.pdf` — reference document for the AcrossLite text format
 
 ### Changed
 
