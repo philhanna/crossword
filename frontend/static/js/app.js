@@ -250,7 +250,7 @@ function updateMenu() {
     editor ? menuEnable('menu-puzzle-save')    : menuDisable('menu-puzzle-save');
     editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
     editor ? menuEnable('menu-puzzle-close')   : menuDisable('menu-puzzle-close');
-    editor ? menuEnable('menu-puzzle-delete')  : menuDisable('menu-puzzle-delete');
+    menuEnable('menu-puzzle-delete');
 
     menuEnable('menu-publish-acrosslite');
     menuEnable('menu-publish-cwcompiler');
@@ -1635,20 +1635,33 @@ async function do_puzzle_rotate_grid() {
 }
 
 async function do_puzzle_delete() {
-    const name = AppState.puzzleName;
-    if (!name) return;
-    messageBox(
-        'Delete puzzle',
-        `Are you sure you want to delete puzzle <b>'${escapeHtml(name)}'</b>?`,
-        null,
-        async () => {
-            try {
-                const data = await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
-                if (data && data.error) { alert(`Error deleting puzzle: ${data.error}`); return; }
-                await _doPuzzleCloseConfirmed();
-            } catch (e) { alert('Error deleting puzzle'); }
+    try {
+        const puzzles = await _listSavedPuzzleNames();
+        if (puzzles.length === 0) {
+            showMessageLine('No saved puzzles found.', 'notice');
+            return;
         }
-    );
+        showPreviewChooser('Delete puzzle', puzzles, '/api/puzzles', async (name) => {
+            messageBox(
+                'Delete puzzle',
+                `Are you sure you want to delete puzzle <b>'${escapeHtml(name)}'</b>?`,
+                null,
+                async () => {
+                    try {
+                        const data = await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
+                        if (data && data.error) { alert(`Error deleting puzzle: ${data.error}`); return; }
+                        if (AppState.puzzleName === name) {
+                            await _doPuzzleCloseConfirmed();
+                            return;
+                        }
+                        showMessageLine(`Puzzle ${name} deleted.`, 'notice');
+                    } catch (e) { alert('Error deleting puzzle'); }
+                }
+            );
+        });
+    } catch (e) {
+        alert('Error listing puzzles');
+    }
 }
 
 // ---------------------------------------------------------------------------
