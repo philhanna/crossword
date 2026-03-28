@@ -176,12 +176,60 @@ Puzzle routes
 │       └── PuzzleUseCases.open_puzzle_for_editing
 │           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
 │           └── persistence.save_puzzle -> SQLitePersistenceAdapter.save_puzzle
+├── POST /api/puzzles/{name}/mode/grid  -> handle_switch_to_grid_mode
+│   └── app.puzzle_uc.switch_to_grid_mode(...)
+│       └── PuzzleUseCases.switch_to_grid_mode
+│           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
+│           ├── puzzle.enter_grid_mode()   (sets last_mode="grid", clears grid_undo/redo stacks)
+│           └── persistence.save_puzzle -> SQLitePersistenceAdapter.save_puzzle
+├── POST /api/puzzles/{name}/mode/puzzle -> handle_switch_to_puzzle_mode
+│   └── app.puzzle_uc.switch_to_puzzle_mode(...)
+│       └── PuzzleUseCases.switch_to_puzzle_mode
+│           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
+│           ├── puzzle.enter_puzzle_mode() (sets last_mode="puzzle", clears undo/redo stacks)
+│           └── persistence.save_puzzle -> SQLitePersistenceAdapter.save_puzzle
 ├── PUT /api/puzzles/{name}/title       -> handle_set_puzzle_title
 │   └── app.puzzle_uc.set_puzzle_title(...)
 │       └── PuzzleUseCases.set_puzzle_title
 │           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
 │           ├── puzzle.title = title
 │           └── persistence.save_puzzle -> SQLitePersistenceAdapter.save_puzzle
+├── PUT /api/puzzles/{name}/grid/cells/{r}/{c} -> handle_toggle_puzzle_black_cell
+│   └── app.puzzle_uc.toggle_black_cell(...)
+│       └── PuzzleUseCases.toggle_black_cell
+│           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
+│           ├── puzzle.toggle_black_cell(r, c)
+│           │   ├── Grid.from_json (snapshot)
+│           │   ├── grid_undo_stack.append / grid_redo_stack.clear
+│           │   ├── newgrid.is_black_cell -> add_black_cell / remove_black_cell
+│           │   └── puzzle._apply_new_grid(newgrid)
+│           │       ├── puzzle.initialize_words
+│           │       └── clue reconstruction from identity map
+│           └── persistence.save_puzzle -> SQLitePersistenceAdapter.save_puzzle
+├── POST /api/puzzles/{name}/grid/rotate -> handle_rotate_puzzle_grid
+│   └── app.puzzle_uc.rotate_grid(...)
+│       └── PuzzleUseCases.rotate_grid
+│           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
+│           ├── puzzle.rotate_grid()
+│           │   ├── Grid.from_json (snapshot)
+│           │   ├── grid_undo_stack.append / grid_redo_stack.clear
+│           │   ├── newgrid.rotate()
+│           │   └── puzzle._apply_new_grid(newgrid)
+│           └── persistence.save_puzzle -> SQLitePersistenceAdapter.save_puzzle
+├── POST /api/puzzles/{name}/grid/undo  -> handle_undo_puzzle_grid
+│   └── app.puzzle_uc.undo_grid(...)
+│       └── PuzzleUseCases.undo_grid
+│           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
+│           ├── puzzle.undo_grid_change()  (if grid_undo_stack non-empty)
+│           │   └── puzzle._apply_new_grid(Grid.from_json(popped snapshot))
+│           └── persistence.save_puzzle (if changed)
+├── POST /api/puzzles/{name}/grid/redo  -> handle_redo_puzzle_grid
+│   └── app.puzzle_uc.redo_grid(...)
+│       └── PuzzleUseCases.redo_grid
+│           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
+│           ├── puzzle.redo_grid_change()  (if grid_redo_stack non-empty)
+│           │   └── puzzle._apply_new_grid(Grid.from_json(popped snapshot))
+│           └── persistence.save_puzzle (if changed)
 ├── POST /api/puzzles/{name}/words/{seq}/{dir}/reset -> handle_reset_word
 │   └── app.puzzle_uc.reset_word(...)
 │       └── PuzzleUseCases.reset_word
@@ -232,16 +280,6 @@ Puzzle routes
 │           │   ├── puzzle.get_text
 │           │   └── puzzle.set_text(..., undo=False)
 │           └── persistence.save_puzzle (if changed)
-├── PUT /api/puzzles/{name}/grid        -> handle_replace_puzzle_grid
-│   └── app.puzzle_uc.replace_puzzle_grid(...)
-│       └── PuzzleUseCases.replace_puzzle_grid
-│           ├── persistence.load_puzzle -> SQLitePersistenceAdapter.load_puzzle -> Puzzle.from_json
-│           ├── persistence.load_grid   -> SQLitePersistenceAdapter.load_grid -> Grid.from_json
-│           ├── puzzle.replace_grid
-│           │   ├── puzzle.to_json (snapshot)
-│           │   ├── Puzzle.initialize_words
-│           │   └── clue reconstruction from old across/down text map
-│           └── persistence.save_puzzle -> SQLitePersistenceAdapter.save_puzzle
 ├── GET /api/puzzles/{name}/preview     -> handle_get_puzzle_preview
 │   └── app.puzzle_uc.get_puzzle_preview(...)
 │       └── PuzzleUseCases.get_puzzle_preview
