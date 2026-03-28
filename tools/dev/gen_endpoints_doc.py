@@ -24,7 +24,7 @@ import sys
 # Paths
 # ---------------------------------------------------------------------------
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEV_TOOLS_DIR = os.path.join(ROOT, "tools", "dev")
 OUT_PATH = os.path.join(ROOT, "docs", "design", "endpoints.md")
 
