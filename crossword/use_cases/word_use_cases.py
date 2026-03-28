@@ -144,7 +144,7 @@ class WordUseCases:
             "pattern": pattern,
         }
 
-    def get_ranked_suggestions(self, word) -> list[dict]:
+    def get_ranked_suggestions(self, word, input_pattern: str = None) -> list[dict]:
         """
         Return word candidates for the given word, ranked by crossing viability score.
 
@@ -153,16 +153,28 @@ class WordUseCases:
         Higher scores mean the candidate's letters are more common across the crossing
         words, leaving more options open for those words.
 
+        If input_pattern is provided (letters and '.' for wildcards), any position
+        with a specific letter overrides the crossing-word constraint at that position.
+
         Args:
             word: A Word domain object (AcrossWord or DownWord)
+            input_pattern: Optional string of letters and '.' (e.g. "CA..T")
 
         Returns:
             List of dicts sorted by score descending:
               [{"word": "crane", "score": 142}, ...]
         """
         constraints = self.get_word_constraints(word)
-        pattern = constraints["pattern"]
         crossers = constraints["crossers"]
+
+        if input_pattern:
+            pos_regexps = [c["regexp"] for c in crossers]
+            for i, ch in enumerate(input_pattern.upper()):
+                if i < len(pos_regexps) and ch != ".":
+                    pos_regexps[i] = ch
+            pattern = "".join(pos_regexps)
+        else:
+            pattern = constraints["pattern"]
 
         candidates = self.word_list.get_matches(self._pattern_to_regex(pattern))
 

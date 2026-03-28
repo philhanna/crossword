@@ -157,8 +157,9 @@ def handle_get_ranked_suggestions(path_params, query_params, body_params, sessio
             return {"error": "seq must be an integer"}
 
         user_id = 1
+        input_pattern = query_params.get("pattern", None) or None
         word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
-        suggestions = app.word_uc.get_ranked_suggestions(word)
+        suggestions = app.word_uc.get_ranked_suggestions(word, input_pattern)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"suggestions": suggestions, "count": len(suggestions)}
 

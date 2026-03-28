@@ -1019,8 +1019,11 @@ async function _fetchConstrainedSuggestions() {
     const matchEl = document.getElementById('we-match');
     matchEl.style.display = 'none';
     try {
+        const inp = document.getElementById('we-text');
+        const rawText = inp ? inp.value : (ew.answer || '');
+        const pattern = rawText.replace(/ /g, '.').toUpperCase();
         const data = await apiFetch('GET',
-            `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/suggestions`);
+            `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/suggestions?pattern=${encodeURIComponent(pattern)}`);
         if (!data.suggestions || data.suggestions.length === 0) {
             _weSuggestions = [];
             matchEl.innerHTML     = 'No matches found';
