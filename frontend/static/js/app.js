@@ -1353,6 +1353,7 @@ async function do_puzzle_save() {
     const name = AppState.puzzleName;
     if (!name) { do_puzzle_save_as(); return; }
     try {
+        await _settlePuzzleEditingBeforeSave();
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { alert(`Save failed: ${data.error}`); return; }
@@ -1389,6 +1390,7 @@ async function do_puzzle_save_as() {
         if (!newName) return;
         if (!validateUserFacingName('puzzle', newName)) return;
         try {
+            await _settlePuzzleEditingBeforeSave();
             await confirmOverwriteIfExists(
                 'puzzle',
                 newName,
@@ -1634,6 +1636,11 @@ async function _settlePuzzleEditingBeforeModeSwitch() {
     if (AppState.selectedWord) {
         await _peCommitWord();
     }
+}
+
+async function _settlePuzzleEditingBeforeSave() {
+    if (_currentEditorMode() !== 'puzzle') return;
+    await _settlePuzzleEditingBeforeModeSwitch();
 }
 
 async function _switchToGridModeConfirmed() {
