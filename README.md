@@ -32,7 +32,7 @@ cd crossword
 ```bash
 python3 -m venv venv
 source venv/bin/activate   # On Windows: venv\Scripts\activate.bat
-pip install .
+pip install -e .
 ```
 
 ### Upgrading
@@ -40,7 +40,7 @@ pip install .
 ```bash
 cd crossword
 git pull
-pip install .
+pip install -e .
 ```
 
 ## Configuration
