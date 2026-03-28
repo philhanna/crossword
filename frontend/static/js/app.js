@@ -1671,6 +1671,7 @@ async function do_puzzle_delete() {
 async function _downloadExport(name, format) {
     const endpointMap = { puz: 'acrosslite', xml: 'xml', nyt: 'nytimes' };
     const filenameMap = { puz: `acrosslite-${name}.txt`, xml: `${name}.xml`, nyt: `nytimes-${name}.pdf` };
+    const labelMap  = { puz: 'Across Lite', xml: 'Crossword Compiler XML', nyt: 'New York Times' };
     const endpoint = endpointMap[format];
     const filename = filenameMap[format];
     try {
@@ -1689,6 +1690,7 @@ async function _downloadExport(name, format) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        showMessageLine(`Published "${name}" as ${labelMap[format]}: ${filename}`, 'notice');
     } catch (e) {
         showMessageLine('Export request failed.', 'error');
     }
