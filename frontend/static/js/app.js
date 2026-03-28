@@ -1670,7 +1670,7 @@ async function do_puzzle_delete() {
 
 async function _downloadExport(name, format) {
     const endpointMap = { puz: 'acrosslite', xml: 'xml', nyt: 'nytimes' };
-    const filenameMap = { puz: `acrosslite-${name}.zip`, xml: `${name}.xml`, nyt: `nytimes-${name}.zip` };
+    const filenameMap = { puz: `acrosslite-${name}.txt`, xml: `${name}.xml`, nyt: `nytimes-${name}.pdf` };
     const endpoint = endpointMap[format];
     const filename = filenameMap[format];
     try {
