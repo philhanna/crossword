@@ -61,6 +61,14 @@ async function apiFetch(method, path, body) {
 
 let _messageLineTimer = null;
 
+function positionMessageLine() {
+    const ml = document.getElementById('ml');
+    const menu = document.getElementById('top-menu');
+    if (!ml || !menu) return;
+    const rect = menu.getBoundingClientRect();
+    ml.style.top = `${rect.bottom + 8}px`;
+}
+
 function clearMessageLine() {
     const ml = document.getElementById('ml');
     ml.style.display = 'none';
@@ -77,6 +85,7 @@ function showMessageLine(text, level = 'notice', timeoutMs = MESSAGE_LINE_TIMEOU
     document.getElementById('ml-text').textContent = text;
     ml.classList.remove('message-line-notice', 'message-line-error');
     ml.classList.add(level === 'error' ? 'message-line-error' : 'message-line-notice');
+    positionMessageLine();
     ml.style.display = 'flex';
     if (_messageLineTimer) {
         clearTimeout(_messageLineTimer);
@@ -1711,5 +1720,8 @@ async function do_publish(format) {
 // ---------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
+    positionMessageLine();
+    window.addEventListener('scroll', positionMessageLine, { passive: true });
+    window.addEventListener('resize', positionMessageLine);
     showView('home');
 });
