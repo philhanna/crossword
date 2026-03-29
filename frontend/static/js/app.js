@@ -731,6 +731,8 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
     <a id="puzzle-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
+    <a id="puzzle-editword-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_edit_word()">
+      <i class="material-icons crosstb-icon">edit</i><span>Edit word</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_title()">
@@ -1537,6 +1539,10 @@ function _updatePuzzleUndoRedo() {
 }
 
 function _updatePuzzleToolbar() {
+    const mode = _currentEditorMode();
+    const eb = document.getElementById('puzzle-editword-btn');
+    if (!eb) return;
+    eb.classList.toggle('w3-disabled', mode !== 'puzzle' || !AppState.selectedWord || !!AppState.editingWord);
 }
 
 async function do_puzzle_undo() { await _puzzleUndoRedo('undo'); }
