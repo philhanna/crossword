@@ -1,5 +1,5 @@
 import json
-from collections import OrderedDict
+from collections import OrderedDict, deque
 
 from .numbered_cell import NumberedCell
 
@@ -298,29 +298,35 @@ class Grid:
                     continue
                 partition[(r, c)] = (0, 0)
 
+        if not partition:
+            return ["Grid must contain at least one white cell"]
+
         # ==============================================================
-        # Inner function which recursively marks its immediate neighbors
+        # Inner function which iteratively marks its immediate neighbors
         # (up, down, left, right) as belonging to the same partition.
+        # Using an explicit queue avoids recursion depth limits on larger
+        # grids.
         # ==============================================================
 
         def mark_partition(r, c, pr, pc):
+            todo = deque([(r, c)])
+            while todo:
+                cellr, cellc = todo.pop()
 
-            if r < 1 or r > self.n or c < 1 or c > self.n:
-                return  # Off the grid
+                if cellr < 1 or cellr > self.n or cellc < 1 or cellc > self.n:
+                    continue  # Off the grid
 
-            if self.is_black_cell(r, c):
-                return  # Black cell
+                if self.is_black_cell(cellr, cellc):
+                    continue  # Black cell
 
-            if partition[(r, c)] != (0, 0):
-                return  # Already marked
+                if partition[(cellr, cellc)] != (0, 0):
+                    continue  # Already marked
 
-            # Otherwise, add this to the partition
-
-            partition[(r, c)] = (pr, pc)
-            mark_partition(r - 1, c, pr, pc)  # Up
-            mark_partition(r, c + 1, pr, pc)  # Right
-            mark_partition(r, c - 1, pr, pc)  # Left
-            mark_partition(r + 1, c, pr, pc)  # Down
+                partition[(cellr, cellc)] = (pr, pc)
+                todo.append((cellr - 1, cellc))  # Up
+                todo.append((cellr, cellc + 1))  # Right
+                todo.append((cellr, cellc - 1))  # Left
+                todo.append((cellr + 1, cellc))  # Down
 
         # ==============================================================
         # Now go through the whole grid, left to right, top to bottom.

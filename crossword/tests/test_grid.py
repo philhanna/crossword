@@ -80,6 +80,19 @@ class TestGrid:
         error_list = grid.validate_interlock()
         assert len(error_list) == 0
 
+    def test_validate_interlock_all_black_grid(self):
+        grid = Grid(3)
+        for r in range(1, 4):
+            for c in range(1, 4):
+                grid.black_cells.add((r, c))
+        error_list = grid.validate_interlock()
+        assert error_list == ["Grid must contain at least one white cell"]
+
+    def test_validate_interlock_large_open_grid(self):
+        grid = Grid(40)
+        error_list = grid.validate_interlock()
+        assert len(error_list) == 0
+
     def test_validate_bad(self):
         grid = TestGrid.get_bad_grid()
         ok, errors = grid.validate()
