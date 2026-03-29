@@ -596,6 +596,21 @@ function _peKeydown(e) {
         renderPuzzleEditorLhs(); e.preventDefault(); return;
     }
 
+    // Cross-direction navigation: treat like clicking the neighboring cell
+    const [curR, curC] = sw.cells[_peCursorIdx];
+    if (!isAcross && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        const nc = curC + (e.key === 'ArrowRight' ? 1 : -1);
+        const neighbor = findWordAtCell(curR, nc, 'across');
+        if (neighbor) { _peCommitWord().then(() => selectWord(neighbor.seq, neighbor.direction, curR, nc)); }
+        e.preventDefault(); return;
+    }
+    if (isAcross && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        const nr = curR + (e.key === 'ArrowDown' ? 1 : -1);
+        const neighbor = findWordAtCell(nr, curC, 'down');
+        if (neighbor) { _peCommitWord().then(() => selectWord(neighbor.seq, neighbor.direction, nr, curC)); }
+        e.preventDefault(); return;
+    }
+
     if (e.key === 'Delete') {
         const t = sw.currentText;
         sw.currentText = t.slice(0, _peCursorIdx) + ' ' + t.slice(_peCursorIdx + 1);
