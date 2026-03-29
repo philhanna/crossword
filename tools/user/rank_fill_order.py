@@ -2,7 +2,7 @@
 Rank puzzle slots by structural importance for fill order.
 
 Usage:
-    python tools/user/rank_fill_order.py <puzzle_name> [--user-id N] [--top N]
+    python tools/user/rank_fill_order.py <puzzle_name> [--top N]
 """
 
 import argparse
@@ -22,7 +22,6 @@ def build_parser() -> argparse.ArgumentParser:
         description="Rank puzzle slots by structural importance for fill order."
     )
     parser.add_argument("name", help="Puzzle name")
-    parser.add_argument("--user-id", type=int, default=1, help="Puzzle owner user id")
     parser.add_argument("--top", type=int, default=20, help="Maximum rows to print")
     return parser
 
@@ -45,7 +44,7 @@ def main(argv=None) -> int:
 
     try:
         app = make_app({"dbfile": dbfile()})
-        puzzle = app.puzzle_uc.load_puzzle(args.user_id, args.name)
+        puzzle = app.puzzle_uc.load_puzzle(1, args.name)
     except (PersistenceError, ValueError) as exc:
         print(f"Error: {exc}")
         return 1
