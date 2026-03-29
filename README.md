@@ -140,10 +140,23 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 
 ## Tools
 
+### Admin
+
 | Script | Description |
 |--------|-------------|
-| `tools/swagger.py` | Swagger UI for the REST API (`python3 tools/swagger.py`) |
-| `tools/md_to_pdf.py` | Convert Markdown to PDF via Chrome headless |
+| `tools/admin/export_acrosslite.py` | Export a puzzle to AcrossLite text format (`.txt`) |
+| `tools/admin/export_ccxml.py` | Export a puzzle to Crossword Compiler XML format (`.xml`) |
+| `tools/admin/export_json.py` | Export a puzzle to JSON format (`.json`) |
+| `tools/admin/export_nytimes.py` | Export a puzzle to NYTimes submission format (`.pdf`) |
+| `tools/admin/clear_work_files.py` | Remove orphaned working-copy rows from the database |
+
+### Dev
+
+| Script | Description |
+|--------|-------------|
+| `tools/dev/swagger.py` | Swagger UI for the REST API (`python3 tools/dev/swagger.py`) |
+| `tools/dev/gen_endpoints_doc.py` | Regenerate `docs/design/endpoints.md` from live route registrations |
+| `tools/dev/migrate196.py` | Migrate a pre-v3.2 database to the merged puzzle-only layout |
 
 ## References
 
