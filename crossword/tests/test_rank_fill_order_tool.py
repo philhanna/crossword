@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 
+import crossword
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.tests import TestPuzzle
 
@@ -17,14 +18,15 @@ def load_main():
 
 class TestRankFillOrderTool:
 
-    def test_main_prints_ranked_slots(self, tmp_path, capsys):
+    def test_main_prints_ranked_slots(self, tmp_path, capsys, monkeypatch):
         main = load_main()
         db_path = tmp_path / "rank-fill.db"
         adapter = SQLitePersistenceAdapter(str(db_path))
         adapter.init_schema()
         adapter.save_puzzle(1, "atlantic", TestPuzzle.create_atlantic_puzzle())
+        monkeypatch.setitem(crossword.config, "dbfile", str(db_path))
 
-        exit_code = main(["atlantic", "--dbfile", str(db_path), "--top", "3"])
+        exit_code = main(["atlantic", "--top", "3"])
 
         captured = capsys.readouterr()
         lines = captured.out.strip().splitlines()
@@ -36,13 +38,14 @@ class TestRankFillOrderTool:
         assert lines[2].startswith("14A ")
         assert lines[3].startswith(("3D ", "5D ", "11A ", "18A "))
 
-    def test_main_returns_error_for_missing_puzzle(self, tmp_path, capsys):
+    def test_main_returns_error_for_missing_puzzle(self, tmp_path, capsys, monkeypatch):
         main = load_main()
         db_path = tmp_path / "rank-fill.db"
         adapter = SQLitePersistenceAdapter(str(db_path))
         adapter.init_schema()
+        monkeypatch.setitem(crossword.config, "dbfile", str(db_path))
 
-        exit_code = main(["missing", "--dbfile", str(db_path)])
+        exit_code = main(["missing"])
 
         captured = capsys.readouterr()
 
