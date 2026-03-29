@@ -864,7 +864,7 @@ function renderWordEditorPanel() {
         <div style="margin-top:12px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
             <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
-                    onclick="doWordSuggestFetch()">
+                    style="min-width:80px" onclick="doWordSuggestFetch()">
               <i class="material-icons crosstb-icon">search</i>
               <span>Suggest</span>
             </button>
@@ -872,9 +872,9 @@ function renderWordEditorPanel() {
               <input type="checkbox" id="we-constrained" checked> Use constraints
             </label>
             <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
-                    onclick="doWordEditOK()">OK</button>
+                    style="min-width:80px" onclick="doWordEditOK()">OK</button>
             <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
-                    onclick="closeWordEditor()">Cancel</button>
+                    style="min-width:80px" onclick="closeWordEditor()">Cancel</button>
           </div>
           <div id="we-match" style="display:none;font-size:small;color:#666;margin-bottom:4px"></div>
           <ul id="we-suggestion-list"
