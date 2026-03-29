@@ -871,6 +871,10 @@ function renderWordEditorPanel() {
             <label style="margin:0;cursor:pointer;font-size:small">
               <input type="checkbox" id="we-constrained" checked> Use constraints
             </label>
+            <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
+                    onclick="doWordEditOK()">OK</button>
+            <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
+                    onclick="closeWordEditor()">Cancel</button>
           </div>
           <div id="we-match" style="display:none;font-size:small;color:#666;margin-bottom:4px"></div>
           <ul id="we-suggestion-list"
@@ -901,13 +905,6 @@ function renderWordEditorPanel() {
         <div id="we-constraints-table"
              style="overflow:auto;overflow-x:hidden;margin-top:8px"></div>
 
-        <!-- OK / Cancel -->
-        <div style="margin-top:12px">
-          <button class="w3-button w3-border w3-round w3-gray" style="width:100px"
-                  onclick="doWordEditOK()">OK</button>
-          <button class="w3-button w3-border w3-round w3-gray" style="width:100px"
-                  onclick="closeWordEditor()">Cancel</button>
-        </div>
 
       </div>
     </div>
