@@ -436,7 +436,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
 }
 
 // ---------------------------------------------------------------------------
-// Puzzle editor — click handling (single = select across, double = open word editor)
+// Puzzle editor — click handling (single = select across, double = select down)
 // ---------------------------------------------------------------------------
 
 let _clickState   = 0;
@@ -490,7 +490,7 @@ function handlePuzzleClick(event) {
     } else {
         _clickState = 0;
         clearTimeout(_clickTimeout);
-        do_puzzle_edit_word();
+        puzzleClickAt(event, 'down');
     }
 }
 
@@ -705,8 +705,6 @@ function renderPuzzleEditorLhs() {
   <div class="w3-bar w3-border">
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save()">
       <i class="material-icons crosstb-icon">save</i><span>Save</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save_as()">
-      <i class="material-icons crosstb-icon">save_alt</i><span>Save As</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_close()">
       <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
     <a id="puzzle-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
@@ -723,8 +721,6 @@ function renderPuzzleEditorLhs() {
   <div class="w3-bar w3-border">
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save()">
       <i class="material-icons crosstb-icon">save</i><span>Save</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save_as()">
-      <i class="material-icons crosstb-icon">save_alt</i><span>Save As</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_close()">
       <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
     <a id="puzzle-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
