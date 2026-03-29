@@ -6,6 +6,17 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Added
+
+- JSON export: `JsonExportAdapter`, `GET /api/export/puzzles/<name>/json` endpoint,
+  and `tools/admin/export_json.py` admin tool
+- `docs/notes/puzzle_guidelines.md` — NYTimes puzzle construction guidelines
+
+### Changed
+
+- README: Tools section updated to list all current admin and dev scripts
+- README: Install instructions updated to use `pip install -e .`
+
 ## [3.4.0] - 2026-03-28
 
 ### Added
