@@ -9,4 +9,5 @@ from .letter_list import regexp
 from .grid import *
 from .word import *
 from .puzzle import *
+from .fill_priority import *
 from .to_svg import *

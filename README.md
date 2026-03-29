@@ -140,15 +140,16 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 
 ## Tools
 
-### Admin
+### User
 
 | Script | Description |
 |--------|-------------|
-| `tools/admin/export_acrosslite.py` | Export a puzzle to AcrossLite text format (`.txt`) |
-| `tools/admin/export_ccxml.py` | Export a puzzle to Crossword Compiler XML format (`.xml`) |
-| `tools/admin/export_json.py` | Export a puzzle to JSON format (`.json`) |
-| `tools/admin/export_nytimes.py` | Export a puzzle to NYTimes submission format (`.pdf`) |
-| `tools/admin/clear_work_files.py` | Remove orphaned working-copy rows from the database |
+| `tools/user/export_acrosslite.py` | Export a puzzle to AcrossLite text format (`.txt`) |
+| `tools/user/export_ccxml.py` | Export a puzzle to Crossword Compiler XML format (`.xml`) |
+| `tools/user/export_json.py` | Export a puzzle to JSON format (`.json`) |
+| `tools/user/export_nytimes.py` | Export a puzzle to NYTimes submission format (`.pdf`) |
+| `tools/user/clear_work_files.py` | Remove orphaned working-copy rows from the database |
+| `tools/user/rank_fill_order.py` | Rank puzzle slots by structural importance to suggest a fill order |
 
 ### Dev
 
