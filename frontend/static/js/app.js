@@ -596,18 +596,16 @@ function _peKeydown(e) {
         renderPuzzleEditorLhs(); e.preventDefault(); return;
     }
 
-    // Cross-direction navigation: treat like clicking the neighboring cell
+    // Cross-direction navigation: switch to perpendicular word at the same cell
     const [curR, curC] = sw.cells[_peCursorIdx];
     if (!isAcross && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-        const nc = curC + (e.key === 'ArrowRight' ? 1 : -1);
-        const neighbor = findWordAtCell(curR, nc, 'across');
-        if (neighbor) { _peCommitWord().then(() => selectWord(neighbor.seq, neighbor.direction, curR, nc)); }
+        const neighbor = findWordAtCell(curR, curC, 'across');
+        if (neighbor) { _peCommitWord().then(() => selectWord(neighbor.seq, neighbor.direction, curR, curC)); }
         e.preventDefault(); return;
     }
     if (isAcross && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-        const nr = curR + (e.key === 'ArrowDown' ? 1 : -1);
-        const neighbor = findWordAtCell(nr, curC, 'down');
-        if (neighbor) { _peCommitWord().then(() => selectWord(neighbor.seq, neighbor.direction, nr, curC)); }
+        const neighbor = findWordAtCell(curR, curC, 'down');
+        if (neighbor) { _peCommitWord().then(() => selectWord(neighbor.seq, neighbor.direction, curR, curC)); }
         e.preventDefault(); return;
     }
 
