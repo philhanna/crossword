@@ -9,6 +9,7 @@ import logging
 
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
+from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
@@ -71,18 +72,21 @@ def make_app(config=None):
     persistence = SQLitePersistenceAdapter(dbfile)
 
     # Word list adapter — priority: word_dbfile → word_file → dbfile (legacy) → empty
-    word_adapter = SQLiteDictionaryAdapter()
     word_dbfile = config.get("word_dbfile")
     word_file = config.get("word_file")
     if word_dbfile:
+        word_adapter = SQLiteDictionaryAdapter()
         word_adapter.load_from_database(word_dbfile)
     elif word_file:
-        word_adapter.load_from_file(word_file)
+        word_adapter = FlatFileWordListAdapter(word_file)
     elif dbfile:
+        word_adapter = SQLiteDictionaryAdapter()
         try:
             word_adapter.load_from_database(dbfile)
         except Exception:
             pass  # words table absent in puzzle DB — leave adapter empty
+    else:
+        word_adapter = SQLiteDictionaryAdapter()
 
     # Export adapters
     acrosslite_adapter = AcrossLiteExportAdapter(author_name=config.get("author_name"))
