@@ -442,6 +442,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
 let _clickState   = 0;
 let _clickTimeout = null;
 let _clickEvent   = null;
+let _ignorePuzzleClicksUntil = 0;
 const CLICK_DELAY = 280;
 
 // ---------------------------------------------------------------------------
@@ -479,17 +480,30 @@ function _weRenderLhs() {
 }
 
 function handlePuzzleClick(event) {
-    if (AppState.editingWord) return;  // word editor open — ignore grid clicks
+    if (Date.now() < _ignorePuzzleClicksUntil) return;
+    if (AppState.editingWord) {
+        _clickState = 0;
+        if (_clickTimeout) {
+            clearTimeout(_clickTimeout);
+            _clickTimeout = null;
+        }
+        _clickEvent = null;
+        _ignorePuzzleClicksUntil = Date.now() + CLICK_DELAY;
+        closeWordEditor();
+        return;
+    }
     _clickEvent = event;
     if (_clickState === 0) {
         _clickState = 1;
         _clickTimeout = setTimeout(() => {
             _clickState = 0;
+            _clickTimeout = null;
             puzzleClickAt(_clickEvent, 'across');
         }, CLICK_DELAY);
     } else {
         _clickState = 0;
         clearTimeout(_clickTimeout);
+        _clickTimeout = null;
         puzzleClickAt(event, 'down');
     }
 }
