@@ -235,7 +235,7 @@ async function showPreviewChooser(title, names, apiPrefix, onSelect) {
 const MENU_ITEMS = [
     'menu-puzzle-new', 'menu-puzzle-open',
     'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-close', 'menu-puzzle-delete',
-    'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
+    'menu-puzzle-title', 'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
     'menu-publish-acrosslite', 'menu-publish-cwcompiler', 'menu-publish-nytimes',
 ];
 
@@ -254,6 +254,7 @@ function updateMenu() {
     menuEnable('menu-puzzle-delete');
 
     const mode = editor ? _currentEditorMode() : null;
+    mode === 'puzzle' ? menuEnable('menu-puzzle-title')       : menuDisable('menu-puzzle-title');
     mode === 'puzzle' ? menuEnable('menu-puzzle-grid-mode')   : menuDisable('menu-puzzle-grid-mode');
     mode === 'grid'   ? menuEnable('menu-puzzle-puzzle-mode') : menuDisable('menu-puzzle-puzzle-mode');
 
@@ -736,8 +737,6 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">edit</i><span>Edit word</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_title()">
-      <i class="material-icons crosstb-icon">title</i><span>Title</span></a>
   </div>
 </div>`;
 
