@@ -754,7 +754,7 @@ function renderPuzzleEditorLhs() {
 
     document.getElementById('lhs').innerHTML = `
 <div class="w3-container">
-  <h3>Editing puzzle <b>${escapeHtml(name)}</b>${title}</h3>
+  <h3>Editing <b>${escapeHtml(name)}</b>${title}</h3>
 </div>
 ${toolbar}
 <div id="puzzle-svg-container" class="w3-container" style="padding-top:4px">
