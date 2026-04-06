@@ -235,6 +235,7 @@ async function showPreviewChooser(title, names, apiPrefix, onSelect) {
 const MENU_ITEMS = [
     'menu-puzzle-new', 'menu-puzzle-open',
     'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-close', 'menu-puzzle-delete',
+    'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
     'menu-publish-acrosslite', 'menu-publish-cwcompiler', 'menu-publish-nytimes',
 ];
 
@@ -251,6 +252,10 @@ function updateMenu() {
     editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
     editor ? menuEnable('menu-puzzle-close')   : menuDisable('menu-puzzle-close');
     menuEnable('menu-puzzle-delete');
+
+    const mode = editor ? _currentEditorMode() : null;
+    mode === 'puzzle' ? menuEnable('menu-puzzle-grid-mode')   : menuDisable('menu-puzzle-grid-mode');
+    mode === 'grid'   ? menuEnable('menu-puzzle-puzzle-mode') : menuDisable('menu-puzzle-puzzle-mode');
 
     menuEnable('menu-publish-acrosslite');
     menuEnable('menu-publish-cwcompiler');
@@ -684,16 +689,12 @@ function _currentEditorMode() {
     return (AppState.puzzleData && AppState.puzzleData.mode) || 'puzzle';
 }
 
-function _modeButtonClass(mode) {
-    return _currentEditorMode() === mode ? 'w3-blue-gray' : 'w3-light-gray';
-}
-
-
 function renderPuzzleEditor() {
     document.removeEventListener('keydown', _peKeydown);
     if (_currentEditorMode() === 'puzzle') {
         document.addEventListener('keydown', _peKeydown);
     }
+    updateMenu();
     renderPuzzleEditorLhs();
     renderPuzzleEditorRhs();
 }
@@ -703,16 +704,6 @@ function renderPuzzleEditorLhs() {
     const name  = AppState.puzzleName || '(untitled)';
     const title = pd && pd.puzzle.title ? `: &ldquo;${escapeHtml(pd.puzzle.title)}&rdquo;` : '';
     const mode  = _currentEditorMode();
-
-    const modeToolbar = `
-<div class="w3-container w3-margin-bottom" style="height:36px">
-  <div class="w3-bar w3-border">
-    <a class="w3-bar-item w3-button crosstb ${_modeButtonClass('grid')}" onclick="do_switch_to_grid_mode()">
-      <i class="material-icons crosstb-icon">grid_on</i><span>Grid Mode</span></a>
-    <a class="w3-bar-item w3-button crosstb ${_modeButtonClass('puzzle')}" onclick="do_switch_to_puzzle_mode()">
-      <i class="material-icons crosstb-icon">edit_note</i><span>Puzzle Mode</span></a>
-  </div>
-</div>`;
 
     const toolbar = mode === 'grid' ? `
 <div class="w3-container w3-margin-bottom" style="height:36px">
@@ -765,7 +756,6 @@ function renderPuzzleEditorLhs() {
 <div class="w3-container">
   <h3>Editing puzzle <b>${escapeHtml(name)}</b>${title}</h3>
 </div>
-${modeToolbar}
 ${toolbar}
 <div id="puzzle-svg-container" class="w3-container" style="padding-top:4px">
   ${pd ? buildPuzzleSvg(pd, editState) : ''}
