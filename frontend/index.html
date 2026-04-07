@@ -26,6 +26,7 @@
     <div class="w3-dropdown-content w3-bar-block w3-card-4">
       <a id="menu-puzzle-new"            class="w3-bar-item w3-button" onclick="do_puzzle_new()">New puzzle...</a>
       <a id="menu-puzzle-open"           class="w3-bar-item w3-button" onclick="do_puzzle_open()">Open puzzle...</a>
+      <a id="menu-puzzle-import"         class="w3-bar-item w3-button" onclick="do_puzzle_import()">Import AcrossLite...</a>
       <a id="menu-puzzle-save"           class="w3-bar-item w3-button" onclick="do_puzzle_save()">Save puzzle</a>
       <a id="menu-puzzle-save-as"        class="w3-bar-item w3-button" onclick="do_puzzle_save_as()">Save puzzle as...</a>
       <a id="menu-puzzle-close"          class="w3-bar-item w3-button" onclick="do_puzzle_close()">Close puzzle</a>
@@ -57,6 +58,9 @@
   <span id="ml-text" class="message-line-text"></span>
   <button id="ml-close" class="message-line-close" onclick="clearMessageLine()" aria-label="Close notification">&times;</button>
 </div>
+
+<!-- Hidden file input for AcrossLite import -->
+<input type="file" id="acrosslite-file-input" accept=".txt" style="display:none">
 
 <!-- ================ main content ================ -->
 

@@ -11,12 +11,14 @@ from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapt
 from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
 from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
+from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
 from crossword.use_cases.export_use_cases import ExportUseCases
+from crossword.use_cases.import_use_cases import ImportUseCases
 
 
 class AppContainer:
@@ -27,10 +29,11 @@ class AppContainer:
     Single-threaded; one container per process.
     """
 
-    def __init__(self, puzzle_uc, word_uc, export_uc=None):
+    def __init__(self, puzzle_uc, word_uc, export_uc=None, import_uc=None):
         self.puzzle_uc = puzzle_uc
         self.word_uc = word_uc
         self.export_uc = export_uc
+        self.import_uc = import_uc
 
 
 def make_app(config=None):
@@ -102,12 +105,15 @@ def make_app(config=None):
     # Instantiate Use Cases (with constructor injection)
     # ========================================================================
 
+    acrosslite_import_adapter = AcrossLiteImportAdapter()
+
     puzzle_uc = PuzzleUseCases(persistence)
     word_uc = WordUseCases(word_adapter)
     export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter)
+    import_uc = ImportUseCases(persistence, acrosslite_import_adapter)
 
     # ========================================================================
     # Assemble Container
     # ========================================================================
 
-    return AppContainer(puzzle_uc, word_uc, export_uc)
+    return AppContainer(puzzle_uc, word_uc, export_uc, import_uc)

@@ -233,7 +233,7 @@ async function showPreviewChooser(title, names, apiPrefix, onSelect) {
 // ---------------------------------------------------------------------------
 
 const MENU_ITEMS = [
-    'menu-puzzle-new', 'menu-puzzle-open',
+    'menu-puzzle-new', 'menu-puzzle-open', 'menu-puzzle-import',
     'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-close', 'menu-puzzle-delete',
     'menu-puzzle-title', 'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
     'menu-publish-acrosslite', 'menu-publish-cwcompiler', 'menu-publish-nytimes',
@@ -248,6 +248,7 @@ function updateMenu() {
 
     home   ? menuEnable('menu-puzzle-new')     : menuDisable('menu-puzzle-new');
     home   ? menuEnable('menu-puzzle-open')    : menuDisable('menu-puzzle-open');
+    home   ? menuEnable('menu-puzzle-import')  : menuDisable('menu-puzzle-import');
     editor ? menuEnable('menu-puzzle-save')    : menuDisable('menu-puzzle-save');
     editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
     editor ? menuEnable('menu-puzzle-close')   : menuDisable('menu-puzzle-close');
@@ -1271,6 +1272,47 @@ async function do_puzzle_open() {
     } catch (e) {
         alert('Error listing puzzles');
     }
+}
+
+async function do_puzzle_import() {
+    const fileInput = document.getElementById('acrosslite-file-input');
+    // Reset so the same file can be selected again
+    fileInput.value = '';
+    fileInput.onchange = async (evt) => {
+        const file = evt.target.files[0];
+        if (!file) return;
+
+        // Pre-populate name from filename (strip .txt extension)
+        const defaultName = file.name.replace(/\.txt$/i, '');
+
+        inputBox(
+            'Import AcrossLite puzzle',
+            '<b>Puzzle name:</b>',
+            defaultName,
+            async (name) => {
+                name = name.trim();
+                if (!name) { alert('Puzzle name is required'); return; }
+
+                let content;
+                try {
+                    content = await file.text();
+                } catch (e) {
+                    alert('Could not read file');
+                    return;
+                }
+
+                try {
+                    const data = await apiFetch('POST', '/api/import/acrosslite', { name, content });
+                    if (data.error) { alert(`Import failed: ${data.error}`); return; }
+                    showMessageLine(`Imported "${name}" — opening…`, 'notice');
+                    await _openPuzzleInEditor(name);
+                } catch (e) {
+                    alert(`Import error: ${e.message || e}`);
+                }
+            }
+        );
+    };
+    fileInput.click();
 }
 
 async function do_puzzle_new() {
