@@ -111,3 +111,20 @@ class TestSQLiteDictionaryAdapter:
 
         matches = adapter.get_matches("^[aeiou].[aeiou].$")
         assert len(matches) > 0
+
+    def test_load_from_ascii_file(self, tmp_path):
+        word_file = tmp_path / "words.txt"
+        word_file.write_text("Delta\necho\n\necho\nFoxtrot\n", encoding="ascii")
+
+        adapter = SQLiteDictionaryAdapter()
+        adapter.load_from_file(str(word_file))
+
+        assert adapter.get_all_words() == ["delta", "echo", "foxtrot"]
+
+    def test_load_from_non_ascii_file_raises(self, tmp_path):
+        word_file = tmp_path / "words.txt"
+        word_file.write_text("cafe\ncaf\u00e9\n", encoding="utf-8")
+
+        adapter = SQLiteDictionaryAdapter()
+        with pytest.raises(Exception, match="Failed to load words from file"):
+            adapter.load_from_file(str(word_file))

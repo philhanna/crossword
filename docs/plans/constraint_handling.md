@@ -15,8 +15,8 @@ word and calls `self.word_list.get_matches(crossing_pattern)` once per position.
 (`crossing_word.length`) but is not passed to the adapter, so the adapter cannot narrow
 its search.
 
-Both adapters (`FlatFileWordListAdapter`, `SQLiteDictionaryAdapter`) store all words in
-a flat `set` and iterate the entire set on every `get_matches` call.
+The word-list adapter stores all words in a flat `set` and iterates the entire set on
+every `get_matches` call.
 
 ## Changes
 
@@ -41,45 +41,15 @@ def get_matches(self, pattern: str, length: int = None) -> list[str]:
     """
 ```
 
-### Step 2 — `FlatFileWordListAdapter`: bucket by length
-
-File: `crossword/adapters/flat_file_word_list_adapter.py`
-
-Replace `self._words: set` with `self._words_by_length: dict[int, list[str]]`.
-
-In `load_from_file`:
-```python
-words = {line.strip().lower() for line in f if line.strip()}
-self._words_by_length = {}
-for w in words:
-    self._words_by_length.setdefault(len(w), []).append(w)
-```
-
-In `get_matches`:
-```python
-def get_matches(self, pattern: str, length: int = None) -> list[str]:
-    if length is not None:
-        candidates = self._words_by_length.get(length, [])
-    else:
-        candidates = (w for bucket in self._words_by_length.values() for w in bucket)
-    regex = re.compile(pattern, re.IGNORECASE)
-    return sorted(word for word in candidates if regex.fullmatch(word))
-```
-
-In `get_all_words`:
-```python
-return sorted(w for bucket in self._words_by_length.values() for w in bucket)
-```
-
-### Step 3 — `SQLiteDictionaryAdapter`: same change
+### Step 2 — `SQLiteDictionaryAdapter`: bucket by length
 
 File: `crossword/adapters/sqlite_dictionary_adapter.py`
 
-Identical restructuring to Step 2. Both `load_from_database` and `load_from_file`
+Both `load_from_database` and `load_from_file`
 build `self._words_by_length` instead of `self._words`. `get_matches` and
 `get_all_words` are updated the same way.
 
-### Step 4 — `WordUseCases`: pass length at the two hot call sites
+### Step 3 — `WordUseCases`: pass length at the two hot call sites
 
 File: `crossword/use_cases/word_use_cases.py`
 
@@ -107,6 +77,6 @@ continue to do a full scan via the `length=None` default.
 ## Test coverage
 
 The existing adapter tests exercise `get_matches` without a `length` argument and
-should pass unchanged. Add cases to each adapter's test module that pass a `length`
-and assert that only words of that length are returned, including the edge case where
-no words of that length exist (expect `[]`).
+should pass unchanged. Add cases that pass a `length` and assert that only words of
+that length are returned, including the edge case where no words of that length
+exist (expect `[]`).

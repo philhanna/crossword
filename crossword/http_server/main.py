@@ -101,7 +101,7 @@ def run_http_server(host: str = "127.0.0.1", port: int = 5000, config=None):
     Args:
         host: Host to bind to (default: 127.0.0.1)
         port: Port to listen on (default: 5000)
-        config: Configuration dict with 'dbfile' and optionally 'word_file'
+        config: Configuration dict with 'dbfile' and optionally 'word_dbfile' or 'word_file'
     """
     print(f"Initializing app...")
     app_container = make_app(config)

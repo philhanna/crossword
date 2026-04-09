@@ -122,7 +122,7 @@ class TestWordListWiring:
         assert set(app.word_uc.get_all_words()) == {"apple", "banana", "cherry"}
 
     def test_falls_back_to_word_file(self, temp_db, temp_word_file):
-        """No word_dbfile, word_file present → adapter loads from text file"""
+        """No word_dbfile, word_file present → SQLite adapter loads from text file"""
         config = {"dbfile": temp_db, "word_file": temp_word_file}
         app = make_app(config)
         assert set(app.word_uc.get_all_words()) == {"delta", "echo", "foxtrot"}

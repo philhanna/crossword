@@ -59,9 +59,9 @@ class SQLiteDictionaryAdapter(WordListPort):
             Exception: If file reading fails
         """
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r", encoding="ascii") as f:
                 words = {line.strip().lower() for line in f if line.strip()}
-        except IOError as e:
+        except (OSError, UnicodeDecodeError) as e:
             raise Exception(f"Failed to load words from file: {e}")
         self._build_index(words)
 
