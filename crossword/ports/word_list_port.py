@@ -14,7 +14,7 @@ class WordListPort(ABC):
     """
 
     @abstractmethod
-    def get_matches(self, pattern: str) -> list[str]:
+    def get_matches(self, pattern: str, length: int = None) -> list[str]:
         """
         Find all words matching a regex pattern.
 
@@ -23,6 +23,9 @@ class WordListPort(ABC):
 
         Args:
             pattern: Python regex pattern (e.g., "^[A-Z]{5}$" for 5-letter words)
+            length:  If provided, only words of this exact length are considered.
+                     Callers should supply this whenever the target length is known,
+                     as it avoids scanning irrelevant words.
 
         Returns:
             List of matching words (lowercase), or empty list if no matches

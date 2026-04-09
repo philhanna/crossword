@@ -110,7 +110,7 @@ class WordUseCases:
                     break
 
             # Look up all words matching the crossing pattern
-            matches = self.word_list.get_matches(crossing_pattern)
+            matches = self.word_list.get_matches(crossing_pattern, length=crossing_word.length)
             letter_freq = {}
             for m in matches:
                 letter = m[crossing_index - 1].upper()
@@ -176,7 +176,7 @@ class WordUseCases:
         else:
             pattern = constraints["pattern"]
 
-        candidates = self.word_list.get_matches(self._pattern_to_regex(pattern))
+        candidates = self.word_list.get_matches(self._pattern_to_regex(pattern), length=word.length)
 
         def score(candidate):
             total = 0

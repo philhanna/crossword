@@ -2,6 +2,8 @@
 SQLiteDictionaryAdapter - Word list implementation of the Word List Port
 
 Loads a dictionary into memory and provides word matching via regex patterns.
+Words are bucketed by length so that callers who know the target length avoid
+scanning the full dictionary.
 """
 
 import re
@@ -19,7 +21,12 @@ class SQLiteDictionaryAdapter(WordListPort):
 
     def __init__(self):
         """Initialize with empty word list."""
-        self._words = set()
+        self._words_by_length: dict[int, list[str]] = {}
+
+    def _build_index(self, words: set[str]) -> None:
+        self._words_by_length = {}
+        for w in words:
+            self._words_by_length.setdefault(len(w), []).append(w)
 
     def load_from_database(self, db_path: str) -> None:
         """
@@ -35,10 +42,11 @@ class SQLiteDictionaryAdapter(WordListPort):
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             cursor.execute("SELECT word FROM words")
-            self._words = {row[0].lower() for row in cursor.fetchall()}
+            words = {row[0].lower() for row in cursor.fetchall()}
             conn.close()
         except sqlite3.Error as e:
             raise Exception(f"Failed to load words from database: {e}")
+        self._build_index(words)
 
     def load_from_file(self, file_path: str) -> None:
         """
@@ -52,11 +60,12 @@ class SQLiteDictionaryAdapter(WordListPort):
         """
         try:
             with open(file_path, 'r') as f:
-                self._words = {line.strip().lower() for line in f if line.strip()}
+                words = {line.strip().lower() for line in f if line.strip()}
         except IOError as e:
             raise Exception(f"Failed to load words from file: {e}")
+        self._build_index(words)
 
-    def get_matches(self, pattern: str) -> list[str]:
+    def get_matches(self, pattern: str, length: int = None) -> list[str]:
         """
         Find all words matching a regex pattern.
 
@@ -65,6 +74,7 @@ class SQLiteDictionaryAdapter(WordListPort):
 
         Args:
             pattern: Python regex pattern (e.g., "^[A-Z]{5}$" for 5-letter words)
+            length:  If provided, only words of this exact length are considered.
 
         Returns:
             List of matching words (lowercase), or empty list if no matches
@@ -73,12 +83,15 @@ class SQLiteDictionaryAdapter(WordListPort):
             ValueError: If pattern is not a valid regex
         """
         try:
-            # Compile the pattern (case-insensitive)
             regex = re.compile(pattern, re.IGNORECASE)
         except re.error as e:
             raise ValueError(f"Invalid regex pattern: {e}")
 
-        return sorted([word for word in self._words if regex.fullmatch(word)])
+        if length is not None:
+            candidates = self._words_by_length.get(length, [])
+        else:
+            candidates = (w for bucket in self._words_by_length.values() for w in bucket)
+        return sorted(word for word in candidates if regex.fullmatch(word))
 
     def get_all_words(self) -> list[str]:
         """
@@ -87,4 +100,4 @@ class SQLiteDictionaryAdapter(WordListPort):
         Returns:
             List of all words in the dictionary (lowercase, sorted)
         """
-        return sorted(self._words)
+        return sorted(w for bucket in self._words_by_length.values() for w in bucket)
