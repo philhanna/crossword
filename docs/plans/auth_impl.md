@@ -7,11 +7,13 @@
 | Password hashing | `sha256()` from `crossword/__init__.py` |
 | Admin account creation | CLI script only (`tools/create_user.py`) |
 | `confirmed` field | Always `NULL` (reserved for future use) |
-| Existing puzzle data | Bootstrap tool creates admin with `id=1`; handlers stop hardcoding `user_id=1` |
+| Existing puzzle data | Admin already has `id=1` in DB; handlers stop hardcoding `user_id=1` |
 | `login.html` | No changes in this phase |
 | Foreign key enforcement | Not enforced |
 | Session cookie | `HttpOnly; SameSite=Lax` — no `Secure` flag (HTTP only) |
 | Session storage | In-memory dict (lost on restart; acceptable for first slice) |
+| `role` column | Not in schema — no role distinction in this phase |
+| Schema migration | None needed — `users` table already exists with admin row |
 
 ---
 
@@ -19,9 +21,11 @@
 
 ### `crossword/domain/user.py`
 `User` dataclass with fields matching the `users` table:
-`id`, `username`, `password`, `role`, `email`, `created`, `last_access`,
+`id`, `username`, `password`, `email`, `created`, `last_access`,
 `confirmed`, `author_name`, `address_line_1`, `address_line_2`,
 `address_city`, `address_state`, `address_zip`.
+
+No `role` field — the schema has no role column.
 
 ### `crossword/ports/auth_port.py`
 Two items:
@@ -29,7 +33,7 @@ Two items:
 - `AuthError(Exception)` — raised by auth use cases on bad credentials.
 - `UserNotFound(Exception)` — raised by adapter when lookup finds nothing.
 - `UserPort(ABC)` — abstract interface with:
-  - `create_user(username, email, password_hash, role, **profile) -> User`
+  - `create_user(username, email, password_hash, **profile) -> User`
   - `get_user_by_username(username) -> User`  raises `UserNotFound`
   - `get_user_by_id(user_id) -> User`  raises `UserNotFound`
   - `update_last_access(user_id, timestamp) -> None`
@@ -38,8 +42,9 @@ Two items:
 `SQLiteUserAdapter(UserPort)` — takes a shared `sqlite3.Connection` (the same
 connection opened by `SQLitePersistenceAdapter`).
 
-- `create_user` — `INSERT INTO users ...`; catches `IntegrityError` and re-raises
-  as `ValueError("Username already taken")` or `ValueError("Email already registered")`.
+- `create_user` — checks for duplicate username/email with `SELECT` before
+  inserting (schema has no `UNIQUE` constraint to rely on), then `INSERT INTO users ...`.
+  Raises `ValueError("Username already taken")` or `ValueError("Email already registered")`.
 - `get_user_by_username` / `get_user_by_id` — `SELECT * FROM users WHERE ...`
 - `update_last_access` — `UPDATE users SET last_access = ? WHERE id = ?`
 - Private `_row_to_user(row) -> User`
@@ -47,7 +52,7 @@ connection opened by `SQLitePersistenceAdapter`).
 ### `crossword/adapters/memory_session_store.py`
 `MemorySessionStore` — no abstract base (single implementation):
 
-- Internal `dict[str, dict]` mapping token → `{id, username, role}`
+- Internal `dict[str, dict]` mapping token → `{id, username}`
 - `create_session(user_info) -> str` — generates `uuid.uuid4()` token, stores it
 - `get_session(token) -> dict | None`
 - `delete_session(token) -> None` — no-op if absent
@@ -64,7 +69,7 @@ connection opened by `SQLitePersistenceAdapter`).
 ### `crossword/use_cases/user_use_cases.py`
 `UserUseCases(user_port)`:
 
-- `create_user(username, email, password, role='user', **profile) -> User` —
+- `create_user(username, email, password, **profile) -> User` —
   hashes password with `sha256`, delegates to `user_port.create_user`.
   Propagates `ValueError` on duplicate username/email.
 
@@ -73,7 +78,7 @@ Three handlers (all public — no auth required):
 
 - `handle_login` — `POST /api/auth/login`  
   Body: `{username, password}`.  
-  On success: responds with `{username, role}` and sets
+  On success: responds with `{username}` and sets
   `Set-Cookie: session=<token>; HttpOnly; SameSite=Lax; Path=/`.  
   On failure: `401 {error: "Invalid username or password"}` (same message for
   both bad username and bad password — no info leak).
@@ -84,52 +89,30 @@ Three handlers (all public — no auth required):
   Returns `200 {}`.
 
 - `handle_me` — `GET /api/auth/me`  
-  Returns `{username, role}` if session valid, else `401 {error: "Not authenticated"}`.
+  Returns `{username}` if session valid, else `401 {error: "Not authenticated"}`.
 
 ### `tools/create_user.py`
 CLI script for manual admin bootstrap:
 
 ```
-python tools/create_user.py --username <u> --email <e> --password <p> [--role admin|user]
+python tools/create_user.py --username <u> --email <e> --password <p>
 ```
 
 - Reads `dbfile` from `~/.config/crossword/config.yaml` (same as the app).
 - Opens the SQLite DB directly, calls `UserUseCases.create_user`.
 - Prints the new user's `id` on success.
 - Exits with error message (non-zero) on duplicate username/email.
-- Role defaults to `user`; pass `--role admin` for the initial admin account.
 
 ---
 
 ## Modified Files
 
 ### `crossword/adapters/sqlite_persistence_adapter.py`
-In `_ensure_schema_compatibility`, add `CREATE TABLE IF NOT EXISTS users`:
+No schema changes — the `users` table already exists.
 
-```sql
-CREATE TABLE IF NOT EXISTS users (
-    id              INTEGER PRIMARY KEY,
-    username        TEXT NOT NULL UNIQUE,
-    password        BLOB NOT NULL,
-    role            TEXT NOT NULL DEFAULT 'user'
-                        CHECK (role IN ('admin', 'user')),
-    created         TEXT,
-    last_access     TEXT,
-    email           TEXT NOT NULL UNIQUE,
-    confirmed       TEXT,
-    author_name     TEXT,
-    address_line_1  TEXT,
-    address_line_2  TEXT,
-    address_city    TEXT,
-    address_state   TEXT,
-    address_zip     TEXT
-)
-```
-
-`SQLiteUserAdapter` will share the same `self.conn` connection object.
-Expose it via a property or pass it at construction; simplest is to
-instantiate `SQLiteUserAdapter(self.conn)` inside the persistence adapter
-and expose it as `self.user_adapter`.
+`SQLiteUserAdapter` needs a `sqlite3.Connection`. The simplest approach is to
+expose the existing connection via a `conn` property on `SQLitePersistenceAdapter`
+so `make_app` can pass it to `SQLiteUserAdapter`.
 
 ### `crossword/wiring/__init__.py`
 - Instantiate `SQLiteUserAdapter` (sharing `persistence.conn`).
@@ -209,13 +192,14 @@ Uses an in-memory SQLite DB (`:memory:`) with the schema applied.
 
 ### `crossword/tests/test_user_use_cases.py`
 - `test_create_user_hashes_password` — stored hash equals `sha256(plain)`
-- `test_create_user_propagates_duplicate_error`
+- `test_create_user_propagates_duplicate_username_error`
+- `test_create_user_propagates_duplicate_email_error`
 
 ### `crossword/tests/test_auth_handlers.py`
 Uses mocked `app.auth_uc` and a minimal mock `request_handler`.
 
 - `test_handle_login_success_sets_cookie`
-- `test_handle_login_bad_credentials_returns_401`
+- `test_handle_login_bad_credentials_returns_401` (same message for bad username and bad password)
 - `test_handle_logout_clears_cookie`
 - `test_handle_me_authenticated`
 - `test_handle_me_unauthenticated_returns_401`
@@ -228,7 +212,7 @@ each handler call, e.g.:
 ```python
 handle_create_puzzle(
     (), {}, {"name": "demo", "size": 15}, None, request_handler,
-    app=app, current_user={"id": 1, "username": "test", "role": "user"}
+    app=app, current_user={"id": 1, "username": "test"}
 )
 ```
 
@@ -236,9 +220,9 @@ handle_create_puzzle(
 
 ## Implementation Order
 
-1. Schema migration (`sqlite_persistence_adapter.py`) — users table
-2. `User` domain model
-3. `UserPort` / `AuthError` / `UserNotFound` port
+1. `User` domain model
+2. `UserPort` / `AuthError` / `UserNotFound` port
+3. Expose `conn` property on `SQLitePersistenceAdapter`
 4. `SQLiteUserAdapter`
 5. `MemorySessionStore`
 6. `UserUseCases`
