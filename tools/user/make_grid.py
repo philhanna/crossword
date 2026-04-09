@@ -118,7 +118,10 @@ def get_grids(n, max_iterations=DEFAULT_MAX_ITERATIONS, ratio=DEFAULT_RATIO):
 
     m = (n + 1) // 2  # number of rows in the top half (including middle)
 
-    for _ in range(max_iterations):
+    for ii in range(max_iterations):
+        if ii % 1000000 == 0:
+            print(f"Iteration {ii}")
+
         grid = [[WHITE] * n for _ in range(n)]
         valid = True
 
