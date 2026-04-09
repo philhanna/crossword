@@ -934,8 +934,9 @@ function _weKeydown(e) {
     if (!AppState.editingWord) return;
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') {
-        if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); }
-        if (e.key === 'Enter')  { doWordEditOK();    e.preventDefault(); }
+        if (e.key === 'Escape') { closeWordEditor();     e.preventDefault(); }
+        if (e.key === 'Enter' && e.target.id === 'we-text') { doWordSuggestFetch(); e.preventDefault(); }
+        if (e.key === 'Enter' && e.target.id !== 'we-text') { doWordEditOK();       e.preventDefault(); }
         return;
     }
     if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); }
