@@ -6,7 +6,7 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
-## [3.5.0] - 2026-04-09
+## [4.0.0] - 2026-04-09
 
 ### Added
 
@@ -418,8 +418,8 @@ editing is done (see Issue #99).
 
 [Semantic Versioning]: https://semver.org/
 [Keep a Changelog]: https://keepachangelog.com/
-[Unreleased]: https://github.com/philhanna/crossword/compare/3.5.0..HEAD
-[3.5.0]: https://github.com/philhanna/crossword/compare/3.4.1..3.5.0
+[Unreleased]: https://github.com/philhanna/crossword/compare/4.0.0..HEAD
+[4.0.0]: https://github.com/philhanna/crossword/compare/3.4.2..4.0.0
 [3.4.1]: https://github.com/philhanna/crossword/compare/3.4.0..3.4.1
 [3.4.0]: https://github.com/philhanna/crossword/compare/3.3.0..3.4.0
 [3.3.0]: https://github.com/philhanna/crossword/compare/3.2.0..3.3.0
