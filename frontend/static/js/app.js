@@ -939,8 +939,9 @@ function _weKeydown(e) {
         if (e.key === 'Enter' && e.target.id !== 'we-text') { doWordEditOK();       e.preventDefault(); }
         return;
     }
+    // For buttons/other elements: Escape closes, Enter lets the focused element
+    // handle its own click (so Suggest button → search, OK button → save, etc.)
     if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); }
-    if (e.key === 'Enter')  { doWordEditOK();    e.preventDefault(); }
 }
 
 // ---------------------------------------------------------------------------
@@ -999,8 +1000,7 @@ async function doWordSuggestFetch() {
 }
 
 async function _fetchPatternSuggestions() {
-    const matchEl = document.getElementById('we-match');
-    matchEl.style.display = 'none';
+    { const m = document.getElementById('we-match'); if (m) m.style.display = 'none'; }
     const inp     = document.getElementById('we-text');
     const rawText = inp ? inp.value : (AppState.editingWord.answer || '');
     const pattern = rawText.replace(/ /g, '.').toUpperCase();
@@ -1008,6 +1008,9 @@ async function _fetchPatternSuggestions() {
     try {
         const data = await apiFetch('GET',
             `/api/words/suggestions?pattern=${encodeURIComponent(pattern)}`);
+        if (!AppState.editingWord) return;
+        const matchEl = document.getElementById('we-match');
+        if (!matchEl) return;
         if (!data.suggestions || data.suggestions.length === 0) {
             _weSuggestions = [];
             matchEl.innerHTML     = 'No matches found';
@@ -1019,22 +1022,25 @@ async function _fetchPatternSuggestions() {
             _weRenderSuggestionList();
         }
     } catch (e) {
-        matchEl.innerHTML     = 'Error fetching suggestions';
-        matchEl.style.display = 'block';
+        if (!AppState.editingWord) return;
+        const matchEl = document.getElementById('we-match');
+        if (matchEl) { matchEl.innerHTML = 'Error fetching suggestions'; matchEl.style.display = 'block'; }
     }
 }
 
 async function _fetchConstrainedSuggestions() {
-    const ew      = AppState.editingWord;
-    const wn      = AppState.puzzleWorkingName;
-    const matchEl = document.getElementById('we-match');
-    matchEl.style.display = 'none';
+    const ew = AppState.editingWord;
+    const wn = AppState.puzzleWorkingName;
+    { const m = document.getElementById('we-match'); if (m) m.style.display = 'none'; }
     try {
         const inp = document.getElementById('we-text');
         const rawText = inp ? inp.value : (ew.answer || '');
         const pattern = rawText.replace(/ /g, '.').toUpperCase();
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/suggestions?pattern=${encodeURIComponent(pattern)}`);
+        if (!AppState.editingWord) return;
+        const matchEl = document.getElementById('we-match');
+        if (!matchEl) return;
         if (!data.suggestions || data.suggestions.length === 0) {
             _weSuggestions = [];
             matchEl.innerHTML     = 'No matches found';
@@ -1050,8 +1056,9 @@ async function _fetchConstrainedSuggestions() {
             _weRenderSuggestionList();
         }
     } catch (e) {
-        matchEl.innerHTML     = 'Error fetching suggestions';
-        matchEl.style.display = 'block';
+        if (!AppState.editingWord) return;
+        const matchEl = document.getElementById('we-match');
+        if (matchEl) { matchEl.innerHTML = 'Error fetching suggestions'; matchEl.style.display = 'block'; }
     }
 }
 
