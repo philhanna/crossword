@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head -->
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Crossword Composer Login</title>
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <script src="lib/jquery-3.7.1.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+</head>
+
+<!-- Body -->
+<body class="w3-container w3-padding">
+
+  <!-- Login dialog -->
+  <div id="lgn" class="w3-display-topmiddle">
+
+    <!-- Login form -->
+    <form id="lgnForm" class="w3-margin-left w3-margin-right w3-border" method="POST">
+
+      <!-- Heading -->
+      <div class="w3-blue-gray w3-center">
+        <h3 id="lgnHeading" class="w3-center w3-blue-gray">Login</h3>
+      </div>
+
+      <!-- Input fields -->
+      <div class="w3-container">
+
+        <!-- Username -->
+        <div class="w3-bar-block">
+          <label class="w3-bar-item" htmlFor="username"><b>Username:</b></label>
+          <input id="lgnUsername" class="w3-bar-item w3-border w3-margin-left w3-margin-right" autofocus type="text"
+            placeholder="Enter username" name="username" required />
+        </div>
+
+        <!-- Password -->
+        <div class="w3-bar-block">
+          <label class="w3-bar-item" htmlFor="password"><b>Password</b></label>
+          <input id="lgnPassword" class="w3-bar-item w3-border w3-margin-left w3-margin-right" type="text"
+            placeholder="Enter password" name="password" required />
+        </div>
+
+        <!-- Submit button -->
+        <div id="lgnSubmit" class="w3-container w3-bar-block w3-center w3-padding-16">
+          <button type="submit" class="w3-button w3-round-large w3-gray w3-block">Login</button>
+        </div>
+
+        <!-- Register link -->
+        <div id="lgnRegister" class="w3-container w3-center w3-margin-bottom">
+          <span>Don't have an account?</span>
+          <a href="/register">Register</a>
+        </div>
+
+        <!-- Error message -->
+        <div id="lgnError" class="w3-text-red" style="display:none">
+          <p id="lgnErrmsg"></p>
+        </div>
+        
+    </form>
+  </div>
+</body>
+
+</html>
