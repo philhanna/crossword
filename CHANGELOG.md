@@ -6,6 +6,28 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-04-09
+
+### Added
+
+- Cookie-based session authentication
+  - `User` domain model; `UserPort` ABC with `AuthError` and `UserNotFound` exceptions
+  - `SQLiteUserAdapter` — CRUD on the existing `users` table, sharing the persistence DB connection
+  - `MemorySessionStore` — in-memory `token → {id, username}` map (sessions lost on restart)
+  - `AuthUseCases` — `login`, `logout`, `get_current_user`
+  - `UserUseCases` — `create_user` (hashes password with `sha256` before storing)
+  - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` endpoints (all public)
+  - `Route.requires_auth` flag; `_handle_request` gates protected routes, passes `current_user` to every handler
+  - All `user_id = 1` hardcodes in handlers replaced with `current_user["id"]`
+- `tools/create_user.py` — CLI to create user accounts from the command line
+- `tools/dev/set_password.py` — dev tool to reset a user's password by ID
+- Frontend authentication flow
+  - `login.html` submits via JS to `/api/auth/login`; redirects to `/` on success
+  - `app.js` checks `GET /api/auth/me` on startup; redirects to `/login` if unauthenticated
+  - `apiFetch` redirects to `/login` on any `401` response
+  - Logout button and username display added to the menu bar
+  - `GET /login` route serves `login.html` (public)
+
 ## [3.4.1] - 2026-04-09
 
 Bug fixes
@@ -396,7 +418,9 @@ editing is done (see Issue #99).
 
 [Semantic Versioning]: https://semver.org/
 [Keep a Changelog]: https://keepachangelog.com/
-[Unreleased]: https://github.com/philhanna/crossword/compare/3.4.0..HEAD
+[Unreleased]: https://github.com/philhanna/crossword/compare/3.5.0..HEAD
+[3.5.0]: https://github.com/philhanna/crossword/compare/3.4.1..3.5.0
+[3.4.1]: https://github.com/philhanna/crossword/compare/3.4.0..3.4.1
 [3.4.0]: https://github.com/philhanna/crossword/compare/3.3.0..3.4.0
 [3.3.0]: https://github.com/philhanna/crossword/compare/3.2.0..3.3.0
 [3.2.0]: https://github.com/philhanna/crossword/compare/3.1.1..3.2.0
