@@ -92,7 +92,7 @@ def _puzzle_response(puzzle):
     }
 
 
-def handle_list_puzzles(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_list_puzzles(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     List all puzzles for the current user.
     GET /api/puzzles
@@ -100,7 +100,7 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
-        user_id = 1
+        user_id = current_user["id"]
         puzzles = app.puzzle_uc.list_puzzles(user_id)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"puzzles": puzzles}
@@ -110,7 +110,7 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
         return {"error": str(e)}
 
 
-def handle_create_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_create_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Create a new puzzle.
     POST /api/puzzles
@@ -131,7 +131,7 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'size' (must be integer >= 1)"}
 
-        user_id = 1
+        user_id = current_user["id"]
         app.puzzle_uc.create_puzzle(user_id, name, size=size)
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
@@ -151,7 +151,7 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
         return {"error": str(e)}
 
 
-def handle_load_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_load_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Load a puzzle by name.
     GET /api/puzzles/<name>
@@ -165,7 +165,7 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -180,7 +180,7 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
         return {"error": str(e)}
 
 
-def handle_delete_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_delete_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Delete a puzzle by name.
     DELETE /api/puzzles/<name>
@@ -194,7 +194,7 @@ def handle_delete_puzzle(path_params, query_params, body_params, session_token, 
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
-        user_id = 1
+        user_id = current_user["id"]
         app.puzzle_uc.delete_puzzle(user_id, name)
 
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
@@ -210,7 +210,7 @@ def handle_delete_puzzle(path_params, query_params, body_params, session_token, 
         return {"error": str(e)}
 
 
-def handle_open_puzzle_for_editing(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_open_puzzle_for_editing(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Open a puzzle for editing by creating a working copy.
     POST /api/puzzles/<name>/open
@@ -225,7 +225,7 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
-        user_id = 1
+        user_id = current_user["id"]
         working_name = app.puzzle_uc.open_puzzle_for_editing(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"original_name": name, "working_name": working_name}
@@ -240,7 +240,7 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
         return {"error": str(e)}
 
 
-def handle_set_puzzle_title(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_set_puzzle_title(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Set the title of a puzzle.
     PUT /api/puzzles/<name>/title
@@ -265,7 +265,7 @@ def handle_set_puzzle_title(path_params, query_params, body_params, session_toke
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "'title' must be a string"}
 
-        user_id = 1
+        user_id = current_user["id"]
         app.puzzle_uc.set_puzzle_title(user_id, name, title)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"name": name, "title": title}
@@ -280,7 +280,7 @@ def handle_set_puzzle_title(path_params, query_params, body_params, session_toke
         return {"error": str(e)}
 
 
-def handle_switch_to_grid_mode(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_switch_to_grid_mode(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """Switch a puzzle working copy into Grid mode."""
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -288,7 +288,7 @@ def handle_switch_to_grid_mode(path_params, query_params, body_params, session_t
         name = path_params[0] if path_params else None
         if not name:
             return {"error": "Missing puzzle name"}
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.switch_to_grid_mode(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -298,7 +298,7 @@ def handle_switch_to_grid_mode(path_params, query_params, body_params, session_t
         return {"error": str(e)}
 
 
-def handle_switch_to_puzzle_mode(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_switch_to_puzzle_mode(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """Switch a puzzle working copy into Puzzle mode."""
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -306,7 +306,7 @@ def handle_switch_to_puzzle_mode(path_params, query_params, body_params, session
         name = path_params[0] if path_params else None
         if not name:
             return {"error": "Missing puzzle name"}
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.switch_to_puzzle_mode(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -316,7 +316,7 @@ def handle_switch_to_puzzle_mode(path_params, query_params, body_params, session
         return {"error": str(e)}
 
 
-def handle_toggle_puzzle_black_cell(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_toggle_puzzle_black_cell(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Toggle a black cell in a puzzle grid.
     PUT /api/puzzles/<name>/grid/cells/<r>/<c>
@@ -335,7 +335,7 @@ def handle_toggle_puzzle_black_cell(path_params, query_params, body_params, sess
             c = int(c) + 1
         except ValueError:
             return {"error": "r and c must be integers"}
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.toggle_black_cell(user_id, name, r, c)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -345,7 +345,7 @@ def handle_toggle_puzzle_black_cell(path_params, query_params, body_params, sess
         return {"error": str(e)}
 
 
-def handle_rotate_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_rotate_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """Rotate a puzzle grid."""
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -353,7 +353,7 @@ def handle_rotate_puzzle_grid(path_params, query_params, body_params, session_to
         name = path_params[0] if path_params else None
         if not name:
             return {"error": "Missing puzzle name"}
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.rotate_grid(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -363,7 +363,7 @@ def handle_rotate_puzzle_grid(path_params, query_params, body_params, session_to
         return {"error": str(e)}
 
 
-def handle_undo_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_undo_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """Undo the last Grid-mode operation on a puzzle."""
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -371,7 +371,7 @@ def handle_undo_puzzle_grid(path_params, query_params, body_params, session_toke
         name = path_params[0] if path_params else None
         if not name:
             return {"error": "Missing puzzle name"}
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.undo_grid(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -381,7 +381,7 @@ def handle_undo_puzzle_grid(path_params, query_params, body_params, session_toke
         return {"error": str(e)}
 
 
-def handle_redo_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_redo_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """Redo the last undone Grid-mode operation on a puzzle."""
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -389,7 +389,7 @@ def handle_redo_puzzle_grid(path_params, query_params, body_params, session_toke
         name = path_params[0] if path_params else None
         if not name:
             return {"error": "Missing puzzle name"}
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.redo_grid(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -399,7 +399,7 @@ def handle_redo_puzzle_grid(path_params, query_params, body_params, session_toke
         return {"error": str(e)}
 
 
-def handle_reset_word(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_reset_word(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Clear letters in a word that are not shared with a completed crossing word.
     POST /api/puzzles/<name>/words/<seq>/<direction>/reset
@@ -423,7 +423,7 @@ def handle_reset_word(path_params, query_params, body_params, session_token, req
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.reset_word(user_id, name, seq, direction)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -442,7 +442,7 @@ def handle_reset_word(path_params, query_params, body_params, session_token, req
         return {"error": str(e)}
 
 
-def handle_set_cell_letter(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_set_cell_letter(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Set a letter in a puzzle cell.
     PUT /api/puzzles/<name>/cells/<r>/<c>
@@ -474,7 +474,7 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "r and c must be integers"}
 
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.set_cell_letter(user_id, name, r, c, letter)
 
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
@@ -499,7 +499,7 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
         return {"error": str(e)}
 
 
-def handle_get_word_at(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_get_word_at(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Get a word at a numbered cell.
     GET /api/puzzles/<name>/words/<seq>/<direction>
@@ -523,7 +523,7 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
-        user_id = 1
+        user_id = current_user["id"]
         word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
 
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
@@ -549,7 +549,7 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
         return {"error": str(e)}
 
 
-def handle_set_word_clue(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_set_word_clue(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Set the clue and optionally the text for a word.
     PUT /api/puzzles/<name>/words/<seq>/<direction>
@@ -577,7 +577,7 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.set_word_clue(user_id, name, seq, direction, clue, text)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -596,7 +596,7 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
         return {"error": str(e)}
 
 
-def handle_undo_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_undo_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Undo the last operation on a puzzle.
     POST /api/puzzles/<name>/undo
@@ -610,7 +610,7 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.undo_puzzle(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -625,7 +625,7 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
         return {"error": str(e)}
 
 
-def handle_redo_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_redo_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Redo the last undone operation on a puzzle.
     POST /api/puzzles/<name>/redo
@@ -639,7 +639,7 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.redo_puzzle(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
@@ -653,7 +653,7 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
 
-def handle_copy_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_copy_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Copy a puzzle to a new name.
     POST /api/puzzles/<name>/copy
@@ -674,7 +674,7 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'new_name'"}
 
-        user_id = 1
+        user_id = current_user["id"]
         puzzle = app.puzzle_uc.copy_puzzle(user_id, name, new_name)
         response = _puzzle_response(puzzle)
         response["name"] = new_name
@@ -695,7 +695,7 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
         return {"error": str(e)}
 
 
-def handle_get_puzzle_preview(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_get_puzzle_preview(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Return a scaled-down SVG thumbnail and summary heading for a puzzle.
     GET /api/puzzles/<name>/preview
@@ -709,7 +709,7 @@ def handle_get_puzzle_preview(path_params, query_params, body_params, session_to
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
-        user_id = 1
+        user_id = current_user["id"]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return app.puzzle_uc.get_puzzle_preview(user_id, name)
 
@@ -723,7 +723,7 @@ def handle_get_puzzle_preview(path_params, query_params, body_params, session_to
         return {"error": str(e)}
 
 
-def handle_get_puzzle_stats(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_get_puzzle_stats(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Return statistics and validation results for a puzzle.
     GET /api/puzzles/<name>/stats
@@ -737,7 +737,7 @@ def handle_get_puzzle_stats(path_params, query_params, body_params, session_toke
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing puzzle name"}
 
-        user_id = 1
+        user_id = current_user["id"]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return app.puzzle_uc.get_puzzle_stats(user_id, name)
 

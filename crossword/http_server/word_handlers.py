@@ -15,7 +15,7 @@ from crossword.ports.persistence_port import PersistenceError
 logger = logging.getLogger(__name__)
 
 
-def handle_get_suggestions(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_get_suggestions(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Get word suggestions matching a pattern.
     GET /api/words/suggestions?pattern=?HALE
@@ -45,7 +45,7 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
         return {"error": str(e)}
 
 
-def handle_get_all_words(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_get_all_words(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Get all words in the dictionary.
     GET /api/words/all
@@ -63,7 +63,7 @@ def handle_get_all_words(path_params, query_params, body_params, session_token, 
         return {"error": str(e)}
 
 
-def handle_validate_word(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_validate_word(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Validate if a word is in the dictionary.
     GET /api/words/validate?word=HELLO
@@ -89,7 +89,7 @@ def handle_validate_word(path_params, query_params, body_params, session_token, 
         return {"error": str(e)}
 
 
-def handle_get_word_constraints(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_get_word_constraints(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Return letter constraints for a word based on its crossing words.
     GET /api/puzzles/<name>/words/<seq>/<direction>/constraints
@@ -113,7 +113,7 @@ def handle_get_word_constraints(path_params, query_params, body_params, session_
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
-        user_id = 1
+        user_id = current_user["id"]
         word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return app.word_uc.get_word_constraints(word)
@@ -132,7 +132,7 @@ def handle_get_word_constraints(path_params, query_params, body_params, session_
         return {"error": str(e)}
 
 
-def handle_get_ranked_suggestions(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_get_ranked_suggestions(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Return word suggestions for a puzzle word, ranked by crossing viability score.
     GET /api/puzzles/<name>/words/<seq>/<direction>/suggestions
@@ -156,7 +156,7 @@ def handle_get_ranked_suggestions(path_params, query_params, body_params, sessio
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "seq must be an integer"}
 
-        user_id = 1
+        user_id = current_user["id"]
         input_pattern = query_params.get("pattern", None) or None
         word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
         suggestions = app.word_uc.get_ranked_suggestions(word, input_pattern)

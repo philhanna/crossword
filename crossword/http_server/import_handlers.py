@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def handle_import_puzzle_from_acrosslite(
-    path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs
+    path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs
 ):
     """
     Import a puzzle from AcrossLite text format.
@@ -42,7 +42,7 @@ def handle_import_puzzle_from_acrosslite(
         return {"error": "Missing file content"}
 
     try:
-        app.import_uc.import_puzzle_from_acrosslite(1, name, content)
+        app.import_uc.import_puzzle_from_acrosslite(current_user["id"], name, content)
         logger.debug("  returning: %s", {"name": name})
         return {"name": name}
     except ValueError as e:

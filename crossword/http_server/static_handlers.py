@@ -41,6 +41,25 @@ def handle_get_index(path_params, query_params, body_params, session_token, requ
         return None
 
 
+def handle_get_login(path_params, query_params, body_params, session_token, request_handler, **kwargs):
+    """
+    Serve login.html.
+    GET /login
+    """
+    try:
+        frontend_dir = get_frontend_dir()
+        login_file = frontend_dir / "login.html"
+        if login_file.exists():
+            with open(login_file, "rb") as f:
+                request_handler._send_bytes(f.read(), content_type="text/html")
+            return None
+        request_handler._send_error(404, "login.html not found")
+        return None
+    except Exception as e:
+        request_handler._send_error(500, str(e))
+        return None
+
+
 def handle_get_static(path_params, query_params, body_params, session_token, request_handler, **kwargs):
     """
     Serve static assets (CSS, JS, etc.).

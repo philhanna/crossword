@@ -31,7 +31,7 @@ def _send_download(request_handler, data, content_type, filename):
     rh.wfile.write(body)
 
 
-def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Export a puzzle to AcrossLite text format (ZIP containing .txt + .json).
     GET /api/export/puzzles/<name>/acrosslite
@@ -44,7 +44,7 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
-        txt = app.export_uc.export_puzzle_to_acrosslite(1, name)
+        txt = app.export_uc.export_puzzle_to_acrosslite(current_user["id"], name)
         _send_download(request_handler, txt, "text/plain", f"acrosslite-{name}.txt")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
@@ -62,7 +62,7 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
         return {"error": str(e)}
 
 
-def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Export a puzzle to Crossword Compiler XML format.
     GET /api/export/puzzles/<name>/xml
@@ -75,7 +75,7 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
-        xml_text = app.export_uc.export_puzzle_to_xml(1, name)
+        xml_text = app.export_uc.export_puzzle_to_xml(current_user["id"], name)
         _send_download(request_handler, xml_text, "application/xml", f"{name}.xml")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
@@ -93,7 +93,7 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
         return {"error": str(e)}
 
 
-def handle_export_puzzle_to_json(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_export_puzzle_to_json(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Export a puzzle to JSON format.
     GET /api/export/puzzles/<name>/json
@@ -106,7 +106,7 @@ def handle_export_puzzle_to_json(path_params, query_params, body_params, session
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
-        json_text = app.export_uc.export_puzzle_to_json(1, name)
+        json_text = app.export_uc.export_puzzle_to_json(current_user["id"], name)
         _send_download(request_handler, json_text, "application/json", f"{name}.json")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
@@ -124,7 +124,7 @@ def handle_export_puzzle_to_json(path_params, query_params, body_params, session
         return {"error": str(e)}
 
 
-def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
     Export a puzzle in NYTimes submission format (ZIP containing .html + .svg).
     GET /api/export/puzzles/<name>/nytimes
@@ -137,7 +137,7 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": "Missing puzzle name"}
     try:
-        pdf_bytes = app.export_uc.export_puzzle_to_nytimes(1, name)
+        pdf_bytes = app.export_uc.export_puzzle_to_nytimes(current_user["id"], name)
         _send_download(request_handler, pdf_bytes, "application/pdf", f"nytimes-{name}.pdf")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None

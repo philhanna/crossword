@@ -16,16 +16,18 @@ from io import BytesIO
 class Route:
     """Single route definition: method + path pattern -> handler"""
 
-    def __init__(self, method: str, path_pattern: str, handler):
+    def __init__(self, method: str, path_pattern: str, handler, requires_auth: bool = True):
         r"""
         Args:
             method: HTTP method ('GET', 'POST', 'PUT', 'DELETE', etc.)
             path_pattern: Regex pattern for path matching (e.g., r'^/grids/(\d+)$')
             handler: Callable that handles the request
+            requires_auth: If True, requests without a valid session are rejected with 401
         """
         self.method = method.upper()
         self.path_pattern = re.compile(path_pattern)
         self.handler = handler
+        self.requires_auth = requires_auth
 
     def matches(self, method: str, path: str):
         """Check if this route matches the request method and path"""
@@ -43,9 +45,9 @@ class Router:
     def __init__(self):
         self.routes = []
 
-    def add_route(self, method: str, path_pattern: str, handler):
+    def add_route(self, method: str, path_pattern: str, handler, requires_auth: bool = True):
         """Register a route"""
-        self.routes.append(Route(method, path_pattern, handler))
+        self.routes.append(Route(method, path_pattern, handler, requires_auth=requires_auth))
 
     def find_route(self, method: str, path: str):
         """Find matching route for method + path, returning (route, path_params)"""
@@ -128,6 +130,15 @@ class RequestHandler(BaseHTTPRequestHandler):
             self._send_error(404, "Not Found")
             return
 
+        # Auth gating
+        current_user = None
+        if session_token and self.app and hasattr(self.app, "auth_uc"):
+            current_user = self.app.auth_uc.get_current_user(session_token)
+
+        if route.requires_auth and current_user is None:
+            self._send_error(401, "Authentication required")
+            return
+
         # Call handler
         try:
             handler = route.handler
@@ -138,6 +149,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 session_token=session_token,
                 request_handler=self,
                 app=self.app,
+                current_user=current_user,
             )
 
             # Send response (skip if handler already sent it and returned None)

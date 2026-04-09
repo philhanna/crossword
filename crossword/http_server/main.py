@@ -6,7 +6,7 @@ from crossword.http_server.server import create_server, start_server
 from crossword.wiring import make_app
 
 # Import all handlers
-from crossword.http_server.static_handlers import handle_get_index, handle_get_static
+from crossword.http_server.static_handlers import handle_get_index, handle_get_login, handle_get_static
 from crossword.http_server.puzzle_handlers import (
     handle_list_puzzles,
     handle_create_puzzle,
@@ -44,15 +44,22 @@ from crossword.http_server.export_handlers import (
     handle_export_puzzle_to_json,
 )
 from crossword.http_server.import_handlers import handle_import_puzzle_from_acrosslite
+from crossword.http_server.auth_handlers import handle_login, handle_logout, handle_me
 
 
 def register_routes(router):
     """
     Register all API routes with the router.
     """
-    # Static file serving
-    router.add_route("GET", r"^/$", handle_get_index)
-    router.add_route("GET", r"^/static/(.+)$", handle_get_static)
+    # Auth routes (public)
+    router.add_route("POST", r"^/api/auth/login$", handle_login, requires_auth=False)
+    router.add_route("POST", r"^/api/auth/logout$", handle_logout, requires_auth=False)
+    router.add_route("GET", r"^/api/auth/me$", handle_me, requires_auth=False)
+
+    # Static file serving (public)
+    router.add_route("GET", r"^/$", handle_get_index, requires_auth=False)
+    router.add_route("GET", r"^/login$", handle_get_login, requires_auth=False)
+    router.add_route("GET", r"^/static/(.+)$", handle_get_static, requires_auth=False)
 
     # Puzzle routes
     router.add_route("GET", r"^/api/puzzles$", handle_list_puzzles)

@@ -22,7 +22,7 @@
   <div id="lgn" class="w3-display-topmiddle">
 
     <!-- Login form -->
-    <form id="lgnForm" class="w3-margin-left w3-margin-right w3-border" method="POST">
+    <form id="lgnForm" class="w3-margin-left w3-margin-right w3-border">
 
       <!-- Heading -->
       <div class="w3-blue-gray w3-center">
@@ -52,7 +52,7 @@
           <input
             id="lgnPassword"
             class="lgn-input w3-border w3-margin-left w3-margin-right"
-            type="text"
+            type="password"
             placeholder="Enter password"
             name="password"
             required
@@ -68,9 +68,39 @@
         <div id="lgnError" class="w3-text-red" style="display:none">
           <p id="lgnErrmsg"></p>
         </div>
-        
+
     </form>
   </div>
+
+<script>
+document.getElementById('lgnForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const username = document.getElementById('lgnUsername').value;
+  const password = document.getElementById('lgnPassword').value;
+  const errDiv = document.getElementById('lgnError');
+  const errMsg = document.getElementById('lgnErrmsg');
+  errDiv.style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (resp.ok) {
+      window.location.href = '/';
+    } else {
+      const data = await resp.json();
+      errMsg.textContent = data.error || 'Login failed';
+      errDiv.style.display = 'block';
+    }
+  } catch (err) {
+    errMsg.textContent = 'Network error';
+    errDiv.style.display = 'block';
+  }
+});
+</script>
+
 </body>
 
 </html>

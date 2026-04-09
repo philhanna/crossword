@@ -331,7 +331,8 @@ class TestMergedPuzzleHandlers:
         app.puzzle_uc.load_puzzle.return_value = puzzle
 
         response = handle_create_puzzle(
-            (), {}, {"name": "demo", "size": 15}, None, request_handler, app=app
+            (), {}, {"name": "demo", "size": 15}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
         )
 
         app.puzzle_uc.create_puzzle.assert_called_once_with(1, "demo", size=15)
@@ -343,7 +344,8 @@ class TestMergedPuzzleHandlers:
         app.puzzle_uc.switch_to_grid_mode.return_value = puzzle
 
         response = handle_switch_to_grid_mode(
-            ("demo",), {}, {}, None, request_handler, app=app
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
         )
 
         app.puzzle_uc.switch_to_grid_mode.assert_called_once_with(1, "demo")
@@ -355,7 +357,8 @@ class TestMergedPuzzleHandlers:
         app.puzzle_uc.switch_to_puzzle_mode.return_value = puzzle
 
         response = handle_switch_to_puzzle_mode(
-            ("demo",), {}, {}, None, request_handler, app=app
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
         )
 
         app.puzzle_uc.switch_to_puzzle_mode.assert_called_once_with(1, "demo")
@@ -367,7 +370,8 @@ class TestMergedPuzzleHandlers:
         app.puzzle_uc.toggle_black_cell.return_value = puzzle
 
         response = handle_toggle_puzzle_black_cell(
-            ("demo", "0", "0"), {}, {}, None, request_handler, app=app
+            ("demo", "0", "0"), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
         )
 
         app.puzzle_uc.toggle_black_cell.assert_called_once_with(1, "demo", 1, 1)
