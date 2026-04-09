@@ -6,6 +6,10 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-04-09
+
+Bug fixes
+
 ### Added
 
 - JSON export: `JsonExportAdapter`, `GET /api/export/puzzles/<name>/json` endpoint,
@@ -16,6 +20,14 @@ and the format is based on [Keep a Changelog].
 
 - README: Tools section updated to list all current admin and dev scripts
 - README: Install instructions updated to use `pip install -e .`
+- Word list wiring now uses `SQLiteDictionaryAdapter` for both `word_dbfile`
+  and `word_file` sources; flat-file loading remains supported through
+  `load_from_file()`
+
+### Removed
+
+- `FlatFileWordListAdapter`; its behavior is now covered by
+  `SQLiteDictionaryAdapter`, with tests and docs updated accordingly
 
 ## [3.4.0] - 2026-03-28
 
