@@ -455,8 +455,11 @@ def format_acrosslite(rows: Sequence[str]) -> str:
     return "\n".join(lines)
 
 
-def print_grid(rows: Sequence[str]) -> None:
-    print(format_acrosslite(rows))
+def print_grid(rows: Sequence[str], seq: int) -> None:
+    path = f"grid{seq:02d}.txt"
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(format_acrosslite(rows))
+    print(path)
 
 
 def main() -> None:
@@ -498,9 +501,7 @@ def main() -> None:
 
     for i in range(args.count):
         rows = gen.generate()
-        if i > 0:
-            print()
-        print_grid(rows)
+        print_grid(rows, seq=i + 1)
 
 
 if __name__ == "__main__":
