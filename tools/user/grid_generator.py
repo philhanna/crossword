@@ -22,9 +22,11 @@ Example:
 from __future__ import annotations
 
 import argparse
+import re
 import random
 from collections import deque
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable, List, Optional, Sequence, Tuple
 
 
@@ -455,10 +457,19 @@ def format_acrosslite(rows: Sequence[str]) -> str:
     return "\n".join(lines)
 
 
-def print_grid(rows: Sequence[str], seq: int) -> None:
-    path = f"grid{seq:02d}.txt"
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(format_acrosslite(rows))
+def _next_seq(output_dir: Path) -> int:
+    """Return one more than the highest grid sequence number already in output_dir."""
+    pattern = re.compile(r"^grid(\d+)\.txt$")
+    highest = 0
+    for p in output_dir.iterdir():
+        m = pattern.match(p.name)
+        if m:
+            highest = max(highest, int(m.group(1)))
+    return highest + 1
+
+
+def print_grid(rows: Sequence[str], path: Path) -> None:
+    path.write_text(format_acrosslite(rows), encoding="utf-8")
     print(path)
 
 
@@ -467,6 +478,12 @@ def main() -> None:
     parser.add_argument("n", type=is_odd_int_ge_9, help="odd grid size >= 9")
     parser.add_argument("--count", type=int, default=1, help="number of grids to generate")
     parser.add_argument("--seed", type=int, default=None, help="random seed")
+    parser.add_argument(
+        "--output",
+        default=".",
+        metavar="DIR",
+        help="directory for output .txt files (default: current directory)",
+    )
     parser.add_argument(
         "--min-black-pct",
         type=float,
@@ -490,6 +507,9 @@ def main() -> None:
     if not (0.0 <= args.min_black_pct <= args.max_black_pct <= 1.0):
         parser.error("require 0.0 <= min-black-pct <= max-black-pct <= 1.0")
 
+    output_dir = Path(args.output)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     rng = random.Random(args.seed)
     config = SearchConfig(
         min_black_pct=args.min_black_pct,
@@ -498,10 +518,12 @@ def main() -> None:
     )
 
     gen = GridGenerator(args.n, rng, config)
+    seq = _next_seq(output_dir)
 
-    for i in range(args.count):
+    for _ in range(args.count):
         rows = gen.generate()
-        print_grid(rows, seq=i + 1)
+        print_grid(rows, output_dir / f"grid{seq:04d}.txt")
+        seq += 1
 
 
 if __name__ == "__main__":
