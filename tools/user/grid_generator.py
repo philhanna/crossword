@@ -409,9 +409,54 @@ class GridGenerator:
         return rows
 
 
-def print_grid(rows: Sequence[str]) -> None:
+def _count_words(rows: Sequence[str]) -> Tuple[int, int]:
+    """Return (across_count, down_count) for a completed grid."""
+    n = len(rows)
+    across = 0
+    down = 0
+    for r in range(n):
+        for c in range(n):
+            if rows[r][c] == WHITE:
+                if (c == 0 or rows[r][c - 1] == BLACK) and c + 1 < n and rows[r][c + 1] == WHITE:
+                    across += 1
+                if (r == 0 or rows[r - 1][c] == BLACK) and r + 1 < n and rows[r + 1][c] == WHITE:
+                    down += 1
+    return across, down
+
+
+def format_acrosslite(rows: Sequence[str]) -> str:
+    """Return the grid formatted as an AcrossLite text (.txt) string."""
+    n = len(rows)
+    indent = "     "
+    across_count, down_count = _count_words(rows)
+
+    lines = [
+        "<ACROSS PUZZLE>",
+        "<TITLE>",
+        indent,
+        "<AUTHOR>",
+        indent,
+        "<COPYRIGHT>",
+        indent,
+        "<SIZE>",
+        f"{indent}{n}x{n}",
+        "<GRID>",
+    ]
     for row in rows:
-        print(row)
+        grid_row = "".join("." if ch == BLACK else "X" for ch in row)
+        lines.append(indent + grid_row)
+    lines.append("<ACROSS>")
+    lines.extend([indent] * across_count)
+    lines.append("<DOWN>")
+    lines.extend([indent] * down_count)
+    lines.append("<NOTEPAD>")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+def print_grid(rows: Sequence[str]) -> None:
+    print(format_acrosslite(rows))
 
 
 def main() -> None:
