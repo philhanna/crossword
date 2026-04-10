@@ -33,6 +33,7 @@ from typing import Iterable, List, Optional, Sequence, Tuple
 BLACK = "#"
 WHITE = "."
 UNKNOWN = "?"
+_STACK_MAX = 7  # words longer than this may not be stacked in adjacent rows/columns
 
 
 def is_odd_int_ge_9(value: str) -> int:
@@ -226,6 +227,40 @@ def line_runs_are_legal(line: Sequence[str]) -> bool:
     return True
 
 
+def _long_spans(line: Sequence[str]) -> List[Tuple[int, int]]:
+    """Return (start, end) index spans of WHITE runs with length > _STACK_MAX."""
+    spans: List[Tuple[int, int]] = []
+    n = len(line)
+    i = 0
+    while i < n:
+        if line[i] == WHITE:
+            start = i
+            while i < n and line[i] == WHITE:
+                i += 1
+            if i - start > _STACK_MAX:
+                spans.append((start, i - 1))
+        else:
+            i += 1
+    return spans
+
+
+def _spans_overlap(a: List[Tuple[int, int]], b: List[Tuple[int, int]]) -> bool:
+    """Return True if any span in a overlaps with any span in b."""
+    for s1, e1 in a:
+        for s2, e2 in b:
+            if s1 <= e2 and s2 <= e1:
+                return True
+    return False
+
+
+def _no_long_word_stack(line1: Sequence[str], line2: Sequence[str]) -> bool:
+    """Return True if no long word (> _STACK_MAX) in line1 is stacked with one in line2."""
+    spans1 = _long_spans(line1)
+    if not spans1:
+        return True
+    return not _spans_overlap(spans1, _long_spans(line2))
+
+
 def validate_grid(grid: Sequence[Sequence[str]]) -> Tuple[bool, str]:
     n = len(grid)
 
@@ -280,6 +315,18 @@ def validate_grid(grid: Sequence[Sequence[str]]) -> Tuple[bool, str]:
                 down += 1
             if down - up + 1 < 3:
                 return False, f"cell ({r}, {c}) is not in a valid down entry"
+
+    # 5. No stacked long across words in adjacent rows
+    for r in range(n - 1):
+        if not _no_long_word_stack(grid[r], grid[r + 1]):
+            return False, f"stacked long across words in rows {r} and {r + 1}"
+
+    # 6. No stacked long down words in adjacent columns
+    for c in range(n - 1):
+        col1 = [grid[r][c] for r in range(n)]
+        col2 = [grid[r][c + 1] for r in range(n)]
+        if not _no_long_word_stack(col1, col2):
+            return False, f"stacked long down words in columns {c} and {c + 1}"
 
     return True, "ok"
 
@@ -366,7 +413,14 @@ class GridGenerator:
             for row in candidates:
                 place_row_pair(grid, row_index, row)
 
-                if partial_columns_feasible(grid):
+                rr = n - 1 - row_index
+                stacking_ok = True
+                if row_index > 0 and not _no_long_word_stack(grid[row_index], grid[row_index - 1]):
+                    stacking_ok = False
+                elif rr < n - 1 and not _no_long_word_stack(grid[rr], grid[rr + 1]):
+                    stacking_ok = False
+
+                if stacking_ok and partial_columns_feasible(grid):
                     result = self._search(grid, row_index + 1, target_black, min_black, max_black)
                     if result is not None:
                         return result
@@ -382,7 +436,11 @@ class GridGenerator:
             for row in candidates:
                 place_middle_row(grid, row)
 
-                if partial_columns_feasible(grid):
+                if (
+                    _no_long_word_stack(grid[mid], grid[mid - 1])
+                    and _no_long_word_stack(grid[mid], grid[mid + 1])
+                    and partial_columns_feasible(grid)
+                ):
                     black_count = count_black_cells_in_grid(grid)
                     if min_black <= black_count <= max_black:
                         ok, _ = validate_grid(grid)
