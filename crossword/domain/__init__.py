@@ -11,3 +11,4 @@ from .word import *
 from .puzzle import *
 from .fill_priority import *
 from .to_svg import *
+from .grid_generator import GridGenerator
