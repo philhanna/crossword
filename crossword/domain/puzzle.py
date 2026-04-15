@@ -209,6 +209,14 @@ class Puzzle:
         newgrid.rotate()
         self._apply_new_grid(newgrid)
 
+    def generate_grid(self):
+        from .grid_generator import GridGenerator
+        gen = GridGenerator(self.n)
+        newgrid = gen.generate()
+        self.grid_undo_stack.append(self.grid.to_json())
+        self.grid_redo_stack = []
+        self._apply_new_grid(newgrid)
+
     def undo_grid_change(self):
         if len(self.grid_undo_stack) == 0:
             return

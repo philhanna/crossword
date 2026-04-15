@@ -19,6 +19,7 @@ from crossword.http_server.puzzle_handlers import (
     handle_set_puzzle_title,
     handle_toggle_puzzle_black_cell,
     handle_rotate_puzzle_grid,
+    handle_generate_puzzle_grid,
     handle_undo_puzzle_grid,
     handle_redo_puzzle_grid,
     handle_reset_word,
@@ -73,6 +74,7 @@ def register_routes(router):
     router.add_route("PUT",  r"^/api/puzzles/([^/]+)/title$", handle_set_puzzle_title)
     router.add_route("PUT", r"^/api/puzzles/([^/]+)/grid/cells/(\d+)/(\d+)$", handle_toggle_puzzle_black_cell)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/grid/rotate$", handle_rotate_puzzle_grid)
+    router.add_route("POST", r"^/api/puzzles/([^/]+)/grid/generate$", handle_generate_puzzle_grid)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/grid/undo$", handle_undo_puzzle_grid)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/grid/redo$", handle_redo_puzzle_grid)
     router.add_route("PUT", r"^/api/puzzles/([^/]+)/cells/(\d+)/(\d+)$", handle_set_cell_letter)

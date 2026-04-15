@@ -12,6 +12,7 @@ Public interface:
   switch_to_puzzle_mode(user_id, name) -> Puzzle
   toggle_black_cell(user_id, name, r, c) -> Puzzle
   rotate_grid(user_id, name) -> Puzzle
+  generate_grid(user_id, name) -> Puzzle
   undo_grid(user_id, name) -> Puzzle
   redo_grid(user_id, name) -> Puzzle
   set_puzzle_title(user_id, name, title) -> Puzzle
@@ -191,6 +192,13 @@ class PuzzleUseCases:
         """Rotate the puzzle grid and save the change."""
         puzzle = self.persistence.load_puzzle(user_id, name)
         puzzle.rotate_grid()
+        self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
+    def generate_grid(self, user_id: int, name: str) -> Puzzle:
+        """Generate a random valid grid for the puzzle and save the change."""
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.generate_grid()
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle
 

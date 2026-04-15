@@ -13,6 +13,7 @@ Routes:
   PUT    /api/puzzles/<name>/title         → set_puzzle_title
   PUT    /api/puzzles/<name>/grid/cells/<r>/<c>  → toggle_black_cell
   POST   /api/puzzles/<name>/grid/rotate         → rotate_grid
+  POST   /api/puzzles/<name>/grid/generate       → generate_grid
   POST   /api/puzzles/<name>/grid/undo           → undo_grid
   POST   /api/puzzles/<name>/grid/redo           → redo_grid
   POST   /api/puzzles/<name>/words/<seq>/<direction>/reset  → reset_word
@@ -355,6 +356,24 @@ def handle_rotate_puzzle_grid(path_params, query_params, body_params, session_to
             return {"error": "Missing puzzle name"}
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.rotate_grid(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return _puzzle_response(puzzle)
+    except PersistenceError:
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def handle_generate_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """Generate a random valid grid for a puzzle."""
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            return {"error": "Missing puzzle name"}
+        user_id = current_user["id"]
+        puzzle = app.puzzle_uc.generate_grid(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:

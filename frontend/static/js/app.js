@@ -712,6 +712,8 @@ function renderPuzzleEditorLhs() {
     const title = pd && pd.puzzle.title ? `: &ldquo;${escapeHtml(pd.puzzle.title)}&rdquo;` : '';
     const mode  = _currentEditorMode();
 
+    const size = pd ? pd.grid.size : 0;
+    const generateDisabled = (size >= 9 && size % 2 === 1) ? '' : ' w3-disabled';
     const toolbar = mode === 'grid' ? `
 <div class="w3-container w3-margin-bottom" style="height:36px">
   <div class="w3-bar w3-border">
@@ -725,6 +727,8 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_rotate_grid()">
       <i class="material-icons crosstb-icon">rotate_right</i><span>Rotate</span></a>
+    <a class="w3-bar-item w3-button crosstb${generateDisabled}" onclick="do_puzzle_generate_grid()">
+      <i class="material-icons crosstb-icon">casino</i><span>Generate</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
   </div>
@@ -1696,6 +1700,16 @@ async function do_puzzle_rotate_grid() {
         if (data.error) { alert(`Error rotating grid: ${data.error}`); return; }
         await _applyGridModeUpdate(data);
     } catch (e) { alert('Error rotating grid'); }
+}
+
+async function do_puzzle_generate_grid() {
+    if (!AppState.puzzleWorkingName || _currentEditorMode() !== 'grid') return;
+    try {
+        const data = await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/generate`);
+        if (data.error) { alert(`Error generating grid: ${data.error}`); return; }
+        await _applyGridModeUpdate(data);
+    } catch (e) { alert('Error generating grid'); }
 }
 
 async function do_puzzle_delete() {
