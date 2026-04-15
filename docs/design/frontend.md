@@ -16,7 +16,7 @@ The server serves these files directly. `app.js` is loaded at the bottom of `ind
 The page has three regions:
 
 - **Header** — logo + title
-- **Menu bar** — Puzzle / Import / Publish dropdown menus + username display + Logout link + Help link (top right)
+- **Menu bar** — Puzzle / Import / Export dropdown menus + username display + Logout link + Help link (top right)
 - **Main content** — two side-by-side cells:
   - `#lhs` (45%) — puzzle SVG + toolbar
   - `#rhs` (55%) — clue lists, word editor, or stats panel
@@ -73,7 +73,7 @@ The editor is a single unified view for both Grid mode and Puzzle mode (there is
 | Puzzle > Grid mode | `editor` + currently in Puzzle mode |
 | Puzzle > Puzzle mode | `editor` + currently in Grid mode |
 | Import > AcrossLite | `home` |
-| Publish > all three formats | always |
+| Export > all three formats | always |
 
 Items are toggled with `w3-disabled` CSS class.
 
@@ -188,11 +188,11 @@ The panel contains:
 - **Show constraints button** (`doWordConstraints()`) — toggles a constraints table below. Calls `GET /api/puzzles/{wn}/words/{seq}/{dir}/constraints`. Shows columns: Pos, Letter, Location, Text, Index, Regexp, Choices; and the overall pattern.
 - **Reset button** (`doWordReset()`) — calls `POST /api/puzzles/{wn}/words/{seq}/{dir}/reset`, updates `#we-text` to the new (partially cleared) text
 
-## Publish
+## Export
 
-`do_publish(format)` — format is `'puz'` (Across Lite), `'xml'` (Crossword Compiler), or `'nyt'` (New York Times).
+`do_export(format)` — format is `'puz'` (Across Lite), `'xml'` (Crossword Compiler), or `'nyt'` (New York Times).
 
-- If a puzzle is open in the editor, publishes it directly
+- If a puzzle is open in the editor, exports it directly
 - Otherwise, shows a preview chooser to pick a puzzle
 
 `_downloadExport(name, format)` fetches the export endpoint using raw `fetch()` (not `apiFetch`), checks `resp.ok`, creates a temporary `<a>` with `download` attribute to trigger a browser download.

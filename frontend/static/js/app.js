@@ -241,7 +241,7 @@ const MENU_ITEMS = [
     'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-close', 'menu-puzzle-delete',
     'menu-puzzle-title', 'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
     'menu-import-acrosslite',
-    'menu-publish-acrosslite', 'menu-publish-cwcompiler', 'menu-publish-nytimes',
+    'menu-export-acrosslite', 'menu-export-cwcompiler', 'menu-export-nytimes',
 ];
 
 function menuEnable(id)  { document.getElementById(id).classList.remove('w3-disabled'); }
@@ -264,9 +264,9 @@ function updateMenu() {
     mode === 'puzzle' ? menuEnable('menu-puzzle-grid-mode')   : menuDisable('menu-puzzle-grid-mode');
     mode === 'grid'   ? menuEnable('menu-puzzle-puzzle-mode') : menuDisable('menu-puzzle-puzzle-mode');
 
-    menuEnable('menu-publish-acrosslite');
-    menuEnable('menu-publish-cwcompiler');
-    menuEnable('menu-publish-nytimes');
+    menuEnable('menu-export-acrosslite');
+    menuEnable('menu-export-cwcompiler');
+    menuEnable('menu-export-nytimes');
 }
 
 // ---------------------------------------------------------------------------
@@ -1743,7 +1743,7 @@ async function do_puzzle_delete() {
 }
 
 // ---------------------------------------------------------------------------
-// Menu actions — Publish
+// Menu actions — Export
 // ---------------------------------------------------------------------------
 
 async function _downloadExport(name, format) {
@@ -1756,7 +1756,7 @@ async function _downloadExport(name, format) {
         const resp = await fetch(`/api/export/puzzles/${encodeURIComponent(name)}/${endpoint}`);
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            showMessageLine(err.error || `Publish failed: HTTP ${resp.status}`, 'error');
+            showMessageLine(err.error || `Export failed: HTTP ${resp.status}`, 'error');
             return;
         }
         const blob = await resp.blob();
@@ -1768,13 +1768,13 @@ async function _downloadExport(name, format) {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showMessageLine(`Published "${name}" as ${labelMap[format]}: ${filename}`, 'notice');
+        showMessageLine(`Exported "${name}" as ${labelMap[format]}: ${filename}`, 'notice');
     } catch (e) {
         showMessageLine('Export request failed.', 'error');
     }
 }
 
-async function do_publish(format) {
+async function do_export(format) {
     if (AppState.view === 'editor' && AppState.puzzleName) {
         await _downloadExport(AppState.puzzleName, format);
     } else {
@@ -1786,7 +1786,7 @@ async function do_publish(format) {
                 showMessageLine('No saved puzzles found.', 'notice');
                 return;
             }
-            showPreviewChooser('Choose a puzzle to publish', puzzles, '/api/puzzles', async (name) => {
+            showPreviewChooser('Choose a puzzle to export', puzzles, '/api/puzzles', async (name) => {
                 await _downloadExport(name, format);
             });
         } catch (e) {

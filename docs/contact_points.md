@@ -10,7 +10,7 @@ The export download uses a raw `fetch()` to stream a blob.
 
 | Method | Path | Triggered by | Notes |
 |--------|------|--------------|-------|
-| `GET` | `/api/puzzles` | `do_puzzle_open`, `do_puzzle_delete`, `do_publish` (from home) | List all puzzle names |
+| `GET` | `/api/puzzles` | `do_puzzle_open`, `do_puzzle_delete`, `do_export` (from home) | List all puzzle names |
 | `POST` | `/api/puzzles` | `do_puzzle_new` | Body: `{name, size}`. Creates new puzzle |
 | `POST` | `/api/puzzles/{name}/open` | `_openPuzzleInEditor` | Creates working copy; returns `{working_name}` |
 | `GET` | `/api/puzzles/{name}` | `_openPuzzleInEditor`, `do_puzzle_title` (refresh) | Fetch full puzzle data |
@@ -72,7 +72,7 @@ The export download uses a raw `fetch()` to stream a blob.
 
 ---
 
-## Export / Publish
+## Export
 
 | Method | Path | Triggered by | Notes |
 |--------|------|--------------|-------|

@@ -2,7 +2,7 @@
 
 A web-based application for creating and editing crossword puzzles.
 
-**Version: 3.4.0** — Added publish support
+**Version: 3.4.0** — Added export support
 
 ## Table of contents
 - [Requirements](#requirements)
@@ -110,8 +110,8 @@ Create the grid and fill the puzzle in one editor, switching modes as needed.
 - The word editor panel offers three tabs: **Suggest** (word suggestions), **Constraints** (pattern matching), and **Reset**.
 - The statistics panel is shared across both modes.
 
-### Publish
-Available from anywhere via the **Publish** menu:
+### Export
+Available from anywhere via the **Export** menu:
 
 | Format | Description |
 |--------|-------------|

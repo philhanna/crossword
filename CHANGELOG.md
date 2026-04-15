@@ -74,8 +74,8 @@ Bug fixes
 ### Fixed
 
 - Issue #199
-- Publish menu: stale download filenames corrected
-- Publish menu: success notification shown after download completes
+- Export menu: stale download filenames corrected
+- Export menu: success notification shown after download completes
 - Test suite: `words.db` path corrected to `examples/words.db`
 
 ## [3.3.0] - 2026-03-28
@@ -219,7 +219,7 @@ Complete rewrite of the application backend and frontend.
 - Save and Close buttons on grid toolbar
 - Warn on unsaved changes when closing grid or puzzle
 - Confirmation dialog after Grid > Save and Puzzle > Save succeed
-- Publish feature (Phases 1–4): AcrossLite `.puz` export, PDF, and print
+- Export feature (Phases 1–4): AcrossLite `.puz` export, PDF, and print
 - Rebranded header with Mozart image and "Crossword Composer" title
 - Puzzle undo/redo button enable/disable driven by `can_undo`/`can_redo` API fields
 - Swagger UI tool (`tools/swagger.py`) with live route diff checking
@@ -406,8 +406,8 @@ editing is done (see Issue #99).
 - Issue #51: Separate sections for the three grid validation checks
 - Issue #53: Made grid and puzzle chooser dialogs scrollable
 - Issue #54: Refactored display of suggested words
-- Issue #55: Publish in AcrossLite format
-- Issue #56: Added JSON source to publish .zip file
+- Issue #55: Export in AcrossLite format
+- Issue #56: Added JSON source to export .zip file
 - Issue #58: Sort puzzle and grid lists by date of last save
 - Issue #59: Added puzzle title
 

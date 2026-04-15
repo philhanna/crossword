@@ -2,7 +2,7 @@ from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
 from crossword.tests import TestPuzzle
 
 
-class TestPuzzlePublishAcrossLite:
+class TestPuzzleExportAcrossLite:
 
     def test_get_text(self):
         puzzle = TestPuzzle.create_nyt_daily()
