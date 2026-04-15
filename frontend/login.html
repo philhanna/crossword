@@ -6,68 +6,62 @@
 <head>
   <meta charset="UTF-8" />
   <title>Crossword Composer Login</title>
-  <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css" />
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
   <style>
-    .lgn-input {
-      box-sizing: border-box;
-      width: calc(100% - 32px);
-    }
+    input { font-size: 1rem !important; }
   </style>
 </head>
 
 <!-- Body -->
-<body class="w3-container w3-padding">
+<body style="display:flex;justify-content:center;padding-top:80px">
 
   <!-- Login dialog -->
-  <div id="lgn" class="w3-display-topmiddle">
+  <div class="w3-modal-content w3-card-4" style="width:30%">
+
+    <!-- Heading -->
+    <div class="w3-blue-gray w3-center">
+      <h3 style="margin-top:0">Login</h3>
+    </div>
 
     <!-- Login form -->
-    <form id="lgnForm" class="w3-margin-left w3-margin-right w3-border">
+    <form id="lgnForm" class="w3-container">
 
-      <!-- Heading -->
-      <div class="w3-blue-gray w3-center">
-        <h3 id="lgnHeading" class="w3-center w3-blue-gray">Login</h3>
+      <!-- Username -->
+      <div class="w3-section">
+        <label><b>Username</b></label>
+        <input
+          id="lgnUsername"
+          type="text"
+          class="w3-input w3-border"
+          autofocus
+          placeholder="Enter username"
+          name="username"
+          required
+        />
       </div>
 
-      <!-- Input fields -->
-      <div class="w3-container">
+      <!-- Password -->
+      <div class="w3-section">
+        <label><b>Password</b></label>
+        <input
+          id="lgnPassword"
+          type="password"
+          class="w3-input w3-border"
+          placeholder="Enter password"
+          name="password"
+          required
+        />
+      </div>
 
-        <!-- Username -->
-        <div class="w3-bar-block">
-          <label class="w3-bar-item" htmlFor="username"><b>Username:</b></label>
-          <input
-            id="lgnUsername"
-            class="lgn-input w3-border w3-margin-left w3-margin-right"
-            autofocus
-            type="text"
-            placeholder="Enter username"
-            name="username"
-            required
-          />
-        </div>
+      <!-- Submit button -->
+      <div class="w3-section w3-center">
+        <button type="submit" class="w3-button w3-border w3-round w3-gray" style="width:100px">Login</button>
+      </div>
 
-        <!-- Password -->
-        <div class="w3-bar-block">
-          <label class="w3-bar-item" htmlFor="password"><b>Password</b></label>
-          <input
-            id="lgnPassword"
-            class="lgn-input w3-border w3-margin-left w3-margin-right"
-            type="password"
-            placeholder="Enter password"
-            name="password"
-            required
-          />
-        </div>
-
-        <!-- Submit button -->
-        <div id="lgnSubmit" class="w3-container w3-bar-block w3-center w3-padding-16">
-          <button type="submit" class="lgn-field w3-button w3-round-large w3-gray">Login</button>
-        </div>
-
-        <!-- Error message -->
-        <div id="lgnError" class="w3-text-red" style="display:none">
-          <p id="lgnErrmsg"></p>
-        </div>
+      <!-- Error message -->
+      <div id="lgnError" class="w3-section w3-center w3-text-red" style="display:none">
+        <span id="lgnErrmsg"></span>
+      </div>
 
     </form>
   </div>
