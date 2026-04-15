@@ -6,6 +6,13 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-04-15
+
+### Added
+
+- Fill priority suggestions in puzzle info panel
+- Fill order moved into its own dedicated panel
+
 ## [4.1.0] - 2026-04-15
 
 ### Added
