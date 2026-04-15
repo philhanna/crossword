@@ -237,9 +237,10 @@ async function showPreviewChooser(title, names, apiPrefix, onSelect) {
 // ---------------------------------------------------------------------------
 
 const MENU_ITEMS = [
-    'menu-puzzle-new', 'menu-puzzle-open', 'menu-puzzle-import',
+    'menu-puzzle-new', 'menu-puzzle-open',
     'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-close', 'menu-puzzle-delete',
     'menu-puzzle-title', 'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
+    'menu-import-acrosslite',
     'menu-publish-acrosslite', 'menu-publish-cwcompiler', 'menu-publish-nytimes',
 ];
 
@@ -252,7 +253,7 @@ function updateMenu() {
 
     home   ? menuEnable('menu-puzzle-new')     : menuDisable('menu-puzzle-new');
     home   ? menuEnable('menu-puzzle-open')    : menuDisable('menu-puzzle-open');
-    home   ? menuEnable('menu-puzzle-import')  : menuDisable('menu-puzzle-import');
+    home   ? menuEnable('menu-import-acrosslite')  : menuDisable('menu-import-acrosslite');
     editor ? menuEnable('menu-puzzle-save')    : menuDisable('menu-puzzle-save');
     editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
     editor ? menuEnable('menu-puzzle-close')   : menuDisable('menu-puzzle-close');
