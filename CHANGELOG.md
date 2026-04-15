@@ -6,6 +6,30 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-04-15
+
+### Added
+
+- Grid generation capability with auto-incrementing output file support
+- Grid generator domain class with stacked long-word rejection heuristic
+- Import menu at top level; AcrossLite import moved out of Puzzle menu
+
+### Changed
+
+- Renamed `schema.sql` to `dbschema.sql`
+- Publish renamed to Export throughout the UI
+
+### Fixed
+
+- Puzzle names with special characters (e.g. `+`) now round-trip correctly through
+  URL encoding — backend URL-decodes path parameters before DB lookup
+- Generate toolbar button is disabled while grid generation is in progress
+
+### Removed
+
+- `fill_priority` module and associated tools (unused)
+- Old `make_grid` script
+
 ## [4.0.0] - 2026-04-09
 
 ### Added
