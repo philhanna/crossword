@@ -9,7 +9,7 @@ import re
 import json
 import uuid
 from http.server import BaseHTTPRequestHandler
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 from io import BytesIO
 
 
@@ -34,9 +34,9 @@ class Route:
         return self.method == method.upper() and self.path_pattern.match(path)
 
     def extract_params(self, path: str):
-        """Extract regex capture groups from path"""
+        """Extract regex capture groups from path, URL-decoding each segment"""
         match = self.path_pattern.match(path)
-        return match.groups() if match else ()
+        return tuple(unquote(g) for g in match.groups()) if match else ()
 
 
 class Router:
