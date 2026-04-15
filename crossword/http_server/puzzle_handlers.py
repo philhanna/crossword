@@ -24,6 +24,7 @@ Routes:
   POST   /api/puzzles/<name>/redo          → redo_puzzle
   GET    /api/puzzles/<name>/preview       → get_puzzle_preview
   GET    /api/puzzles/<name>/stats         → get_puzzle_stats
+  GET    /api/puzzles/<name>/fill-order    → get_fill_order
 """
 
 import logging
@@ -759,6 +760,34 @@ def handle_get_puzzle_stats(path_params, query_params, body_params, session_toke
         user_id = current_user["id"]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return app.puzzle_uc.get_puzzle_stats(user_id, name)
+
+    except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_get_fill_order(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Return ranked fill-order suggestions for a puzzle.
+    GET /api/puzzles/<name>/fill-order
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing puzzle name"}
+
+        user_id = current_user["id"]
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return app.puzzle_uc.get_fill_order(user_id, name)
 
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})

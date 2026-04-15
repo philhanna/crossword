@@ -24,6 +24,7 @@ Public interface:
   redo_puzzle(user_id, name) -> Puzzle
   get_puzzle_preview(user_id, name) -> dict
   get_puzzle_stats(user_id, name) -> dict
+  get_fill_order(user_id, name, top_n=10) -> dict
 """
 
 import logging
@@ -450,21 +451,40 @@ class PuzzleUseCases:
             PersistenceError: If puzzle not found
         """
         puzzle = self.persistence.load_puzzle(user_id, name)
-        stats = puzzle.get_statistics()
+        return puzzle.get_statistics()
+
+    def get_fill_order(self, user_id: int, name: str, top_n: int = 10) -> dict:
+        """
+        Return a ranked list of slots that are good candidates to fill next.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            top_n: Maximum number of rows to return
+
+        Returns:
+            Dict with key:
+            fill_priority
+
+        Raises:
+            PersistenceError: If puzzle not found
+        """
+        puzzle = self.persistence.load_puzzle(user_id, name)
         analyzer = FillPriorityAnalyzer(self.word_uc)
-        stats["fill_priority"] = [
-            {
-                "seq": item.seq,
-                "direction": item.direction,
-                "label": item.label,
-                "pattern": item.pattern,
-                "candidate_count": item.candidate_count,
-                "critical": item.critical,
-                "reason": item.reason,
-            }
-            for item in analyzer.rank_slots(puzzle)
-        ]
-        return stats
+        return {
+            "fill_priority": [
+                {
+                    "seq": item.seq,
+                    "direction": item.direction,
+                    "label": item.label,
+                    "pattern": item.pattern,
+                    "candidate_count": item.candidate_count,
+                    "critical": item.critical,
+                    "reason": item.reason,
+                }
+                for item in analyzer.rank_slots(puzzle, top_n=top_n)
+            ]
+        }
 
     def get_puzzle_preview(self, user_id: int, name: str) -> dict:
         """

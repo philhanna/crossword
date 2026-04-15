@@ -20,7 +20,9 @@ const AppState = {
     editingWord: null,       // null | {seq, direction, cells, answer, clue}
     selectedWord: null,      // null | {seq, direction, cells, initialText, currentText}
     showingStats: false,     // true = puzzle editor RHS shows stats panel
+    showingFillOrder: false, // true = puzzle editor RHS shows fill-order panel
     _statsData: null,        // cached puzzle stats response
+    _fillOrderData: null,    // cached fill-order response
     gridStructureChanged: false, // true after Grid-mode edits until user returns to Puzzle mode
 };
 
@@ -46,6 +48,11 @@ function escapeHtml(s) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+function _closeSidePanels() {
+    AppState.showingStats = false;
+    AppState.showingFillOrder = false;
 }
 
 async function apiFetch(method, path, body) {
@@ -565,7 +572,7 @@ function selectWord(seq, direction, clickR, clickC) {
         initialText: text,
         currentText: text,
     };
-    AppState.showingStats = false;
+    _closeSidePanels();
     if (clickR !== undefined) {
         const clickedIdx = word.cells.findIndex(([r, c]) => r === clickR && c === clickC);
         _peCursorIdx = clickedIdx >= 0 ? clickedIdx : 0;
@@ -745,6 +752,8 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
     <a id="puzzle-editword-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_edit_word()">
       <i class="material-icons crosstb-icon">edit</i><span>Edit word</span></a>
+    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_fill_order()">
+      <i class="material-icons crosstb-icon">format_list_numbered</i><span>Fill order</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
   </div>
@@ -786,6 +795,8 @@ function renderPuzzleEditorRhs() {
             : renderGridModePanel();
     } else if (AppState.editingWord) {
         html = renderWordEditorPanel();
+    } else if (AppState.showingFillOrder) {
+        html = AppState._fillOrderData ? renderFillOrderPanel(AppState._fillOrderData) : '';
     } else if (AppState.showingStats) {
         html = AppState._statsData ? renderStatsPanel(AppState._statsData) : '';
     } else {
@@ -1267,7 +1278,9 @@ async function _openPuzzleInEditor(name) {
     AppState.editingWord       = null;
     AppState.selectedWord      = null;
     AppState.showingStats      = false;
+    AppState.showingFillOrder  = false;
     AppState._statsData        = null;
+    AppState._fillOrderData    = null;
     AppState.gridStructureChanged = false;
     showView('editor');
 }
@@ -1418,7 +1431,9 @@ async function _doPuzzleCloseConfirmed() {
     AppState.editingWord       = null;
     AppState.selectedWord      = null;
     AppState.showingStats      = false;
+    AppState.showingFillOrder  = false;
     AppState._statsData        = null;
+    AppState._fillOrderData    = null;
     AppState.gridStructureChanged = false;
     if (wn) {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
@@ -1463,10 +1478,24 @@ async function do_puzzle_stats() {
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/stats`);
         if (data.error) { alert(`Error: ${data.error}`); return; }
         AppState._statsData   = data;
+        AppState.showingFillOrder = false;
         AppState.showingStats = true;
         AppState.editingWord  = null;
         renderPuzzleEditorRhs();
     } catch (e) { alert('Error fetching stats'); }
+}
+
+async function do_puzzle_fill_order() {
+    const wn = AppState.puzzleWorkingName;
+    try {
+        const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
+        if (data.error) { alert(`Error: ${data.error}`); return; }
+        AppState._fillOrderData = data;
+        AppState.showingStats = false;
+        AppState.showingFillOrder = true;
+        AppState.editingWord = null;
+        renderPuzzleEditorRhs();
+    } catch (e) { alert('Error fetching fill order'); }
 }
 
 function renderStatsPanel(stats) {
@@ -1497,33 +1526,6 @@ function renderStatsPanel(stats) {
 </tr>`;
         }).join('');
 
-    const fillPriority = (_currentEditorMode() === 'puzzle' ? (stats.fill_priority || []) : []).map(item => {
-        const countLabel = `${item.candidate_count} candidate${item.candidate_count === 1 ? '' : 's'}`;
-        return `<tr>
-  <td style="border:1px solid #ccc;padding:3px 8px;white-space:nowrap">
-    <a onclick="selectWord(${item.seq}, '${item.direction}');return false;">${escapeHtml(item.label)}</a>
-  </td>
-  <td style="border:1px solid #ccc;padding:3px 8px;font-family:monospace">${escapeHtml(item.pattern || '')}</td>
-  <td style="border:1px solid #ccc;padding:3px 8px;white-space:nowrap">${escapeHtml(countLabel)}</td>
-  <td style="border:1px solid #ccc;padding:3px 8px">${escapeHtml(item.reason || '')}</td>
-</tr>`;
-    }).join('');
-
-    const fillPrioritySection = fillPriority
-        ? `<div class="w3-section">
-        <div style="margin-bottom:6px"><b>Best slots to try next:</b></div>
-        <table class="w3-table" style="border-collapse:collapse;width:auto">
-          <tr>
-            <th style="border:1px solid #ccc;padding:3px 8px">Slot</th>
-            <th style="border:1px solid #ccc;padding:3px 8px">Pattern</th>
-            <th style="border:1px solid #ccc;padding:3px 8px">Candidates</th>
-            <th style="border:1px solid #ccc;padding:3px 8px">Reason</th>
-          </tr>
-          ${fillPriority}
-        </table>
-      </div>`
-        : '';
-
     function row(label, value) {
         return `<div class="w3-section w3-cell-row">
   <div class="w3-cell" style="width:30%"><b>${label}</b></div>
@@ -1546,7 +1548,6 @@ function renderStatsPanel(stats) {
       ${row('Size:', escapeHtml(stats.size))}
       ${row('Word count:', stats.wordcount)}
       ${row('Black cells:', stats.blockcount)}
-      ${fillPrioritySection}
       <div class="w3-section">
         <table class="w3-table" style="border-collapse:collapse;width:auto">
           <tr>
@@ -1562,8 +1563,58 @@ function renderStatsPanel(stats) {
 </div>`;
 }
 
+function renderFillOrderPanel(data) {
+    const rows = (data.fill_priority || []).map(item => {
+        const countLabel = `${item.candidate_count} candidate${item.candidate_count === 1 ? '' : 's'}`;
+        return `<tr>
+  <td style="border:1px solid #ccc;padding:3px 8px;white-space:nowrap">
+    <a onclick="selectWord(${item.seq}, '${item.direction}');return false;">${escapeHtml(item.label)}</a>
+  </td>
+  <td style="border:1px solid #ccc;padding:3px 8px;font-family:monospace">${escapeHtml(item.pattern || '')}</td>
+  <td style="border:1px solid #ccc;padding:3px 8px;white-space:nowrap">${escapeHtml(countLabel)}</td>
+  <td style="border:1px solid #ccc;padding:3px 8px">${escapeHtml(item.reason || '')}</td>
+</tr>`;
+    }).join('');
+    const body = rows
+        ? `<table class="w3-table" style="border-collapse:collapse;width:auto">
+          <tr>
+            <th style="border:1px solid #ccc;padding:3px 8px">Slot</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Pattern</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Candidates</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Reason</th>
+          </tr>
+          ${rows}
+        </table>`
+        : '<div class="w3-section">No fill-order suggestions are available yet.</div>';
+
+    return `
+<div class="w3-margin-right">
+  <header class="w3-container w3-blue-gray" style="padding:7px;position:relative">
+    <h3>Fill order</h3>
+    <span class="w3-button w3-xlarge w3-hover-red"
+          style="position:absolute;top:0;right:0"
+          onclick="closeFillOrderPanel()">&times;</span>
+  </header>
+  <div class="w3-card-4">
+    <div class="w3-container" style="padding-bottom:12px">
+      <div class="w3-section">
+        Best slots to try next, ranked by candidate count with extra weight for bridge-like entries.
+      </div>
+      <div class="w3-section">
+        ${body}
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
 function closeStatsPanel() {
     AppState.showingStats = false;
+    renderPuzzleEditorRhs();
+}
+
+function closeFillOrderPanel() {
+    AppState.showingFillOrder = false;
     renderPuzzleEditorRhs();
 }
 
@@ -1580,6 +1631,19 @@ async function _refreshPuzzleStatsIfVisible() {
     }
 }
 
+async function _refreshFillOrderIfVisible() {
+    if (!AppState.showingFillOrder || !AppState.puzzleWorkingName || _currentEditorMode() !== 'puzzle') return;
+    try {
+        const data = await apiFetch('GET',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/fill-order`);
+        if (data.error) return;
+        AppState._fillOrderData = data;
+        renderPuzzleEditorRhs();
+    } catch (e) {
+        // Keep the current panel if the refresh fails.
+    }
+}
+
 async function _applyGridModeUpdate(data) {
     AppState.puzzleData   = data;
     AppState.editingWord  = null;
@@ -1587,6 +1651,7 @@ async function _applyGridModeUpdate(data) {
     AppState.gridStructureChanged = true;
     renderPuzzleEditor();
     await _refreshPuzzleStatsIfVisible();
+    await _refreshFillOrderIfVisible();
 }
 
 async function handleGridModeClick(event) {
@@ -1649,7 +1714,9 @@ async function _puzzleUndoRedo(action) {
         AppState.editingWord  = null;
         AppState.selectedWord = null;
         AppState.showingStats = false;
+        AppState.showingFillOrder = false;
         AppState._statsData   = null;
+        AppState._fillOrderData = null;
         renderPuzzleEditor();
     } catch (e) { alert(`Error during ${action}`); }
 }
@@ -1682,7 +1749,9 @@ async function _switchToGridModeConfirmed() {
         AppState.editingWord  = null;
         AppState.selectedWord = null;
         AppState.showingStats = false;
+        AppState.showingFillOrder = false;
         AppState._statsData   = null;
+        AppState._fillOrderData = null;
         renderPuzzleEditor();
     } catch (e) { alert('Error switching to Grid mode'); }
 }
@@ -1708,7 +1777,9 @@ async function do_switch_to_puzzle_mode() {
         AppState.editingWord  = null;
         AppState.selectedWord = null;
         AppState.showingStats = false;
+        AppState.showingFillOrder = false;
         AppState._statsData   = null;
+        AppState._fillOrderData = null;
         AppState.gridStructureChanged = false;
         renderPuzzleEditor();
         if (hadGridStructureChange) {
