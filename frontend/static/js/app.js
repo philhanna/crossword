@@ -727,7 +727,7 @@ function renderPuzzleEditorLhs() {
       <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_rotate_grid()">
       <i class="material-icons crosstb-icon">rotate_right</i><span>Rotate</span></a>
-    <a class="w3-bar-item w3-button crosstb${generateDisabled}" onclick="do_puzzle_generate_grid()">
+    <a id="puzzle-generate-btn" class="w3-bar-item w3-button crosstb${generateDisabled}" onclick="do_puzzle_generate_grid()">
       <i class="material-icons crosstb-icon">casino</i><span>Generate</span></a>
     <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
       <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
@@ -1704,12 +1704,17 @@ async function do_puzzle_rotate_grid() {
 
 async function do_puzzle_generate_grid() {
     if (!AppState.puzzleWorkingName || _currentEditorMode() !== 'grid') return;
+    const btn = document.getElementById('puzzle-generate-btn');
+    if (btn) btn.classList.add('w3-disabled');
     try {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/generate`);
         if (data.error) { alert(`Error generating grid: ${data.error}`); return; }
         await _applyGridModeUpdate(data);
     } catch (e) { alert('Error generating grid'); }
+    finally {
+        if (btn) btn.classList.remove('w3-disabled');
+    }
 }
 
 async function do_puzzle_delete() {
