@@ -608,6 +608,13 @@ class TestPuzzleUseCasesGetPreview:
 class TestPuzzleUseCasesGetStats:
     """Tests for get_puzzle_stats"""
 
+    class _StubWordUseCases:
+        def get_all_words(self):
+            return ["aaa"]
+
+        def get_candidate_count(self, word):
+            return 3
+
     def test_get_puzzle_stats_returns_required_keys(self, puzzle_uc, mock_persistence, test_puzzle):
         """get_puzzle_stats returns dict with all required keys"""
         mock_persistence.load_puzzle.return_value = test_puzzle
@@ -651,3 +658,19 @@ class TestPuzzleUseCasesGetStats:
 
         with pytest.raises(PersistenceError):
             puzzle_uc.get_puzzle_stats(1, "missing")
+
+    def test_get_puzzle_stats_includes_fill_priority(self, mock_persistence, test_puzzle):
+        """get_puzzle_stats includes a ranked fill-priority list when a word list is available"""
+        puzzle_uc = PuzzleUseCases(mock_persistence, word_uc=self._StubWordUseCases())
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_puzzle_stats(1, "my_puzzle")
+
+        assert "fill_priority" in result
+        assert isinstance(result["fill_priority"], list)
+        if result["fill_priority"]:
+            first = result["fill_priority"][0]
+            assert "label" in first
+            assert "pattern" in first
+            assert "candidate_count" in first
+            assert "reason" in first

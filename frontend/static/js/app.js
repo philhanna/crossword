@@ -1497,6 +1497,33 @@ function renderStatsPanel(stats) {
 </tr>`;
         }).join('');
 
+    const fillPriority = (_currentEditorMode() === 'puzzle' ? (stats.fill_priority || []) : []).map(item => {
+        const countLabel = `${item.candidate_count} candidate${item.candidate_count === 1 ? '' : 's'}`;
+        return `<tr>
+  <td style="border:1px solid #ccc;padding:3px 8px;white-space:nowrap">
+    <a onclick="selectWord(${item.seq}, '${item.direction}');return false;">${escapeHtml(item.label)}</a>
+  </td>
+  <td style="border:1px solid #ccc;padding:3px 8px;font-family:monospace">${escapeHtml(item.pattern || '')}</td>
+  <td style="border:1px solid #ccc;padding:3px 8px;white-space:nowrap">${escapeHtml(countLabel)}</td>
+  <td style="border:1px solid #ccc;padding:3px 8px">${escapeHtml(item.reason || '')}</td>
+</tr>`;
+    }).join('');
+
+    const fillPrioritySection = fillPriority
+        ? `<div class="w3-section">
+        <div style="margin-bottom:6px"><b>Best slots to try next:</b></div>
+        <table class="w3-table" style="border-collapse:collapse;width:auto">
+          <tr>
+            <th style="border:1px solid #ccc;padding:3px 8px">Slot</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Pattern</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Candidates</th>
+            <th style="border:1px solid #ccc;padding:3px 8px">Reason</th>
+          </tr>
+          ${fillPriority}
+        </table>
+      </div>`
+        : '';
+
     function row(label, value) {
         return `<div class="w3-section w3-cell-row">
   <div class="w3-cell" style="width:30%"><b>${label}</b></div>
@@ -1519,6 +1546,7 @@ function renderStatsPanel(stats) {
       ${row('Size:', escapeHtml(stats.size))}
       ${row('Word count:', stats.wordcount)}
       ${row('Black cells:', stats.blockcount)}
+      ${fillPrioritySection}
       <div class="w3-section">
         <table class="w3-table" style="border-collapse:collapse;width:auto">
           <tr>

@@ -192,6 +192,21 @@ class WordUseCases:
             reverse=True,
         )
 
+    def get_candidate_count(self, word) -> int:
+        """
+        Return how many dictionary words satisfy the word's current crossing
+        constraints.
+
+        Args:
+            word: A Word domain object (AcrossWord or DownWord)
+
+        Returns:
+            Number of matching candidates in the dictionary
+        """
+        constraints = self.get_word_constraints(word)
+        pattern = self._pattern_to_regex(constraints["pattern"])
+        return len(self.word_list.get_matches(pattern, length=word.length))
+
     # Helper methods
 
     def _pattern_to_regex(self, pattern: str) -> str:

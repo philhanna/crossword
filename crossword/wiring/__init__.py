@@ -110,8 +110,8 @@ def make_app(config=None):
 
     acrosslite_import_adapter = AcrossLiteImportAdapter()
 
-    puzzle_uc = PuzzleUseCases(persistence)
     word_uc = WordUseCases(word_adapter)
+    puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc)
     export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter)
     import_uc = ImportUseCases(persistence, acrosslite_import_adapter)
 

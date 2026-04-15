@@ -30,6 +30,7 @@ import logging
 import uuid
 
 from crossword import Grid, Puzzle, PuzzleToSVG
+from crossword.domain.fill_priority import FillPriorityAnalyzer
 from crossword.domain.word import Word
 from crossword.ports.persistence_port import PersistencePort, PersistenceError
 from crossword.use_cases._name_validation import validate_new_public_name, validate_public_name
@@ -44,8 +45,9 @@ class PuzzleUseCases:
     Constructor injection: takes a PersistencePort instance.
     """
 
-    def __init__(self, persistence: PersistencePort):
+    def __init__(self, persistence: PersistencePort, word_uc=None):
         self.persistence = persistence
+        self.word_uc = word_uc
 
     def create_puzzle(self, user_id: int, name: str, size: int) -> None:
         """
@@ -448,7 +450,21 @@ class PuzzleUseCases:
             PersistenceError: If puzzle not found
         """
         puzzle = self.persistence.load_puzzle(user_id, name)
-        return puzzle.get_statistics()
+        stats = puzzle.get_statistics()
+        analyzer = FillPriorityAnalyzer(self.word_uc)
+        stats["fill_priority"] = [
+            {
+                "seq": item.seq,
+                "direction": item.direction,
+                "label": item.label,
+                "pattern": item.pattern,
+                "candidate_count": item.candidate_count,
+                "critical": item.critical,
+                "reason": item.reason,
+            }
+            for item in analyzer.rank_slots(puzzle)
+        ]
+        return stats
 
     def get_puzzle_preview(self, user_id: int, name: str) -> dict:
         """
