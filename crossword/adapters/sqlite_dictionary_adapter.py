@@ -22,9 +22,11 @@ class SQLiteDictionaryAdapter(WordListPort):
     def __init__(self):
         """Initialize with empty word list."""
         self._words_by_length: dict[int, list[str]] = {}
+        self._match_cache: dict[tuple[str, int | None], list[str]] = {}
 
     def _build_index(self, words: set[str]) -> None:
         self._words_by_length = {}
+        self._match_cache = {}
         for w in words:
             self._words_by_length.setdefault(len(w), []).append(w)
 
@@ -82,6 +84,10 @@ class SQLiteDictionaryAdapter(WordListPort):
         Raises:
             ValueError: If pattern is not a valid regex
         """
+        cache_key = (pattern, length)
+        if cache_key in self._match_cache:
+            return self._match_cache[cache_key]
+
         try:
             regex = re.compile(pattern, re.IGNORECASE)
         except re.error as e:
@@ -91,7 +97,9 @@ class SQLiteDictionaryAdapter(WordListPort):
             candidates = self._words_by_length.get(length, [])
         else:
             candidates = (w for bucket in self._words_by_length.values() for w in bucket)
-        return sorted(word for word in candidates if regex.fullmatch(word))
+        result = sorted(word for word in candidates if regex.fullmatch(word))
+        self._match_cache[cache_key] = result
+        return result
 
     def get_all_words(self) -> list[str]:
         """
