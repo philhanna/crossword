@@ -7,11 +7,19 @@ from typing import List, Optional, Sequence, Tuple
 
 from .grid import Grid
 
+@dataclass
+class GeneratorSettings:
+    # User-facing (Could be overridden from YAML)
+    BLACK_CELL_PERCENT_MIN: float = 0.15
+    BLACK_CELL_PERCENT_MAX: float = 0.25
+    
+    # Internal (Hardcoded safety rails)
+    MAX_ITERATIONS: int = 500 
+    STACK_MAX = 7  # words longer than this may not be stacked in adjacent rows/columns
 
 BLACK = "#"
 WHITE = "."
 UNKNOWN = "?"
-_STACK_MAX = 7  # words longer than this may not be stacked in adjacent rows/columns
 
 
 def _generate_legal_rows(n: int, require_palindrome: bool) -> List[str]:
@@ -202,7 +210,7 @@ def _long_spans(line: Sequence[str]) -> List[Tuple[int, int]]:
             start = i
             while i < n and line[i] == WHITE:
                 i += 1
-            if i - start > _STACK_MAX:
+            if i - start > GeneratorSettings.STACK_MAX:
                 spans.append((start, i - 1))
         else:
             i += 1
@@ -285,7 +293,7 @@ class GridGenerator:
       - 180-degree rotational symmetry.
       - Every across and down entry is at least 3 letters long.
       - All white cells form a single connected region.
-      - No word longer than _STACK_MAX letters is directly stacked above or
+      - No word longer than STACK_MAX letters is directly stacked above or
         beside another such word in an adjacent row or column.
 
     Usage::
@@ -298,9 +306,9 @@ class GridGenerator:
         self,
         n: int,
         seed: Optional[int] = None,
-        min_black_pct: float = 0.14,
-        max_black_pct: float = 0.22,
-        max_attempts: int = 200,
+        min_black_pct: float = GeneratorSettings.BLACK_CELL_PERCENT_MIN,
+        max_black_pct: float = GeneratorSettings.BLACK_CELL_PERCENT_MAX,
+        max_attempts: int = GeneratorSettings.MAX_ITERATIONS,
     ):
         """Initialise the generator and pre-compute legal row templates.
 
@@ -308,11 +316,9 @@ class GridGenerator:
             n: Grid size (must be an odd integer >= 9).
             seed: Optional random seed for reproducible output.
             min_black_pct: Minimum fraction of cells that must be BLACK
-                (default 0.14).
             max_black_pct: Maximum fraction of cells that may be BLACK
-                (default 0.22).
             max_attempts: Number of top-level randomised search attempts
-                before giving up (default 200).
+                before giving up.
 
         Raises:
             ValueError: If n is even or < 9, or if the black-percentage
