@@ -183,7 +183,7 @@ class GridGenerator:
             return None
 
         if row_index < mid:
-            candidates = self._rank_top_candidates(target_black, current_black)
+            candidates = self._rank_top_candidates(target_black, current_black, row_index)
 
             for row in candidates:
                 nodes[0] += 1
@@ -235,16 +235,21 @@ class GridGenerator:
 
         return None
 
-    def _rank_top_candidates(self, target_black: int, current_black: int) -> List[str]:
+    def _rank_top_candidates(self, target_black: int, current_black: int, row_index: int) -> List[str]:
         """Return top-half row candidates sorted toward the target black-cell count.
 
         Rows are pre-shuffled for randomness, then stable-sorted so that rows
-        whose contribution (placed twice, for the pair) keeps the running
-        total closest to target_black come first.
+        whose black contribution is closest to the proportional share for this
+        step come first.  The proportional share spreads the remaining black-cell
+        budget evenly over the remaining placements (each top-row pair has weight 2,
+        the centre row has weight 1), avoiding front-loading black cells onto the
+        first row.
         """
+        remaining_weight = 2 * (self.mid - row_index) + 1  # weight of remaining placements
+        step_target = (target_black - current_black) * 2 / remaining_weight
         rows = self.top_rows[:]
         self.rng.shuffle(rows)
-        rows.sort(key=lambda row: abs((current_black + 2 * row.count(BLACK)) - target_black))
+        rows.sort(key=lambda row: abs(row.count(BLACK) - step_target))
         return rows
 
     def _rank_middle_candidates(self, target_black: int, current_black: int) -> List[str]:
