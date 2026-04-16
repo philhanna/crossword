@@ -249,7 +249,7 @@ async function showPreviewChooser(title, names, apiPrefix, onSelect) {
 
 const MENU_ITEMS = [
     'menu-puzzle-new', 'menu-puzzle-open',
-    'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-close', 'menu-puzzle-delete',
+    'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-rename', 'menu-puzzle-close', 'menu-puzzle-delete',
     'menu-puzzle-title', 'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
     'menu-import-acrosslite',
     'menu-export-acrosslite', 'menu-export-cwcompiler', 'menu-export-nytimes',
@@ -267,6 +267,7 @@ function updateMenu() {
     home   ? menuEnable('menu-import-acrosslite')  : menuDisable('menu-import-acrosslite');
     editor ? menuEnable('menu-puzzle-save')    : menuDisable('menu-puzzle-save');
     editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
+    (editor && AppState.puzzleName) ? menuEnable('menu-puzzle-rename') : menuDisable('menu-puzzle-rename');
     editor ? menuEnable('menu-puzzle-close')   : menuDisable('menu-puzzle-close');
     menuEnable('menu-puzzle-delete');
 
@@ -1430,6 +1431,34 @@ async function do_puzzle_save_as() {
                 () => _savePuzzleAsName(newName)
             );
         } catch (e) { alert('Error saving puzzle'); }
+    });
+}
+
+async function do_puzzle_rename() {
+    const currentName = AppState.puzzleName;
+    if (!currentName) return;
+    inputBox('Rename puzzle', 'New name:', currentName, async (newName) => {
+        if (!newName || newName === currentName) return;
+        if (!validateUserFacingName('puzzle', newName)) return;
+        try {
+            const existing = await _listSavedPuzzleNames();
+            if (existing.includes(newName)) {
+                const confirmed = await new Promise(resolve =>
+                    messageBox(`A puzzle named "${newName}" already exists. Overwrite?`,
+                        [{ label: 'Overwrite', value: true }, { label: 'Cancel', value: false }],
+                        resolve)
+                );
+                if (!confirmed) return;
+            }
+            const data = await apiFetch('POST',
+                `/api/puzzles/${encodeURIComponent(currentName)}/rename`, { new_name: newName });
+            if (data.error) { alert(`Error renaming puzzle: ${data.error}`); return; }
+            AppState.puzzleName         = newName;
+            AppState.puzzleOriginalName = newName;
+            renderPuzzleEditorLhs();
+            updateMenu();
+            showMessageLine(`Puzzle renamed to ${newName}.`, 'notice');
+        } catch (e) { alert('Error renaming puzzle'); }
     });
 }
 

@@ -7,6 +7,7 @@ Routes:
   GET    /api/puzzles/<name>       → load_puzzle
   DELETE /api/puzzles/<name>       → delete_puzzle
   POST   /api/puzzles/<name>/copy          → copy_puzzle
+  POST   /api/puzzles/<name>/rename        → rename_puzzle
   POST   /api/puzzles/<name>/open          → open_puzzle_for_editing
   POST   /api/puzzles/<name>/mode/grid     → switch_to_grid_mode
   POST   /api/puzzles/<name>/mode/puzzle   → switch_to_puzzle_mode
@@ -702,6 +703,46 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
         response["name"] = new_name
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return response
+
+    except ValueError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+    except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_rename_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Rename a puzzle to a new name.
+    POST /api/puzzles/<name>/rename
+    Body: { "new_name": "..." }
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing puzzle name"}
+
+        new_name = body_params.get("new_name")
+        if not new_name or not isinstance(new_name, str):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'new_name'"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing or invalid 'new_name'"}
+
+        user_id = current_user["id"]
+        app.puzzle_uc.rename_puzzle(user_id, name, new_name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"name": new_name}
 
     except ValueError as e:
         logger.debug("  returning: %s", {"error": str(e)})

@@ -143,6 +143,22 @@ class PuzzleUseCases:
         self.persistence.save_puzzle(user_id, new_name, puzzle)
         return puzzle
 
+    def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
+        """
+        Rename a puzzle by copying it to the new name and deleting the old one.
+
+        Args:
+            user_id: The user who owns the puzzle
+            old_name: Current name of the puzzle
+            new_name: Desired new name
+
+        Raises:
+            PersistenceError: If source not found or save/delete fails
+            ValueError: If new_name is empty or invalid
+        """
+        self.copy_puzzle(user_id, old_name, new_name)
+        self.persistence.delete_puzzle(user_id, old_name)
+
     def open_puzzle_for_editing(self, user_id: int, name: str) -> str:
         """
         Open a puzzle for editing by creating a working copy.
