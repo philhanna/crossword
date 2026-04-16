@@ -63,30 +63,33 @@ def temp_db():
         pass
 
 
+@pytest.fixture
+def base_config(temp_db):
+    """Minimal valid config with all required keys."""
+    return {"dbfile": temp_db, "host": "localhost", "port": 5000}
+
+
 class TestMakeApp:
     """Tests for make_app() wiring function"""
 
-    def test_make_app_creates_container(self, temp_db):
+    def test_make_app_creates_container(self, base_config):
         """make_app() returns AppContainer with all use cases"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         assert isinstance(app, AppContainer)
         assert app.puzzle_uc is not None
         assert app.word_uc is not None
 
-    def test_make_app_initializes_puzzle_use_case(self, temp_db):
+    def test_make_app_initializes_puzzle_use_case(self, base_config):
         """Puzzle use case is wired correctly"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         # Puzzle use case should have a persistence port
         assert app.puzzle_uc.persistence is not None
 
-    def test_make_app_initializes_word_use_case(self, temp_db):
+    def test_make_app_initializes_word_use_case(self, base_config):
         """Word use case is wired correctly"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         # Word use case should have a word list port
         assert app.word_uc.word_list is not None
@@ -107,53 +110,47 @@ class TestMakeApp:
 class TestWordListWiring:
     """Tests for word list loading priority in make_app()"""
 
-    def test_loads_word_dbfile(self, temp_db, temp_word_db):
+    def test_loads_word_dbfile(self, base_config, temp_word_db):
         """word_dbfile present → adapter populated from dedicated word DB"""
-        config = {"dbfile": temp_db, "word_dbfile": temp_word_db}
-        app = make_app(config)
+        app = make_app({**base_config, "word_dbfile": temp_word_db})
         words = app.word_uc.get_all_words()
         assert set(words) == {"apple", "banana", "cherry"}
 
-    def test_word_dbfile_takes_priority_over_dbfile(self, temp_db, temp_word_db):
+    def test_word_dbfile_takes_priority_over_dbfile(self, base_config, temp_word_db):
         """word_dbfile wins over dbfile even when dbfile has a words table"""
-        # temp_db (puzzle DB) has no words — word_dbfile should still be used
-        config = {"dbfile": temp_db, "word_dbfile": temp_word_db}
-        app = make_app(config)
+        # base_config's dbfile (puzzle DB) has no words — word_dbfile should still be used
+        app = make_app({**base_config, "word_dbfile": temp_word_db})
         assert set(app.word_uc.get_all_words()) == {"apple", "banana", "cherry"}
 
-    def test_falls_back_to_word_file(self, temp_db, temp_word_file):
+    def test_falls_back_to_word_file(self, base_config, temp_word_file):
         """No word_dbfile, word_file present → SQLite adapter loads from text file"""
-        config = {"dbfile": temp_db, "word_file": temp_word_file}
-        app = make_app(config)
+        app = make_app({**base_config, "word_file": temp_word_file})
         assert set(app.word_uc.get_all_words()) == {"delta", "echo", "foxtrot"}
 
-    def test_falls_back_to_dbfile(self, temp_db):
+    def test_falls_back_to_dbfile(self, base_config):
         """No word_dbfile or word_file → adapter falls back to puzzle DB"""
         # Insert a word directly into the puzzle DB's words table
-        conn = sqlite3.connect(temp_db)
+        conn = sqlite3.connect(base_config["dbfile"])
         conn.execute("CREATE TABLE IF NOT EXISTS words (word TEXT UNIQUE NOT NULL)")
         conn.execute("INSERT INTO words (word) VALUES ('golf')")
         conn.commit()
         conn.close()
 
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
         assert "golf" in app.word_uc.get_all_words()
 
-    def test_empty_adapter_when_no_word_sources(self, temp_db):
+    def test_empty_adapter_when_no_word_sources(self, base_config):
         """No word sources configured → adapter is empty, no exception raised"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
         assert app.word_uc.get_all_words() == []
 
 
 class TestEndToEndWiring:
     """End-to-end tests with wired app"""
 
-    def test_puzzle_crud_end_to_end(self, temp_db):
+    def test_puzzle_crud_end_to_end(self, base_config):
         """Can create, load, delete puzzles via wired app"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         # Create puzzle directly
         app.puzzle_uc.create_puzzle(1, "puzzle1", size=15)
@@ -171,10 +168,9 @@ class TestEndToEndWiring:
         puzzles = app.puzzle_uc.list_puzzles(1)
         assert "puzzle1" not in puzzles
 
-    def test_puzzle_set_cell_letter_end_to_end(self, temp_db):
+    def test_puzzle_set_cell_letter_end_to_end(self, base_config):
         """Can set cell letters in puzzle via wired app"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         # Create puzzle
         app.puzzle_uc.create_puzzle(1, "puzzle1", size=15)
@@ -187,10 +183,9 @@ class TestEndToEndWiring:
         puzzle = app.puzzle_uc.load_puzzle(1, "puzzle1")
         assert puzzle.get_cell(2, 2) == "A"
 
-    def test_merged_editor_flow_end_to_end(self, temp_db):
+    def test_merged_editor_flow_end_to_end(self, base_config):
         """A new puzzle can move through Grid and Puzzle modes and persist last mode."""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         app.puzzle_uc.create_puzzle(1, "merged", size=9)
         original = app.puzzle_uc.load_puzzle(1, "merged")
@@ -236,10 +231,9 @@ class TestEndToEndWiring:
         assert reopened.get_across_word(1).get_text() == "ALGORITHM"
         assert reopened.get_across_word(1).get_clue() == "Computer science topic"
 
-    def test_late_grid_edit_recomputes_entries_end_to_end(self, temp_db):
+    def test_late_grid_edit_recomputes_entries_end_to_end(self, base_config):
         """Late grid edits preserve letters, clear affected clues, and keep unaffected clues."""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         seeded = TestPuzzle.create_solved_atlantic_puzzle()
         seeded.enter_puzzle_mode()
@@ -264,10 +258,9 @@ class TestEndToEndWiring:
         assert reloaded.last_mode == "puzzle"
         assert reloaded.get_across_word(13).get_text() == "REUNITED "
 
-    def test_working_copy_discard_does_not_modify_saved_puzzle(self, temp_db):
+    def test_working_copy_discard_does_not_modify_saved_puzzle(self, base_config):
         """Deleting a working copy discards unsaved edits to the original puzzle."""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         app.puzzle_uc.create_puzzle(1, "discardme", size=9)
         original = app.puzzle_uc.load_puzzle(1, "discardme")
@@ -280,10 +273,9 @@ class TestEndToEndWiring:
         reloaded = app.puzzle_uc.load_puzzle(1, "discardme")
         assert reloaded.title is None
 
-    def test_word_validation_end_to_end(self, temp_db):
+    def test_word_validation_end_to_end(self, base_config):
         """Can validate words via wired app"""
-        config = {"dbfile": temp_db}
-        app = make_app(config)
+        app = make_app(base_config)
 
         # Validation works (with empty dictionary)
         result = app.word_uc.validate_word("HELLO")
