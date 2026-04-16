@@ -74,7 +74,7 @@ def make_app(config=None):
     logger = logging.getLogger(__name__)
     logger.info("Configuration:")
     for key, value in config.items():
-        logger.info("  %s = %r", key, value)
+        logger.info("%s = %r", key, value)
 
     # ========================================================================
     # Instantiate Adapters
