@@ -5,7 +5,7 @@
 // ---------------------------------------------------------------------------
 
 const BOXSIZE = 32;
-const MESSAGE_LINE_TIMEOUT_MS = 3000;
+let MESSAGE_LINE_TIMEOUT_MS = 3000; // default; may be overridden by /api/config
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -1936,6 +1936,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = await resp.json();
     const el = document.getElementById('menu-username');
     if (el && user && user.username) el.textContent = user.username;
+
+    try {
+        const cfg = await (await fetch('/api/config')).json();
+        if (cfg.message_line_timeout_ms != null) {
+            MESSAGE_LINE_TIMEOUT_MS = cfg.message_line_timeout_ms;
+        }
+    } catch (e) { /* use default */ }
 
     positionMessageLine();
     window.addEventListener('scroll', positionMessageLine, { passive: true });

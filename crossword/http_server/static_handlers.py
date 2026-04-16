@@ -60,6 +60,21 @@ def handle_get_login(path_params, query_params, body_params, session_token, requ
         return None
 
 
+def handle_get_config(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Return frontend configuration derived from config.yaml.
+    GET /api/config
+    """
+    try:
+        config = app.config if app else {}
+        return {
+            "message_line_timeout_ms": config.get("message_line_timeout_ms", None),
+        }
+    except Exception as e:
+        request_handler._send_error(500, str(e))
+        return None
+
+
 def handle_get_static(path_params, query_params, body_params, session_token, request_handler, **kwargs):
     """
     Serve static assets (CSS, JS, etc.).

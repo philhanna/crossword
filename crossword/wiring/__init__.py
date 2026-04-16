@@ -33,13 +33,14 @@ class AppContainer:
     """
 
     def __init__(self, puzzle_uc, word_uc, export_uc=None, import_uc=None,
-                 auth_uc=None, user_uc=None):
+                 auth_uc=None, user_uc=None, config=None):
         self.puzzle_uc = puzzle_uc
         self.word_uc = word_uc
         self.export_uc = export_uc
         self.import_uc = import_uc
         self.auth_uc = auth_uc
         self.user_uc = user_uc
+        self.config = config or {}
 
 
 def make_app(config=None):
@@ -124,4 +125,4 @@ def make_app(config=None):
     # Assemble Container
     # ========================================================================
 
-    return AppContainer(puzzle_uc, word_uc, export_uc, import_uc, auth_uc=auth_uc, user_uc=user_uc)
+    return AppContainer(puzzle_uc, word_uc, export_uc, import_uc, auth_uc=auth_uc, user_uc=user_uc, config=config)

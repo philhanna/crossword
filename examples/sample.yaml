@@ -11,6 +11,9 @@ word_dbfile: /path/to/words.db
 # log_level: one of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 log_level: INFO
 
+# How many milliseconds for the message line to remain visible
+MESSAGE_LINE_TIMEOUT_MS: 2000
+
 # NYTimes submission: author info printed on the grid page
 #author_name: Your Name
 #author_address: "123 Main St, City, ST 12345"
