@@ -108,17 +108,19 @@ def register_routes(router):
     router.add_route("POST", r"^/api/import/acrosslite$", handle_import_puzzle_from_acrosslite)
 
 
-def run_http_server(host: str = "127.0.0.1", port: int = 5000, config=None):
+def run_http_server(config=None):
     """
     Start the HTTP server with all routes registered.
 
     Args:
-        host: Host to bind to (default: 127.0.0.1)
-        port: Port to listen on (default: 5000)
-        config: Configuration dict with 'dbfile' and optionally 'word_dbfile' or 'word_file'
+        config: Configuration dict. Required keys: 'dbfile', 'host', 'port'.
+                If None, loaded from ~/.config/crossword/config.yaml.
     """
     print(f"Initializing app...")
     app_container = make_app(config)
+
+    host = app_container.config["host"]
+    port = int(app_container.config["port"])
 
     print(f"Creating HTTP server...")
     server, router = create_server(port=port, host=host)
@@ -128,17 +130,3 @@ def run_http_server(host: str = "127.0.0.1", port: int = 5000, config=None):
 
     print(f"Starting HTTP server on http://{host}:{port}")
     start_server(server, router, app_container, host=host, port=port)
-
-
-if __name__ == "__main__":
-    import sys
-    import os
-
-    # Optionally read config from env or default
-    config = None  # Will use defaults from ~/.config/crossword/config.yaml
-
-    # Optional: accept port from command line
-    port = int(os.environ.get("CROSSWORD_PORT", "5000"))
-    host = os.environ.get("CROSSWORD_HOST", "127.0.0.1")
-
-    run_http_server(host=host, port=port, config=config)

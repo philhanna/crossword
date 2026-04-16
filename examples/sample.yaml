@@ -2,6 +2,12 @@
 #
 # Copy this file to ~/.config/crossword/config.yaml and edit as needed.
 
+# host: IP address the server will bind to
+host: 127.0.0.1
+
+# port: TCP port the server will listen on
+port: 5000
+
 # dbfile: fully qualified path to the SQLite 3 database
 dbfile: /path/to/crossword.db
 
@@ -12,7 +18,7 @@ word_dbfile: /path/to/words.db
 log_level: INFO
 
 # How many milliseconds for the message line to remain visible
-MESSAGE_LINE_TIMEOUT_MS: 2000
+message_line_timeout_ms: 2000
 
 # NYTimes submission: author info printed on the grid page
 #author_name: Your Name

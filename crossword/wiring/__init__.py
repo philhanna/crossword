@@ -77,13 +77,23 @@ def make_app(config=None):
         logger.info("%s = %r", key, value)
 
     # ========================================================================
+    # Validate required config keys
+    # ========================================================================
+
+    dbfile = config.get("dbfile")
+    if not dbfile:
+        raise ValueError("config['dbfile'] is required")
+
+    if not config.get("host"):
+        raise ValueError("config['host'] is required")
+    if not config.get("port"):
+        raise ValueError("config['port'] is required")
+
+    # ========================================================================
     # Instantiate Adapters
     # ========================================================================
 
     # Persistence adapter (SQLite)
-    dbfile = config.get("dbfile")
-    if not dbfile:
-        raise ValueError("config['dbfile'] is required")
     persistence = SQLitePersistenceAdapter(dbfile)
 
     # Word list adapter — priority: word_dbfile → word_file → dbfile (legacy) → empty
