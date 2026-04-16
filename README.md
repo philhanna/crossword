@@ -2,7 +2,7 @@
 
 A web-based application for creating and editing crossword puzzles.
 
-**Version: 3.4.0** — Added export support
+**Version: 4.2.0**
 
 ## Table of contents
 - [Requirements](#requirements)
@@ -56,7 +56,13 @@ cp examples/sample.yaml ~/.config/crossword/config.yaml
 Then edit `~/.config/crossword/config.yaml`:
 
 ```yaml
-# dbfile: fully qualified path to the SQLite 3 database
+# host: IP address the server will bind to (required)
+host: 127.0.0.1
+
+# port: TCP port the server will listen on (required)
+port: 5000
+
+# dbfile: fully qualified path to the SQLite 3 database (required)
 dbfile: /path/to/crossword.db
 
 # word_dbfile: fully qualified path to the word list SQLite database
@@ -65,14 +71,16 @@ word_dbfile: /path/to/words.db
 # log_level: one of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 log_level: INFO
 
+# How many milliseconds notification messages remain visible (default: 3000)
+message_line_timeout_ms: 3000
+
 # NYTimes submission: author info printed on the grid page
 #author_name: Your Name
 #author_address: "123 Main St, City, ST 12345"
 #author_email: you@example.com
 ```
 
-If the file does not exist, the application uses `examples/sample.crossword.db`
-and a log level of `INFO`.
+`host`, `port`, and `dbfile` are required — the server will not start without them.
 
 ## Running the server
 
@@ -87,11 +95,11 @@ Or use the provided script:
 ./run_server
 ```
 
-This starts an HTTP server on port 5000. Stop it at any time with `Ctrl-C`.
+This starts the HTTP server on the host and port specified in config.yaml. Stop it at any time with `Ctrl-C`.
 
 ## Using the application
 
-Open a browser and go to **http://localhost:5000**.
+Open a browser and go to the host and port configured in config.yaml (e.g. **http://localhost:5000**).
 
 The application is a single-page app with a home screen plus one merged construction editor:
 
@@ -103,6 +111,7 @@ Create the grid and fill the puzzle in one editor, switching modes as needed.
 
 - **Grid mode:** edit black cells, rotate the grid, inspect stats, and use mode-local undo/redo.
 - **Puzzle mode:** fill answers and clues, set the title, inspect stats, and use mode-local undo/redo.
+- New puzzles are created without a name; you are prompted for a name only when you first save.
 - New puzzles begin in Grid mode.
 - Existing puzzles reopen in the last mode used for that puzzle.
 - Clicking a cell in Grid mode toggles it black/white. The grid is kept symmetric automatically.
