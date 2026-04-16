@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class GeneratorSettings:
     # User-facing (Could be overridden from YAML)
-    BLACK_CELL_PERCENT_MIN: float = 0.15
-    BLACK_CELL_PERCENT_MAX: float = 0.25
+    BLACK_CELL_PERCENT_MIN: float = 0.10
+    BLACK_CELL_PERCENT_MAX: float = 0.20
 
     # Internal (Hardcoded safety rails)
-    MAX_ITERATIONS: int = 500
-    MAX_NODES: int = 100_000   # max candidates tried per _search call before bailing out
+    MAX_ITERATIONS: int = 30
+    MAX_NODES: int = 10000   # max candidates tried per _search call before bailing out
     STACK_MAX = 7  # words longer than this may not be stacked in adjacent rows/columns
 
 BLACK = "#"
