@@ -6,6 +6,22 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.2.1] - 2026-04-15
+
+### Fixed
+
+- Fix messageBox navigating to `/null` when OK and okCallback are both null (issue #211)
+- Move host and port into `config.yaml` as required settings
+- Allow message line timeout to be configurable
+- Fix GridGenerator._search hanging on difficult searches
+
+### Changed
+
+- Defer puzzle naming until first save
+- Updated readme
+- Added log messages on startup and during grid generation
+- Adjusted grid generator parameters
+
 ## [4.2.0] - 2026-04-15
 
 ### Added
