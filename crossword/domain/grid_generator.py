@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import logging
 import random
 from collections import deque
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
 from .grid import Grid
-
-logger = logging.getLogger(__name__)
 
 @dataclass
 class GeneratorSettings:
@@ -106,7 +103,7 @@ class GridGenerator:
         lo = max(0, int(total * self.min_black_pct))
         hi = min(total, int(total * self.max_black_pct))
 
-        for attempt in range(self.max_attempts):
+        for _ in range(self.max_attempts):
             target = self.rng.randint(lo, hi)
             raw = [[UNKNOWN] * self.n for _ in range(self.n)]
             nodes = [0]
@@ -114,9 +111,7 @@ class GridGenerator:
             if result is not None:
                 ok, _ = _validate_grid(result)
                 if ok:
-                    logger.info("GridGenerator: %dx%d grid found in %d iteration(s)", self.n, self.n, attempt + 1)
                     return self._to_grid(result)
-        logger.info("GridGenerator: %dx%d grid not found after %d iteration(s)", self.n, self.n, self.max_attempts)
         return None
 
 
