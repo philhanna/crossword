@@ -15,14 +15,238 @@ class GeneratorSettings:
     # User-facing (Could be overridden from YAML)
     BLACK_CELL_PERCENT_MIN: float = 0.15
     BLACK_CELL_PERCENT_MAX: float = 0.25
-    
+
     # Internal (Hardcoded safety rails)
-    MAX_ITERATIONS: int = 500 
+    MAX_ITERATIONS: int = 500
     STACK_MAX = 7  # words longer than this may not be stacked in adjacent rows/columns
 
 BLACK = "#"
 WHITE = "."
 UNKNOWN = "?"
+
+
+class GridGenerator:
+    """Generates random valid crossword grids of a given odd size.
+
+    The generator uses a randomised backtracking search over row patterns,
+    building the grid from the outside in (top and bottom simultaneously)
+    toward the centre row.  180-degree rotational symmetry is maintained
+    throughout by always placing each row together with its mirror partner.
+
+    Rules enforced on every generated grid:
+      - 180-degree rotational symmetry.
+      - Every across and down entry is at least 3 letters long.
+      - All white cells form a single connected region.
+      - No word longer than STACK_MAX letters is directly stacked above or
+        beside another such word in an adjacent row or column.
+
+    Usage::
+
+        gen = GridGenerator(15, seed=42)
+        grid = gen.generate()   # returns a domain Grid object
+    """
+
+    def __init__(
+        self,
+        n: int,
+        seed: Optional[int] = None,
+        min_black_pct: float = GeneratorSettings.BLACK_CELL_PERCENT_MIN,
+        max_black_pct: float = GeneratorSettings.BLACK_CELL_PERCENT_MAX,
+        max_attempts: int = GeneratorSettings.MAX_ITERATIONS,
+    ):
+        """Initialise the generator and pre-compute legal row templates.
+
+        Args:
+            n: Grid size (must be an odd integer >= 9).
+            seed: Optional random seed for reproducible output.
+            min_black_pct: Minimum fraction of cells that must be BLACK
+            max_black_pct: Maximum fraction of cells that may be BLACK
+            max_attempts: Number of top-level randomised search attempts
+                before giving up.
+
+        Raises:
+            ValueError: If n is even or < 9, or if the black-percentage
+                bounds are invalid.
+            RuntimeError: If no legal row templates can be generated for
+                the given n (should not occur in practice).
+        """
+        if n < 9 or n % 2 == 0:
+            raise ValueError("n must be an odd integer >= 9")
+        if not (0.0 <= min_black_pct <= max_black_pct <= 1.0):
+            raise ValueError("require 0.0 <= min_black_pct <= max_black_pct <= 1.0")
+
+        self.n = n
+        self.min_black_pct = min_black_pct
+        self.max_black_pct = max_black_pct
+        self.max_attempts = max_attempts
+        self.rng = random.Random(seed)
+        self.mid = n // 2
+
+        self.top_rows = [r for r in _generate_legal_rows(n, require_palindrome=False) if WHITE in r]
+        self.middle_rows = [r for r in _generate_legal_rows(n, require_palindrome=True) if WHITE in r]
+
+        if not self.top_rows or not self.middle_rows:
+            raise RuntimeError("failed to generate legal row templates")
+
+    def generate(self) -> Grid:
+        """Generate and return one valid Grid.
+
+        Each call picks a fresh random target black-cell count within the
+        configured range and runs the backtracking search.  If the search
+        fails, a new target is chosen and the search restarts.  This repeats
+        up to max_attempts times.
+
+        Returns:
+            A Grid with black cells placed at 1-based (row, col) coordinates
+            or NONE, if no valid grid is found within max_attempts attempts.
+        """
+        total = self.n * self.n
+        lo = max(0, int(total * self.min_black_pct))
+        hi = min(total, int(total * self.max_black_pct))
+
+        for attempt in range(self.max_attempts):
+            target = self.rng.randint(lo, hi)
+            raw = [[UNKNOWN] * self.n for _ in range(self.n)]
+            result = self._search(raw, row_index=0, target_black=target, min_black=lo, max_black=hi)
+            if result is not None:
+                ok, _ = _validate_grid(result)
+                if ok:
+                    logger.info("GridGenerator: %dx%d grid found in %d iteration(s)", self.n, self.n, attempt + 1)
+                    return self._to_grid(result)
+        logger.info("GridGenerator: %dx%d grid not found after %d iteration(s)", self.n, self.n, self.max_attempts)
+        return None
+
+
+    def _to_grid(self, raw: List[List[str]]) -> Grid:
+        """Convert the internal 0-based raw grid to a domain Grid (1-based coordinates)."""
+        grid = Grid(self.n)
+        for r, row in enumerate(raw):
+            for c, ch in enumerate(row):
+                if ch == BLACK:
+                    grid.add_black_cell(r + 1, c + 1, undo=False)
+        return grid
+
+    def _search(
+        self,
+        grid: List[List[str]],
+        row_index: int,
+        target_black: int,
+        min_black: int,
+        max_black: int,
+    ) -> Optional[List[List[str]]]:
+        """Recursive backtracking search that fills rows from the outside in.
+
+        Rows are filled in order 0, 1, …, mid-1, mid.  Filling row r also
+        fills its symmetric partner row n-1-r simultaneously.  The centre
+        row (mid) is filled last and must be a palindrome.
+
+        Pruning:
+          - Abandon if the current black count already exceeds max_black.
+          - Abandon if the maximum achievable black count (current + all
+            remaining UNKNOWN cells) falls below min_black.
+          - After placing each row pair, check that no column has already
+            acquired a forced short white run (_partial_columns_feasible).
+          - After placing each row pair, check that no long word in the new
+            row is stacked with one in its neighbour.
+
+        Args:
+            grid: The partially filled grid (modified in place).
+            row_index: The next top-half row to fill (0 .. mid).
+            target_black: The desired total black-cell count for this attempt.
+            min_black: Hard lower bound on black-cell count.
+            max_black: Hard upper bound on black-cell count.
+
+        Returns:
+            The completed grid as a list-of-lists on success, or None if no
+            valid completion exists from the current partial assignment.
+        """
+        n = self.n
+        mid = self.mid
+
+        current_black = _count_black_cells(grid)
+
+        if current_black > max_black:
+            return None
+
+        remaining_slots = 0
+        for r in range(row_index, mid):
+            if grid[r][0] == UNKNOWN:
+                remaining_slots += 2 * n
+        if row_index <= mid and grid[mid][0] == UNKNOWN:
+            remaining_slots += n
+
+        if current_black + remaining_slots < min_black:
+            return None
+
+        if row_index < mid:
+            candidates = self._rank_top_candidates(target_black, current_black)
+            self.rng.shuffle(candidates)
+
+            for row in candidates:
+                _place_row_pair(grid, row_index, row)
+
+                rr = n - 1 - row_index
+                stacking_ok = True
+                if row_index > 0 and not _no_long_word_stack(grid[row_index], grid[row_index - 1]):
+                    stacking_ok = False
+                elif rr < n - 1 and not _no_long_word_stack(grid[rr], grid[rr + 1]):
+                    stacking_ok = False
+
+                if stacking_ok and _partial_columns_feasible(grid):
+                    result = self._search(grid, row_index + 1, target_black, min_black, max_black)
+                    if result is not None:
+                        return result
+
+                _clear_row_pair(grid, row_index)
+
+            return None
+
+        if row_index == mid:
+            candidates = self._rank_middle_candidates(target_black, current_black)
+            self.rng.shuffle(candidates)
+
+            for row in candidates:
+                _place_middle_row(grid, row)
+
+                if (
+                    _no_long_word_stack(grid[mid], grid[mid - 1])
+                    and _no_long_word_stack(grid[mid], grid[mid + 1])
+                    and _partial_columns_feasible(grid)
+                ):
+                    black_count = _count_black_cells(grid)
+                    if min_black <= black_count <= max_black:
+                        ok, _ = _validate_grid(grid)
+                        if ok:
+                            return [list(r) for r in grid]
+
+                _clear_middle_row(grid)
+
+            return None
+
+        return None
+
+    def _rank_top_candidates(self, target_black: int, current_black: int) -> List[str]:
+        """Return top-half row candidates sorted toward the target black-cell count.
+
+        Rows are pre-shuffled for randomness, then stable-sorted so that rows
+        whose contribution (placed twice, for the pair) keeps the running
+        total closest to target_black come first.
+        """
+        rows = self.top_rows[:]
+        self.rng.shuffle(rows)
+        rows.sort(key=lambda row: abs((current_black + 2 * row.count(BLACK)) - target_black))
+        return rows
+
+    def _rank_middle_candidates(self, target_black: int, current_black: int) -> List[str]:
+        """Return centre-row candidates sorted toward the target black-cell count.
+
+        Like _rank_top_candidates but the centre row is placed only once, so
+        its black contribution is counted once rather than twice.
+        """
+        rows = self.middle_rows[:]
+        self.rng.shuffle(rows)
+        rows.sort(key=lambda row: abs((current_black + row.count(BLACK)) - target_black))
+        return rows
 
 
 def _generate_legal_rows(n: int, require_palindrome: bool) -> List[str]:
@@ -282,227 +506,3 @@ def _validate_grid(grid: Sequence[Sequence[str]]) -> Tuple[bool, str]:
         if not _no_long_word_stack(col1, col2):
             return False, f"stacked long down words in columns {c} and {c + 1}"
     return True, "ok"
-
-
-class GridGenerator:
-    """Generates random valid crossword grids of a given odd size.
-
-    The generator uses a randomised backtracking search over row patterns,
-    building the grid from the outside in (top and bottom simultaneously)
-    toward the centre row.  180-degree rotational symmetry is maintained
-    throughout by always placing each row together with its mirror partner.
-
-    Rules enforced on every generated grid:
-      - 180-degree rotational symmetry.
-      - Every across and down entry is at least 3 letters long.
-      - All white cells form a single connected region.
-      - No word longer than STACK_MAX letters is directly stacked above or
-        beside another such word in an adjacent row or column.
-
-    Usage::
-
-        gen = GridGenerator(15, seed=42)
-        grid = gen.generate()   # returns a domain Grid object
-    """
-
-    def __init__(
-        self,
-        n: int,
-        seed: Optional[int] = None,
-        min_black_pct: float = GeneratorSettings.BLACK_CELL_PERCENT_MIN,
-        max_black_pct: float = GeneratorSettings.BLACK_CELL_PERCENT_MAX,
-        max_attempts: int = GeneratorSettings.MAX_ITERATIONS,
-    ):
-        """Initialise the generator and pre-compute legal row templates.
-
-        Args:
-            n: Grid size (must be an odd integer >= 9).
-            seed: Optional random seed for reproducible output.
-            min_black_pct: Minimum fraction of cells that must be BLACK
-            max_black_pct: Maximum fraction of cells that may be BLACK
-            max_attempts: Number of top-level randomised search attempts
-                before giving up.
-
-        Raises:
-            ValueError: If n is even or < 9, or if the black-percentage
-                bounds are invalid.
-            RuntimeError: If no legal row templates can be generated for
-                the given n (should not occur in practice).
-        """
-        if n < 9 or n % 2 == 0:
-            raise ValueError("n must be an odd integer >= 9")
-        if not (0.0 <= min_black_pct <= max_black_pct <= 1.0):
-            raise ValueError("require 0.0 <= min_black_pct <= max_black_pct <= 1.0")
-
-        self.n = n
-        self.min_black_pct = min_black_pct
-        self.max_black_pct = max_black_pct
-        self.max_attempts = max_attempts
-        self.rng = random.Random(seed)
-        self.mid = n // 2
-
-        self.top_rows = [r for r in _generate_legal_rows(n, require_palindrome=False) if WHITE in r]
-        self.middle_rows = [r for r in _generate_legal_rows(n, require_palindrome=True) if WHITE in r]
-
-        if not self.top_rows or not self.middle_rows:
-            raise RuntimeError("failed to generate legal row templates")
-
-    def generate(self) -> Grid:
-        """Generate and return one valid Grid.
-
-        Each call picks a fresh random target black-cell count within the
-        configured range and runs the backtracking search.  If the search
-        fails, a new target is chosen and the search restarts.  This repeats
-        up to max_attempts times.
-
-        Returns:
-            A Grid with black cells placed at 1-based (row, col) coordinates
-            or NONE, if no valid grid is found within max_attempts attempts.
-        """
-        total = self.n * self.n
-        lo = max(0, int(total * self.min_black_pct))
-        hi = min(total, int(total * self.max_black_pct))
-
-        for attempt in range(self.max_attempts):
-            target = self.rng.randint(lo, hi)
-            raw = [[UNKNOWN] * self.n for _ in range(self.n)]
-            result = self._search(raw, row_index=0, target_black=target, min_black=lo, max_black=hi)
-            if result is not None:
-                ok, _ = _validate_grid(result)
-                if ok:
-                    logger.info("GridGenerator: %dx%d grid found in %d iteration(s)", self.n, self.n, attempt + 1)
-                    return self._to_grid(result)
-        logger.info("GridGenerator: %dx%d grid not found after %d iteration(s)", self.n, self.n, self.max_attempts)
-        return None
-        
-
-    def _to_grid(self, raw: List[List[str]]) -> Grid:
-        """Convert the internal 0-based raw grid to a domain Grid (1-based coordinates)."""
-        grid = Grid(self.n)
-        for r, row in enumerate(raw):
-            for c, ch in enumerate(row):
-                if ch == BLACK:
-                    grid.add_black_cell(r + 1, c + 1, undo=False)
-        return grid
-
-    def _search(
-        self,
-        grid: List[List[str]],
-        row_index: int,
-        target_black: int,
-        min_black: int,
-        max_black: int,
-    ) -> Optional[List[List[str]]]:
-        """Recursive backtracking search that fills rows from the outside in.
-
-        Rows are filled in order 0, 1, …, mid-1, mid.  Filling row r also
-        fills its symmetric partner row n-1-r simultaneously.  The centre
-        row (mid) is filled last and must be a palindrome.
-
-        Pruning:
-          - Abandon if the current black count already exceeds max_black.
-          - Abandon if the maximum achievable black count (current + all
-            remaining UNKNOWN cells) falls below min_black.
-          - After placing each row pair, check that no column has already
-            acquired a forced short white run (_partial_columns_feasible).
-          - After placing each row pair, check that no long word in the new
-            row is stacked with one in its neighbour.
-
-        Args:
-            grid: The partially filled grid (modified in place).
-            row_index: The next top-half row to fill (0 .. mid).
-            target_black: The desired total black-cell count for this attempt.
-            min_black: Hard lower bound on black-cell count.
-            max_black: Hard upper bound on black-cell count.
-
-        Returns:
-            The completed grid as a list-of-lists on success, or None if no
-            valid completion exists from the current partial assignment.
-        """
-        n = self.n
-        mid = self.mid
-
-        current_black = _count_black_cells(grid)
-
-        if current_black > max_black:
-            return None
-
-        remaining_slots = 0
-        for r in range(row_index, mid):
-            if grid[r][0] == UNKNOWN:
-                remaining_slots += 2 * n
-        if row_index <= mid and grid[mid][0] == UNKNOWN:
-            remaining_slots += n
-
-        if current_black + remaining_slots < min_black:
-            return None
-
-        if row_index < mid:
-            candidates = self._rank_top_candidates(target_black, current_black)
-            self.rng.shuffle(candidates)
-
-            for row in candidates:
-                _place_row_pair(grid, row_index, row)
-
-                rr = n - 1 - row_index
-                stacking_ok = True
-                if row_index > 0 and not _no_long_word_stack(grid[row_index], grid[row_index - 1]):
-                    stacking_ok = False
-                elif rr < n - 1 and not _no_long_word_stack(grid[rr], grid[rr + 1]):
-                    stacking_ok = False
-
-                if stacking_ok and _partial_columns_feasible(grid):
-                    result = self._search(grid, row_index + 1, target_black, min_black, max_black)
-                    if result is not None:
-                        return result
-
-                _clear_row_pair(grid, row_index)
-
-            return None
-
-        if row_index == mid:
-            candidates = self._rank_middle_candidates(target_black, current_black)
-            self.rng.shuffle(candidates)
-
-            for row in candidates:
-                _place_middle_row(grid, row)
-
-                if (
-                    _no_long_word_stack(grid[mid], grid[mid - 1])
-                    and _no_long_word_stack(grid[mid], grid[mid + 1])
-                    and _partial_columns_feasible(grid)
-                ):
-                    black_count = _count_black_cells(grid)
-                    if min_black <= black_count <= max_black:
-                        ok, _ = _validate_grid(grid)
-                        if ok:
-                            return [list(r) for r in grid]
-
-                _clear_middle_row(grid)
-
-            return None
-
-        return None
-
-    def _rank_top_candidates(self, target_black: int, current_black: int) -> List[str]:
-        """Return top-half row candidates sorted toward the target black-cell count.
-
-        Rows are pre-shuffled for randomness, then stable-sorted so that rows
-        whose contribution (placed twice, for the pair) keeps the running
-        total closest to target_black come first.
-        """
-        rows = self.top_rows[:]
-        self.rng.shuffle(rows)
-        rows.sort(key=lambda row: abs((current_black + 2 * row.count(BLACK)) - target_black))
-        return rows
-
-    def _rank_middle_candidates(self, target_black: int, current_black: int) -> List[str]:
-        """Return centre-row candidates sorted toward the target black-cell count.
-
-        Like _rank_top_candidates but the centre row is placed only once, so
-        its black contribution is counted once rather than twice.
-        """
-        rows = self.middle_rows[:]
-        self.rng.shuffle(rows)
-        rows.sort(key=lambda row: abs((current_black + row.count(BLACK)) - target_black))
-        return rows
