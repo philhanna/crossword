@@ -134,6 +134,78 @@ Col three
         assert puzzle.grid.is_black_cell(2, 2)
         assert not puzzle.grid.is_black_cell(1, 1)
 
+    def test_imported_puzzle_is_in_puzzle_mode(self, adapter):
+        _, _, puzzle = adapter.import_puzzle(VALID_3X3)
+        assert puzzle.last_mode == "puzzle"
+
+    def test_title_and_author_are_stripped_to_first_non_empty_value(self, adapter):
+        content = """\
+<ACROSS PUZZLE>
+<TITLE>
+
+   Sample Puzzle
+Ignored Title
+<AUTHOR>
+
+   Test Author
+Ignored Author
+<SIZE>
+3x3
+<GRID>
+ABC
+DEF
+GHI
+<ACROSS>
+Row one
+Row two
+Row three
+<DOWN>
+Col one
+Col two
+Col three
+"""
+        title, author, _ = adapter.import_puzzle(content)
+        assert title == "Sample Puzzle"
+        assert author == "Test Author"
+
+    def test_lowercase_grid_letters_are_uppercased(self, adapter):
+        content = VALID_3X3.replace("ABC\nDEF\nGHI", "abc\ndef\nghi")
+        _, _, puzzle = adapter.import_puzzle(content)
+        assert puzzle.get_cell(1, 1) == "A"
+        assert puzzle.get_cell(1, 2) == "B"
+        assert puzzle.get_cell(1, 3) == "C"
+        assert puzzle.get_cell(2, 2) == "E"
+        assert puzzle.get_cell(2, 3) == "F"
+
+    def test_grid_and_clue_lines_are_stripped(self, adapter):
+        content = """\
+<ACROSS PUZZLE>
+<TITLE>
+  Sample Puzzle
+<AUTHOR>
+  Test Author
+<SIZE>
+  3x3
+<GRID>
+  ABC
+  D.F
+  GHI
+<ACROSS>
+  Row one
+  Row three
+<DOWN>
+  Col one
+  Col three
+"""
+        title, author, puzzle = adapter.import_puzzle(content)
+        assert title == "Sample Puzzle"
+        assert author == "Test Author"
+        assert puzzle.grid.is_black_cell(2, 2)
+        assert puzzle.get_clue(1, "A") == "Row one"
+        assert puzzle.get_clue(3, "A") == "Row three"
+        assert puzzle.get_clue(1, "D") == "Col one"
+        assert puzzle.get_clue(2, "D") == "Col three"
+
 
 class TestParseErrors:
     def test_empty_content_raises(self, adapter):
