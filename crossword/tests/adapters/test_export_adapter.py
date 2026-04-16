@@ -30,7 +30,7 @@ def puzzle():
 class TestAcrossLiteExportAdapter:
     @pytest.fixture
     def adapter(self):
-        return AcrossLiteExportAdapter()
+        return AcrossLiteExportAdapter(author_name="Test Author")
 
     def test_returns_string(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
@@ -57,6 +57,12 @@ class TestAcrossLiteExportAdapter:
     def test_title_present(self, adapter, puzzle):
         result = adapter.export_puzzle_to_acrosslite(puzzle)
         assert "Test Puzzle" in result
+
+    def test_export_error_wraps_exception(self, adapter, puzzle):
+        with patch.object(adapter, '_build_acrosslite_txt', side_effect=RuntimeError("boom")):
+            from crossword.ports.export_port import ExportError
+            with pytest.raises(ExportError, match="AcrossLite export failed"):
+                adapter.export_puzzle_to_acrosslite(puzzle)
 
 
 class TestCcxmlExportAdapter:
@@ -92,6 +98,12 @@ class TestCcxmlExportAdapter:
     def test_black_cells_are_type_block(self, adapter, puzzle):
         result = adapter.export_puzzle_to_xml(puzzle)
         assert 'type="block"' in result
+
+    def test_export_error_wraps_exception(self, adapter, puzzle):
+        with patch.object(adapter, '_build_xml', side_effect=RuntimeError("boom")):
+            from crossword.ports.export_port import ExportError
+            with pytest.raises(ExportError, match="XML export failed"):
+                adapter.export_puzzle_to_xml(puzzle)
 
 
 class TestNYTimesExportAdapter:
@@ -144,6 +156,42 @@ class TestNYTimesExportAdapter:
             result = adapter.export_puzzle_to_nytimes(puzzle)
         assert result == _fake_pdf
 
+    def test_export_error_reraises_without_wrapping(self, adapter, puzzle):
+        from crossword.ports.export_port import ExportError
+        with patch.object(adapter, "_html_to_pdf", side_effect=ExportError("inner")):
+            with pytest.raises(ExportError, match="inner"):
+                adapter.export_puzzle_to_nytimes(puzzle)
+
+    def test_generic_exception_wrapped_as_export_error(self, adapter, puzzle):
+        from crossword.ports.export_port import ExportError
+        with patch.object(adapter, "_build_html", side_effect=ValueError("bad")):
+            with pytest.raises(ExportError, match="NYTimes export failed"):
+                adapter.export_puzzle_to_nytimes(puzzle)
+
+    def test_html_to_pdf_success(self, adapter, puzzle):
+        from unittest.mock import MagicMock
+
+        def fake_chrome(args, **kwargs):
+            pdf_arg = next(a for a in args if a.startswith('--print-to-pdf='))
+            pdf_path = pdf_arg.split('=', 1)[1]
+            with open(pdf_path, 'wb') as f:
+                f.write(b'%PDF-fake')
+            return MagicMock(returncode=0)
+
+        html = adapter._build_html(puzzle)
+        with patch('subprocess.run', side_effect=fake_chrome):
+            result = adapter._html_to_pdf(html)
+        assert result == b'%PDF-fake'
+
+    def test_html_to_pdf_chrome_failure_raises_export_error(self, adapter, puzzle):
+        from unittest.mock import MagicMock
+        from crossword.ports.export_port import ExportError
+        mock_result = MagicMock(returncode=1, stderr=b'Chrome crashed')
+        html = adapter._build_html(puzzle)
+        with patch('subprocess.run', return_value=mock_result):
+            with pytest.raises(ExportError, match="Chrome PDF generation failed"):
+                adapter._html_to_pdf(html)
+
 
 class TestJsonExportAdapter:
     @pytest.fixture
@@ -195,3 +243,9 @@ class TestJsonExportAdapter:
             assert "seq" in word
             assert "text" in word
             assert "clue" in word
+
+    def test_export_error_wraps_exception(self, adapter, puzzle):
+        with patch.object(adapter, '_build_json', side_effect=RuntimeError("boom")):
+            from crossword.ports.export_port import ExportError
+            with pytest.raises(ExportError, match="JSON export failed"):
+                adapter.export_puzzle_to_json(puzzle)

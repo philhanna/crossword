@@ -41,8 +41,11 @@ def test_config_has_log_level():
     assert 'log_level' in crossword.config
 
 
-def test_init_config_missing_file_uses_defaults():
-    with patch('os.path.exists', return_value=False):
-        cfg = init_config()
-    assert 'dbfile' in cfg
-    assert 'log_level' in cfg
+def test_init_config_missing_file_uses_defaults(caplog):
+    import logging
+    with caplog.at_level(logging.WARNING):
+        with patch('os.path.exists', return_value=False):
+            cfg = init_config()
+    assert 'Config file not found' in caplog.text
+    assert cfg['dbfile'].endswith('sample.crossword.db')
+    assert cfg['log_level'] == 'INFO'

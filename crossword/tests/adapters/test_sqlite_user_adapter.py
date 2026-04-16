@@ -67,6 +67,10 @@ class TestSQLiteUserAdapter:
         assert user.id == created.id
         assert user.username == "alice"
 
+    def test_get_user_by_id_not_found_raises(self, adapter):
+        with pytest.raises(UserNotFound):
+            adapter.get_user_by_id(9999)
+
     def test_update_last_access(self, adapter):
         user = adapter.create_user("alice", "alice@example.com", sha256("secret"))
         adapter.update_last_access(user.id, "2026-01-01T00:00:00")

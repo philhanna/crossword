@@ -2,8 +2,10 @@
 Tests for SQLitePersistenceAdapter - Persistence adapter tests
 """
 
+import sqlite3
 import pytest
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 from crossword import Grid, Puzzle
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.ports.persistence_port import PersistenceError
@@ -136,6 +138,71 @@ class TestSQLitePersistenceAdapter:
         cur.execute("PRAGMA table_info(puzzles)")
         columns = {row["name"] for row in cur.fetchall()}
         assert "last_mode" in columns
+
+    # ======================================================================
+    # Error paths
+    # ======================================================================
+
+    def test_init_connect_failure_raises_persistence_error(self):
+        with patch('sqlite3.connect', side_effect=sqlite3.Error("no connection")):
+            with pytest.raises(PersistenceError, match="Failed to connect"):
+                SQLitePersistenceAdapter(":memory:")
+
+    def test_ensure_schema_sqlite_error_raises_persistence_error(self, adapter):
+        adapter.conn = MagicMock()
+        adapter.conn.cursor.return_value.execute.side_effect = sqlite3.Error("schema error")
+        with pytest.raises(PersistenceError, match="Failed to ensure schema"):
+            adapter._ensure_schema_compatibility()
+
+    def test_init_schema_reraises_persistence_error(self, adapter):
+        with patch.object(adapter, '_ensure_schema_compatibility',
+                          side_effect=PersistenceError("inner")):
+            with pytest.raises(PersistenceError, match="inner"):
+                adapter.init_schema()
+
+    def test_init_schema_wraps_sqlite_error(self, adapter):
+        with patch.object(adapter, '_ensure_schema_compatibility',
+                          side_effect=sqlite3.Error("raw")):
+            with pytest.raises(PersistenceError, match="Failed to initialize schema"):
+                adapter.init_schema()
+
+    def test_save_puzzle_sqlite_error_raises_persistence_error(self, adapter, sample_puzzle):
+        adapter.conn = MagicMock()
+        adapter.conn.cursor.return_value.execute.side_effect = sqlite3.Error("write error")
+        with pytest.raises(PersistenceError, match="Failed to save puzzle"):
+            adapter.save_puzzle(1, "test", sample_puzzle)
+
+    def test_load_puzzle_not_found_raises_persistence_error(self, adapter):
+        with pytest.raises(PersistenceError, match="not found"):
+            adapter.load_puzzle(1, "nonexistent")
+
+    def test_load_puzzle_sqlite_error_raises_persistence_error(self, adapter):
+        adapter.conn = MagicMock()
+        adapter.conn.cursor.return_value.execute.side_effect = sqlite3.Error("read error")
+        with pytest.raises(PersistenceError, match="Failed to load puzzle"):
+            adapter.load_puzzle(1, "test")
+
+    def test_load_puzzle_deserialization_error_raises_persistence_error(self, adapter, sample_puzzle):
+        adapter.save_puzzle(1, "test", sample_puzzle)
+        with patch('crossword.Puzzle.from_json', side_effect=ValueError("bad json")):
+            with pytest.raises(PersistenceError, match="Failed to deserialize"):
+                adapter.load_puzzle(1, "test")
+
+    def test_delete_puzzle_not_found_raises_persistence_error(self, adapter):
+        with pytest.raises(PersistenceError, match="not found"):
+            adapter.delete_puzzle(1, "nonexistent")
+
+    def test_delete_puzzle_sqlite_error_raises_persistence_error(self, adapter):
+        adapter.conn = MagicMock()
+        adapter.conn.cursor.return_value.execute.side_effect = sqlite3.Error("delete error")
+        with pytest.raises(PersistenceError, match="Failed to delete puzzle"):
+            adapter.delete_puzzle(1, "test")
+
+    def test_list_puzzles_sqlite_error_raises_persistence_error(self, adapter):
+        adapter.conn = MagicMock()
+        adapter.conn.cursor.return_value.execute.side_effect = sqlite3.Error("list error")
+        with pytest.raises(PersistenceError, match="Failed to list puzzles"):
+            adapter.list_puzzles(1)
 
     # ======================================================================
     # Integration with Production Database

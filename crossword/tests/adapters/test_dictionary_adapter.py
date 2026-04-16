@@ -2,8 +2,10 @@
 Tests for SQLiteDictionaryAdapter - Word list adapter tests
 """
 
+import sqlite3
 import pytest
 from pathlib import Path
+from unittest.mock import patch
 from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
 
 FIXTURE_WORDS = [
@@ -128,3 +130,9 @@ class TestSQLiteDictionaryAdapter:
         adapter = SQLiteDictionaryAdapter()
         with pytest.raises(Exception, match="Failed to load words from file"):
             adapter.load_from_file(str(word_file))
+
+    def test_load_from_database_sqlite_error_raises(self):
+        adapter = SQLiteDictionaryAdapter()
+        with patch('sqlite3.connect', side_effect=sqlite3.Error("db error")):
+            with pytest.raises(Exception, match="Failed to load words from database"):
+                adapter.load_from_database("fake.db")
