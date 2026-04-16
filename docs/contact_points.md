@@ -15,10 +15,12 @@ The export download uses a raw `fetch()` to stream a blob.
 | `POST` | `/api/puzzles/{name}/open` | `_openPuzzleInEditor` | Creates working copy; returns `{working_name}` |
 | `GET` | `/api/puzzles/{name}` | `_openPuzzleInEditor`, `do_puzzle_title` (refresh) | Fetch full puzzle data |
 | `POST` | `/api/puzzles/{wn}/copy` | `do_puzzle_save`, `_savePuzzleAsName` | Body: `{new_name}`. Save/Save-As |
+| `POST` | `/api/puzzles/{name}/rename` | `do_puzzle_rename` | Body: `{new_name}`. Rename puzzle in place |
 | `PUT` | `/api/puzzles/{wn}/title` | `do_puzzle_title` | Body: `{title}` |
 | `DELETE` | `/api/puzzles/{name}` | `_doPuzzleCloseConfirmed` (cleanup wc), `do_puzzle_delete` | Delete working copy on close, or named puzzle |
 | `GET` | `/api/puzzles/{name}/preview` | `showPreviewChooser` | Returns `{name, heading, svgstr}`; fetched in parallel for all names |
 | `GET` | `/api/puzzles/{wn}/stats` | `do_puzzle_stats`, `_refreshPuzzleStatsIfVisible` | Puzzle statistics |
+| `GET` | `/api/puzzles/{wn}/fill-order` | `do_puzzle_fill_order` | Fill priority order for unfilled words |
 
 ---
 
@@ -40,6 +42,7 @@ The export download uses a raw `fetch()` to stream a blob.
 |--------|------|--------------|-------|
 | `PUT` | `/api/puzzles/{wn}/grid/cells/{r}/{c}` | `handleGridModeClick` | Toggle cell black/white |
 | `POST` | `/api/puzzles/{wn}/grid/rotate` | `do_puzzle_rotate_grid` | Rotate grid 90° |
+| `POST` | `/api/puzzles/{wn}/grid/generate` | `do_puzzle_generate_grid` | Auto-fill grid using fill-priority algorithm |
 | `POST` | `/api/puzzles/{wn}/grid/undo` | `do_puzzle_undo` (grid mode) | Undo last grid change |
 | `POST` | `/api/puzzles/{wn}/grid/redo` | `do_puzzle_redo` (grid mode) | Redo last grid change |
 | `POST` | `/api/puzzles/{wn}/undo` | `do_puzzle_undo` (puzzle mode) | Undo last puzzle-text change |
@@ -51,7 +54,7 @@ The export download uses a raw `fetch()` to stream a blob.
 
 | Method | Path | Triggered by | Notes |
 |--------|------|--------------|-------|
-| `POST` | `/api/puzzles/{wn}/mode/grid` | `_switchToGridModeConfirmed` | Switch working copy to grid-edit mode |
+| `POST` | `/api/puzzles/{wn}/mode/grid` | `do_switch_to_grid_mode` | Switch working copy to grid-edit mode |
 | `POST` | `/api/puzzles/{wn}/mode/puzzle` | `do_switch_to_puzzle_mode` | Switch back to puzzle mode; recomputes entries |
 
 ---
@@ -79,3 +82,4 @@ The export download uses a raw `fetch()` to stream a blob.
 | `GET` | `/api/export/puzzles/{name}/acrosslite` | `_downloadExport('puz')` | Raw `fetch()`; response streamed as blob download |
 | `GET` | `/api/export/puzzles/{name}/xml` | `_downloadExport('xml')` | Raw `fetch()`; Crossword Compiler XML |
 | `GET` | `/api/export/puzzles/{name}/nytimes` | `_downloadExport('nyt')` | Raw `fetch()`; NYT PDF |
+| `GET` | `/api/export/puzzles/{name}/json` | — | JSON export; not yet wired to frontend |
