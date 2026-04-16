@@ -118,9 +118,12 @@ function messageBox(title, prompt, ok, okCallback, okLabel = 'OK') {
     if (okCallback) {
         mbOk.removeAttribute('href');
         mbOk.onclick = () => { hideElement('mb'); okCallback(); };
-    } else {
+    } else if (ok) {
         mbOk.onclick = null;
         mbOk.setAttribute('href', ok);
+    } else {
+        mbOk.removeAttribute('href');
+        mbOk.onclick = () => hideElement('mb');
     }
     showElement('mb');
 }
