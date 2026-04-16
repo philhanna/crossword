@@ -13,7 +13,8 @@ const MESSAGE_LINE_TIMEOUT_MS = 3000;
 
 const AppState = {
     view: 'home',            // 'home' | 'editor'
-    puzzleName: null,        // name of currently-open puzzle (original)
+    puzzleName: null,        // user-facing name of the open puzzle; null until first Save
+    puzzleOriginalName: null,// backend name of the original (may be '__new__…' for unnamed)
     puzzleWorkingName: null, // working copy name (e.g. '__wc__a1b2c3d4')
     puzzleData: null,        // response from GET /api/puzzles/{workingName}
     puzzleSavedHash: null,   // checksum of puzzle at last open/save
@@ -715,7 +716,7 @@ function renderPuzzleEditor() {
 
 function renderPuzzleEditorLhs() {
     const pd    = AppState.puzzleData;
-    const name  = AppState.puzzleName || '(untitled)';
+    const name  = AppState.puzzleName || '(No name)';
     const title = pd && pd.puzzle.title ? `: &ldquo;${escapeHtml(pd.puzzle.title)}&rdquo;` : '';
     const mode  = _currentEditorMode();
 
@@ -1272,6 +1273,7 @@ async function _openPuzzleInEditor(name) {
         throw new Error(puzzleData.error);
     }
     AppState.puzzleName        = name;
+    AppState.puzzleOriginalName = name;
     AppState.puzzleWorkingName = wn;
     AppState.puzzleData        = puzzleData;
     AppState.puzzleSavedHash   = _hash(puzzleData.puzzle);
@@ -1355,16 +1357,17 @@ async function do_puzzle_new() {
             if (!sizeVal || isNaN(n))  { alert(sizeVal + ' is not a number'); return; }
             if (n % 2 === 0)           { alert(n + ' is not an odd number'); return; }
             if (n < 1)                 { alert(n + ' is not a positive number'); return; }
-            inputBox('New puzzle', '<b>Puzzle name:</b>', '', async (name) => {
-                if (!name) return;
-                if (!validateUserFacingName('puzzle', name)) return;
+            (async () => {
                 try {
-                    if (await rejectIfNameExists('puzzle', name, _listSavedPuzzleNames)) return;
-                    const data = await apiFetch('POST', '/api/puzzles', { name, size: n });
+                    const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
+                    const data = await apiFetch('POST', '/api/puzzles', { name: internalName, size: n });
                     if (data.error) { alert(`Error creating puzzle: ${data.error}`); return; }
-                    await _openPuzzleInEditor(name);
+                    await _openPuzzleInEditor(internalName);
+                    AppState.puzzleName         = null;        // no user-facing name yet
+                    AppState.puzzleOriginalName = internalName;
+                    renderPuzzleEditorLhs();
                 } catch (e) { alert('Error creating puzzle'); }
-            });
+            })();
         }
     );
 }
@@ -1388,7 +1391,7 @@ async function _listSavedPuzzleNames() {
     if (listData.error) {
         throw new Error(listData.error);
     }
-    return (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
+    return (listData.puzzles || []).filter(p => p && !p.startsWith('__'));
 }
 
 async function _savePuzzleAsName(newName) {
@@ -1398,10 +1401,17 @@ async function _savePuzzleAsName(newName) {
     if (data.error) {
         throw new Error(data.error);
     }
-    AppState.puzzleName      = newName;
-    AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
+    const oldOriginal = AppState.puzzleOriginalName;
+    AppState.puzzleName         = newName;
+    AppState.puzzleOriginalName = newName;
+    AppState.puzzleSavedHash    = _hash(AppState.puzzleData.puzzle);
     renderPuzzleEditorLhs();
     showMessageLine(`Puzzle ${newName} saved.`, 'notice');
+    if (oldOriginal && oldOriginal !== newName) {
+        // Clean up the internal __new__ entry now that a real name exists
+        try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(oldOriginal)}`); }
+        catch (e) { /* ignore */ }
+    }
 }
 
 async function do_puzzle_save_as() {
@@ -1423,20 +1433,28 @@ async function do_puzzle_save_as() {
 async function _doPuzzleCloseConfirmed() {
     document.removeEventListener('keydown', _peKeydown);
     document.removeEventListener('keydown', _weKeydown);
-    const wn = AppState.puzzleWorkingName;
-    AppState.puzzleName        = null;
-    AppState.puzzleWorkingName = null;
-    AppState.puzzleData        = null;
-    AppState.puzzleSavedHash   = null;
-    AppState.editingWord       = null;
-    AppState.selectedWord      = null;
-    AppState.showingStats      = false;
-    AppState.showingFillOrder  = false;
-    AppState._statsData        = null;
-    AppState._fillOrderData    = null;
+    const wn           = AppState.puzzleWorkingName;
+    const originalName = AppState.puzzleOriginalName;
+    const savedName    = AppState.puzzleName;
+    AppState.puzzleName         = null;
+    AppState.puzzleOriginalName = null;
+    AppState.puzzleWorkingName  = null;
+    AppState.puzzleData         = null;
+    AppState.puzzleSavedHash    = null;
+    AppState.editingWord        = null;
+    AppState.selectedWord       = null;
+    AppState.showingStats       = false;
+    AppState.showingFillOrder   = false;
+    AppState._statsData         = null;
+    AppState._fillOrderData     = null;
     AppState.gridStructureChanged = false;
     if (wn) {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
+        catch (e) { /* ignore cleanup errors */ }
+    }
+    if (!savedName && originalName) {
+        // Puzzle was never given a user name — delete the internal __new__ original too
+        try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(originalName)}`); }
         catch (e) { /* ignore cleanup errors */ }
     }
     showView('home');
@@ -1446,7 +1464,7 @@ async function do_puzzle_close() {
     const isDirty = AppState.puzzleData &&
         _hash(AppState.puzzleData.puzzle) !== AppState.puzzleSavedHash;
     if (isDirty) {
-        const name = AppState.puzzleName || '(untitled)';
+        const name = AppState.puzzleName || '(No name)';
         messageBox(
             'Close puzzle',
             `Puzzle <b>${escapeHtml(name)}</b> has unsaved changes. Close without saving?`,
