@@ -18,6 +18,7 @@ class GeneratorSettings:
 
     # Internal (Hardcoded safety rails)
     MAX_ITERATIONS: int = 500
+    MAX_NODES: int = 100_000   # max candidates tried per _search call before bailing out
     STACK_MAX = 7  # words longer than this may not be stacked in adjacent rows/columns
 
 BLACK = "#"
@@ -81,6 +82,7 @@ class GridGenerator:
         self.max_attempts = max_attempts
         self.rng = random.Random(seed)
         self.mid = n // 2
+        self.max_nodes = GeneratorSettings.MAX_NODES
 
         self.top_rows = [r for r in _generate_legal_rows(n, require_palindrome=False) if WHITE in r]
         self.middle_rows = [r for r in _generate_legal_rows(n, require_palindrome=True) if WHITE in r]
@@ -107,7 +109,8 @@ class GridGenerator:
         for attempt in range(self.max_attempts):
             target = self.rng.randint(lo, hi)
             raw = [[UNKNOWN] * self.n for _ in range(self.n)]
-            result = self._search(raw, row_index=0, target_black=target, min_black=lo, max_black=hi)
+            nodes = [0]
+            result = self._search(raw, row_index=0, target_black=target, min_black=lo, max_black=hi, nodes=nodes)
             if result is not None:
                 ok, _ = _validate_grid(result)
                 if ok:
@@ -133,6 +136,7 @@ class GridGenerator:
         target_black: int,
         min_black: int,
         max_black: int,
+        nodes: List[int],
     ) -> Optional[List[List[str]]]:
         """Recursive backtracking search that fills rows from the outside in.
 
@@ -180,9 +184,12 @@ class GridGenerator:
 
         if row_index < mid:
             candidates = self._rank_top_candidates(target_black, current_black)
-            self.rng.shuffle(candidates)
 
             for row in candidates:
+                nodes[0] += 1
+                if nodes[0] >= self.max_nodes:
+                    return None
+
                 _place_row_pair(grid, row_index, row)
 
                 rr = n - 1 - row_index
@@ -193,7 +200,7 @@ class GridGenerator:
                     stacking_ok = False
 
                 if stacking_ok and _partial_columns_feasible(grid):
-                    result = self._search(grid, row_index + 1, target_black, min_black, max_black)
+                    result = self._search(grid, row_index + 1, target_black, min_black, max_black, nodes)
                     if result is not None:
                         return result
 
@@ -203,9 +210,12 @@ class GridGenerator:
 
         if row_index == mid:
             candidates = self._rank_middle_candidates(target_black, current_black)
-            self.rng.shuffle(candidates)
 
             for row in candidates:
+                nodes[0] += 1
+                if nodes[0] >= self.max_nodes:
+                    return None
+
                 _place_middle_row(grid, row)
 
                 if (
