@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 import random
 from collections import deque
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
 from .grid import Grid
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class GeneratorSettings:
@@ -353,26 +356,25 @@ class GridGenerator:
         up to max_attempts times.
 
         Returns:
-            A Grid with black cells placed at 1-based (row, col) coordinates.
-
-        Raises:
-            RuntimeError: If no valid grid is found within max_attempts
-                attempts.
+            A Grid with black cells placed at 1-based (row, col) coordinates
+            or NONE, if no valid grid is found within max_attempts attempts.
         """
         total = self.n * self.n
         lo = max(0, int(total * self.min_black_pct))
         hi = min(total, int(total * self.max_black_pct))
 
-        for _ in range(self.max_attempts):
+        for attempt in range(self.max_attempts):
             target = self.rng.randint(lo, hi)
             raw = [[UNKNOWN] * self.n for _ in range(self.n)]
             result = self._search(raw, row_index=0, target_black=target, min_black=lo, max_black=hi)
             if result is not None:
                 ok, _ = _validate_grid(result)
                 if ok:
+                    logger.info("GridGenerator: %dx%d grid found in %d iteration(s)", self.n, self.n, attempt + 1)
                     return self._to_grid(result)
-
-        raise RuntimeError("failed to generate a valid grid; try increasing max_attempts")
+        logger.info("GridGenerator: %dx%d grid not found after %d iteration(s)", self.n, self.n, self.max_attempts)
+        return None
+        
 
     def _to_grid(self, raw: List[List[str]]) -> Grid:
         """Convert the internal 0-based raw grid to a domain Grid (1-based coordinates)."""

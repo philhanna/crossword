@@ -379,6 +379,8 @@ def handle_generate_puzzle_grid(path_params, query_params, body_params, session_
         return _puzzle_response(puzzle)
     except PersistenceError:
         return {"error": f"Puzzle not found: {name}"}
+    except RuntimeError as e:
+        return {"notice": str(e)}
     except Exception as e:
         return {"error": str(e)}
 

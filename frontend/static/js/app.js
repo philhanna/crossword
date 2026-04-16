@@ -1808,9 +1808,10 @@ async function do_puzzle_generate_grid() {
     try {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/generate`);
-        if (data.error) { alert(`Error generating grid: ${data.error}`); return; }
+        if (data.notice) { showMessageLine(data.notice, 'notice'); return; }
+        if (data.error) { showMessageLine(`Error generating grid: ${data.error}`, 'error'); return; }
         await _applyGridModeUpdate(data);
-    } catch (e) { alert('Error generating grid'); }
+    } catch (e) { showMessageLine('Error generating grid', 'error'); }
     finally {
         if (btn) btn.classList.remove('w3-disabled');
     }
