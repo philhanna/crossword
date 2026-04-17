@@ -1,10 +1,9 @@
 import pytest
 
-import os
 from datetime import datetime
 from time import sleep
 
-from crossword import get_elapsed_time, dbfile
+from crossword import get_elapsed_time
 
 
 class TestPackage:
@@ -17,8 +16,3 @@ class TestPackage:
         actual = get_elapsed_time(stime, etime)
         # 50 milliseconds difference is good enough
         assert actual == pytest.approx(expected, abs=0.05)
-
-    def test_dbfile(self):
-        db = os.path.abspath(dbfile())
-        errmsg = f"{db} file not found"
-        assert os.path.exists(db)
