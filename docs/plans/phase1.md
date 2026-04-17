@@ -272,53 +272,33 @@ pytestmark = pytest.mark.skipif(
 
 ---
 
-## Step 9 — Database environments via Neon branching
+## Step 9 — Local PostgreSQL setup
 
-PostgreSQL is hosted on [Neon](https://neon.tech). No local installation or Docker
-needed.
+Install PostgreSQL locally and create a database:
 
-Neon's branching feature (included on the free tier) lets you create isolated
-database environments that start as a copy of the main branch. Use one branch per
-environment so dev and prod never share data.
+```
+sudo apt install postgresql        # Ubuntu/Debian
+# or
+brew install postgresql@16         # macOS
 
-**Recommended branch layout:**
-
-| Branch | Purpose | When to create |
-|--------|---------|----------------|
-| `main` | Production data | When you create the Neon project |
-| `dev` | Development and manual testing | Once, before Phase 1 work begins |
-| `ci` | Automated tests (reset between runs) | When setting up CI |
-
-**Setup (one-time):**
-
-1. Create a Neon project at [neon.tech](https://neon.tech).
-2. From the Neon console, create a `dev` branch from `main`.
-3. Copy the connection string for the `dev` branch — it looks like:
-   `postgresql://user:password@ep-xxx.neon.tech/crossword?sslmode=require`
-4. Run the init script against the `dev` branch:
-   `python tools/dev/init_db.py --url <dev-connection-string>`
+createdb crossword
+```
 
 Store connection strings in a local `.env` file (not committed):
 
 ```
 # .env  — do not commit
-DATABASE_URL=postgresql://...@ep-xxx.neon.tech/crossword?sslmode=require
-TEST_DATABASE_URL=postgresql://...@ep-yyy.neon.tech/crossword?sslmode=require
+DATABASE_URL=postgresql://localhost/crossword
+TEST_DATABASE_URL=postgresql://localhost/crossword_test
 ```
 
-Add `.env` to `.gitignore`. Load it when starting the server:
-```
-source .env && python -m crossword.http_server
-```
-
-**SSL:** Neon connection strings include `sslmode=require` by default.
-`psycopg2` respects this automatically — no code change needed.
+Add `.env` to `.gitignore`.
 
 ---
 
 ## Step 10 — Smoke test procedure
 
-1. Ensure `DATABASE_URL` is set (e.g. `source .env`).
+1. Load env vars: `source .env`
 2. Run init script: `python tools/dev/init_db.py`
 3. Optionally migrate existing data:
    ```
