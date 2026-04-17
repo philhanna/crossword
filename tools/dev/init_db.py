@@ -34,6 +34,14 @@ def main():
     user = PostgresUserAdapter(conn)
     _ = persistence, user  # keep references so __del__ doesn't close conn early
 
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS words (
+            word TEXT UNIQUE NOT NULL
+        )
+    """)
+    conn.commit()
+
     conn.close()
     print("Schema initialized successfully.")
 

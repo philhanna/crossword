@@ -5,7 +5,7 @@ Tests for SQLiteDictionaryAdapter - Word list adapter tests
 import sqlite3
 import pytest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
 
 FIXTURE_WORDS = [
@@ -136,3 +136,23 @@ class TestSQLiteDictionaryAdapter:
         with patch('sqlite3.connect', side_effect=sqlite3.Error("db error")):
             with pytest.raises(Exception, match="Failed to load words from database"):
                 adapter.load_from_database("fake.db")
+
+    def test_load_from_postgres(self):
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_cursor.fetchall.return_value = [("Hello",), ("WORLD",), ("python",)]
+
+        adapter = SQLiteDictionaryAdapter()
+        adapter.load_from_postgres(mock_conn)
+
+        words = adapter.get_all_words()
+        assert words == ["hello", "python", "world"]
+
+    def test_load_from_postgres_error_raises(self):
+        mock_conn = MagicMock()
+        mock_conn.cursor.side_effect = Exception("pg error")
+
+        adapter = SQLiteDictionaryAdapter()
+        with pytest.raises(Exception, match="Failed to load words from PostgreSQL"):
+            adapter.load_from_postgres(mock_conn)

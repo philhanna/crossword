@@ -99,7 +99,7 @@ def make_app(config=None):
         persistence = SQLitePersistenceAdapter(dbfile)
         user_adapter = SQLiteUserAdapter(persistence.conn)
 
-    # Word list adapter — priority: word_dbfile → word_file → dbfile (legacy) → empty
+    # Word list adapter — priority: word_dbfile → word_file → database_url → dbfile (legacy) → empty
     dbfile = config.get("dbfile")
     word_dbfile = config.get("word_dbfile")
     word_file = config.get("word_file")
@@ -108,6 +108,11 @@ def make_app(config=None):
         word_adapter.load_from_database(word_dbfile)
     elif word_file:
         word_adapter.load_from_file(word_file)
+    elif database_url:
+        try:
+            word_adapter.load_from_postgres(conn)
+        except Exception:
+            pass  # words table absent — leave adapter empty
     elif dbfile:
         try:
             word_adapter.load_from_database(dbfile)

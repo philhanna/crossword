@@ -29,7 +29,6 @@ def init_config():
     project_root_dir = os.path.dirname(this_dir)
 
     defaults = {
-        'dbfile': os.path.join(project_root_dir, "examples", "sample.crossword.db"),
         'log_level': "INFO",
     }
     filename = os.path.expanduser("~/.config/crossword/config.yaml")

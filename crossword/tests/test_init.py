@@ -12,11 +12,6 @@ def test_get_elapsed_time():
     assert crossword.get_elapsed_time(t1, t2) == pytest.approx(3.5)
 
 
-def test_dbfile_returns_string():
-    result = crossword.dbfile()
-    assert isinstance(result, str)
-
-
 def test_sha256_string():
     result = crossword.sha256("hello")
     assert isinstance(result, bytes)
@@ -33,10 +28,6 @@ def test_sha256_non_string():
     assert result == crossword.sha256("42")
 
 
-def test_config_has_dbfile():
-    assert 'dbfile' in crossword.config
-
-
 def test_config_has_log_level():
     assert 'log_level' in crossword.config
 
@@ -47,5 +38,5 @@ def test_init_config_missing_file_uses_defaults(caplog):
         with patch('os.path.exists', return_value=False):
             cfg = init_config()
     assert 'Config file not found' in caplog.text
-    assert cfg['dbfile'].endswith('sample.crossword.db')
+    assert 'dbfile' not in cfg
     assert cfg['log_level'] == 'INFO'

@@ -50,6 +50,24 @@ class SQLiteDictionaryAdapter(WordListPort):
             raise Exception(f"Failed to load words from database: {e}")
         self._build_index(words)
 
+    def load_from_postgres(self, conn) -> None:
+        """
+        Load words from a PostgreSQL database.
+
+        Args:
+            conn: psycopg2 connection to a database containing a 'words' table
+
+        Raises:
+            Exception: If query fails
+        """
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT word FROM words")
+            words = {row[0].lower() for row in cursor.fetchall()}
+        except Exception as e:
+            raise Exception(f"Failed to load words from PostgreSQL: {e}")
+        self._build_index(words)
+
     def load_from_file(self, file_path: str) -> None:
         """
         Load words from a text file (one word per line).
