@@ -11,6 +11,7 @@ Adapters implement these ports to provide concrete implementations (e.g., SQLite
 from .persistence_port import PersistencePort, PersistenceError
 from .word_list_port import WordListPort
 from .export_port import ExportPort, ExportError
+from .definition_port import DefinitionProviderPort, DefinitionNotFound
 
 __all__ = [
     "PersistencePort",
@@ -18,4 +19,6 @@ __all__ = [
     "WordListPort",
     "ExportPort",
     "ExportError",
+    "DefinitionProviderPort",
+    "DefinitionNotFound",
 ]

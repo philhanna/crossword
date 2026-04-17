@@ -11,3 +11,4 @@ from .word import *
 from .puzzle import *
 from .to_svg import *
 from .grid_generator import GridGenerator
+from .definition import PartOfSpeech, Definition, LexicalEntry, WordResult
