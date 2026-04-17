@@ -6,6 +6,24 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-04-17
+
+### Added
+
+- Migrate words database to PostgreSQL (`words` table created by `init_db.py`)
+- Add `tools/dev/migrate_words_to_postgres.py` to import words from SQLite or text file
+- Load words from PostgreSQL automatically when `database_url` is configured
+
+### Changed
+
+- Word-load priority: `word_dbfile` → `word_file` → `database_url` → `dbfile` (legacy) → empty
+- Remove `Rename puzzle` feature
+
+### Removed
+
+- Remove hardcoded `sample.crossword.db` default from `init_config()`
+- Remove word editor Reset button
+
 ## [4.2.1] - 2026-04-15
 
 ### Fixed
