@@ -30,7 +30,6 @@ The export download uses a raw `fetch()` to stream a blob.
 |--------|------|--------------|-------|
 | `GET` | `/api/puzzles/{wn}/words/{seq}/{dir}` | `openWordEditor` | Fetch word data for editing |
 | `PUT` | `/api/puzzles/{wn}/words/{seq}/{dir}` | `doWordEditOK`, `_peCommitWord` | Body: `{text?, clue?}`. Save answer and/or clue; returns full puzzle data |
-| `POST` | `/api/puzzles/{wn}/words/{seq}/{dir}/reset` | `doWordReset` | Clear word text back to blanks |
 | `GET` | `/api/puzzles/{wn}/words/{seq}/{dir}/constraints` | `doShowConstraints` | Crosser constraint table |
 | `GET` | `/api/puzzles/{wn}/words/{seq}/{dir}/suggestions?pattern=` | `_fetchConstrainedSuggestions` | Constrained word suggestions (respects crossing letters) |
 

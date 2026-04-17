@@ -17,7 +17,6 @@ Routes:
   POST   /api/puzzles/<name>/grid/generate       → generate_grid
   POST   /api/puzzles/<name>/grid/undo           → undo_grid
   POST   /api/puzzles/<name>/grid/redo           → redo_grid
-  POST   /api/puzzles/<name>/words/<seq>/<direction>/reset  → reset_word
   PUT    /api/puzzles/<name>/cells/<r>/<c>  → set_cell_letter
   GET    /api/puzzles/<name>/words/<seq>/<direction>  → get_word_at
   PUT    /api/puzzles/<name>/words/<seq>/<direction>  → set_word_clue
@@ -422,47 +421,6 @@ def handle_redo_puzzle_grid(path_params, query_params, body_params, session_toke
         return {"error": str(e)}
 
 
-def handle_reset_word(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
-    """
-    Clear letters in a word that are not shared with a completed crossing word.
-    POST /api/puzzles/<name>/words/<seq>/<direction>/reset
-    """
-    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
-    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
-    try:
-        name      = path_params[0] if len(path_params) > 0 else None
-        seq       = path_params[1] if len(path_params) > 1 else None
-        direction = path_params[2] if len(path_params) > 2 else None
-
-        if not name or not seq or not direction:
-            logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
-            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing name, seq, or direction"}
-
-        try:
-            seq = int(seq)
-        except ValueError:
-            logger.debug("  returning: %s", {"error": "seq must be an integer"})
-            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "seq must be an integer"}
-
-        user_id = current_user["id"]
-        puzzle = app.puzzle_uc.reset_word(user_id, name, seq, direction)
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return _puzzle_response(puzzle)
-
-    except ValueError as e:
-        logger.debug("  returning: %s", {"error": str(e)})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
-    except PersistenceError:
-        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
-    except Exception as e:
-        logger.debug("  returning: %s", {"error": str(e)})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
 
 
 def handle_set_cell_letter(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):

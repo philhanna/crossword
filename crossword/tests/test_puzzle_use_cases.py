@@ -319,57 +319,6 @@ class TestPuzzleUseCasesModes:
         mock_persistence.save_puzzle.assert_called_once_with(1, "test_puzzle", test_puzzle)
 
 
-class TestPuzzleUseCasesResetWord:
-    """Tests for reset_word"""
-
-    def test_reset_word_across(self, puzzle_uc, mock_persistence, test_puzzle):
-        """Reset an across word — clears letters not locked by crossing words"""
-        mock_persistence.load_puzzle.return_value = test_puzzle
-
-        if test_puzzle.across_words:
-            first_seq = list(test_puzzle.across_words.keys())[0]
-            result = puzzle_uc.reset_word(1, "test_puzzle", first_seq, "across")
-            mock_persistence.save_puzzle.assert_called_once()
-            assert result is test_puzzle
-
-    def test_reset_word_down(self, puzzle_uc, mock_persistence, test_puzzle):
-        """Reset a down word"""
-        mock_persistence.load_puzzle.return_value = test_puzzle
-
-        if test_puzzle.down_words:
-            first_seq = list(test_puzzle.down_words.keys())[0]
-            result = puzzle_uc.reset_word(1, "test_puzzle", first_seq, "down")
-            mock_persistence.save_puzzle.assert_called_once()
-            assert result is test_puzzle
-
-    def test_reset_word_invalid_direction(self, puzzle_uc, mock_persistence, test_puzzle):
-        """Raises ValueError for invalid direction"""
-        mock_persistence.load_puzzle.return_value = test_puzzle
-
-        with pytest.raises(ValueError, match="Direction must be 'across' or 'down'"):
-            puzzle_uc.reset_word(1, "test_puzzle", 1, "diagonal")
-
-    def test_reset_word_nonexistent_across(self, puzzle_uc, mock_persistence, test_puzzle):
-        """Raises ValueError for nonexistent across seq"""
-        mock_persistence.load_puzzle.return_value = test_puzzle
-
-        with pytest.raises(ValueError, match="No across word at"):
-            puzzle_uc.reset_word(1, "test_puzzle", 9999, "across")
-
-    def test_reset_word_nonexistent_down(self, puzzle_uc, mock_persistence, test_puzzle):
-        """Raises ValueError for nonexistent down seq"""
-        mock_persistence.load_puzzle.return_value = test_puzzle
-
-        with pytest.raises(ValueError, match="No down word at"):
-            puzzle_uc.reset_word(1, "test_puzzle", 9999, "down")
-
-    def test_reset_word_not_found(self, puzzle_uc, mock_persistence):
-        """Raises PersistenceError if puzzle does not exist"""
-        mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
-
-        with pytest.raises(PersistenceError, match="Puzzle not found"):
-            puzzle_uc.reset_word(1, "nonexistent", 1, "across")
-
 
 class TestPuzzleUseCasesSetCellLetter:
     """Tests for set_cell_letter"""

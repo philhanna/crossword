@@ -186,7 +186,6 @@ The panel contains:
 - **OK button** — `doWordEditOK()`: pads/trims text to exact word length, calls `PUT /api/puzzles/{wn}/words/{seq}/{dir}` with `{text, clue}`, updates `puzzleData`, closes editor, syncs `selectedWord.currentText`
 - **Cancel button / × button / Escape** — `closeWordEditor()`: discards pending word-input changes, restores `_peKeydown`
 - **Show constraints button** (`doWordConstraints()`) — toggles a constraints table below. Calls `GET /api/puzzles/{wn}/words/{seq}/{dir}/constraints`. Shows columns: Pos, Letter, Location, Text, Index, Regexp, Choices; and the overall pattern.
-- **Reset button** (`doWordReset()`) — calls `POST /api/puzzles/{wn}/words/{seq}/{dir}/reset`, updates `#we-text` to the new (partially cleared) text
 
 ## Export
 

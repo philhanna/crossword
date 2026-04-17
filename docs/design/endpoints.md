@@ -32,7 +32,6 @@ Handler modules are in `crossword/http_server/`.
 | PUT | `/api/puzzles/{name}/cells/{r}/{c}` | [handle_set_cell_letter](../../crossword/http_server/puzzle_handlers.py#L445) | `puzzle_handlers.py` |
 | GET | `/api/puzzles/{name}/words/{seq}/{direction}` | [handle_get_word_at](../../crossword/http_server/puzzle_handlers.py#L502) | `puzzle_handlers.py` |
 | PUT | `/api/puzzles/{name}/words/{seq}/{direction}` | [handle_set_word_clue](../../crossword/http_server/puzzle_handlers.py#L552) | `puzzle_handlers.py` |
-| POST | `/api/puzzles/{name}/words/{seq}/{direction}/reset` | [handle_reset_word](../../crossword/http_server/puzzle_handlers.py#L402) | `puzzle_handlers.py` |
 | POST | `/api/puzzles/{name}/undo` | [handle_undo_puzzle](../../crossword/http_server/puzzle_handlers.py#L599) | `puzzle_handlers.py` |
 | POST | `/api/puzzles/{name}/redo` | [handle_redo_puzzle](../../crossword/http_server/puzzle_handlers.py#L628) | `puzzle_handlers.py` |
 | GET | `/api/puzzles/{name}/preview` | [handle_get_puzzle_preview](../../crossword/http_server/puzzle_handlers.py#L698) | `puzzle_handlers.py` |

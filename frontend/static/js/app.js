@@ -916,15 +916,11 @@ function renderWordEditorPanel() {
           </div>
         </div>
 
-        <!-- Show constraints / Reset row -->
+        <!-- Show constraints row -->
         <div style="margin-top:14px;display:flex;gap:6px">
           <button class="w3-button w3-border w3-round w3-small w3-light-gray"
                   id="we-constraints-btn" type="button" onclick="doWordConstraints()">
             <i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Show constraints
-          </button>
-          <button class="w3-button w3-border w3-round w3-small w3-light-gray"
-                  type="button" onclick="doWordReset()">
-            <i class="material-icons" style="font-size:14px;vertical-align:middle">cached</i> Reset
           </button>
         </div>
         <div id="we-constraints-table"
@@ -1194,32 +1190,6 @@ async function doWordConstraints() {
         if (btn) btn.innerHTML = '<i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Hide constraints';
     } catch (e) {
         tableEl.innerHTML = 'Error fetching constraints';
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Word editor — Reset tab
-// ---------------------------------------------------------------------------
-
-async function doWordReset() {
-    const ew = AppState.editingWord;
-    const wn = AppState.puzzleWorkingName;
-    try {
-        const data = await apiFetch('POST',
-            `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/reset`);
-        if (data.error) { alert(`Reset failed: ${data.error}`); return; }
-
-        const updated = (data.puzzle.words || []).find(
-            w => w.seq === ew.seq && w.direction === ew.direction
-        );
-        if (updated) {
-            const len     = ew.cells.length;
-            const newText = (updated.answer || '').padEnd(len).slice(0, len);
-            const inp = document.getElementById('we-text');
-            if (inp) inp.value = newText.trimEnd();
-        }
-    } catch (e) {
-        alert('Error resetting word');
     }
 }
 

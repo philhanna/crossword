@@ -16,7 +16,6 @@ Public interface:
   undo_grid(user_id, name) -> Puzzle
   redo_grid(user_id, name) -> Puzzle
   set_puzzle_title(user_id, name, title) -> Puzzle
-  reset_word(user_id, name, seq, direction) -> Puzzle
   set_cell_letter(user_id, name, r, c, letter) -> Puzzle
   get_word_at(user_id, name, seq, direction) -> Word
   set_word_clue(user_id, name, seq, direction, clue) -> Puzzle
@@ -257,44 +256,6 @@ class PuzzleUseCases:
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle
 
-    def reset_word(self, user_id: int, name: str, seq: int, direction: str) -> Puzzle:
-        """
-        Clear all letters in a word that are not shared with a completed crossing word.
-
-        Args:
-            user_id: The user who owns this puzzle
-            name: Name/identifier for the puzzle
-            seq: Numbered cell sequence number
-            direction: 'across' or 'down'
-
-        Returns:
-            Updated Puzzle object
-
-        Raises:
-            PersistenceError: If load/save fails
-            ValueError: If seq or direction is invalid
-        """
-        puzzle = self.persistence.load_puzzle(user_id, name)
-
-        if direction.lower() == "across":
-            if seq not in puzzle.across_words:
-                raise ValueError(f"No across word at {seq}")
-            word = puzzle.across_words[seq]
-        elif direction.lower() == "down":
-            if seq not in puzzle.down_words:
-                raise ValueError(f"No down word at {seq}")
-            word = puzzle.down_words[seq]
-        else:
-            raise ValueError(f"Direction must be 'across' or 'down', got {repr(direction)}")
-
-        cleared_text = word.get_clear_word()
-        old_text = word.get_text()
-        if old_text != cleared_text:
-            word_dir = Word.ACROSS if direction.lower() == "across" else Word.DOWN
-            puzzle.undo_stack.append(["text", seq, word_dir, old_text])
-        word.set_text(cleared_text)
-        self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
 
     def set_cell_letter(self, user_id: int, name: str, r: int, c: int, letter: str) -> Puzzle:
         """

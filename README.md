@@ -116,7 +116,7 @@ Create the grid and fill the puzzle in one editor, switching modes as needed.
 - Existing puzzles reopen in the last mode used for that puzzle.
 - Clicking a cell in Grid mode toggles it black/white. The grid is kept symmetric automatically.
 - Click a cell or clue to select a word.
-- The word editor panel offers three tabs: **Suggest** (word suggestions), **Constraints** (pattern matching), and **Reset**.
+- The word editor panel offers **Suggest** (word suggestions) and **Constraints** (pattern matching).
 - The statistics panel is shared across both modes.
 
 ### Export
