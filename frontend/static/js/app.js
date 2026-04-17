@@ -854,6 +854,7 @@ function renderWordEditorPanel() {
     const dirLabel = ew.direction.charAt(0).toUpperCase() + ew.direction.slice(1);
     const len      = ew.cells.length;
     const text     = (ew.answer || '').padEnd(len).slice(0, len);
+    const defsDisabled = /^[A-Za-z]+$/.test(text.trim()) && text.trim().length === len ? '' : 'disabled';
 
     return `
 <div id="we-dialog" class="w3-margin-right">
@@ -873,7 +874,8 @@ function renderWordEditorPanel() {
           <label>Word:</label>
           <input class="w3-input w3-border" id="we-text" type="text"
                  maxlength="${len}" value="${escapeHtml(text.replace(/ /g, '.'))}"
-                 style="font-family:monospace;letter-spacing:0.2em;text-transform:uppercase"/>
+                 style="font-family:monospace;letter-spacing:0.2em;text-transform:uppercase"
+                 oninput="weUpdateDefinitionsBtn()"/>
         </p>
 
         <!-- Clue input -->
@@ -922,6 +924,10 @@ function renderWordEditorPanel() {
                   id="we-constraints-btn" type="button" onclick="doWordConstraints()">
             <i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Show constraints
           </button>
+          <button class="w3-button w3-border w3-round w3-small w3-light-gray"
+                  id="we-definitions-btn" type="button" ${defsDisabled}>
+            <i class="material-icons" style="font-size:14px;vertical-align:middle">menu_book</i> Show definitions
+          </button>
         </div>
         <div id="we-constraints-table"
              style="overflow:auto;overflow-x:hidden;margin-top:8px"></div>
@@ -940,6 +946,15 @@ function weListItemClick(word) {
     document.querySelectorAll('#we-suggestion-list li').forEach(li => {
         li.style.background = li.dataset.word === word ? '#d0e8ff' : '';
     });
+}
+
+function weUpdateDefinitionsBtn() {
+    const inp = document.getElementById('we-text');
+    const btn = document.getElementById('we-definitions-btn');
+    if (!inp || !btn) return;
+    const len = AppState.editingWord ? AppState.editingWord.cells.length : 0;
+    const val = inp.value;
+    btn.disabled = !(val.length === len && /^[A-Za-z]+$/.test(val));
 }
 
 function _weOnClueBlur(newVal) {
