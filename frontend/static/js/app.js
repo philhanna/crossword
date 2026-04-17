@@ -925,11 +925,14 @@ function renderWordEditorPanel() {
             <i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Show constraints
           </button>
           <button class="w3-button w3-border w3-round w3-small w3-light-gray"
-                  id="we-definitions-btn" type="button" ${defsDisabled}>
+                  id="we-definitions-btn" type="button" ${defsDisabled}
+                  onclick="doWordDefinitions()">
             <i class="material-icons" style="font-size:14px;vertical-align:middle">menu_book</i> Show definitions
           </button>
         </div>
         <div id="we-constraints-table"
+             style="overflow:auto;overflow-x:hidden;margin-top:8px"></div>
+        <div id="we-definitions-panel"
              style="overflow:auto;overflow-x:hidden;margin-top:8px"></div>
 
 
@@ -1205,6 +1208,52 @@ async function doWordConstraints() {
         if (btn) btn.innerHTML = '<i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Hide constraints';
     } catch (e) {
         tableEl.innerHTML = 'Error fetching constraints';
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Word editor — Definitions tab
+// ---------------------------------------------------------------------------
+
+async function doWordDefinitions() {
+    const panelEl = document.getElementById('we-definitions-panel');
+    const btn     = document.getElementById('we-definitions-btn');
+    const icon    = '<i class="material-icons" style="font-size:14px;vertical-align:middle">menu_book</i>';
+
+    // Toggle: if already showing, hide
+    if (panelEl.innerHTML.trim() !== '') {
+        panelEl.innerHTML = '';
+        if (btn) btn.innerHTML = `${icon} Show definitions`;
+        return;
+    }
+
+    const inp  = document.getElementById('we-text');
+    const word = inp ? inp.value.toUpperCase() : '';
+    panelEl.innerHTML = 'Loading…';
+
+    try {
+        const data = await apiFetch('GET', `/api/words/${encodeURIComponent(word)}/definitions`);
+        if (data.error) { panelEl.innerHTML = `<p>${escapeHtml(data.error)}</p>`; return; }
+
+        const entriesHtml = data.entries.map(entry => {
+            const defsHtml = entry.definitions.map(d => {
+                const ex = d.example ? `<div style="color:#666;font-style:italic;margin-top:2px">${escapeHtml(d.example)}</div>` : '';
+                return `<li style="margin-bottom:4px">${escapeHtml(d.text)}${ex}</li>`;
+            }).join('');
+            return `<div style="margin-bottom:8px">
+  <b style="text-transform:capitalize">${escapeHtml(entry.part_of_speech)}</b>
+  <ol style="margin:4px 0 0 0;padding-left:18px">${defsHtml}</ol>
+</div>`;
+        }).join('');
+
+        panelEl.innerHTML = `
+<div class="w3-padding" style="font-size:0.9em">
+  <b>${escapeHtml(data.word.toUpperCase())}</b>
+  <div style="margin-top:6px">${entriesHtml}</div>
+</div>`;
+        if (btn) btn.innerHTML = `${icon} Hide definitions`;
+    } catch (e) {
+        panelEl.innerHTML = 'Error fetching definitions';
     }
 }
 

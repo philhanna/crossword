@@ -38,6 +38,7 @@ from crossword.http_server.word_handlers import (
     handle_validate_word,
     handle_get_word_constraints,
     handle_get_ranked_suggestions,
+    handle_get_word_definitions,
 )
 from crossword.http_server.export_handlers import (
     handle_export_puzzle_to_acrosslite,
@@ -97,6 +98,7 @@ def register_routes(router):
     router.add_route("GET", r"^/api/words/validate$", handle_validate_word)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/constraints$", handle_get_word_constraints)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/suggestions$", handle_get_ranked_suggestions)
+    router.add_route("GET", r"^/api/words/([A-Za-z]+)/definitions$", handle_get_word_definitions)
 
     # Export routes
     router.add_route("GET", r"^/api/export/puzzles/([^/]+)/acrosslite$", handle_export_puzzle_to_acrosslite)

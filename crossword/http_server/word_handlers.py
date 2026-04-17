@@ -5,11 +5,13 @@ Routes:
   GET /api/words/suggestions?pattern=<pattern>  → get_suggestions
   GET /api/words/all                            → get_all_words
   GET /api/words/validate?word=<word>           → validate_word
+  GET /api/words/<word>/definitions             → get_word_definitions
   GET /api/puzzles/<name>/words/<seq>/<dir>/constraints  → get_word_constraints
   GET /api/puzzles/<name>/words/<seq>/<dir>/suggestions  → get_ranked_suggestions
 """
 
 import logging
+from crossword.ports.definition_port import DefinitionNotFound
 from crossword.ports.persistence_port import PersistenceError
 
 logger = logging.getLogger(__name__)
@@ -163,7 +165,7 @@ def handle_get_ranked_suggestions(path_params, query_params, body_params, sessio
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"suggestions": suggestions, "count": len(suggestions)}
 
-    except ValueError as e:
+    except ValueError as e:  # ranked suggestions
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
@@ -171,6 +173,32 @@ def handle_get_ranked_suggestions(path_params, query_params, body_params, sessio
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_get_word_definitions(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Return definitions for a word from the definition provider.
+    GET /api/words/<word>/definitions
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        word = path_params[0] if path_params else None
+        if not word:
+            return {"error": "Missing word"}
+
+        result = app.definition_uc.lookup(word)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return result
+
+    except DefinitionNotFound:
+        logger.debug("  returning: word not found: %s", path_params)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"No definitions found for '{word}'"}
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
