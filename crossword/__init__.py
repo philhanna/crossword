@@ -20,6 +20,7 @@ def get_elapsed_time(stime, etime):
 
 
 def init_config():
+    import os
     import os.path
     import logging
     import yaml
@@ -39,7 +40,10 @@ def init_config():
     else:
         logging.warning(f"Config file not found: {filename}. Using default configuration. See README.md")
         options = defaults
-    logging.info(f"Using database at {options['dbfile']}")
+
+    if os.environ.get('DATABASE_URL'):
+        options['database_url'] = os.environ['DATABASE_URL']
+
     return options
 
 

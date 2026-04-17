@@ -9,7 +9,7 @@ description = "Crossword Puzzle Editor"
 license = { text = "MIT" }
 authors = [{ name = "Phil Hanna" }]
 requires-python = ">=3.10"
-dependencies = ["PyYAML"]
+dependencies = ["PyYAML", "psycopg2-binary"]
 
 [project.urls]
 Homepage = "https://github.com/philhanna/crossword"

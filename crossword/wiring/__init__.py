@@ -7,6 +7,8 @@ ready for HTTP handlers or CLI commands to call.
 
 import logging
 
+from crossword.adapters.postgres_persistence_adapter import PostgresPersistenceAdapter
+from crossword.adapters.postgres_user_adapter import PostgresUserAdapter
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
@@ -80,23 +82,25 @@ def make_app(config=None):
     # Validate required config keys
     # ========================================================================
 
-    dbfile = config.get("dbfile")
-    if not dbfile:
-        raise ValueError("config['dbfile'] is required")
-
-    if not config.get("host"):
-        raise ValueError("config['host'] is required")
-    if not config.get("port"):
-        raise ValueError("config['port'] is required")
-
     # ========================================================================
     # Instantiate Adapters
     # ========================================================================
 
-    # Persistence adapter (SQLite)
-    persistence = SQLitePersistenceAdapter(dbfile)
+    database_url = config.get("database_url")
+    if database_url:
+        import psycopg2
+        conn = psycopg2.connect(database_url)
+        persistence = PostgresPersistenceAdapter(conn)
+        user_adapter = PostgresUserAdapter(conn)
+    else:
+        dbfile = config.get("dbfile")
+        if not dbfile:
+            raise ValueError("config['dbfile'] is required when DATABASE_URL is not set")
+        persistence = SQLitePersistenceAdapter(dbfile)
+        user_adapter = SQLiteUserAdapter(persistence.conn)
 
     # Word list adapter — priority: word_dbfile → word_file → dbfile (legacy) → empty
+    dbfile = config.get("dbfile")
     word_dbfile = config.get("word_dbfile")
     word_file = config.get("word_file")
     word_adapter = SQLiteDictionaryAdapter()
@@ -131,7 +135,11 @@ def make_app(config=None):
     export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter)
     import_uc = ImportUseCases(persistence, acrosslite_import_adapter)
 
-    user_adapter = SQLiteUserAdapter(persistence.conn)
+    if not config.get("host"):
+        raise ValueError("config['host'] is required")
+    if not config.get("port"):
+        raise ValueError("config['port'] is required")
+
     session_store = MemorySessionStore()
     auth_uc = AuthUseCases(user_adapter, session_store)
     user_uc = UserUseCases(user_adapter)

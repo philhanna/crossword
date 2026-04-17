@@ -13,11 +13,10 @@ Options:
 """
 
 import argparse
-import sqlite3
 import sys
 
 sys.path.insert(0, ".")
-from crossword import dbfile
+from crossword import init_config
 
 
 WC_PREFIX = "__wc__"
@@ -35,17 +34,41 @@ def source_name(wc_name: str) -> str:
     return "(unknown)"
 
 
-def find_work_files(conn: sqlite3.Connection) -> list[str]:
+def find_work_files(conn, placeholder: str) -> list[str]:
     cur = conn.cursor()
-    cur.execute("SELECT puzzlename FROM puzzles WHERE puzzlename LIKE ? ORDER BY puzzlename", (WC_PREFIX + "%",))
+    cur.execute(
+        f"SELECT puzzlename FROM puzzles WHERE puzzlename LIKE {placeholder} ORDER BY puzzlename",
+        (WC_PREFIX + "%",)
+    )
     return [row[0] for row in cur.fetchall()]
 
 
-def delete_work_files(conn: sqlite3.Connection, puzzles: list[str]) -> None:
+def delete_work_files(conn, placeholder: str, puzzles: list[str]) -> None:
     cur = conn.cursor()
     for name in puzzles:
-        cur.execute("DELETE FROM puzzles WHERE puzzlename = ?", (name,))
+        cur.execute(f"DELETE FROM puzzles WHERE puzzlename = {placeholder}", (name,))
     conn.commit()
+
+
+def connect(config: dict):
+    database_url = config.get("database_url")
+    if database_url:
+        import psycopg2
+        return psycopg2.connect(database_url), "%s", str(database_url)
+    else:
+        import sqlite3
+        db = config["dbfile"]
+        return sqlite3.connect(db), "?", db
+
+
+def vacuum(conn, is_postgres: bool) -> None:
+    if is_postgres:
+        old_level = conn.isolation_level
+        conn.set_isolation_level(0)
+        conn.cursor().execute("VACUUM")
+        conn.set_isolation_level(old_level)
+    else:
+        conn.execute("VACUUM")
 
 
 def main() -> None:
@@ -53,12 +76,14 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="List work files without deleting them")
     args = parser.parse_args()
 
-    db = dbfile()
-    print(f"Database: {db}\n")
+    config = init_config()
+    conn, placeholder, db_label = connect(config)
+    is_postgres = config.get("database_url") is not None
 
-    conn = sqlite3.connect(db)
+    print(f"Database: {db_label}\n")
+
     try:
-        puzzles = find_work_files(conn)
+        puzzles = find_work_files(conn, placeholder)
 
         print(f"Work-copy puzzles ({len(puzzles)}):")
         for name in puzzles:
@@ -80,11 +105,11 @@ def main() -> None:
             print("Cancelled.")
             return
 
-        delete_work_files(conn, puzzles)
+        delete_work_files(conn, placeholder, puzzles)
         print(f"\nDeleted {total} row(s).")
 
         print("Vacuuming database...", end=" ", flush=True)
-        conn.execute("VACUUM")
+        vacuum(conn, is_postgres)
         print("done.")
     finally:
         conn.close()
