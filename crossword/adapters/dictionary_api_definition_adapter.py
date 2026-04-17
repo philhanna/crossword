@@ -1,7 +1,4 @@
-import json
-import urllib.error
-import urllib.parse
-import urllib.request
+import requests
 
 from crossword.domain.definition import Definition, LexicalEntry, PartOfSpeech, WordResult
 from crossword.ports.definition_port import DefinitionNotFound, DefinitionProviderPort
@@ -19,14 +16,12 @@ _POS_MAP = {
 class DictionaryAPIDefinition(DefinitionProviderPort):
 
     def lookup(self, word: str) -> WordResult:
-        url = _BASE_URL.format(word=urllib.parse.quote(word.lower()))
-        try:
-            with urllib.request.urlopen(url) as resp:
-                data = json.loads(resp.read().decode())
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                raise DefinitionNotFound(word)
-            raise
+        url = _BASE_URL.format(word=word.lower())
+        resp = requests.get(url)
+        if resp.status_code == 404:
+            raise DefinitionNotFound(word)
+        resp.raise_for_status()
+        data = resp.json()
 
         # Merge meanings across all entries, grouping by part of speech
         merged: dict[PartOfSpeech, list[Definition]] = {}
