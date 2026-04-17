@@ -5,64 +5,57 @@
 Deploy the crossword application to a cloud environment accessible to multiple users,
 with persistent storage and proper authentication.
 
+Each phase below produces a **fully working application** — you can stop after any phase
+and still have something that runs.
+
 ---
 
-## 1. Cloud Database — PostgreSQL on Neon
+## Phase 1 — PostgreSQL Backend (local)
 
-**Recommendation:** PostgreSQL hosted on [Neon](https://neon.tech) (free tier available).
+**Result:** Application runs locally, identical to today, but uses PostgreSQL instead of SQLite.
 
-**Why:**
-- The existing hexagonal architecture makes adapter replacement straightforward
-- Neon provides a standard PostgreSQL connection string, zero-config branching,
-  and a generous free tier
+**Why do this first:**
+The hexagonal architecture means swapping the storage adapter is self-contained and testable
+without touching anything else. This is the foundation every later phase builds on.
 
-**Migration tasks:**
+**Tasks:**
 - Add `psycopg2-binary` (or `psycopg[binary]`) to project dependencies
-- Write a `PostgresAdapter` implementing the same persistence port as `SQLiteAdapter`
-- Update config to read `DATABASE_URL` from an environment variable
-- Write a schema migration script (create tables, indexes) for the new DB
+- Write `PostgresAdapter` implementing the same persistence port as `SQLiteAdapter`
+- Write a schema creation script (`tools/dev/init_db.py`) that creates all tables and indexes
+- Update config to accept `DATABASE_URL` environment variable (fall back to SQLite if absent,
+  so existing local dev still works without Postgres)
+- Migrate existing data from `examples/samples.db` to the new Postgres DB
+- All existing tests pass
+
+**Deliverable:** `DATABASE_URL=postgres://... python -m crossword.http_server` works fully.
 
 ---
 
-## 2. Container Hosting — Fly.io
+## Phase 2 — Authentication (local)
 
-**Recommendation:** [Fly.io](https://fly.io)
+**Result:** Application requires login. Multiple users can have their own puzzles and grids.
 
-**Why:**
-- Dockerfile-based deployment with a simple `fly.toml` config
-- Does not sleep on free tier (unlike Render)
-- Supports persistent volumes if needed for temporary files
-- Global edge deployment
+**Why do this before deploying:**
+Deploying without authentication would expose all data to anyone with the URL. Auth must be
+in place before the app goes public.
 
-**Migration tasks:**
-- Write a `Dockerfile` for the Python backend
-- Write `fly.toml` (app name, port, region, env vars)
-- Set secrets on Fly.io: `DATABASE_URL`, `SECRET_KEY`
-- Confirm static files (`frontend/`) are served correctly from the container
+**Approach:** `httpOnly` cookie sessions stored in PostgreSQL.
 
----
-
-## 3. Authentication — Cookie-Based Sessions
-
-**Recommendation:** `httpOnly` cookie sessions stored in PostgreSQL.
-
-**Why cookie sessions over JWT:**
-- This is a browser-only web app — cookies are the right fit
-- `httpOnly` cookies cannot be read by JavaScript, protecting against XSS
+- `httpOnly` cookies cannot be read by JavaScript — protected against XSS
 - `Secure` + `SameSite=Strict` flags prevent CSRF
-- Simpler to implement and reason about than JWT refresh-token flows
-- JWT is better suited to mobile apps or third-party API consumers
+- Simpler than JWT for a browser-only web app (no refresh-token complexity)
+- Sessions stored in the DB — no extra infrastructure needed
 
-**How it works:**
+**How login works:**
 1. User submits email + password to `POST /api/login`
-2. Server verifies password (bcrypt), creates a session row in the DB, returns
-   a `Set-Cookie: session_id=<token>; HttpOnly; Secure; SameSite=Strict` header
+2. Server verifies password (bcrypt), creates a session row, returns
+   `Set-Cookie: session_id=<token>; HttpOnly; Secure; SameSite=Strict`
 3. Browser sends the cookie automatically on every subsequent request
-4. A middleware layer in the HTTP server looks up the session, rejects requests
-   with missing/expired sessions (except `/api/login` and static assets)
+4. Middleware in the HTTP server looks up the session and rejects unauthenticated requests
+   (except `POST /api/login` and static asset routes)
 5. `POST /api/logout` deletes the session row and clears the cookie
 
-**New DB tables needed:**
+**New DB tables:**
 ```sql
 CREATE TABLE users (
     id       SERIAL PRIMARY KEY,
@@ -71,43 +64,54 @@ CREATE TABLE users (
 );
 
 CREATE TABLE sessions (
-    id         TEXT PRIMARY KEY,  -- random token, e.g. secrets.token_hex(32)
+    id         TEXT PRIMARY KEY,  -- secrets.token_hex(32)
     user_id    INTEGER NOT NULL REFERENCES users(id),
     expires_at TIMESTAMPTZ NOT NULL
 );
 ```
 
-**Migration tasks:**
+**Tasks:**
 - Add `bcrypt` to project dependencies
-- Create `users` and `sessions` tables
-- Write a `POST /api/login` handler
-- Write a `POST /api/logout` handler
+- Add `users` and `sessions` tables to the schema script
+- Write `POST /api/login` and `POST /api/logout` handlers
 - Add session-check middleware to the HTTP request handler
-- Add a `GET /api/me` endpoint (returns current user info; frontend uses to check login state)
-- Write a `tools/dev/create_user.py` script for provisioning accounts
-- Update `tools/user/export_*.py` CLI scripts (currently hardcode `user_id=1`)
+- Add `GET /api/me` endpoint (frontend uses this to check login state on page load)
+- Add a login page / login form to the frontend
+- Write `tools/dev/create_user.py` for provisioning accounts (no self-signup for now)
+- Update `tools/user/export_*.py` to accept a `--user <email>` argument instead of hardcoding `user_id=1`
+
+**Deliverable:** App works locally with login. Each user sees only their own puzzles and grids.
 
 ---
 
-## Migration Order
+## Phase 3 — Cloud Deployment (Fly.io + Neon)
 
-| Step | Task | Depends on |
-|------|------|------------|
-| 1 | Write `PostgresAdapter` | — |
-| 2 | Add `users` + `sessions` tables to schema | Step 1 |
-| 3 | Add login/logout endpoints + session middleware | Step 2 |
-| 4 | Write `Dockerfile` | — |
-| 5 | Write `fly.toml`, set secrets | Steps 1–3 |
-| 6 | Deploy and smoke-test | Steps 1–5 |
-| 7 | Update CLI export scripts to accept `--user` arg | Step 2 |
+**Result:** Application is live in the cloud, accessible to all users via a URL.
+
+**Hosting:** [Fly.io](https://fly.io) — Dockerfile-based, does not sleep on free tier,
+simple `fly.toml` config.
+
+**Database:** [Neon](https://neon.tech) — managed PostgreSQL, generous free tier,
+standard connection string.
+
+**Tasks:**
+- Write `Dockerfile` for the Python backend (serves frontend static files too)
+- Write `fly.toml` (app name, port 5000, region, env var references)
+- Provision a Neon database; run the schema creation script against it
+- Set Fly.io secrets: `DATABASE_URL`, `SECRET_KEY`
+- Create initial user accounts with `create_user.py` pointed at the Neon DB
+- Deploy and smoke-test all major flows (login, create grid, create puzzle, export)
+- Set up a custom domain (optional)
+
+**Deliverable:** `https://<appname>.fly.dev` is live and fully functional.
 
 ---
 
 ## Open Questions
 
-- **Single tenant or multi-tenant?** Currently one DB shared by all users (rows scoped
-  by `user_id`). This is fine for a small number of known users.
-- **User registration:** Self-serve signup vs. admin-provisioned accounts?
-  For a small group, provisioning via `create_user.py` is simpler.
-- **Session expiry:** How long should sessions last? (Suggestion: 30 days with
-  sliding expiry on each request.)
+- **Session expiry:** How long should sessions last? (Suggestion: 30 days with sliding
+  expiry reset on each request.)
+- **User registration:** Self-serve signup vs. admin-provisioned accounts? For a small
+  known group, provisioning via `create_user.py` is simpler and avoids spam accounts.
+- **Multi-tenancy:** One shared DB, rows scoped by `user_id`. Fine for a small number
+  of users.
