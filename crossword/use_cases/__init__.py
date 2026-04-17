@@ -8,4 +8,5 @@ mechanism (HTTP, CLI, etc.) and have no framework dependencies.
 Use-cases are instantiated with constructor injection:
   puzzle_uc = PuzzleUseCases(persistence_port)
   export_uc = ExportUseCases(export_port)
+  definition_uc = DefinitionUseCases(definition_port)
 """
