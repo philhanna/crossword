@@ -60,10 +60,6 @@ async function apiFetch(method, path, body) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body !== undefined) opts.body = JSON.stringify(body);
     const resp = await fetch(path, opts);
-    if (resp.status === 401) {
-        window.location.href = '/login';
-        return null;
-    }
     return resp.json();
 }
 
@@ -1979,21 +1975,7 @@ async function do_export(format) {
 // Bootstrap
 // ---------------------------------------------------------------------------
 
-async function do_logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
-    const resp = await fetch('/api/auth/me');
-    if (resp.status === 401) {
-        window.location.href = '/login';
-        return;
-    }
-    const user = await resp.json();
-    const el = document.getElementById('menu-username');
-    if (el && user && user.username) el.textContent = user.username;
-
     try {
         const cfg = await (await fetch('/api/config')).json();
         if (cfg.message_line_timeout_ms != null) {

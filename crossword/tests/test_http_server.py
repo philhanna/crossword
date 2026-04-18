@@ -153,47 +153,9 @@ class TestRequestHandler:
     def _create_handler(self):
         """Create a RequestHandler instance with mocked dependencies"""
         handler = Mock(spec=RequestHandler)
-        # Bind the actual methods we want to test to the mock
-        handler._parse_session_token = RequestHandler._parse_session_token.__get__(handler, RequestHandler)
         handler._send_json = RequestHandler._send_json.__get__(handler, RequestHandler)
         handler._send_error = RequestHandler._send_error.__get__(handler, RequestHandler)
         return handler
-
-    def test_parse_session_token(self):
-        """RequestHandler extracts session token from cookies"""
-        handler = self._create_handler()
-        handler.headers = {"Cookie": "session=abc123def456"}
-
-        token = handler._parse_session_token()
-
-        assert token == "abc123def456"
-
-    def test_parse_session_token_no_cookie(self):
-        """RequestHandler returns None when no session cookie"""
-        handler = self._create_handler()
-        handler.headers = {"Cookie": "other=value"}
-
-        token = handler._parse_session_token()
-
-        assert token is None
-
-    def test_parse_session_token_no_header(self):
-        """RequestHandler returns None when no Cookie header"""
-        handler = self._create_handler()
-        handler.headers = {}
-
-        token = handler._parse_session_token()
-
-        assert token is None
-
-    def test_parse_session_token_multiple_cookies(self):
-        """RequestHandler extracts session from multiple cookies"""
-        handler = self._create_handler()
-        handler.headers = {"Cookie": "user=john; session=token123; theme=dark"}
-
-        token = handler._parse_session_token()
-
-        assert token == "token123"
 
     def test_send_json(self):
         """RequestHandler.send_json sends JSON response"""

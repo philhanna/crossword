@@ -1,33 +1,23 @@
 """
 HTTP Server - custom request handler with regex-based router.
-
-Implements a stateless HTTP request handler that routes to application handlers.
-Session tokens are parsed from cookies (simple UUID format).
 """
 
 import re
 import json
-import uuid
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, unquote, urlparse
 from io import BytesIO
+
+CURRENT_USER = {"id": 1}
 
 
 class Route:
     """Single route definition: method + path pattern -> handler"""
 
     def __init__(self, method: str, path_pattern: str, handler, requires_auth: bool = True):
-        r"""
-        Args:
-            method: HTTP method ('GET', 'POST', 'PUT', 'DELETE', etc.)
-            path_pattern: Regex pattern for path matching (e.g., r'^/grids/(\d+)$')
-            handler: Callable that handles the request
-            requires_auth: If True, requests without a valid session are rejected with 401
-        """
         self.method = method.upper()
         self.path_pattern = re.compile(path_pattern)
         self.handler = handler
-        self.requires_auth = requires_auth
 
     def matches(self, method: str, path: str):
         """Check if this route matches the request method and path"""
@@ -47,7 +37,7 @@ class Router:
 
     def add_route(self, method: str, path_pattern: str, handler, requires_auth: bool = True):
         """Register a route"""
-        self.routes.append(Route(method, path_pattern, handler, requires_auth=requires_auth))
+        self.routes.append(Route(method, path_pattern, handler))
 
     def find_route(self, method: str, path: str):
         """Find matching route for method + path, returning (route, path_params)"""
@@ -121,22 +111,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                 except json.JSONDecodeError:
                     body_params = {}
 
-        # Parse session token from cookies
-        session_token = self._parse_session_token()
-
         # Find route
         route, path_params = self.router.find_route(method, path)
         if not route:
             self._send_error(404, "Not Found")
-            return
-
-        # Auth gating
-        current_user = None
-        if session_token and self.app and hasattr(self.app, "auth_uc"):
-            current_user = self.app.auth_uc.get_current_user(session_token)
-
-        if route.requires_auth and current_user is None:
-            self._send_error(401, "Authentication required")
             return
 
         # Call handler
@@ -146,10 +124,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                 path_params=path_params,
                 query_params=query_params,
                 body_params=body_params,
-                session_token=session_token,
+                session_token=None,
                 request_handler=self,
                 app=self.app,
-                current_user=current_user,
+                current_user=CURRENT_USER,
             )
 
             # Send response (skip if handler already sent it and returned None)
@@ -164,21 +142,6 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             self._send_error(500, str(e))
-
-    def _parse_session_token(self):
-        """Extract session token from Cookie header"""
-        cookie_header = self.headers.get("Cookie", "")
-        if not cookie_header:
-            return None
-
-        # Parse cookies (simple format: key=value; key=value)
-        for cookie in cookie_header.split(";"):
-            cookie = cookie.strip()
-            if "=" in cookie:
-                key, value = cookie.split("=", 1)
-                if key.strip() == "session":
-                    return value.strip()
-        return None
 
     def _send_cors_headers(self):
         """Add CORS headers to allow cross-origin requests (e.g. from Swagger UI)"""
