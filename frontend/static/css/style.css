@@ -174,6 +174,8 @@ h3 { font-size: 1.05rem; }
 
 /* W3.CSS dropdown overrides for app bar */
 #top-menu .w3-dropdown-hover { position: relative; }
+/* W3.CSS applies background-color:#ccc to .w3-dropdown-hover:first-child unconditionally */
+#top-menu .w3-dropdown-hover:first-child { background-color: transparent; color: inherit; }
 
 .app-dropdown {
   background: var(--c-surface) !important;
