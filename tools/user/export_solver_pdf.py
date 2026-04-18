@@ -7,6 +7,7 @@ Usage:
 If output path is omitted, writes <puzzle_name>-solver.pdf in the current directory.
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -16,15 +17,20 @@ from crossword.wiring import make_app
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: export_solver_pdf.py <puzzle_name> [output.pdf]", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Export a puzzle to solver PDF format (empty grid + clues)."
+    )
+    parser.add_argument("puzzle_name", help="Name of the puzzle to export")
+    parser.add_argument(
+        "output", nargs="?", type=Path,
+        help="Output PDF path (default: <puzzle_name>-solver.pdf)"
+    )
+    args = parser.parse_args()
 
-    name = sys.argv[1]
-    out_path = Path(sys.argv[2]) if len(sys.argv) >= 3 else Path(f"{name}-solver.pdf")
+    out_path = args.output or Path(f"{args.puzzle_name}-solver.pdf")
 
     app = make_app()
-    pdf = app.export_uc.export_puzzle_to_solver_pdf(user_id=1, name=name)
+    pdf = app.export_uc.export_puzzle_to_solver_pdf(user_id=1, name=args.puzzle_name)
     out_path.write_bytes(pdf)
     print(f"Written: {out_path}")
 
