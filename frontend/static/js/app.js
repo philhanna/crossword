@@ -1545,6 +1545,7 @@ async function do_puzzle_save() {
             `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { alert(`Save failed: ${data.error}`); return; }
         AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
+        updateAppBarPuzzleInfo();
         showMessageLine(`Puzzle ${name} saved.`, 'notice');
     } catch (e) { alert('Error saving puzzle'); }
 }
