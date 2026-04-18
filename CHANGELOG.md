@@ -6,6 +6,12 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.6.0] - 2026-04-18
+
+### Changed
+
+- Redesign frontend with new visual system and sidebar tabs (Phases 1–4)
+
 ## [4.5.1] - 2026-04-18
 
 ### Changed
