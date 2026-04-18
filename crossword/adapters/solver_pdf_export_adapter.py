@@ -56,19 +56,22 @@ class SolverPdfExportAdapter:
     margin: 0 0 0.5em 0;
     font-weight: bold;
   }}
-  .layout::after {{
-    content: "";
-    display: table;
-    clear: both;
+  .layout {{
+    display: grid;
+    grid-template-columns: 1fr {_GRID_WIDTH};
+    column-gap: 0.75em;
+    align-items: start;
+  }}
+  .clue-col {{
+    grid-column: 1;
+  }}
+  .grid-col {{
+    grid-column: 2;
   }}
   svg.grid-svg {{
-    float: right;
     display: block;
     width: {_GRID_WIDTH};
     height: {_GRID_HEIGHT};
-    margin-left: 0.75em;
-    margin-right: 4px;
-    overflow: visible;
   }}
   .section-title {{
     font-size: 10pt;
@@ -87,19 +90,30 @@ class SolverPdfExportAdapter:
 <body>
 {"<h1>" + title + "</h1>" if title else ""}
 <div class="layout">
-  {svg_str}
-  <div class="section-title">ACROSS</div>
-  {across_html}
-  <div class="section-title">DOWN</div>
-  {down_html}
+  <div class="clue-col">
+    <div class="section-title">ACROSS</div>
+    {across_html}
+    <div class="section-title">DOWN</div>
+    {down_html}
+  </div>
+  <div class="grid-col">{svg_str}</div>
 </div>
 </body>
 </html>"""
 
     def _prepare_svg(self, svg_str: str) -> str:
-        """Set SVG root width/height to CSS units and add float class."""
+        """Set SVG root width/height to CSS units, expand viewBox to include border stroke."""
+        m = re.search(r'width="(\d+(?:\.\d+)?)"', svg_str)
+        orig_w = int(float(m.group(1))) if m else 352
+        m = re.search(r'height="(\d+(?:\.\d+)?)"', svg_str)
+        orig_h = int(float(m.group(1))) if m else 352
         svg_str = re.sub(r'width="\d+(?:\.\d+)?"', f'width="{_GRID_WIDTH}"', svg_str, count=1)
         svg_str = re.sub(r'height="\d+(?:\.\d+)?"', f'height="{_GRID_HEIGHT}"', svg_str, count=1)
+        svg_str = re.sub(
+            r'viewBox="[^"]*"',
+            f'viewBox="0 0 {orig_w + 1} {orig_h}"',
+            svg_str, count=1, flags=re.IGNORECASE,
+        )
         svg_str = svg_str.replace('<svg ', '<svg class="grid-svg" ', 1)
         return svg_str
 

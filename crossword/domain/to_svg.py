@@ -56,7 +56,7 @@ class ToSVG:
         else:
             self.root.set("width", str(self.gridsize))
             self.root.set("height", str(self.gridsize))
-        self.root.set("viewbox", f'0 0 {self.gridsize} {self.gridsize}')
+        self.root.set("viewBox", f'0 0 {self.gridsize} {self.gridsize}')
         self.root.set("xmlns", 'http://www.w3.org/2000/svg')
         self.root.set("xmlns:xlink", 'http://www.w3.org/1999/xlink')
 
