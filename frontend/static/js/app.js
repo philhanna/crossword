@@ -945,6 +945,7 @@ function renderWordEditorPanel() {
 function weListItemClick(word) {
     const inp = document.getElementById('we-text');
     if (inp) inp.value = word;
+    weUpdateDefinitionsBtn();
     // Highlight selected item
     document.querySelectorAll('#we-suggestion-list li').forEach(li => {
         li.style.background = li.dataset.word === word ? '#d0e8ff' : '';
