@@ -1686,6 +1686,7 @@ async function do_puzzle_title() {
 async function do_puzzle_stats() {
     const wn = AppState.puzzleWorkingName;
     try {
+        await _settlePuzzleEditingBeforeModeSwitch();
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/stats`);
         if (data.error) { alert(`Error: ${data.error}`); return; }
         AppState._statsData       = data;
