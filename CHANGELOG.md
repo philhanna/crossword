@@ -6,6 +6,18 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-04-18
+
+### Added
+
+- Dictionary lookup via dictionaryapi.dev (domain model, port, adapter, use cases, Show Definitions button in word editor)
+- Solver PDF export format (empty grid + compact clue list) in Export menu
+- Scroll clue lists to first missing clue on render
+
+### Changed
+
+- Solver PDF layout uses CSS grid; fix SVG viewBox casing
+
 ## [4.3.0] - 2026-04-17
 
 ### Added
