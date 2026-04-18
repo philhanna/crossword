@@ -1,6 +1,6 @@
 # Frontend–Server Contact Points
 
-All HTTP interactions go through `apiFetch(method, path, body?)` at [app.js:51](frontend/static/js/app.js#L51),
+All HTTP interactions go through `apiFetch(method, path, body?)` at [app.js:59](frontend/static/js/app.js#L59),
 which JSON-encodes the body and JSON-parses the response.
 The export download uses a raw `fetch()` to stream a blob.
 
@@ -63,6 +63,7 @@ The export download uses a raw `fetch()` to stream a blob.
 | Method | Path | Triggered by | Notes |
 |--------|------|--------------|-------|
 | `GET` | `/api/words/suggestions?pattern=` | `_fetchPatternSuggestions` | Unconstrained pattern-based word list |
+| `GET` | `/api/words/{word}/definitions` | `doWordDefinitions` | Dictionary definitions for a word (toggle show/hide in word editor) |
 
 ---
 
@@ -81,4 +82,5 @@ The export download uses a raw `fetch()` to stream a blob.
 | `GET` | `/api/export/puzzles/{name}/acrosslite` | `_downloadExport('puz')` | Raw `fetch()`; response streamed as blob download |
 | `GET` | `/api/export/puzzles/{name}/xml` | `_downloadExport('xml')` | Raw `fetch()`; Crossword Compiler XML |
 | `GET` | `/api/export/puzzles/{name}/nytimes` | `_downloadExport('nyt')` | Raw `fetch()`; NYT PDF |
+| `GET` | `/api/export/puzzles/{name}/solver-pdf` | `_downloadExport('solver')` | Raw `fetch()`; Solver PDF |
 | `GET` | `/api/export/puzzles/{name}/json` | — | JSON export; not yet wired to frontend |
