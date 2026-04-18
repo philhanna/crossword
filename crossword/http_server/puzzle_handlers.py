@@ -104,6 +104,7 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
     try:
         user_id = current_user["id"]
         puzzles = app.puzzle_uc.list_puzzles(user_id)
+        puzzles = [name for name in puzzles if not name.startswith("__new__")]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"puzzles": puzzles}
     except Exception as e:

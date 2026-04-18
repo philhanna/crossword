@@ -10,6 +10,7 @@ from crossword.http_server.main import register_routes
 from crossword.http_server.puzzle_handlers import (
     _puzzle_response,
     handle_create_puzzle,
+    handle_list_puzzles,
     handle_switch_to_grid_mode,
     handle_switch_to_puzzle_mode,
     handle_toggle_puzzle_black_cell,
@@ -299,6 +300,17 @@ class TestMergedPuzzleHandlers:
 
         app.puzzle_uc.create_puzzle.assert_called_once_with(1, "demo", size=15)
         assert response["grid"]["size"] == puzzle.n
+
+    def test_handle_list_puzzles_hides_internal_new_entries(self, request_handler, app):
+        app.puzzle_uc.list_puzzles.return_value = ["alpha", "__new__abcd1234", "beta"]
+
+        response = handle_list_puzzles(
+            (), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        app.puzzle_uc.list_puzzles.assert_called_once_with(1)
+        assert response == {"puzzles": ["alpha", "beta"]}
 
     def test_handle_switch_to_grid_mode(self, request_handler, app):
         puzzle = TestPuzzle.create_puzzle()

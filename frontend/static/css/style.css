@@ -21,7 +21,7 @@
   --c-error:        #9b1c1c;
 
   /* Layout */
-  --app-bar-h:    52px;
+  --app-bar-h:    64px;
   --action-bar-h: 44px;
 
   /* Spacing */
@@ -67,7 +67,7 @@ h3 { font-size: 1.05rem; }
 .app-bar {
   display: flex;
   align-items: center;
-  height: var(--app-bar-h);
+  min-height: var(--app-bar-h);
   background: var(--c-appbar-bg);
   color: var(--c-appbar-text);
   padding: 0 var(--sp-4);
@@ -86,7 +86,7 @@ h3 { font-size: 1.05rem; }
 }
 
 .app-bar-logo {
-  height: 32px;
+  height: 44px;
   width: auto;
   opacity: 0.85;
 }
@@ -154,7 +154,7 @@ h3 { font-size: 1.05rem; }
 .app-nav-btn {
   display: inline-flex;
   align-items: center;
-  height: 32px;
+  height: 36px;
   padding: 0 var(--sp-3);
   background: transparent;
   border: none;
