@@ -6,6 +6,16 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.6.2] - 2026-04-18
+
+### Fixed
+
+- Fixed Z-order issue
+- Fix for issue #219
+- Polish app bar and hide internal puzzles
+- Adjusted grid generation settings
+- Changed highlight for cursor cell
+
 ## [4.6.1] - 2026-04-18
 
 ### Added
