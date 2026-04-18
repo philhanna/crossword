@@ -6,6 +6,21 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.6.1] - 2026-04-18
+
+### Added
+
+- Configurable `theme_color` support via dynamically generated `/static/css/theme.css`
+
+### Changed
+
+- Update frontend color theme and app bar styling
+- Refresh app bar puzzle info immediately after Save As
+
+### Removed
+
+- Remove obsolete `tools/create_user.py` script
+
 ## [4.6.0] - 2026-04-18
 
 ### Changed

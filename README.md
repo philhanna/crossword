@@ -2,7 +2,7 @@
 
 A web-based application for creating and editing crossword puzzles.
 
-**Version: 4.2.0**
+**Version: 4.6.1**
 
 ## Table of contents
 - [Requirements](#requirements)
@@ -16,7 +16,7 @@ A web-based application for creating and editing crossword puzzles.
 
 - Python 3.10 or greater
 - git
-- PyYAML (`pip install pyyaml`)
+- PyYAML and requests (`pip install pyyaml requests`)
 
 ## Setup
 
@@ -74,6 +74,9 @@ log_level: INFO
 # How many milliseconds notification messages remain visible (default: 3000)
 message_line_timeout_ms: 3000
 
+# Optional base color for the frontend theme; the app derives related colors automatically
+#theme_color: "#004953"
+
 # NYTimes submission: author info printed on the grid page
 #author_name: Your Name
 #author_address: "123 Main St, City, ST 12345"
@@ -101,6 +104,8 @@ This starts the HTTP server on the host and port specified in config.yaml. Stop 
 
 Open a browser and go to the host and port configured in config.yaml (e.g. **http://localhost:5000**).
 
+The app runs in single-user mode. There is no login screen; puzzle actions use the built-in local user.
+
 The application is a single-page app with a home screen plus one merged construction editor:
 
 ### Home
@@ -116,17 +121,20 @@ Create the grid and fill the puzzle in one editor, switching modes as needed.
 - Existing puzzles reopen in the last mode used for that puzzle.
 - Clicking a cell in Grid mode toggles it black/white. The grid is kept symmetric automatically.
 - Click a cell or clue to select a word.
-- The word editor panel offers **Suggest** (word suggestions) and **Constraints** (pattern matching).
+- The word editor panel offers **Suggest** (word suggestions), **Constraints** (pattern matching), and **Show definitions**.
 - The statistics panel is shared across both modes.
+- The top app bar shows the current puzzle and updates immediately after **Save as**.
+- If `theme_color` is set in config, the app derives the app bar, primary accent, and sidebar colors from that base color.
 
 ### Export
 Available from anywhere via the **Export** menu:
 
 | Format | Description |
 |--------|-------------|
-| Across Lite (.puz) | Standard binary format for most crossword apps |
+| Across Lite (.txt) | Across Lite text export |
 | Crossword Compiler (.xml) | XML export |
-| New York Times (.nyt) | NYT submission format |
+| New York Times (.pdf) | NYT submission PDF |
+| Solver PDF (.pdf) | Empty grid plus compact clue list for solving/printing |
 
 ### Working copy pattern
 All edits target an invisible working copy (`__wc__<uuid>`). Choosing **Save** commits
@@ -153,12 +161,14 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 
 | Script | Description |
 |--------|-------------|
-| `tools/user/export_acrosslite.py` | Export a puzzle to AcrossLite text format (`.txt`) |
+| `tools/user/export_acrosslite.py` | Export a puzzle to Across Lite text format (`.txt`) |
 | `tools/user/export_ccxml.py` | Export a puzzle to Crossword Compiler XML format (`.xml`) |
 | `tools/user/export_json.py` | Export a puzzle to JSON format (`.json`) |
 | `tools/user/export_nytimes.py` | Export a puzzle to NYTimes submission format (`.pdf`) |
+| `tools/user/export_solver_pdf.py` | Export a puzzle to the compact solver PDF format (`.pdf`) |
 | `tools/user/clear_work_files.py` | Remove orphaned working-copy rows from the database |
-| `tools/user/rank_fill_order.py` | Rank puzzle slots by structural importance to suggest a fill order |
+| `tools/user/grid_generator.py` | Generate candidate crossword grids |
+| `tools/user/lookup.py` | Look up dictionary entries from the command line |
 
 ### Dev
 
