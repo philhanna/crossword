@@ -6,7 +6,7 @@ from crossword.http_server.server import create_server, start_server
 from crossword.wiring import make_app
 
 # Import all handlers
-from crossword.http_server.static_handlers import handle_get_index, handle_get_static, handle_get_config
+from crossword.http_server.static_handlers import handle_get_index, handle_get_static, handle_get_config, handle_get_theme_css
 from crossword.http_server.puzzle_handlers import (
     handle_list_puzzles,
     handle_create_puzzle,
@@ -56,6 +56,7 @@ def register_routes(router):
     """
     # Static file serving
     router.add_route("GET", r"^/$", handle_get_index)
+    router.add_route("GET", r"^/static/css/theme\.css$", handle_get_theme_css)
     router.add_route("GET", r"^/static/(.+)$", handle_get_static)
 
     # Frontend configuration

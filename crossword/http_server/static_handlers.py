@@ -2,6 +2,7 @@
 Static file handlers - serve index.html and static assets (CSS, JS).
 """
 
+import colorsys
 import logging
 from pathlib import Path
 
@@ -51,6 +52,52 @@ def handle_get_config(path_params, query_params, body_params, session_token, req
         return {
             "message_line_timeout_ms": config.get("message_line_timeout_ms", None),
         }
+    except Exception as e:
+        request_handler._send_error(500, str(e))
+        return None
+
+
+def _hex_to_hsl(hex_color):
+    hex_color = hex_color.lstrip('#')
+    r, g, b = (int(hex_color[i:i+2], 16) / 255 for i in (0, 2, 4))
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    return h, s, l
+
+
+def _hsl_to_hex(h, s, l):
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return '#{:02x}{:02x}{:02x}'.format(round(r * 255), round(g * 255), round(b * 255))
+
+
+def _derive_palette(theme_color):
+    h, s, l = _hex_to_hsl(theme_color)
+    return {
+        '--c-primary':    theme_color,
+        '--c-primary-dk': _hsl_to_hex(h, max(s * 0.7, 0.3), min(l * 1.9, 0.52)),
+        '--c-appbar-bg':  _hsl_to_hex(h, min(s, 1.0),       max(l * 0.75, 0.08)),
+        '--c-appbar-text':_hsl_to_hex(h, 0.20,               0.92),
+        '--c-sidebar-bg': _hsl_to_hex(h, 0.30,               0.96),
+    }
+
+
+def handle_get_theme_css(path_params, query_params, body_params, session_token, request_handler, app=None, **kwargs):
+    """
+    Serve a dynamically computed :root override for theme colors.
+    GET /static/css/theme.css
+    """
+    try:
+        config = app.config if app else {}
+        theme_color = config.get('theme_color', '').strip()
+
+        if not theme_color:
+            request_handler._send_bytes(b'', content_type='text/css')
+            return None
+
+        palette = _derive_palette(theme_color)
+        lines = ['  ' + k + ': ' + v + ';' for k, v in palette.items()]
+        css = ':root {\n' + '\n'.join(lines) + '\n}\n'
+        request_handler._send_bytes(css.encode(), content_type='text/css')
+        return None
     except Exception as e:
         request_handler._send_error(500, str(e))
         return None
