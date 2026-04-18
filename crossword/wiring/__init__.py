@@ -16,6 +16,7 @@ from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
+from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
 from crossword.adapters.sqlite_user_adapter import SQLiteUserAdapter
 from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDefinition
 from crossword.adapters.memory_session_store import MemorySessionStore
@@ -131,6 +132,7 @@ def make_app(config=None):
         author_email=config.get("author_email"),
     )
     json_adapter = JsonExportAdapter()
+    solver_pdf_adapter = SolverPdfExportAdapter()
 
     # ========================================================================
     # Instantiate Use Cases (with constructor injection)
@@ -140,7 +142,7 @@ def make_app(config=None):
 
     word_uc = WordUseCases(word_adapter)
     puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc)
-    export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter)
+    export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter, solver_pdf_adapter)
     import_uc = ImportUseCases(persistence, acrosslite_import_adapter)
 
     if not config.get("host"):

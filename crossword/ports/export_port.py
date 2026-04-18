@@ -115,6 +115,25 @@ class ExportPort(ABC):
         pass
 
     @abstractmethod
+    def export_puzzle_to_solver_pdf(self, puzzle: Puzzle) -> bytes:
+        """
+        Export a puzzle to a compact solver PDF.
+
+        Produces a single Letter-size page with an empty numbered grid on the
+        left and ACROSS / DOWN clue lists side-by-side on the right.
+
+        Args:
+            puzzle: Puzzle object to export
+
+        Returns:
+            PDF file contents as bytes
+
+        Raises:
+            ExportError: If export fails
+        """
+        pass
+
+    @abstractmethod
     def export_puzzle_to_nytimes(self, puzzle: Puzzle) -> bytes:
         """
         Export a puzzle in NYTimes submission format (PDF).
