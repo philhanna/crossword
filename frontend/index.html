@@ -1,66 +1,75 @@
 <!DOCTYPE html>
 <html>
-<!-- ================ header ================ -->
 <head>
 <meta charset="utf-8">
 <title>Crossword Composer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
 <body>
-<div class="w3-container" style="display:flex;align-items:center;gap:16px;padding-top:12px;padding-bottom:12px;">
-  <img src="/static/images/mozart-crossword.png" style="height:64px;width:auto;">
-  <h1>Crossword Composer</h1>
-</div>
 
-<!-- ================ menu ================ -->
-
-<div id="top-menu" class="w3-bar w3-blue-gray">
-
-  <!-- Puzzle menu -->
-  <div class="w3-dropdown-hover w3-blue-gray">
-    <button class="w3-button">Puzzle</button>
-    <div class="w3-dropdown-content w3-bar-block w3-card-4">
-      <a id="menu-puzzle-new"            class="w3-bar-item w3-button" onclick="do_puzzle_new()">New puzzle...</a>
-      <a id="menu-puzzle-open"           class="w3-bar-item w3-button" onclick="do_puzzle_open()">Open puzzle...</a>
-      <a id="menu-puzzle-save"           class="w3-bar-item w3-button" onclick="do_puzzle_save()">Save puzzle</a>
-      <a id="menu-puzzle-save-as"        class="w3-bar-item w3-button" onclick="do_puzzle_save_as()">Save puzzle as...</a>
-      <a id="menu-puzzle-rename"         class="w3-bar-item w3-button" onclick="do_puzzle_rename()">Rename puzzle...</a>
-      <a id="menu-puzzle-close"          class="w3-bar-item w3-button" onclick="do_puzzle_close()">Close puzzle</a>
-      <a id="menu-puzzle-delete"         class="w3-bar-item w3-button" onclick="do_puzzle_delete()">Delete puzzle</a>
-      <a id="menu-puzzle-title"          class="w3-bar-item w3-button" onclick="do_puzzle_title()">Title...</a>
-      <hr style="margin:4px 0">
-      <a id="menu-puzzle-grid-mode"      class="w3-bar-item w3-button" onclick="do_switch_to_grid_mode()">Grid mode</a>
-      <a id="menu-puzzle-puzzle-mode"    class="w3-bar-item w3-button" onclick="do_switch_to_puzzle_mode()">Puzzle mode</a>
-    </div>
+<!-- ================ App bar ================ -->
+<header class="app-bar">
+  <div class="app-bar-brand">
+    <img src="/static/images/mozart-crossword.png" class="app-bar-logo" alt="">
+    <span class="app-bar-title">Crossword Composer</span>
   </div>
 
-  <!-- Import menu -->
-  <div class="w3-dropdown-hover w3-blue-gray">
-    <button class="w3-button">Import</button>
-    <div class="w3-dropdown-content w3-bar-block w3-card-4">
-      <a id="menu-import-acrosslite"     class="w3-bar-item w3-button" onclick="do_puzzle_import()">AcrossLite...</a>
-    </div>
-  </div>
+  <div id="app-bar-puzzle-info" class="app-bar-puzzle-info"></div>
 
-  <!-- Export menu -->
-  <div class="w3-dropdown-hover w3-blue-gray">
-    <button class="w3-button">Export</button>
-    <div class="w3-dropdown-content w3-bar-block w3-card-4">
-      <a id="menu-export-acrosslite"    class="w3-bar-item w3-button" onclick="do_export('puz')">Across Lite format</a>
-      <a id="menu-export-cwcompiler"    class="w3-bar-item w3-button" onclick="do_export('xml')">Crossword Compiler format</a>
-      <a id="menu-export-nytimes"       class="w3-bar-item w3-button" onclick="do_export('nyt')">New York Times format</a>
-      <a id="menu-export-solver-pdf"    class="w3-bar-item w3-button" onclick="do_export('solver')">Solver PDF</a>
-    </div>
-  </div>
+  <nav id="top-menu" class="app-bar-nav">
 
-  <a class="w3-bar-item w3-button w3-right"
-     href="https://github.com/philhanna/crossword"
-     target="_blank">Help</a>
-</div>
+    <!-- Puzzle menu -->
+    <div class="w3-dropdown-hover">
+      <button class="app-nav-btn">Puzzle</button>
+      <div class="w3-dropdown-content w3-card-4 app-dropdown">
+        <a id="menu-puzzle-new"            class="w3-bar-item w3-button" onclick="do_puzzle_new()">New puzzle…</a>
+        <a id="menu-puzzle-open"           class="w3-bar-item w3-button" onclick="do_puzzle_open()">Open puzzle…</a>
+        <hr class="dropdown-divider">
+        <a id="menu-puzzle-save"           class="w3-bar-item w3-button" onclick="do_puzzle_save()">Save</a>
+        <a id="menu-puzzle-save-as"        class="w3-bar-item w3-button" onclick="do_puzzle_save_as()">Save as…</a>
+        <a id="menu-puzzle-rename"         class="w3-bar-item w3-button" onclick="do_puzzle_rename()">Rename…</a>
+        <a id="menu-puzzle-close"          class="w3-bar-item w3-button" onclick="do_puzzle_close()">Close</a>
+        <a id="menu-puzzle-delete"         class="w3-bar-item w3-button" onclick="do_puzzle_delete()">Delete…</a>
+        <hr class="dropdown-divider">
+        <a id="menu-puzzle-title"          class="w3-bar-item w3-button" onclick="do_puzzle_title()">Edit title…</a>
+        <a id="menu-puzzle-grid-mode"      class="w3-bar-item w3-button" onclick="do_switch_to_grid_mode()">Switch to Grid mode</a>
+        <a id="menu-puzzle-puzzle-mode"    class="w3-bar-item w3-button" onclick="do_switch_to_puzzle_mode()">Switch to Puzzle mode</a>
+      </div>
+    </div>
+
+    <!-- Import menu -->
+    <div class="w3-dropdown-hover">
+      <button class="app-nav-btn">Import</button>
+      <div class="w3-dropdown-content w3-card-4 app-dropdown">
+        <a id="menu-import-acrosslite"     class="w3-bar-item w3-button" onclick="do_puzzle_import()">AcrossLite…</a>
+      </div>
+    </div>
+
+    <!-- Export menu -->
+    <div class="w3-dropdown-hover">
+      <button class="app-nav-btn">Export</button>
+      <div class="w3-dropdown-content w3-card-4 app-dropdown">
+        <a id="menu-export-acrosslite"     class="w3-bar-item w3-button" onclick="do_export('puz')">Across Lite</a>
+        <a id="menu-export-cwcompiler"     class="w3-bar-item w3-button" onclick="do_export('xml')">Crossword Compiler</a>
+        <a id="menu-export-nytimes"        class="w3-bar-item w3-button" onclick="do_export('nyt')">New York Times</a>
+        <a id="menu-export-solver-pdf"     class="w3-bar-item w3-button" onclick="do_export('solver')">Solver PDF</a>
+      </div>
+    </div>
+
+    <a class="app-nav-btn"
+       href="https://github.com/philhanna/crossword"
+       target="_blank">Help</a>
+
+  </nav>
+</header>
+
+<!-- ================ Action bar (populated by JS) ================ -->
+<div id="action-bar" class="action-bar" style="display:none"></div>
 
 <!-- Message line -->
 <div id="ml" class="message-line message-line-notice" style="display:none">
@@ -71,60 +80,52 @@
 <!-- Hidden file input for AcrossLite import -->
 <input type="file" id="acrosslite-file-input" accept=".txt" style="display:none">
 
-<!-- ================ main content ================ -->
+<!-- ================ Main workspace ================ -->
+<main id="workspace">
+  <div id="lhs" class="workspace-grid-pane"></div>
+  <div id="rhs" class="workspace-sidebar-pane"></div>
+</main>
 
-<div class="w3-cell-row">
-  <!-- LHS: grid / chooser panel (45%) -->
-  <div id="lhs" class="w3-cell" style="width:45%;padding-top:0;vertical-align:top"></div>
-  <!-- RHS: clues / suggestions panel (55%) -->
-  <div id="rhs" class="w3-cell" style="width:55%;vertical-align:top"></div>
-</div>
-
-<!-- ================ footer ================ -->
+<!-- ================ Dialogs ================ -->
 
 <!-- Constraints popup -->
-<div id="constraints-popup" class="w3-modal" style="display:none" onclick="if(event.target===this)hideElement('constraints-popup')">
-  <div class="w3-modal-content w3-card-4" style="width:640px;max-width:95vw">
-    <div class="w3-blue-gray w3-padding-small" style="display:flex;align-items:center">
-      <i class="material-icons" style="vertical-align:middle;margin-right:6px">assignment</i>
-      <span id="constraints-popup-title" style="font-weight:bold;font-size:1.1em;flex:1"></span>
-      <span class="w3-button w3-display-topright" onclick="hideElement('constraints-popup')" style="padding:4px 8px">&times;</span>
+<div id="constraints-popup" class="w3-modal" style="display:none"
+     onclick="if(event.target===this)hideElement('constraints-popup')">
+  <div class="w3-modal-content dialog-card" style="width:640px;max-width:95vw">
+    <div class="dialog-header">
+      <i class="material-icons dialog-header-icon">assignment</i>
+      <span id="constraints-popup-title" class="dialog-title"></span>
+      <button class="dialog-close-btn" onclick="hideElement('constraints-popup')">&times;</button>
     </div>
-    <div id="constraints-popup-body" class="w3-container" style="max-height:60vh;overflow-y:auto;padding:12px 16px;font-size:0.9em"></div>
+    <div id="constraints-popup-body" class="dialog-body" style="max-height:60vh;overflow-y:auto"></div>
   </div>
 </div>
 
 <!-- Definitions popup -->
-<div id="defs-popup" class="w3-modal" style="display:none" onclick="if(event.target===this)hideElement('defs-popup')">
-  <div class="w3-modal-content w3-card-4" style="width:480px;max-width:95vw">
-    <div class="w3-blue-gray w3-padding-small" style="display:flex;align-items:center">
-      <i class="material-icons" style="vertical-align:middle;margin-right:6px">menu_book</i>
-      <span id="defs-popup-title" style="font-weight:bold;font-size:1.1em;flex:1"></span>
-      <span class="w3-button w3-display-topright" onclick="hideElement('defs-popup')" style="padding:4px 8px">&times;</span>
+<div id="defs-popup" class="w3-modal" style="display:none"
+     onclick="if(event.target===this)hideElement('defs-popup')">
+  <div class="w3-modal-content dialog-card" style="width:480px;max-width:95vw">
+    <div class="dialog-header">
+      <i class="material-icons dialog-header-icon">menu_book</i>
+      <span id="defs-popup-title" class="dialog-title"></span>
+      <button class="dialog-close-btn" onclick="hideElement('defs-popup')">&times;</button>
     </div>
-    <div id="defs-popup-body" class="w3-container" style="max-height:60vh;overflow-y:auto;padding:12px 16px;font-size:0.9em"></div>
+    <div id="defs-popup-body" class="dialog-body" style="max-height:60vh;overflow-y:auto"></div>
   </div>
 </div>
 
 <!-- Message box dialog (OK / Cancel) -->
 <div id="mb" class="w3-modal" style="display:none">
-  <div class="w3-modal-content w3-card-4" style="width:30%">
-    <div class="w3-blue-gray w3-center">
-      <span class="w3-button w3-display-topright" onclick="hideElement('mb')">&times;</span>
-      <h3 id="mb-title"></h3>
+  <div class="w3-modal-content dialog-card" style="width:380px;max-width:90vw">
+    <div class="dialog-header">
+      <span id="mb-title" class="dialog-title"></span>
+      <button class="dialog-close-btn" onclick="hideElement('mb')">&times;</button>
     </div>
-    <div class="w3-container">
-      <div class="w3-section">
-        <span id="mb-prompt"></span>
-      </div>
-      <div class="w3-section w3-center">
-        <a class="w3-button w3-border w3-round w3-gray"
-           id="mb-ok"
-           href="#"
-           style="width:100px">OK</a>
-        <button class="w3-button w3-border w3-round w3-gray"
-                onclick="hideElement('mb')"
-                style="width:100px">Cancel</button>
+    <div class="dialog-body">
+      <p id="mb-prompt" class="dialog-prompt"></p>
+      <div class="dialog-actions">
+        <a class="btn btn-primary" id="mb-ok" href="#">OK</a>
+        <button class="btn btn-secondary" onclick="hideElement('mb')">Cancel</button>
       </div>
     </div>
   </div>
@@ -132,28 +133,20 @@
 
 <!-- Input box dialog (text input + OK / Cancel) -->
 <div id="ib" class="w3-modal" style="display:none">
-  <div class="w3-modal-content w3-card-4" style="width:30%">
-    <div class="w3-blue-gray w3-center">
-      <span class="w3-button w3-display-topright" onclick="hideElement('ib')">&times;</span>
-      <h3 id="ib-title"></h3>
+  <div class="w3-modal-content dialog-card" style="width:380px;max-width:90vw">
+    <div class="dialog-header">
+      <span id="ib-title" class="dialog-title"></span>
+      <button class="dialog-close-btn" onclick="hideElement('ib')">&times;</button>
     </div>
-    <div class="w3-section">
-      <span id="ib-prompt"></span>
-    </div>
-    <form id="ib-form" name="ib-form" class="w3-container">
-      <div class="w3-section">
-        <label id="ib-label"></label>
-        <input type="text" id="ib-input" name="ib-input" value="" required>
-        <div class="w3-section w3-center">
-          <button class="w3-button w3-border w3-round w3-gray"
-                  id="ib-ok"
-                  type="submit"
-                  value="OK"
-                  style="width:100px">OK</button>
-          <button class="w3-button w3-border w3-round w3-gray"
-                  onclick="hideElement('ib');return false;"
-                  style="width:100px">Cancel</button>
-        </div>
+    <form id="ib-form" name="ib-form" class="dialog-body">
+      <p id="ib-prompt" class="dialog-prompt"></p>
+      <div class="form-field">
+        <label id="ib-label" class="form-label"></label>
+        <input type="text" id="ib-input" name="ib-input" class="form-input" value="" required>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-primary" id="ib-ok" type="submit">OK</button>
+        <button class="btn btn-secondary" onclick="hideElement('ib');return false;">Cancel</button>
       </div>
     </form>
   </div>
@@ -161,12 +154,12 @@
 
 <!-- Chooser dialog (scrollable list of grids or puzzles) -->
 <div id="ch" class="w3-modal" style="display:none">
-  <div class="w3-modal-content w3-card-4" style="width:65%">
-    <div class="w3-blue-gray w3-center">
-      <span class="w3-button w3-display-topright" onclick="hideElement('ch')">&times;</span>
-      <h3 id="ch-title"></h3>
+  <div class="w3-modal-content dialog-card" style="width:65%;max-width:95vw">
+    <div class="dialog-header">
+      <span id="ch-title" class="dialog-title"></span>
+      <button class="dialog-close-btn" onclick="hideElement('ch')">&times;</button>
     </div>
-    <div id="ch-list" class="w3-container chooser-list"></div>
+    <div id="ch-list" class="chooser-list dialog-body"></div>
   </div>
 </div>
 

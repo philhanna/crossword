@@ -22,6 +22,7 @@ const AppState = {
     selectedWord: null,      // null | {seq, direction, cells, initialText, currentText}
     showingStats: false,     // true = puzzle editor RHS shows stats panel
     showingFillOrder: false, // true = puzzle editor RHS shows fill-order panel
+    sidebarTab: 'clues',     // active sidebar tab: 'clues'|'word'|'stats'|'fill-order'|'grid'
     _statsData: null,        // cached puzzle stats response
     _fillOrderData: null,    // cached fill-order response
     gridStructureChanged: false, // true after Grid-mode edits until user returns to Puzzle mode
@@ -52,8 +53,9 @@ function escapeHtml(s) {
 }
 
 function _closeSidePanels() {
-    AppState.showingStats = false;
+    AppState.showingStats     = false;
     AppState.showingFillOrder = false;
+    AppState.sidebarTab       = 'clues';
 }
 
 async function apiFetch(method, path, body) {
@@ -71,9 +73,11 @@ let _messageLineTimer = null;
 
 function positionMessageLine() {
     const ml = document.getElementById('ml');
-    const menu = document.getElementById('top-menu');
-    if (!ml || !menu) return;
-    const rect = menu.getBoundingClientRect();
+    const ab = document.getElementById('action-bar');
+    const appBar = document.querySelector('.app-bar');
+    if (!ml || !appBar) return;
+    const ref = (ab && ab.style.display !== 'none') ? ab : appBar;
+    const rect = ref.getBoundingClientRect();
     ml.style.top = `${rect.bottom + 8}px`;
 }
 
@@ -288,17 +292,24 @@ function showView(view) {
     document.getElementById('lhs').innerHTML = '';
     document.getElementById('rhs').innerHTML = '';
     switch (view) {
-        case 'home':   renderHome();   break;
-        case 'editor': renderPuzzleEditor(); break;
+        case 'home':
+            updateAppBarPuzzleInfo();
+            renderActionBar();
+            renderHome();
+            break;
+        case 'editor':
+            renderPuzzleEditor();
+            break;
         default:
+            renderActionBar();
             document.getElementById('lhs').innerHTML =
-                `<div class="w3-container"><p>Unknown view: ${view}</p></div>`;
+                `<div class="home-welcome"><p>Unknown view: ${view}</p></div>`;
     }
 }
 
 function renderHome() {
     document.getElementById('lhs').innerHTML =
-        `<div class="w3-container">
+        `<div class="home-welcome">
   <p>Use the Puzzle menu to create or open a crossword for editing.</p>
 </div>`;
 }
@@ -328,7 +339,7 @@ function buildGridSvg(cells, n) {
     const totalPx = n * BOXSIZE + 1;
     const nums    = computeGridNumbers(cells, n);
     const parts   = [
-        `<svg xmlns="http://www.w3.org/2000/svg" id="grid-svg" ` +
+        `<svg xmlns="http://www.w3.org/2000/svg" id="grid-svg" class="svg-grid-mode" ` +
         `width="${totalPx}" height="${totalPx}" style="cursor:pointer;display:block">`,
     ];
     for (let r = 1; r <= n; r++) {
@@ -339,19 +350,20 @@ function buildGridSvg(cells, n) {
             const black = cells[idx];
             parts.push(
                 `<rect x="${x}" y="${y}" width="${BOXSIZE}" height="${BOXSIZE}" ` +
-                `fill="${black ? 'black' : 'white'}" stroke="#999" stroke-width="0.5"/>`
+                `class="${black ? 'grid-cell-black' : 'grid-cell-white'}" ` +
+                `fill="${black ? '#1a1a1a' : 'white'}" stroke="#c8c4bc" stroke-width="0.5"/>`
             );
             if (!black && nums[idx] !== null) {
                 parts.push(
                     `<text x="${x + 2}" y="${y + 10}" ` +
-                    `font-size="9" font-family="sans-serif">${nums[idx]}</text>`
+                    `font-size="9" font-family="'IBM Plex Sans', sans-serif" fill="#555">${nums[idx]}</text>`
                 );
             }
         }
     }
     parts.push(
         `<rect x="0" y="0" width="${totalPx - 1}" height="${totalPx - 1}" ` +
-        `fill="none" stroke="black" stroke-width="2"/>`
+        `fill="none" stroke="#1a1a1a" stroke-width="2"/>`
     );
     parts.push('</svg>');
     return parts.join('');
@@ -386,7 +398,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
     }
 
     const parts = [
-        `<svg xmlns="http://www.w3.org/2000/svg" id="puzzle-svg" ` +
+        `<svg xmlns="http://www.w3.org/2000/svg" id="puzzle-svg" class="svg-puzzle-mode" ` +
         `width="${totalPx}" height="${totalPx}" style="cursor:pointer;display:block">`,
     ];
 
@@ -397,19 +409,23 @@ function buildPuzzleSvg(puzzleData, editState = null) {
             const y     = (r - 1) * BOXSIZE;
             const black = blackCells[idx];
 
-            let fill;
+            let fill, cellClass;
             if (black) {
-                fill = 'black';
-            } else if (editState) {
-                if (wordCellSet.has(idx))       fill = '#c8e6fa';  // selected word cells
-                else                            fill = 'white';
+                fill = '#1a1a1a'; cellClass = '';
+            } else if (editState && wordCellSet.has(idx)) {
+                if (idx === cursorFlatIdx) {
+                    fill = '#ffc107'; cellClass = 'puzzle-cell-cursor'; // amber active cell
+                } else {
+                    fill = '#b8d4f5'; cellClass = 'puzzle-cell-word';   // selected word
+                }
             } else {
-                fill = 'white';
+                fill = 'white'; cellClass = 'puzzle-cell-plain';
             }
 
             parts.push(
                 `<rect x="${x}" y="${y}" width="${BOXSIZE}" height="${BOXSIZE}" ` +
-                `fill="${fill}" stroke="#999" stroke-width="0.5"/>`
+                `${cellClass ? `class="${cellClass}" ` : ''}` +
+                `fill="${fill}" stroke="#c8c4bc" stroke-width="0.5"/>`
             );
 
             if (!black) {
@@ -417,7 +433,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
                 if (cd.number !== undefined) {
                     parts.push(
                         `<text x="${x + 2}" y="${y + 10}" ` +
-                        `font-size="9" font-family="sans-serif">${cd.number}</text>`
+                        `font-size="9" font-family="'IBM Plex Sans', sans-serif" fill="#555">${cd.number}</text>`
                     );
                 }
                 // In edit mode show weText letters for word cells; otherwise use puzzle data
@@ -425,10 +441,11 @@ function buildPuzzleSvg(puzzleData, editState = null) {
                     ? (wordLetterMap[idx] || '')
                     : (cd.letter || '');
                 if (letter) {
+                    const letterFill = (idx === cursorFlatIdx) ? '#1a1a1a' : '#1a1a2e';
                     parts.push(
-                        `<text x="${x + BOXSIZE / 2}" y="${y + BOXSIZE - 6}" ` +
-                        `font-size="15" font-family="sans-serif" ` +
-                        `text-anchor="middle">${escapeHtml(letter)}</text>`
+                        `<text x="${x + BOXSIZE / 2}" y="${y + BOXSIZE - 5}" ` +
+                        `font-size="16" font-family="'IBM Plex Mono', monospace" font-weight="500" ` +
+                        `fill="${letterFill}" text-anchor="middle">${escapeHtml(letter)}</text>`
                     );
                 }
             }
@@ -438,19 +455,8 @@ function buildPuzzleSvg(puzzleData, editState = null) {
     // Outer border
     parts.push(
         `<rect x="0" y="0" width="${totalPx - 1}" height="${totalPx - 1}" ` +
-        `fill="none" stroke="black" stroke-width="2"/>`
+        `fill="none" stroke="#1a1a1a" stroke-width="2"/>`
     );
-
-    // Cursor indicator: bold inner border on cursor cell
-    if (editState && cursorFlatIdx >= 0) {
-        const cc_ = (cursorFlatIdx % n);
-        const cr_ = Math.floor(cursorFlatIdx / n);
-        parts.push(
-            `<rect x="${cc_ * BOXSIZE + 2}" y="${cr_ * BOXSIZE + 2}" ` +
-            `width="${BOXSIZE - 4}" height="${BOXSIZE - 4}" ` +
-            `fill="none" stroke="#1565c0" stroke-width="2"/>`
-        );
-    }
 
     parts.push('</svg>');
     return parts.join('');
@@ -486,7 +492,8 @@ let _weCursorIdx      = 0;   // position of typing cursor within the word cells 
 // Puzzle editor — keyboard entry state
 // ---------------------------------------------------------------------------
 
-let _peCursorIdx = 0;  // cursor position within selectedWord.cells
+let _peCursorIdx    = 0;   // cursor position within selectedWord.cells
+let _clueDirection  = 'across'; // active clue direction in Clues tab
 
 function _weRenderLhs() {
     const container = document.getElementById('puzzle-svg-container');
@@ -711,55 +718,15 @@ function renderPuzzleEditor() {
         document.addEventListener('keydown', _peKeydown);
     }
     updateMenu();
+    updateAppBarPuzzleInfo();
+    renderActionBar();
     renderPuzzleEditorLhs();
     renderPuzzleEditorRhs();
 }
 
 function renderPuzzleEditorLhs() {
-    const pd    = AppState.puzzleData;
-    const name  = AppState.puzzleName || '(No name)';
-    const title = pd && pd.puzzle.title ? `: &ldquo;${escapeHtml(pd.puzzle.title)}&rdquo;` : '';
-    const mode  = _currentEditorMode();
-
-    const size = pd ? pd.grid.size : 0;
-    const generateDisabled = (size >= 9 && size % 2 === 1) ? '' : ' w3-disabled';
-    const toolbar = mode === 'grid' ? `
-<div class="w3-container w3-margin-bottom" style="height:36px">
-  <div class="w3-bar w3-border">
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save()">
-      <i class="material-icons crosstb-icon">save</i><span>Save</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_close()">
-      <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
-    <a id="puzzle-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
-      <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
-    <a id="puzzle-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
-      <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_rotate_grid()">
-      <i class="material-icons crosstb-icon">rotate_right</i><span>Rotate</span></a>
-    <a id="puzzle-generate-btn" class="w3-bar-item w3-button crosstb${generateDisabled}" onclick="do_puzzle_generate_grid()">
-      <i class="material-icons crosstb-icon">casino</i><span>Generate</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
-      <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
-  </div>
-</div>` : `
-<div class="w3-container w3-margin-bottom" style="height:36px">
-  <div class="w3-bar w3-border">
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_save()">
-      <i class="material-icons crosstb-icon">save</i><span>Save</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_close()">
-      <i class="material-icons crosstb-icon">close</i><span>Close</span></a>
-    <a id="puzzle-undo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_undo()">
-      <i class="material-icons crosstb-icon">undo</i><span>Undo</span></a>
-    <a id="puzzle-redo-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_redo()">
-      <i class="material-icons crosstb-icon">redo</i><span>Redo</span></a>
-    <a id="puzzle-editword-btn" class="w3-bar-item w3-button crosstb" onclick="do_puzzle_edit_word()">
-      <i class="material-icons crosstb-icon">edit</i><span>Edit word</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_fill_order()">
-      <i class="material-icons crosstb-icon">format_list_numbered</i><span>Fill order</span></a>
-    <a class="w3-bar-item w3-button crosstb" onclick="do_puzzle_stats()">
-      <i class="material-icons crosstb-icon">info</i><span>Info</span></a>
-  </div>
-</div>`;
+    const pd   = AppState.puzzleData;
+    const mode = _currentEditorMode();
 
     const ew  = AppState.editingWord;
     const sw  = AppState.selectedWord;
@@ -769,16 +736,29 @@ function renderPuzzleEditorLhs() {
         ? { cells: sw.cells, cursorIdx: _peCursorIdx, text: sw.currentText }
         : null;
     const clickHelp = mode === 'grid'
-        ? '<div class="w3-container w3-text-gray" style="margin-top:8px;font-style:italic">Click cells to toggle black squares.</div>'
-        : '';
+        ? `<div class="kb-hints">
+             <span class="kb-hint"><kbd>Click</kbd> toggle cell</span>
+             <span class="kb-hint"><kbd>Rotate</kbd> or <kbd>Generate</kbd> in toolbar</span>
+           </div>`
+        : AppState.editingWord
+        ? `<div class="kb-hints">
+             <span class="kb-hint"><kbd>Enter</kbd> suggest words</span>
+             <span class="kb-hint"><kbd>Esc</kbd> cancel</span>
+           </div>`
+        : `<div class="kb-hints">
+             <span class="kb-hint"><kbd>← → ↑ ↓</kbd> move</span>
+             <span class="kb-hint"><kbd>Tab</kbd> next word</span>
+             <span class="kb-hint"><kbd>A–Z</kbd> fill</span>
+             <span class="kb-hint"><kbd>⌫</kbd> clear</span>
+             <span class="kb-hint"><kbd>Esc</kbd> deselect</span>
+           </div>`;
 
+    updateAppBarPuzzleInfo();
     document.getElementById('lhs').innerHTML = `
-<div class="w3-container">
-  <h3>Editing <b>${escapeHtml(name)}</b>${title}</h3>
-</div>
-${toolbar}
-<div id="puzzle-svg-container" class="w3-container" style="padding-top:4px">
-  ${pd ? buildPuzzleSvg(pd, editState) : ''}
+<div class="grid-canvas-frame">
+  <div id="puzzle-svg-container">
+    ${pd ? buildPuzzleSvg(pd, editState) : ''}
+  </div>
 </div>
 ${clickHelp}`;
 
@@ -788,67 +768,236 @@ ${clickHelp}`;
     _updatePuzzleUndoRedo();
 }
 
-function renderPuzzleEditorRhs() {
+function updateAppBarPuzzleInfo() {
+    const el = document.getElementById('app-bar-puzzle-info');
+    if (!el) return;
+    if (AppState.view !== 'editor' || !AppState.puzzleData) {
+        el.innerHTML = '';
+        return;
+    }
+    const name = AppState.puzzleName || '(No name)';
     const mode = _currentEditorMode();
-    let html;
+    const badgeClass = mode === 'grid' ? 'mode-badge mode-badge-grid' : 'mode-badge mode-badge-puzzle';
+    const badgeText  = mode === 'grid' ? 'Grid Mode' : 'Puzzle Mode';
+    const isDirty = AppState.puzzleSavedHash !== null &&
+        _hash(AppState.puzzleData.puzzle) !== AppState.puzzleSavedHash;
+    const saveHtml = isDirty
+        ? `<span class="save-status save-status-dirty">● Unsaved</span>`
+        : `<span class="save-status save-status-saved">✓ Saved</span>`;
+    el.innerHTML =
+        `<span class="puzzle-info-name">${escapeHtml(name)}</span>` +
+        `<span class="${badgeClass}">${badgeText}</span>` +
+        saveHtml;
+}
+
+function renderActionBar() {
+    const ab = document.getElementById('action-bar');
+    if (!ab) return;
+    if (AppState.view !== 'editor') {
+        ab.style.display = 'none';
+        document.body.classList.remove('editor-open');
+        return;
+    }
+    ab.style.display = 'flex';
+    document.body.classList.add('editor-open');
+
+    const pd   = AppState.puzzleData;
+    const mode = _currentEditorMode();
+    const size = pd ? pd.grid.size : 0;
+    const genDisabled = (size >= 9 && size % 2 === 1) ? '' : ' w3-disabled';
+
+    const modeSpecific = mode === 'grid' ? `
+<div class="ab-group">
+  <button class="ab-btn ab-mode-btn" onclick="do_switch_to_puzzle_mode()">Puzzle Mode</button>
+  <button class="ab-btn ab-mode-btn ab-mode-active">Grid Mode</button>
+</div>
+<div class="ab-divider"></div>
+<div class="ab-group">
+  <button class="ab-btn" onclick="do_puzzle_rotate_grid()">
+    <i class="material-icons">rotate_right</i><span>Rotate</span>
+  </button>
+  <button id="puzzle-generate-btn" class="ab-btn${genDisabled}" onclick="do_puzzle_generate_grid()">
+    <i class="material-icons">casino</i><span>Generate</span>
+  </button>
+  <button class="ab-btn" onclick="do_puzzle_stats()">
+    <i class="material-icons">info</i><span>Stats</span>
+  </button>
+</div>` : `
+<div class="ab-group">
+  <button class="ab-btn ab-mode-btn ab-mode-active">Puzzle Mode</button>
+  <button class="ab-btn ab-mode-btn" onclick="do_switch_to_grid_mode()">Grid Mode</button>
+</div>
+<div class="ab-divider"></div>
+<div class="ab-group">
+  <button id="puzzle-editword-btn" class="ab-btn" onclick="do_puzzle_edit_word()">
+    <i class="material-icons">edit</i><span>Edit word</span>
+  </button>
+  <button class="ab-btn" onclick="do_puzzle_fill_order()">
+    <i class="material-icons">format_list_numbered</i><span>Fill order</span>
+  </button>
+  <button class="ab-btn" onclick="do_puzzle_stats()">
+    <i class="material-icons">info</i><span>Stats</span>
+  </button>
+</div>`;
+
+    ab.innerHTML = `
+<div class="ab-group">
+  <button class="ab-btn" onclick="do_puzzle_save()">
+    <i class="material-icons">save</i><span>Save</span>
+  </button>
+</div>
+<div class="ab-divider"></div>
+<div class="ab-group">
+  <button id="puzzle-undo-btn" class="ab-btn" onclick="do_puzzle_undo()">
+    <i class="material-icons">undo</i><span>Undo</span>
+  </button>
+  <button id="puzzle-redo-btn" class="ab-btn" onclick="do_puzzle_redo()">
+    <i class="material-icons">redo</i><span>Redo</span>
+  </button>
+</div>
+<div class="ab-divider"></div>
+${modeSpecific}`;
+}
+
+function renderPuzzleEditorRhs() {
+    const mode      = _currentEditorMode();
+    const activeTab = _getActiveTab(mode);
+    const tabList   = mode === 'grid' ? ['grid', 'stats'] : ['clues', 'word', 'stats', 'fill-order'];
+    let contentHtml;
+
     if (mode === 'grid') {
-        html = AppState.showingStats && AppState._statsData
+        contentHtml = activeTab === 'stats' && AppState._statsData
             ? renderStatsPanel(AppState._statsData)
             : renderGridModePanel();
-    } else if (AppState.editingWord) {
-        html = renderWordEditorPanel();
-    } else if (AppState.showingFillOrder) {
-        html = AppState._fillOrderData ? renderFillOrderPanel(AppState._fillOrderData) : '';
-    } else if (AppState.showingStats) {
-        html = AppState._statsData ? renderStatsPanel(AppState._statsData) : '';
     } else {
-        html = renderClues();
+        switch (activeTab) {
+            case 'word':
+                contentHtml = AppState.editingWord
+                    ? renderWordEditorPanel()
+                    : `<div class="sidebar-empty">Select a word in the grid, then click <b>Edit word</b> to edit it here.</div>`;
+                break;
+            case 'stats':
+                contentHtml = AppState._statsData
+                    ? renderStatsPanel(AppState._statsData)
+                    : `<div class="sidebar-empty">Loading stats…</div>`;
+                break;
+            case 'fill-order':
+                contentHtml = AppState._fillOrderData
+                    ? renderFillOrderPanel(AppState._fillOrderData)
+                    : `<div class="sidebar-empty">Loading fill order…</div>`;
+                break;
+            default:
+                contentHtml = renderClues();
+        }
     }
-    document.getElementById('rhs').innerHTML = html;
+
+    document.getElementById('rhs').innerHTML =
+        renderSidebarTabs(activeTab, tabList) +
+        `<div class="sidebar-content">${contentHtml}</div>`;
     _scrollCluesToFirstMissing();
 }
 
-function _scrollCluesToFirstMissing() {
-    for (const dir of ['across', 'down']) {
-        const list = document.getElementById(`clue-list-${dir}`);
-        if (!list) continue;
-        const first = list.querySelector('[data-noclue]');
-        if (first) first.scrollIntoView({ block: 'nearest' });
+function _getActiveTab(mode) {
+    if (mode === 'grid') return AppState.sidebarTab === 'stats' ? 'stats' : 'grid';
+    if (AppState.editingWord) return 'word';
+    return AppState.sidebarTab || 'clues';
+}
+
+function renderSidebarTabs(activeTab, tabs) {
+    const labels = { clues: 'Clues', word: 'Word', stats: 'Stats', 'fill-order': 'Fill Order', grid: 'Grid' };
+    return `<div class="sidebar-tabs">${
+        tabs.map(t =>
+            `<button class="sidebar-tab${t === activeTab ? ' sidebar-tab-active' : ''}"
+                     onclick="switchSidebarTab('${t}')">${labels[t]}</button>`
+        ).join('')
+    }</div>`;
+}
+
+async function switchSidebarTab(tab) {
+    if (tab === 'stats' && !AppState._statsData) {
+        await do_puzzle_stats(); return;
     }
+    if (tab === 'fill-order' && !AppState._fillOrderData) {
+        await do_puzzle_fill_order(); return;
+    }
+    if (tab === 'word' && !AppState.editingWord && AppState.selectedWord) {
+        await openWordEditor(AppState.selectedWord.seq, AppState.selectedWord.direction); return;
+    }
+    AppState.sidebarTab     = tab;
+    AppState.showingStats   = (tab === 'stats');
+    AppState.showingFillOrder = (tab === 'fill-order');
+    renderPuzzleEditorRhs();
+}
+
+function switchClueDirection(dir) {
+    _clueDirection = dir;
+    renderPuzzleEditorRhs();
+}
+
+function _scrollCluesToFirstMissing() {
+    const list = document.getElementById('clue-list-active');
+    if (!list) return;
+    const first = list.querySelector('[data-noclue]');
+    if (first) first.scrollIntoView({ block: 'nearest' });
 }
 
 function renderGridModePanel() {
-    return '';
+    const pd   = AppState.puzzleData;
+    const size = pd ? pd.grid.size : '—';
+    const wc   = pd ? pd.puzzle.words.length : '—';
+    const canGen = pd && pd.grid.size >= 9 && pd.grid.size % 2 === 1;
+    return `
+<div class="grid-panel-info">
+  <p class="grid-instructions">Click any cell to toggle it between white and black. The grid maintains rotational symmetry automatically.</p>
+  <div class="grid-info-card">
+    <div class="grid-info-row"><span class="grid-info-label">Grid size</span><span class="grid-info-value">${size} × ${size}</span></div>
+    <div class="grid-info-row"><span class="grid-info-label">Words</span><span class="grid-info-value">${wc}</span></div>
+    <div class="grid-info-row"><span class="grid-info-label">Symmetry</span><span class="grid-info-value">180° rotational</span></div>
+    <div class="grid-info-row"><span class="grid-info-label">Auto-generate</span><span class="grid-info-value">${canGen ? 'Available (odd size ≥ 9)' : 'Not available for this size'}</span></div>
+  </div>
+  <p class="grid-instructions" style="margin-top:0">Use <b>Rotate</b> to rotate the grid 90°. Use <b>Generate</b> to create a random valid grid pattern. Switch to <b>Puzzle Mode</b> when done.</p>
+</div>`;
 }
 
 function renderClues() {
     if (!AppState.puzzleData) return '';
-    const words = AppState.puzzleData.puzzle.words;
-    const across = words.filter(w => w.direction === 'across').sort((a, b) => a.seq - b.seq);
-    const down   = words.filter(w => w.direction === 'down').sort((a, b) => a.seq - b.seq);
+    const words    = AppState.puzzleData.puzzle.words;
+    const across   = words.filter(w => w.direction === 'across').sort((a, b) => a.seq - b.seq);
+    const down     = words.filter(w => w.direction === 'down').sort((a, b) => a.seq - b.seq);
     const selected = AppState.selectedWord;
+    const dir      = _clueDirection;
+    const list     = dir === 'across' ? across : down;
 
-    function listHtml(wordList, direction, colorClass) {
-        const items = wordList.map(w =>
-            `<li class="${selected && selected.seq === w.seq && selected.direction === direction ? 'w3-blue-gray' : ''}"${w.clue ? '' : ' data-noclue="1"'}>` +
-            `<a onclick="selectWord(${w.seq}, '${direction}');return false;">${w.seq}. ${escapeHtml(w.clue || '(no clue)')}</a> ` +
-            `<span class="w3-small"><a onclick="do_puzzle_edit_word(${w.seq}, '${direction}');return false;">edit</a></span>` +
-            `</li>`
-        ).join('');
-        return `<ul id="clue-list-${direction}" class="w3-ul w3-card w3-border w3-hoverable ${colorClass} clue-list">${items}</ul>`;
-    }
+    const acrossClued = across.filter(w => w.clue).length;
+    const downClued   = down.filter(w => w.clue).length;
+    const countLabel  = dir === 'across'
+        ? `${acrossClued}/${across.length} clued`
+        : `${downClued}/${down.length} clued`;
+    const countClass  = (dir === 'across' ? acrossClued === across.length : downClued === down.length)
+        ? 'clue-count-ok' : 'clue-count-bad';
+
+    const items = list.map(w => {
+        const isSelected = selected && selected.seq === w.seq && selected.direction === dir;
+        const hasMissing = !w.clue;
+        return `<li class="clue-row${isSelected ? ' clue-row-selected' : ''}"${hasMissing ? ' data-noclue="1"' : ''}>` +
+            `<a class="clue-row-link" onclick="selectWord(${w.seq},'${dir}');return false;">` +
+            (hasMissing ? '<span class="clue-missing-dot"></span>' : '') +
+            `<span class="clue-num">${w.seq}</span>` +
+            `<span class="clue-text${hasMissing ? ' clue-text-missing' : ''}">${escapeHtml(w.clue || 'No clue')}</span>` +
+            `</a>` +
+            `<a class="clue-edit-link" onclick="do_puzzle_edit_word(${w.seq},'${dir}');return false;">edit</a>` +
+            `</li>`;
+    }).join('');
 
     return `
-<div class="w3-cell-row">
-  <div class="w3-cell" style="width:50%">
-    <div class="w3-center w3-margin-bottom"><b>Across</b></div>
-    ${listHtml(across, 'across', 'w3-pale-yellow')}
+<div class="clue-toolbar">
+  <div class="clue-dir-toggle">
+    <button class="clue-dir-btn${dir === 'across' ? ' clue-dir-btn-active' : ''}" onclick="switchClueDirection('across')">Across</button>
+    <button class="clue-dir-btn${dir === 'down'   ? ' clue-dir-btn-active' : ''}" onclick="switchClueDirection('down')">Down</button>
   </div>
-  <div class="w3-cell" style="width:50%">
-    <div class="w3-center w3-margin-bottom"><b>Down</b></div>
-    ${listHtml(down, 'down', 'w3-pale-green')}
-  </div>
-</div>`;
+  <span class="clue-count ${countClass}">${countLabel}</span>
+</div>
+<ul id="clue-list-active" class="clue-list-new">${items}</ul>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -864,82 +1013,68 @@ function renderWordEditorPanel() {
     const defsDisabled = /^[A-Za-z]+$/.test(text.trim()) && text.trim().length === len ? '' : 'disabled';
 
     return `
-<div id="we-dialog" class="w3-margin-right">
-  <div class="w3-section">
-    <header class="w3-container w3-blue-gray" style="padding:7px;position:relative">
-      <h3><span>${ew.seq} ${dirLabel} (${len} letters)</span></h3>
-      <span class="w3-button w3-xlarge w3-hover-red"
-            style="position:absolute;top:0;right:0"
-            onclick="closeWordEditor()">&times;</span>
-    </header>
+<div id="we-dialog" class="we-panel">
+  <div class="we-header">
+    <div class="we-header-info">
+      <div class="we-header-title">${ew.seq} ${dirLabel}</div>
+      <div class="we-header-sub">${len} letters</div>
+    </div>
+    <button class="we-header-close" onclick="closeWordEditor()" aria-label="Close">&times;</button>
+  </div>
 
-    <div class="w3-card-4">
-      <div class="w3-section" style="padding:0 8px 8px 8px">
+  <div class="we-body">
+    <!-- Answer -->
+    <div class="we-field">
+      <label class="we-label">Answer</label>
+      <input class="we-word-input" id="we-text" type="text"
+             maxlength="${len}" value="${escapeHtml(text.replace(/ /g, '.'))}"
+             oninput="weUpdateDefinitionsBtn()"/>
+    </div>
 
-        <!-- Word text input -->
-        <p style="width:95%;margin:8px 0 0 0">
-          <label>Word:</label>
-          <input class="w3-input w3-border" id="we-text" type="text"
-                 maxlength="${len}" value="${escapeHtml(text.replace(/ /g, '.'))}"
-                 style="font-family:monospace;letter-spacing:0.2em;text-transform:uppercase"
-                 oninput="weUpdateDefinitionsBtn()"/>
-        </p>
+    <!-- Clue -->
+    <div class="we-field">
+      <label class="we-label">Clue</label>
+      <input class="we-clue-input" id="we-clue" type="text"
+             value="${escapeHtml(clue)}"
+             onfocus="_weClueBeforeEdit=this.value"
+             onblur="_weOnClueBlur(this.value)"
+             placeholder="Enter clue…"/>
+    </div>
 
-        <!-- Clue input -->
-        <p style="width:95%;margin:8px 0 0 0">
-          <label>Clue:</label>
-          <input class="w3-input w3-border" id="we-clue" type="text"
-                 value="${escapeHtml(clue)}"
-                 onfocus="_weClueBeforeEdit=this.value"
-                 onblur="_weOnClueBlur(this.value)"/>
-        </p>
-
-        <!-- Suggestions section -->
-        <div style="margin-top:12px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-            <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
-                    style="min-width:80px" onclick="doWordSuggestFetch()">
-              <i class="material-icons crosstb-icon">search</i>
-              <span>Suggest</span>
-            </button>
-            <label style="margin:0;cursor:pointer;font-size:small">
-              <input type="checkbox" id="we-constrained" checked> Use constraints
-            </label>
-            <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
-                    style="min-width:80px" onclick="doWordEditOK()">OK</button>
-            <button class="w3-button w3-small w3-round w3-light-gray crosstb" type="button"
-                    style="min-width:80px" onclick="closeWordEditor()">Cancel</button>
-          </div>
-          <div id="we-match" style="display:none;font-size:small;color:#666;margin-bottom:4px"></div>
-          <ul id="we-suggestion-list"
-              style="list-style:none;margin:0;padding:0;max-height:220px;overflow-y:auto;
-                     border:1px solid #ddd;display:none"></ul>
-          <div id="we-pagination"
-               style="display:none;margin-top:4px;font-size:small;
-                      align-items:center;gap:8px">
-            <button class="w3-button w3-small w3-border" type="button"
-                    id="we-page-prev" onclick="wePagePrev()">&#9664;</button>
-            <span id="we-page-label" style="flex:1;text-align:center"></span>
-            <button class="w3-button w3-small w3-border" type="button"
-                    id="we-page-next" onclick="wePageNext()">&#9654;</button>
-          </div>
-        </div>
-
-        <!-- Show constraints row -->
-        <div style="margin-top:14px;display:flex;gap:6px">
-          <button class="w3-button w3-border w3-round w3-small w3-light-gray"
-                  id="we-constraints-btn" type="button" onclick="doWordConstraints()">
-            <i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Show constraints
-          </button>
-          <button class="w3-button w3-border w3-round w3-small w3-light-gray"
-                  id="we-definitions-btn" type="button" ${defsDisabled}
-                  onclick="doWordDefinitions()">
-            <i class="material-icons" style="font-size:14px;vertical-align:middle">menu_book</i> Show definitions
-          </button>
-        </div>
-
-
+    <!-- Suggestions -->
+    <div class="we-field">
+      <div class="we-suggestions-toolbar">
+        <label class="we-label" style="margin:0">Suggestions</label>
+        <label style="cursor:pointer;font-size:0.78rem;color:var(--c-text-muted);display:flex;align-items:center;gap:4px">
+          <input type="checkbox" id="we-constrained" checked> Constrained
+        </label>
+        <button class="ab-btn" type="button" onclick="doWordSuggestFetch()" style="height:26px;font-size:0.75rem">
+          <i class="material-icons" style="font-size:13px">search</i> Suggest
+        </button>
       </div>
+      <div id="we-match" class="we-match-label" style="display:none"></div>
+      <ul id="we-suggestion-list" class="we-suggestion-list" style="display:none"></ul>
+      <div id="we-pagination" style="display:none;margin-top:4px;align-items:center;gap:8px">
+        <button class="ab-btn" type="button" id="we-page-prev" onclick="wePagePrev()" style="height:24px;padding:0 8px">&#9664;</button>
+        <span id="we-page-label" style="flex:1;text-align:center;font-size:0.78rem;color:var(--c-text-muted)"></span>
+        <button class="ab-btn" type="button" id="we-page-next" onclick="wePageNext()" style="height:24px;padding:0 8px">&#9654;</button>
+      </div>
+    </div>
+
+    <!-- Secondary tools -->
+    <div class="we-secondary-tools">
+      <button class="ab-btn" id="we-constraints-btn" type="button" onclick="doWordConstraints()" style="font-size:0.78rem">
+        <i class="material-icons" style="font-size:13px">assignment</i> Constraints
+      </button>
+      <button class="ab-btn" id="we-definitions-btn" type="button" ${defsDisabled} onclick="doWordDefinitions()" style="font-size:0.78rem">
+        <i class="material-icons" style="font-size:13px">menu_book</i> Definitions
+      </button>
+    </div>
+
+    <!-- Action row -->
+    <div class="we-action-row">
+      <button class="btn btn-primary" type="button" onclick="doWordEditOK()">Apply</button>
+      <button class="btn btn-secondary" type="button" onclick="closeWordEditor()">Cancel</button>
     </div>
   </div>
 </div>`;
@@ -1005,6 +1140,7 @@ async function openWordEditor(seq, direction) {
             answer:    data.answer,
             clue:      data.clue,
         };
+        AppState.sidebarTab  = 'word';
         _weSuggestions = [];
         _wePage        = 0;
         document.removeEventListener('keydown', _peKeydown);
@@ -1022,6 +1158,7 @@ function closeWordEditor() {
     document.addEventListener('keydown', _peKeydown);
     AppState.editingWord  = null;
     AppState.showingStats = false;
+    AppState.sidebarTab   = 'clues';
     _weSuggestions = [];
     _wePage        = 0;
     renderPuzzleEditorLhs();
@@ -1306,6 +1443,7 @@ async function _openPuzzleInEditor(name) {
     AppState.selectedWord      = null;
     AppState.showingStats      = false;
     AppState.showingFillOrder  = false;
+    AppState.sidebarTab        = 'clues';
     AppState._statsData        = null;
     AppState._fillOrderData    = null;
     AppState.gridStructureChanged = false;
@@ -1498,6 +1636,7 @@ async function _doPuzzleCloseConfirmed() {
     AppState.selectedWord       = null;
     AppState.showingStats       = false;
     AppState.showingFillOrder   = false;
+    AppState.sidebarTab         = 'clues';
     AppState._statsData         = null;
     AppState._fillOrderData     = null;
     AppState.gridStructureChanged = false;
@@ -1548,10 +1687,11 @@ async function do_puzzle_stats() {
     try {
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/stats`);
         if (data.error) { alert(`Error: ${data.error}`); return; }
-        AppState._statsData   = data;
+        AppState._statsData       = data;
         AppState.showingFillOrder = false;
-        AppState.showingStats = true;
-        AppState.editingWord  = null;
+        AppState.showingStats     = true;
+        AppState.editingWord      = null;
+        AppState.sidebarTab       = 'stats';
         renderPuzzleEditorRhs();
     } catch (e) { alert('Error fetching stats'); }
 }
@@ -1561,136 +1701,103 @@ async function do_puzzle_fill_order() {
     try {
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
         if (data.error) { alert(`Error: ${data.error}`); return; }
-        AppState._fillOrderData = data;
-        AppState.showingStats = false;
+        AppState._fillOrderData   = data;
+        AppState.showingStats     = false;
         AppState.showingFillOrder = true;
-        AppState.editingWord = null;
+        AppState.editingWord      = null;
+        AppState.sidebarTab       = 'fill-order';
         renderPuzzleEditorRhs();
     } catch (e) { alert('Error fetching fill order'); }
 }
 
 function renderStatsPanel(stats) {
-    const validColor = stats.valid ? 'w3-text-green' : 'w3-text-red';
     const validText  = stats.valid ? 'Valid' : 'Invalid';
+    const validClass = stats.valid ? 'stat-valid' : 'stat-invalid';
 
-    // Errors section
-    let errorsHtml;
     const allErrors = Object.values(stats.errors).flat();
-    if (allErrors.length === 0) {
-        errorsHtml = 'None';
-    } else {
-        errorsHtml = '<ul style="list-style-type:none;margin:0;padding:0">' +
-            allErrors.map(e => `<li style="color:#cc0000">${escapeHtml(e)}</li>`).join('') +
-            '</ul>';
-    }
+    const errorsHtml = allErrors.length === 0 ? '' :
+        `<div class="stat-error-box">${allErrors.map(e => escapeHtml(e)).join('<br>')}</div>`;
 
-    // Word lengths table
     const wlRows = Object.entries(stats.wordlengths)
         .sort((a, b) => Number(b[0]) - Number(a[0]))
         .map(([len, entry]) => {
-            const across = (entry.alist || []).join(', ') || '(none)';
-            const down   = (entry.dlist || []).join(', ') || '(none)';
+            const across = (entry.alist || []).join(', ') || '—';
+            const down   = (entry.dlist || []).join(', ') || '—';
             return `<tr>
-  <td style="border:1px solid #ccc;padding:3px 8px">${len}</td>
-  <td style="border:1px solid #ccc;padding:3px 8px;word-break:break-word">${escapeHtml(across)}</td>
-  <td style="border:1px solid #ccc;padding:3px 8px;word-break:break-word">${escapeHtml(down)}</td>
+  <td>${len}</td>
+  <td style="word-break:break-word">${escapeHtml(across)}</td>
+  <td style="word-break:break-word">${escapeHtml(down)}</td>
 </tr>`;
         }).join('');
 
-    function row(label, value) {
-        return `<div class="w3-section w3-cell-row">
-  <div class="w3-cell" style="width:30%"><b>${label}</b></div>
-  <div class="w3-cell">${value}</div>
-</div>`;
-    }
-
     return `
-<div class="w3-margin-right">
-  <header class="w3-container w3-blue-gray" style="padding:7px;position:relative">
-    <h3>Puzzle statistics</h3>
-    <span class="w3-button w3-xlarge w3-hover-red"
-          style="position:absolute;top:0;right:0"
-          onclick="closeStatsPanel()">&times;</span>
-  </header>
-  <div class="w3-card-4">
-    <div class="w3-container" style="padding-bottom:12px">
-      ${row('Valid:', `<span class="${validColor}"><b>${validText}</b></span>`)}
-      ${row('Errors:', errorsHtml)}
-      ${row('Size:', escapeHtml(stats.size))}
-      ${row('Word count:', stats.wordcount)}
-      ${row('Black cells:', stats.blockcount)}
-      <div class="w3-section">
-        <table class="w3-table" style="border-collapse:collapse;width:auto">
-          <tr>
-            <th style="border:1px solid #ccc;padding:3px 8px">Word length</th>
-            <th style="border:1px solid #ccc;padding:3px 8px">Across</th>
-            <th style="border:1px solid #ccc;padding:3px 8px">Down</th>
-          </tr>
-          ${wlRows}
-        </table>
-      </div>
-    </div>
+<div class="stat-cards">
+  <div class="stat-card ${validClass}">
+    <div class="stat-card-value">${validText}</div>
+    <div class="stat-card-label">Validity</div>
   </div>
-</div>`;
+  <div class="stat-card">
+    <div class="stat-card-value">${escapeHtml(stats.size)}</div>
+    <div class="stat-card-label">Grid size</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-value">${stats.wordcount}</div>
+    <div class="stat-card-label">Words</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-value">${stats.blockcount}</div>
+    <div class="stat-card-label">Black cells</div>
+  </div>
+</div>
+${errorsHtml}
+<div class="stat-section-title">Word lengths</div>
+<table class="stat-table">
+  <tr><th>Length</th><th>Across</th><th>Down</th></tr>
+  ${wlRows}
+</table>`;
 }
 
 function renderFillOrderPanel(data) {
     const rows = (data.fill_priority || []).map(item => {
         const countLabel = `${item.candidate_count} candidate${item.candidate_count === 1 ? '' : 's'}`;
-        return `<tr>
-  <td style="border:1px solid #ccc;padding:3px 8px;white-space:nowrap">
-    <a onclick="selectWord(${item.seq}, '${item.direction}');return false;">${escapeHtml(item.label)}</a>
-  </td>
-  <td style="border:1px solid #ccc;padding:3px 8px;font-family:monospace">${escapeHtml(item.pattern || '')}</td>
-  <td style="border:1px solid #ccc;padding:3px 8px;white-space:nowrap">${escapeHtml(countLabel)}</td>
-  <td style="border:1px solid #ccc;padding:3px 8px">${escapeHtml(item.reason || '')}</td>
+        return `<tr onclick="_openWordFromFillOrder(${item.seq},'${item.direction}')">
+  <td style="white-space:nowrap"><a onclick="return false">${escapeHtml(item.label)}</a></td>
+  <td style="font-family:var(--font-mono)">${escapeHtml(item.pattern || '')}</td>
+  <td style="white-space:nowrap">${escapeHtml(countLabel)}</td>
+  <td>${escapeHtml(item.reason || '')}</td>
 </tr>`;
     }).join('');
     const body = rows
-        ? `<table class="w3-table" style="border-collapse:collapse;width:auto">
-          <tr>
-            <th style="border:1px solid #ccc;padding:3px 8px">Slot</th>
-            <th style="border:1px solid #ccc;padding:3px 8px">Pattern</th>
-            <th style="border:1px solid #ccc;padding:3px 8px">Candidates</th>
-            <th style="border:1px solid #ccc;padding:3px 8px">Reason</th>
-          </tr>
-          ${rows}
-        </table>`
-        : '<div class="w3-section">No fill-order suggestions are available yet.</div>';
+        ? `<table class="fill-table">
+    <thead><tr><th>Slot</th><th>Pattern</th><th>Candidates</th><th>Reason</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`
+        : `<div class="sidebar-empty">No fill-order data yet.</div>`;
 
     return `
-<div class="w3-margin-right">
-  <header class="w3-container w3-blue-gray" style="padding:7px;position:relative">
-    <h3>Fill order</h3>
-    <span class="w3-button w3-xlarge w3-hover-red"
-          style="position:absolute;top:0;right:0"
-          onclick="closeFillOrderPanel()">&times;</span>
-  </header>
-  <div class="w3-card-4">
-    <div class="w3-container" style="padding-bottom:12px">
-      <div class="w3-section">
-        Best slots to try next, ranked by candidate count with extra weight for bridge-like entries.
-      </div>
-      <div class="w3-section">
-        ${body}
-      </div>
-    </div>
-  </div>
-</div>`;
+<p class="fill-intro">Best slots to fill next, ranked by candidate count. Click a row to open the word editor for that slot.</p>
+${body}`;
 }
 
 function closeStatsPanel() {
     AppState.showingStats = false;
+    AppState.sidebarTab   = 'clues';
     renderPuzzleEditorRhs();
+}
+
+function _openWordFromFillOrder(seq, dir) {
+    selectWord(seq, dir);
+    openWordEditor(seq, dir);
 }
 
 function closeFillOrderPanel() {
     AppState.showingFillOrder = false;
+    AppState.sidebarTab       = 'clues';
     renderPuzzleEditorRhs();
 }
 
 async function _refreshPuzzleStatsIfVisible() {
-    if (!AppState.showingStats || !AppState.puzzleWorkingName) return;
+    if (AppState.sidebarTab !== 'stats' || !AppState.puzzleWorkingName) return;
     try {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/stats`);
@@ -1703,7 +1810,7 @@ async function _refreshPuzzleStatsIfVisible() {
 }
 
 async function _refreshFillOrderIfVisible() {
-    if (!AppState.showingFillOrder || !AppState.puzzleWorkingName || _currentEditorMode() !== 'puzzle') return;
+    if (AppState.sidebarTab !== 'fill-order' || !AppState.puzzleWorkingName || _currentEditorMode() !== 'puzzle') return;
     try {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/fill-order`);
@@ -1781,13 +1888,14 @@ async function _puzzleUndoRedo(action) {
     try {
         const data = await apiFetch('POST', path);
         if (data.error) { alert(`${action} failed: ${data.error}`); return; }
-        AppState.puzzleData   = data;
-        AppState.editingWord  = null;
-        AppState.selectedWord = null;
-        AppState.showingStats = false;
+        AppState.puzzleData       = data;
+        AppState.editingWord      = null;
+        AppState.selectedWord     = null;
+        AppState.showingStats     = false;
         AppState.showingFillOrder = false;
-        AppState._statsData   = null;
-        AppState._fillOrderData = null;
+        AppState.sidebarTab       = 'clues';
+        AppState._statsData       = null;
+        AppState._fillOrderData   = null;
         renderPuzzleEditor();
     } catch (e) { alert(`Error during ${action}`); }
 }
@@ -1816,13 +1924,14 @@ async function _switchToGridModeConfirmed() {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/grid`);
         if (data.error) { alert(`Error switching modes: ${data.error}`); return; }
-        AppState.puzzleData   = data;
-        AppState.editingWord  = null;
-        AppState.selectedWord = null;
-        AppState.showingStats = false;
+        AppState.puzzleData       = data;
+        AppState.editingWord      = null;
+        AppState.selectedWord     = null;
+        AppState.showingStats     = false;
         AppState.showingFillOrder = false;
-        AppState._statsData   = null;
-        AppState._fillOrderData = null;
+        AppState.sidebarTab       = 'grid';
+        AppState._statsData       = null;
+        AppState._fillOrderData   = null;
         renderPuzzleEditor();
     } catch (e) { alert('Error switching to Grid mode'); }
 }
@@ -1846,11 +1955,12 @@ async function do_switch_to_puzzle_mode() {
         const hadGridStructureChange = AppState.gridStructureChanged;
         AppState.puzzleData   = data;
         AppState.editingWord  = null;
-        AppState.selectedWord = null;
-        AppState.showingStats = false;
+        AppState.selectedWord     = null;
+        AppState.showingStats     = false;
         AppState.showingFillOrder = false;
-        AppState._statsData   = null;
-        AppState._fillOrderData = null;
+        AppState.sidebarTab       = 'clues';
+        AppState._statsData       = null;
+        AppState._fillOrderData   = null;
         AppState.gridStructureChanged = false;
         renderPuzzleEditor();
         if (hadGridStructureChange) {
