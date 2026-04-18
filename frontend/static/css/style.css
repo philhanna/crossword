@@ -1090,6 +1090,10 @@ kbd {
    Dialogs
    ========================================================= */
 
+.w3-modal {
+  z-index: 1300 !important;
+}
+
 .dialog-card {
   border-radius: 8px !important;
   overflow: hidden;
