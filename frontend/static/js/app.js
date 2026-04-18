@@ -809,6 +809,16 @@ function renderPuzzleEditorRhs() {
         html = renderClues();
     }
     document.getElementById('rhs').innerHTML = html;
+    _scrollCluesToFirstMissing();
+}
+
+function _scrollCluesToFirstMissing() {
+    for (const dir of ['across', 'down']) {
+        const list = document.getElementById(`clue-list-${dir}`);
+        if (!list) continue;
+        const first = list.querySelector('[data-noclue]');
+        if (first) first.scrollIntoView({ block: 'nearest' });
+    }
 }
 
 function renderGridModePanel() {
@@ -824,12 +834,12 @@ function renderClues() {
 
     function listHtml(wordList, direction, colorClass) {
         const items = wordList.map(w =>
-            `<li class="${selected && selected.seq === w.seq && selected.direction === direction ? 'w3-blue-gray' : ''}">` +
+            `<li class="${selected && selected.seq === w.seq && selected.direction === direction ? 'w3-blue-gray' : ''}"${w.clue ? '' : ' data-noclue="1"'}>` +
             `<a onclick="selectWord(${w.seq}, '${direction}');return false;">${w.seq}. ${escapeHtml(w.clue || '(no clue)')}</a> ` +
             `<span class="w3-small"><a onclick="do_puzzle_edit_word(${w.seq}, '${direction}');return false;">edit</a></span>` +
             `</li>`
         ).join('');
-        return `<ul class="w3-ul w3-card w3-border w3-hoverable ${colorClass} clue-list">${items}</ul>`;
+        return `<ul id="clue-list-${direction}" class="w3-ul w3-card w3-border w3-hoverable ${colorClass} clue-list">${items}</ul>`;
     }
 
     return `
