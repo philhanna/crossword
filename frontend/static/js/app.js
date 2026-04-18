@@ -941,8 +941,6 @@ function renderWordEditorPanel() {
             <i class="material-icons" style="font-size:14px;vertical-align:middle">menu_book</i> Show definitions
           </button>
         </div>
-        <div id="we-constraints-table"
-             style="overflow:auto;overflow-x:hidden;margin-top:8px"></div>
 
 
       </div>
@@ -1178,24 +1176,19 @@ function wePageNext() {
 // ---------------------------------------------------------------------------
 
 async function doWordConstraints() {
-    const tableEl = document.getElementById('we-constraints-table');
-    const btn     = document.getElementById('we-constraints-btn');
-
-    // Toggle: if already showing, hide
-    if (tableEl.innerHTML.trim() !== '') {
-        tableEl.innerHTML = '';
-        if (btn) btn.innerHTML = '<i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Show constraints';
-        return;
-    }
-
     const ew = AppState.editingWord;
     const wn = AppState.puzzleWorkingName;
-    tableEl.innerHTML = 'Loading…';
+
+    const titleEl = document.getElementById('constraints-popup-title');
+    const bodyEl  = document.getElementById('constraints-popup-body');
+    titleEl.textContent = `Constraints — ${ew.seq} ${ew.direction === 'A' ? 'Across' : 'Down'}`;
+    bodyEl.innerHTML = 'Loading…';
+    showElement('constraints-popup');
 
     try {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/constraints`);
-        if (data.error) { tableEl.innerHTML = `Error: ${escapeHtml(data.error)}`; return; }
+        if (data.error) { bodyEl.innerHTML = `Error: ${escapeHtml(data.error)}`; return; }
 
         const colNames    = ['Pos', 'Letter', 'Location', 'Text', 'Index', 'Regexp', 'Choices'];
         const crosserKeys = ['pos', 'letter', 'crossing_location', 'crossing_text',
@@ -1206,7 +1199,7 @@ async function doWordConstraints() {
             `<tr>${crosserKeys.map(k => `<td>${escapeHtml(String(cr[k]))}</td>`).join('')}</tr>`
         ).join('');
 
-        tableEl.innerHTML = `
+        bodyEl.innerHTML = `
 <div class="w3-padding w3-center">
   <b>Overall pattern:</b>
   <code style="margin:0 8px">${escapeHtml(data.pattern)}</code>
@@ -1215,9 +1208,8 @@ async function doWordConstraints() {
   <tr>${headerRow}</tr>
   ${bodyRows}
 </table>`;
-        if (btn) btn.innerHTML = '<i class="material-icons" style="font-size:14px;vertical-align:middle">assignment</i> Hide constraints';
     } catch (e) {
-        tableEl.innerHTML = 'Error fetching constraints';
+        bodyEl.innerHTML = 'Error fetching constraints';
     }
 }
 
