@@ -943,8 +943,6 @@ function renderWordEditorPanel() {
         </div>
         <div id="we-constraints-table"
              style="overflow:auto;overflow-x:hidden;margin-top:8px"></div>
-        <div id="we-definitions-panel"
-             style="overflow:auto;overflow-x:hidden;margin-top:8px"></div>
 
 
       </div>
@@ -1228,24 +1226,18 @@ async function doWordConstraints() {
 // ---------------------------------------------------------------------------
 
 async function doWordDefinitions() {
-    const panelEl = document.getElementById('we-definitions-panel');
-    const btn     = document.getElementById('we-definitions-btn');
-    const icon    = '<i class="material-icons" style="font-size:14px;vertical-align:middle">menu_book</i>';
-
-    // Toggle: if already showing, hide
-    if (panelEl.innerHTML.trim() !== '') {
-        panelEl.innerHTML = '';
-        if (btn) btn.innerHTML = `${icon} Show definitions`;
-        return;
-    }
-
     const inp  = document.getElementById('we-text');
     const word = inp ? inp.value.toUpperCase() : '';
-    panelEl.innerHTML = 'Loading…';
+
+    const titleEl = document.getElementById('defs-popup-title');
+    const bodyEl  = document.getElementById('defs-popup-body');
+    titleEl.textContent = word;
+    bodyEl.innerHTML = 'Loading…';
+    showElement('defs-popup');
 
     try {
         const data = await apiFetch('GET', `/api/words/${encodeURIComponent(word)}/definitions`);
-        if (data.error) { panelEl.innerHTML = `<p>${escapeHtml(data.error)}</p>`; return; }
+        if (data.error) { bodyEl.innerHTML = `<p>${escapeHtml(data.error)}</p>`; return; }
 
         const entriesHtml = data.entries.map(entry => {
             const defsHtml = entry.definitions.map(d => {
@@ -1258,14 +1250,9 @@ async function doWordDefinitions() {
 </div>`;
         }).join('');
 
-        panelEl.innerHTML = `
-<div class="w3-padding" style="font-size:0.9em">
-  <b>${escapeHtml(data.word.toUpperCase())}</b>
-  <div style="margin-top:6px">${entriesHtml}</div>
-</div>`;
-        if (btn) btn.innerHTML = `${icon} Hide definitions`;
+        bodyEl.innerHTML = entriesHtml || '<p>No definitions found.</p>';
     } catch (e) {
-        panelEl.innerHTML = 'Error fetching definitions';
+        bodyEl.innerHTML = 'Error fetching definitions.';
     }
 }
 
