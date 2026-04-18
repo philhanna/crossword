@@ -6,6 +6,13 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-04-18
+
+### Changed
+
+- Word editor "Show definitions" and "Show constraints" buttons now open popup modals instead of inline panels
+- Remove PostgreSQL support (tagged as `postgres-support` for future restore)
+
 ## [4.4.0] - 2026-04-18
 
 ### Added
