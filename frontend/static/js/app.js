@@ -252,7 +252,7 @@ const MENU_ITEMS = [
     'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-rename', 'menu-puzzle-close', 'menu-puzzle-delete',
     'menu-puzzle-title', 'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
     'menu-import-acrosslite',
-    'menu-export-acrosslite', 'menu-export-cwcompiler', 'menu-export-nytimes',
+    'menu-export-acrosslite', 'menu-export-cwcompiler', 'menu-export-nytimes', 'menu-export-solver-pdf',
 ];
 
 function menuEnable(id)  { document.getElementById(id).classList.remove('w3-disabled'); }
@@ -279,6 +279,7 @@ function updateMenu() {
     menuEnable('menu-export-acrosslite');
     menuEnable('menu-export-cwcompiler');
     menuEnable('menu-export-nytimes');
+    menuEnable('menu-export-solver-pdf');
 }
 
 // ---------------------------------------------------------------------------
@@ -1937,9 +1938,9 @@ async function do_puzzle_delete() {
 // ---------------------------------------------------------------------------
 
 async function _downloadExport(name, format) {
-    const endpointMap = { puz: 'acrosslite', xml: 'xml', nyt: 'nytimes' };
-    const filenameMap = { puz: `acrosslite-${name}.txt`, xml: `${name}.xml`, nyt: `nytimes-${name}.pdf` };
-    const labelMap  = { puz: 'Across Lite', xml: 'Crossword Compiler XML', nyt: 'New York Times' };
+    const endpointMap = { puz: 'acrosslite', xml: 'xml', nyt: 'nytimes', solver: 'solver-pdf' };
+    const filenameMap = { puz: `acrosslite-${name}.txt`, xml: `${name}.xml`, nyt: `nytimes-${name}.pdf`, solver: `${name}-solver.pdf` };
+    const labelMap  = { puz: 'Across Lite', xml: 'Crossword Compiler XML', nyt: 'New York Times', solver: 'Solver PDF' };
     const endpoint = endpointMap[format];
     const filename = filenameMap[format];
     try {
