@@ -6,6 +6,15 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.5.1] - 2026-04-18
+
+### Changed
+
+- Remove login system; hard-code user_id to 1 (single-user mode)
+- Delete auth/user source files and tests (no longer needed in single-user mode)
+- Update docs for single-user mode
+- Add new frontend redesign proposal
+
 ## [4.5.0] - 2026-04-18
 
 ### Changed
