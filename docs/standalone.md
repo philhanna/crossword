@@ -3,7 +3,7 @@
 ## Goal
 
 Bundle the crossword app as a standalone desktop executable for offline use. No Python install,
-no PostgreSQL, no config required. User double-clicks `crossword.exe`, browser opens automatically.
+no config required. User double-clicks `crossword.exe`, browser opens automatically.
 
 ## How PyInstaller works
 
@@ -66,7 +66,7 @@ The config system already supports SQLite — just default to this path when no 
 
 A `crossword.exe` (a folder with an exe) that:
 
-- Runs fully offline
+- Runs fully offline, single-user (no login required)
 - Stores data in `%APPDATA%/crossword/`
 - Opens the browser automatically on launch
-- Requires no Python, PostgreSQL, or config file
+- Requires no Python or config file

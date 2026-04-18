@@ -3,6 +3,7 @@
 All HTTP interactions go through `apiFetch(method, path, body?)` at [app.js:59](frontend/static/js/app.js#L59),
 which JSON-encodes the body and JSON-parses the response.
 The export download uses a raw `fetch()` to stream a blob.
+No authentication — single-user mode; user id is hard-coded to 1 on the server.
 
 ---
 
@@ -63,7 +64,7 @@ The export download uses a raw `fetch()` to stream a blob.
 | Method | Path | Triggered by | Notes |
 |--------|------|--------------|-------|
 | `GET` | `/api/words/suggestions?pattern=` | `_fetchPatternSuggestions` | Unconstrained pattern-based word list |
-| `GET` | `/api/words/{word}/definitions` | `doWordDefinitions` | Dictionary definitions for a word (toggle show/hide in word editor) |
+| `GET` | `/api/words/{word}/definitions` | `doWordDefinitions` | Dictionary definitions for a word; shown in popup modal |
 
 ---
 
