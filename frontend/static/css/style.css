@@ -33,6 +33,8 @@
   --sp-8: 32px;
 
   /* Typography */
+  --font-scale: 1.3;
+  --font-base: 18px;
   --font-ui:   'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 }
@@ -48,7 +50,7 @@ html, body {
   padding: 0;
   height: 100%;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--font-base);
   color: var(--c-text);
   background: var(--c-bg);
 }
@@ -276,7 +278,7 @@ h3 { font-size: 1.05rem; }
 }
 
 .ab-btn .material-icons {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
 }
 
 .ab-btn.w3-disabled {
@@ -1063,11 +1065,11 @@ kbd {
 
 .crosstb {
   vertical-align: top;
-  font-size: 12px;
+  font-size: calc(12px * var(--font-scale));
 }
 
 .crosstb-icon {
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
 }
 
 /* =========================================================

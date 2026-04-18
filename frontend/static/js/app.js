@@ -414,7 +414,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
                 fill = '#1a1a1a'; cellClass = '';
             } else if (editState && wordCellSet.has(idx)) {
                 if (idx === cursorFlatIdx) {
-                    fill = '#ffc107'; cellClass = 'puzzle-cell-cursor'; // amber active cell
+                    fill = '#f5cbcb'; cellClass = 'puzzle-cell-cursor'; // amber active cell
                 } else {
                     fill = '#b8d4f5'; cellClass = 'puzzle-cell-word';   // selected word
                 }
