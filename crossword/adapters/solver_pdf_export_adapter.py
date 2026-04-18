@@ -73,8 +73,6 @@ class SolverPdfExportAdapter:
   .section-title {{
     font-size: 10pt;
     font-weight: bold;
-    border-bottom: 1.5px solid black;
-    padding-bottom: 2px;
     margin: 0.5em 0 4px 0;
   }}
   .clue {{
