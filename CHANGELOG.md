@@ -6,6 +6,23 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+## [4.6.3] - 2026-04-18
+
+### Added
+
+- Auto-commit typed word when user clicks outside the current word
+
+### Changed
+
+- Use Windows config path by default
+- Add Windows run script and update docs
+
+### Fixed
+
+- Fix "Save As" on existing puzzle to copy rather than rename
+- Go to Mozart webpage when icon is clicked
+- Fix dropdown closing when mouse moves to submenu items
+
 ## [4.6.2] - 2026-04-18
 
 ### Fixed
