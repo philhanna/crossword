@@ -581,6 +581,7 @@ function selectWord(seq, direction, clickR, clickC) {
         initialText: text,
         currentText: text,
     };
+    AppState.sidebarTab = 'word';
     _closeSidePanels();
     if (clickR !== undefined) {
         const clickedIdx = word.cells.findIndex(([r, c]) => r === clickR && c === clickC);
@@ -871,7 +872,7 @@ ${modeSpecific}`;
 function renderPuzzleEditorRhs() {
     const mode      = _currentEditorMode();
     const activeTab = _getActiveTab(mode);
-    const tabList   = mode === 'grid' ? ['grid', 'stats'] : ['clues', 'word', 'stats', 'fill-order'];
+    const tabList   = mode === 'grid' ? ['grid', 'stats'] : ['word', 'clues', 'stats'];
     let contentHtml;
 
     if (mode === 'grid') {
