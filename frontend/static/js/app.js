@@ -1565,17 +1565,21 @@ async function _savePuzzleAsName(newName) {
     if (data.error) {
         throw new Error(data.error);
     }
-    const oldOriginal = AppState.puzzleOriginalName;
-    AppState.puzzleName         = newName;
-    AppState.puzzleOriginalName = newName;
-    AppState.puzzleSavedHash    = _hash(AppState.puzzleData.puzzle);
-    renderPuzzleEditorLhs();
-    showMessageLine(`Puzzle ${newName} saved.`, 'notice');
-    if (oldOriginal && oldOriginal !== newName) {
-        // Clean up the internal __new__ entry now that a real name exists
-        try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(oldOriginal)}`); }
-        catch (e) { /* ignore */ }
+    if (!AppState.puzzleName) {
+        // New (never-saved) puzzle: assign the name and clean up the __new__ entry
+        const oldOriginal = AppState.puzzleOriginalName;
+        AppState.puzzleName         = newName;
+        AppState.puzzleOriginalName = newName;
+        AppState.puzzleSavedHash    = _hash(AppState.puzzleData.puzzle);
+        renderPuzzleEditorLhs();
+        updateMenu();
+        if (oldOriginal && oldOriginal !== newName) {
+            try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(oldOriginal)}`); }
+            catch (e) { /* ignore */ }
+        }
     }
+    // For an existing named puzzle (true Save As), keep the editor on the original.
+    showMessageLine(`Puzzle saved as "${newName}".`, 'notice');
 }
 
 async function do_puzzle_save_as() {
