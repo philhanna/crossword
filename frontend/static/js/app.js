@@ -545,8 +545,8 @@ async function puzzleClickAt(event, direction) {
     const r = Math.floor(1 + y / BOXSIZE);
     const c = Math.floor(1 + x / BOXSIZE);
     const n = AppState.puzzleData.grid.size;
-    if (r < 1 || r > n || c < 1 || c > n) return;
-    if (AppState.puzzleData.grid.cells[(r - 1) * n + (c - 1)]) return; // black cell
+    if (r < 1 || r > n || c < 1 || c > n) { await _peCommitWord(); return; }
+    if (AppState.puzzleData.grid.cells[(r - 1) * n + (c - 1)]) { await _peCommitWord(); return; } // black cell
     const word = findWordAtCell(r, c, direction);
     if (word) {
         await _peCommitWord();
@@ -690,6 +690,13 @@ function _peKeydown(e) {
     }
 }
 
+function _peOutsideMousedown(e) {
+    if (!AppState.selectedWord || AppState.editingWord) return;
+    const svg = document.getElementById('puzzle-svg');
+    if (svg && svg.contains(e.target)) return; // SVG clicks handled by puzzleClickAt
+    _peCommitWord(); // fire-and-forget
+}
+
 async function do_puzzle_edit_word(seq, direction) {
     if (_currentEditorMode() !== 'puzzle') return;
     // Called from toolbar button (no args) or clue list (with args)
@@ -714,8 +721,10 @@ function _currentEditorMode() {
 
 function renderPuzzleEditor() {
     document.removeEventListener('keydown', _peKeydown);
+    document.removeEventListener('mousedown', _peOutsideMousedown);
     if (_currentEditorMode() === 'puzzle') {
         document.addEventListener('keydown', _peKeydown);
+        document.addEventListener('mousedown', _peOutsideMousedown);
     }
     updateMenu();
     updateAppBarPuzzleInfo();
@@ -1629,6 +1638,7 @@ async function do_puzzle_rename() {
 async function _doPuzzleCloseConfirmed() {
     document.removeEventListener('keydown', _peKeydown);
     document.removeEventListener('keydown', _weKeydown);
+    document.removeEventListener('mousedown', _peOutsideMousedown);
     const wn           = AppState.puzzleWorkingName;
     const originalName = AppState.puzzleOriginalName;
     const savedName    = AppState.puzzleName;
