@@ -189,6 +189,15 @@ h3 { font-size: 1.05rem; }
   margin-top: 2px;
 }
 
+.app-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
 .app-dropdown .w3-bar-item.w3-button {
   color: var(--c-text) !important;
   background: transparent !important;
