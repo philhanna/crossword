@@ -551,6 +551,7 @@ async function puzzleClickAt(event, direction) {
     if (word) {
         await _peCommitWord();
         selectWord(word.seq, word.direction, r, c);
+        await openWordEditor(word.seq, word.direction);
     }
 }
 
