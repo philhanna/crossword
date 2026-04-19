@@ -581,8 +581,8 @@ function selectWord(seq, direction, clickR, clickC) {
         initialText: text,
         currentText: text,
     };
-    AppState.sidebarTab = 'word';
     _closeSidePanels();
+    AppState.sidebarTab = 'word';
     if (clickR !== undefined) {
         const clickedIdx = word.cells.findIndex(([r, c]) => r === clickR && c === clickC);
         _peCursorIdx = clickedIdx >= 0 ? clickedIdx : 0;
