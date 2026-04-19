@@ -22,20 +22,49 @@ A web-based application for creating and editing crossword puzzles.
 
 ### Clone the repository
 
+Linux/macOS:
+
 ```bash
+git clone https://github.com/philhanna/crossword
+cd crossword
+```
+
+Windows (`cmd.exe` or PowerShell):
+
+```powershell
 git clone https://github.com/philhanna/crossword
 cd crossword
 ```
 
 ### Install in a virtual environment
 
+Linux/macOS:
+
 ```bash
 python3 -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate.bat
+source venv/bin/activate
+pip install -e .
+```
+
+Windows Command Prompt:
+
+```bat
+py -m venv venv
+venv\Scripts\activate.bat
+pip install -e .
+```
+
+Windows PowerShell:
+
+```powershell
+py -m venv venv
+.\venv\Scripts\Activate.ps1
 pip install -e .
 ```
 
 ### Upgrading
+
+Linux/macOS:
 
 ```bash
 cd crossword
@@ -43,17 +72,45 @@ git pull
 pip install -e .
 ```
 
+Windows (`cmd.exe` or PowerShell):
+
+```powershell
+cd crossword
+git pull
+pip install -e .
+```
+
 ## Configuration
 
-The application is configured via `~/.config/crossword/config.yaml`.
+The application is configured via `config.yaml` in this location:
+
+- Linux/macOS: `~/.config/crossword/config.yaml`
+- Windows: `%USERPROFILE%\.config\crossword\config.yaml`
+
 A sample configuration file is provided at `examples/sample.yaml` — copy it to get started:
+
+Linux/macOS:
 
 ```bash
 mkdir -p ~/.config/crossword
 cp examples/sample.yaml ~/.config/crossword/config.yaml
 ```
 
-Then edit `~/.config/crossword/config.yaml`:
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\crossword" | Out-Null
+Copy-Item examples\sample.yaml "$env:USERPROFILE\.config\crossword\config.yaml"
+```
+
+Windows Command Prompt:
+
+```bat
+mkdir %USERPROFILE%\.config\crossword
+copy examples\sample.yaml %USERPROFILE%\.config\crossword\config.yaml
+```
+
+Then edit that `config.yaml` file:
 
 ```yaml
 # host: IP address the server will bind to (required)
@@ -87,18 +144,34 @@ message_line_timeout_ms: 3000
 
 ## Running the server
 
+Linux/macOS:
+
 ```bash
-source venv/bin/activate   # if not already active
+source venv/bin/activate
 python -m crossword.http_server
 ```
 
-Or use the provided script:
+Windows Command Prompt:
+
+```bat
+venv\Scripts\activate.bat
+python -m crossword.http_server
+```
+
+Windows PowerShell:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+python -m crossword.http_server
+```
+
+On Linux/macOS you can also use the provided helper script:
 
 ```bash
 ./run_server
 ```
 
-This starts the HTTP server on the host and port specified in config.yaml. Stop it at any time with `Ctrl-C`.
+This starts the HTTP server on the host and port specified in `config.yaml`. Stop it at any time with `Ctrl-C`.
 
 ## Using the application
 

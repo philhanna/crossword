@@ -343,15 +343,6 @@ class TestPuzzle:
             puzzle.get_down_word(seq).set_clue(clue)
         return puzzle
 
-    def test_nyt_daily(self):
-        import json
-        puzzle = TestPuzzle.create_nyt_daily()
-        jsonstr = puzzle.to_json()
-        obj = json.loads(jsonstr)
-        jsonstr = json.dumps(obj, indent=2)
-        with open("/tmp/nyt_daily.json", "w") as fp:
-            fp.write(jsonstr)
-
     def test_equals(self):
         puzzle1 = self.create_solved_atlantic_puzzle()
         puzzle2 = self.create_solved_atlantic_puzzle()
