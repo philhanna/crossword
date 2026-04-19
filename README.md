@@ -85,7 +85,7 @@ pip install -e .
 The application is configured via `config.yaml` in this location:
 
 - Linux/macOS: `~/.config/crossword/config.yaml`
-- Windows: `%USERPROFILE%\.config\crossword\config.yaml`
+- Windows: `%APPDATA%\crossword\config.yaml`
 
 A sample configuration file is provided at `examples/sample.yaml` — copy it to get started:
 
@@ -99,15 +99,15 @@ cp examples/sample.yaml ~/.config/crossword/config.yaml
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\crossword" | Out-Null
-Copy-Item examples\sample.yaml "$env:USERPROFILE\.config\crossword\config.yaml"
+New-Item -ItemType Directory -Force "$env:APPDATA\crossword" | Out-Null
+Copy-Item examples\sample.yaml "$env:APPDATA\crossword\config.yaml"
 ```
 
 Windows Command Prompt:
 
 ```bat
-mkdir %USERPROFILE%\.config\crossword
-copy examples\sample.yaml %USERPROFILE%\.config\crossword\config.yaml
+mkdir %APPDATA%\crossword
+copy examples\sample.yaml %APPDATA%\crossword\config.yaml
 ```
 
 Then edit that `config.yaml` file:

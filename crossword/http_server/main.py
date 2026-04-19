@@ -112,7 +112,7 @@ def run_http_server(config=None):
 
     Args:
         config: Configuration dict. Required keys: 'dbfile', 'host', 'port'.
-                If None, loaded from ~/.config/crossword/config.yaml.
+                If None, loaded from the platform default config path.
     """
     print(f"Initializing app...")
     app_container = make_app(config)

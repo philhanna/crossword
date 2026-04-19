@@ -1,6 +1,8 @@
 # Crossword Composer configuration
 #
-# Copy this file to ~/.config/crossword/config.yaml and edit as needed.
+# Copy this file to:
+#   Linux/macOS: ~/.config/crossword/config.yaml
+#   Windows: %APPDATA%\crossword\config.yaml
 
 # host: IP address the server will bind to
 host: 127.0.0.1

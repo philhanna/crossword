@@ -3,7 +3,7 @@ import datetime
 from unittest.mock import patch
 import pytest
 import crossword
-from crossword import init_config
+from crossword import get_default_config_path, init_config
 
 
 def test_get_elapsed_time():
@@ -40,3 +40,21 @@ def test_init_config_missing_file_uses_defaults(caplog):
     assert 'Config file not found' in caplog.text
     assert 'dbfile' not in cfg
     assert cfg['log_level'] == 'INFO'
+
+
+def test_get_default_config_path_unix():
+    with patch('os.name', 'posix'):
+        assert get_default_config_path().endswith('.config/crossword/config.yaml')
+
+
+def test_get_default_config_path_windows():
+    with patch('os.name', 'nt'):
+        with patch.dict('os.environ', {'APPDATA': r'C:\Users\Test\AppData\Roaming'}, clear=True):
+            assert get_default_config_path() == r'C:\Users\Test\AppData\Roaming\crossword\config.yaml'
+
+
+def test_get_default_config_path_windows_without_appdata_falls_back_to_unix_style():
+    with patch('os.name', 'nt'):
+        with patch.dict('os.environ', {}, clear=True):
+            with patch('os.path.expanduser', return_value='/fallback/.config/crossword/config.yaml'):
+                assert get_default_config_path() == '/fallback/.config/crossword/config.yaml'

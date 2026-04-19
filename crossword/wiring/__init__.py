@@ -47,7 +47,7 @@ def make_app(config=None):
 
     Args:
         config: Dict with optional keys 'dbfile', 'word_dbfile', 'word_file'
-                (or None to use defaults from ~/.config/crossword/config.yaml).
+                (or None to use the platform default config path).
                 Word list load priority: word_dbfile → word_file → dbfile (legacy) → empty.
 
     Returns:

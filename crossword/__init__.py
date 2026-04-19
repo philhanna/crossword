@@ -19,6 +19,18 @@ def get_elapsed_time(stime, etime):
     return seconds
 
 
+def get_default_config_path():
+    import ntpath
+    import os
+
+    if os.name == "nt":
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            return ntpath.join(appdata, "crossword", "config.yaml")
+
+    return os.path.expanduser("~/.config/crossword/config.yaml")
+
+
 def init_config():
     import os
     import os.path
@@ -31,7 +43,7 @@ def init_config():
     defaults = {
         'log_level': "INFO",
     }
-    filename = os.path.expanduser("~/.config/crossword/config.yaml")
+    filename = get_default_config_path()
     if os.path.exists(filename):
         with open(filename) as f:
             loaded = yaml.safe_load(f) or {}
