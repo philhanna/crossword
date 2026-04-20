@@ -1139,6 +1139,13 @@ function weHandleTextInput(value) {
     weUpdateDefinitionsBtn();
 }
 
+function _weSyncTextInputFromAnswer() {
+    const inp = document.getElementById('we-text');
+    if (!inp || !AppState.editingWord) return;
+    inp.value = (AppState.editingWord.answer || '').replace(/ /g, '.');
+    weUpdateDefinitionsBtn();
+}
+
 function weUpdateDefinitionsBtn() {
     const inp = document.getElementById('we-text');
     const btn = document.getElementById('we-definitions-btn');
@@ -1154,7 +1161,7 @@ function _weOnClueBlur(newVal) {
 }
 
 // ---------------------------------------------------------------------------
-// Word editor — keyboard handler (Escape/Enter only; browser handles #we-text)
+// Word editor — keyboard handler
 // ---------------------------------------------------------------------------
 
 function _weKeydown(e) {
@@ -1168,7 +1175,56 @@ function _weKeydown(e) {
     }
     // For buttons/other elements: Escape closes, Enter lets the focused element
     // handle its own click (so Suggest button → search, OK button → save, etc.)
-    if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); }
+    if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); return; }
+
+    const ew = AppState.editingWord;
+    const len = ew.cells.length;
+
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && _weCursorIdx < len - 1) {
+        _weCursorIdx++;
+        renderPuzzleEditorLhs();
+        e.preventDefault();
+        return;
+    }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && _weCursorIdx > 0) {
+        _weCursorIdx--;
+        renderPuzzleEditorLhs();
+        e.preventDefault();
+        return;
+    }
+
+    if (e.key === 'Delete') {
+        const t = ew.answer || ''.padEnd(len);
+        ew.answer = t.slice(0, _weCursorIdx) + ' ' + t.slice(_weCursorIdx + 1);
+        _weSyncTextInputFromAnswer();
+        renderPuzzleEditorLhs();
+        e.preventDefault();
+        return;
+    }
+
+    if (e.key === 'Backspace') {
+        const t = ew.answer || ''.padEnd(len);
+        if (t[_weCursorIdx] !== ' ') {
+            ew.answer = t.slice(0, _weCursorIdx) + ' ' + t.slice(_weCursorIdx + 1);
+        } else if (_weCursorIdx > 0) {
+            _weCursorIdx--;
+            ew.answer = t.slice(0, _weCursorIdx) + ' ' + t.slice(_weCursorIdx + 1);
+        }
+        _weSyncTextInputFromAnswer();
+        renderPuzzleEditorLhs();
+        e.preventDefault();
+        return;
+    }
+
+    if (e.key === ' ' || (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key))) {
+        const ch = e.key === ' ' ? ' ' : e.key.toUpperCase();
+        const t = (ew.answer || '').padEnd(len).slice(0, len);
+        ew.answer = t.slice(0, _weCursorIdx) + ch + t.slice(_weCursorIdx + 1);
+        if (_weCursorIdx < len - 1) _weCursorIdx++;
+        _weSyncTextInputFromAnswer();
+        renderPuzzleEditorLhs();
+        e.preventDefault();
+    }
 }
 
 // ---------------------------------------------------------------------------
