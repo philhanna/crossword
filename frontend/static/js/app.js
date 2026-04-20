@@ -400,7 +400,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
 
     const parts = [
         `<svg xmlns="http://www.w3.org/2000/svg" id="puzzle-svg" class="svg-puzzle-mode" ` +
-        `width="${totalPx}" height="${totalPx}" style="cursor:pointer;display:block">`,
+        `width="${totalPx}" height="${totalPx}" tabindex="0" style="cursor:pointer;display:block">`,
     ];
 
     for (let r = 1; r <= n; r++) {
@@ -508,8 +508,19 @@ function _weRenderLhs() {
     if (svg) svg.addEventListener('click', handlePuzzleClick);
 }
 
+function _focusPuzzleSvg() {
+    const svg = document.getElementById('puzzle-svg');
+    if (!svg) return;
+    try {
+        svg.focus({ preventScroll: true });
+    } catch (e) {
+        svg.focus();
+    }
+}
+
 function handlePuzzleClick(event) {
     if (Date.now() < _ignorePuzzleClicksUntil) return;
+    _focusPuzzleSvg();
     if (AppState.editingWord) {
         _clickState = 0;
         if (_clickTimeout) {
@@ -777,6 +788,7 @@ ${clickHelp}`;
     const svg = document.getElementById('puzzle-svg');
     if (svg && mode === 'puzzle') svg.addEventListener('click', handlePuzzleClick);
     if (svg && mode === 'grid') svg.addEventListener('click', handleGridModeClick);
+    if (mode === 'puzzle' && sw && !ew) _focusPuzzleSvg();
     _updatePuzzleUndoRedo();
 }
 
