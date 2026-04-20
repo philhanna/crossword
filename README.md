@@ -8,7 +8,7 @@ A web-based application for creating and editing crossword puzzles.
 - [Requirements](#requirements)
 - [Setup](#setup)
 - [Configuration](https://github.com/philhanna/crossword/wiki/Configuration)
-- [Running the server](#running-the-server)
+- [Running the server](https://github.com/philhanna/crossword/wiki/Running-The-Server)
 - [Using the application](#using-the-application)
 - [References](#references)
 
@@ -29,34 +29,7 @@ See [Configuration](https://github.com/philhanna/crossword/wiki/Configuration) i
 
 ## Running the server
 
-Linux/macOS:
-
-```bash
-source venv/bin/activate
-python -m crossword.http_server
-```
-
-Windows Command Prompt:
-
-```bat
-venv\Scripts\activate.bat
-python -m crossword.http_server
-```
-
-Windows PowerShell:
-
-```powershell
-.\venv\Scripts\Activate.ps1
-python -m crossword.http_server
-```
-
-On Linux/macOS you can also use the provided helper script:
-
-```bash
-./run_server
-```
-
-This starts the HTTP server on the host and port specified in `config.yaml`. Stop it at any time with `Ctrl-C`.
+See [Running the Server](https://github.com/philhanna/crossword/wiki/Running-The-Server) in the wiki.
 
 ## Using the application
 
