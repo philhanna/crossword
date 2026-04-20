@@ -4,12 +4,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
-## [Unreleased]
+## [4.6.4] - 2026-04-20
 
 ### Added
 
 - Wire Help button to GitHub wiki home page
 - Open word editor automatically on cell click in puzzle editor
+- Added favicon
 
 ### Changed
 
@@ -19,10 +20,18 @@ and the format is based on [Keep a Changelog].
 - Reorder sidebar tabs; auto-focus Word tab on word selection
 - Move documentation (API reference, design docs, db schema) to GitHub wiki
 - Replace README sections with links to wiki
+- Allow grid typing while word editor is open
+- Let grid clicks close word editor and continue navigation
+- Focus puzzle grid for keyboard input
+- Disable fill order button while it is running
 
 ### Fixed
 
 - Fix Word tab not activating on word selection
+- Make solver PDF export work on Windows and macOS
+- Make NYTimes export work on Windows and macOS
+- Preserve clicked cell when opening word editor
+- Keep grid clicks working in puzzle mode after closing editor
 
 ## [4.6.3] - 2026-04-18
 
