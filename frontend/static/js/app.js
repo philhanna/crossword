@@ -25,6 +25,7 @@ const AppState = {
     sidebarTab: 'clues',     // active sidebar tab: 'clues'|'word'|'stats'|'fill-order'|'grid'
     _statsData: null,        // cached puzzle stats response
     _fillOrderData: null,    // cached fill-order response
+    fillOrderLoading: false, // true while fill-order suggestions are loading
     gridStructureChanged: false, // true after Grid-mode edits until user returns to Puzzle mode
 };
 
@@ -816,6 +817,8 @@ function renderActionBar() {
     const mode = _currentEditorMode();
     const size = pd ? pd.grid.size : 0;
     const genDisabled = (size >= 9 && size % 2 === 1) ? '' : ' w3-disabled';
+    const fillOrderDisabled = AppState.fillOrderLoading ? ' w3-disabled' : '';
+    const fillOrderDisabledAttr = AppState.fillOrderLoading ? ' disabled' : '';
 
     const modeSpecific = mode === 'grid' ? `
 <div class="ab-group">
@@ -843,7 +846,7 @@ function renderActionBar() {
   <button id="puzzle-editword-btn" class="ab-btn" onclick="do_puzzle_edit_word()">
     <i class="material-icons">edit</i><span>Edit word</span>
   </button>
-  <button class="ab-btn" onclick="do_puzzle_fill_order()">
+  <button id="puzzle-fill-order-btn" class="ab-btn${fillOrderDisabled}" onclick="do_puzzle_fill_order()"${fillOrderDisabledAttr}>
     <i class="material-icons">format_list_numbered</i><span>Fill order</span>
   </button>
   <button class="ab-btn" onclick="do_puzzle_stats()">
@@ -1737,7 +1740,14 @@ async function do_puzzle_stats() {
 }
 
 async function do_puzzle_fill_order() {
+    if (AppState.fillOrderLoading) return;
     const wn = AppState.puzzleWorkingName;
+    const btn = document.getElementById('puzzle-fill-order-btn');
+    AppState.fillOrderLoading = true;
+    if (btn) {
+        btn.classList.add('w3-disabled');
+        btn.disabled = true;
+    }
     try {
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
         if (data.error) { showMessageLine(`Error: ${data.error}`, 'error', 0); return; }
@@ -1748,6 +1758,10 @@ async function do_puzzle_fill_order() {
         AppState.sidebarTab       = 'fill-order';
         renderPuzzleEditorRhs();
     } catch (e) { showMessageLine('Error fetching fill order', 'error', 0); }
+    finally {
+        AppState.fillOrderLoading = false;
+        renderActionBar();
+    }
 }
 
 function renderStatsPanel(stats) {
