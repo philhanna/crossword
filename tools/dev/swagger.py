@@ -26,9 +26,11 @@ SPEC = {
     },
     "servers": [{"url": "http://localhost:5000", "description": "Local dev server"}],
     "tags": [
+        {"name": "config",  "description": "Frontend configuration"},
         {"name": "puzzles", "description": "Puzzle CRUD and editing"},
         {"name": "words",   "description": "Word list / dictionary"},
         {"name": "export",  "description": "Export puzzles"},
+        {"name": "import",  "description": "Import puzzles"},
     ],
 
     # ---- reusable schemas -----------------------------------------------
@@ -113,6 +115,51 @@ SPEC = {
                     "svgstr":  {"type": "string",  "description": "SVG XML string for thumbnail rendering"},
                 },
             },
+            "FillPriorityData": {
+                "type": "object",
+                "properties": {
+                    "fill_priority": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "seq":             {"type": "integer"},
+                                "direction":       {"type": "string", "enum": ["A", "D"]},
+                                "label":           {"type": "string", "example": "1-Across"},
+                                "pattern":         {"type": "string", "example": "H.LLO"},
+                                "candidate_count": {"type": "integer"},
+                                "critical":        {"type": "boolean"},
+                                "reason":          {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
+            "DefinitionData": {
+                "type": "object",
+                "properties": {
+                    "word": {"type": "string"},
+                    "entries": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "part_of_speech": {"type": "string", "example": "noun"},
+                                "definitions": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "text":    {"type": "string"},
+                                            "example": {"type": "string", "nullable": True},
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
             "StatsData": {
                 "type": "object",
                 "properties": {
@@ -147,6 +194,25 @@ SPEC = {
 
     # ---- paths ----------------------------------------------------------
     "paths": {
+
+        # ================================================================
+        # CONFIG
+        # ================================================================
+        "/api/config": {
+            "get": {
+                "tags": ["config"],
+                "summary": "Get frontend configuration derived from config.yaml",
+                "responses": {
+                    "200": {"description": "Config values",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "message_line_timeout_ms": {"type": "integer", "nullable": True},
+                                },
+                            }}}},
+                },
+            },
+        },
 
         # ================================================================
         # PUZZLES
@@ -255,6 +321,37 @@ SPEC = {
             },
         },
 
+        "/api/puzzles/{name}/rename": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Rename a puzzle",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "required": ["new_name"],
+                        "properties": {
+                            "new_name": {"type": "string", "example": "mypuzzle-v2"},
+                        },
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Renamed",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                },
+                            }}}},
+                    "400": {"description": "Validation error",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
         "/api/puzzles/{name}/mode/grid": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "post": {
@@ -331,6 +428,25 @@ SPEC = {
             },
         },
 
+        "/api/puzzles/{name}/grid/generate": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Generate a random valid grid for a puzzle",
+                "responses": {
+                    "200": {"description": "Updated puzzle data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                    "200 (notice)": {"description": "Generation failed but puzzle unchanged",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {"notice": {"type": "string"}},
+                            }}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
         "/api/puzzles/{name}/grid/rotate": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "post": {
@@ -363,6 +479,20 @@ SPEC = {
                 "responses": {
                     "200": {"description": "Updated puzzle data",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/fill-order": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["puzzles"],
+                "summary": "Get ranked fill-order suggestions for unfilled slots",
+                "responses": {
+                    "200": {"description": "Fill priority list",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FillPriorityData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },
         },
@@ -525,22 +655,6 @@ SPEC = {
             },
         },
 
-        "/api/puzzles/{name}/words/{seq}/{direction}/reset": {
-            "parameters": [
-                {"name": "name",      "in": "path", "required": True, "schema": {"type": "string"}},
-                {"name": "seq",       "in": "path", "required": True, "schema": {"type": "integer"}},
-                {"name": "direction", "in": "path", "required": True, "schema": {"type": "string", "enum": ["across", "down"]}},
-            ],
-            "post": {
-                "tags": ["puzzles"],
-                "summary": "Clear letters not shared with any completed crossing word",
-                "responses": {
-                    "200": {"description": "Updated puzzle data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
-                },
-            },
-        },
-
         "/api/puzzles/{name}/undo": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "post": {
@@ -596,6 +710,21 @@ SPEC = {
         # ================================================================
         # WORDS
         # ================================================================
+        "/api/words/{word}/definitions": {
+            "parameters": [{"name": "word", "in": "path", "required": True, "schema": {"type": "string"},
+                            "description": "The word to look up (case-insensitive)"}],
+            "get": {
+                "tags": ["words"],
+                "summary": "Look up dictionary definitions for a word",
+                "responses": {
+                    "200": {"description": "Definition entries",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/DefinitionData"}}}},
+                    "404": {"description": "Word not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
         "/api/words/suggestions": {
             "get": {
                 "tags": ["words"],
@@ -661,6 +790,34 @@ SPEC = {
         # ================================================================
         # EXPORT
         # ================================================================
+        "/api/export/puzzles/{name}/json": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["export"],
+                "summary": "Export puzzle to JSON (file download)",
+                "responses": {
+                    "200": {"description": "JSON file",
+                            "content": {"application/json": {"schema": {"type": "string", "format": "binary"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/export/puzzles/{name}/solver-pdf": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["export"],
+                "summary": "Export puzzle to solver PDF (empty grid + clues)",
+                "responses": {
+                    "200": {"description": "PDF file",
+                            "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
         "/api/export/puzzles/{name}/acrosslite": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "get": {
@@ -697,6 +854,40 @@ SPEC = {
                 "responses": {
                     "200": {"description": "XML text",
                             "content": {"application/xml": {"schema": {"type": "string"}}}},
+                },
+            },
+        },
+
+        # ================================================================
+        # IMPORT
+        # ================================================================
+        "/api/import/acrosslite": {
+            "post": {
+                "tags": ["import"],
+                "summary": "Import a puzzle from AcrossLite text format",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "required": ["name", "content"],
+                        "properties": {
+                            "name":    {"type": "string", "example": "mypuzzle",
+                                        "description": "Name to save the imported puzzle under"},
+                            "content": {"type": "string",
+                                        "description": "AcrossLite text file contents"},
+                        },
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Imported",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                },
+                            }}}},
+                    "400": {"description": "Validation or parse error",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },
         },
@@ -808,10 +999,11 @@ def check():
                 spec_routes.add((method.upper(), norm))
 
     # Static file routes are intentionally excluded from the spec
-    SKIP = {"/", "/static/{}"}
+    def _skip(path: str) -> bool:
+        return path in {"/", "/static/{}"} or path.startswith("/static/")
 
     # Normalize app routes the same way (already using {})
-    app_norm = {(m, _normalize(p)) for m, p in app_routes if _normalize(p) not in SKIP}
+    app_norm = {(m, _normalize(p)) for m, p in app_routes if not _skip(_normalize(p))}
 
     missing_from_spec = app_norm - spec_routes
     extra_in_spec     = spec_routes - app_norm
