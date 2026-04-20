@@ -7,7 +7,7 @@ A web-based application for creating and editing crossword puzzles.
 ## Table of contents
 - [Requirements](#requirements)
 - [Setup](#setup)
-- [Configuration](#configuration)
+- [Configuration](https://github.com/philhanna/crossword/wiki/Configuration)
 - [Running the server](#running-the-server)
 - [Using the application](#using-the-application)
 - [References](#references)
@@ -25,65 +25,7 @@ See installation and setup instructions at
 
 ## Configuration
 
-The application is configured via `config.yaml` in this location:
-
-- Linux/macOS: `~/.config/crossword/config.yaml`
-- Windows: `%APPDATA%\crossword\config.yaml`
-
-A sample configuration file is provided at `examples/sample.yaml` — copy it to get started:
-
-Linux/macOS:
-
-```bash
-mkdir -p ~/.config/crossword
-cp examples/sample.yaml ~/.config/crossword/config.yaml
-```
-
-Windows PowerShell:
-
-```powershell
-New-Item -ItemType Directory -Force "$env:APPDATA\crossword" | Out-Null
-Copy-Item examples\sample.yaml "$env:APPDATA\crossword\config.yaml"
-```
-
-Windows Command Prompt:
-
-```bat
-mkdir %APPDATA%\crossword
-copy examples\sample.yaml %APPDATA%\crossword\config.yaml
-```
-
-Then edit that `config.yaml` file:
-
-```yaml
-# host: IP address the server will bind to (required)
-host: 127.0.0.1
-
-# port: TCP port the server will listen on (required)
-port: 5000
-
-# dbfile: fully qualified path to the SQLite 3 database (required)
-dbfile: /path/to/crossword.db
-
-# word_dbfile: fully qualified path to the word list SQLite database
-word_dbfile: /path/to/words.db
-
-# log_level: one of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
-log_level: INFO
-
-# How many milliseconds notification messages remain visible (default: 3000)
-message_line_timeout_ms: 3000
-
-# Optional base color for the frontend theme; the app derives related colors automatically
-#theme_color: "#004953"
-
-# NYTimes submission: author info printed on the grid page
-#author_name: Your Name
-#author_address: "123 Main St, City, ST 12345"
-#author_email: you@example.com
-```
-
-`host`, `port`, and `dbfile` are required — the server will not start without them.
+See [Configuration](https://github.com/philhanna/crossword/wiki/Configuration) in the wiki.
 
 ## Running the server
 
