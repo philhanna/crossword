@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="504" height="674" viewBox="260 140 504 674" xmlns="http://www.w3.org/2000/svg">
+  <rect x="260" y="140" width="504" height="674" fill="white"/>
+
+  <!-- Outer document -->
+  <rect x="270" y="150" width="484" height="654" rx="42" ry="42"
+        fill="none" stroke="black" stroke-width="20"/>
+
+  <!-- Crossword grid -->
+  <g fill="none" stroke="black" stroke-width="18" stroke-linejoin="round" stroke-linecap="round">
+    <!-- left vertical -->
+    <rect x="360" y="258" width="70" height="208" rx="3"/>
+    <line x1="360" y1="310" x2="430" y2="310"/>
+    <line x1="360" y1="362" x2="430" y2="362"/>
+    <line x1="360" y1="414" x2="430" y2="414"/>
+
+    <!-- horizontal -->
+    <rect x="360" y="414" width="290" height="70" rx="3"/>
+    <line x1="430" y1="414" x2="430" y2="484"/>
+    <line x1="482" y1="414" x2="482" y2="484"/>
+    <line x1="534" y1="414" x2="534" y2="484"/>
+    <line x1="586" y1="414" x2="586" y2="484"/>
+
+    <!-- center vertical -->
+    <rect x="482" y="362" width="70" height="226" rx="3"/>
+    <line x1="482" y1="414" x2="552" y2="414"/>
+    <line x1="482" y1="484" x2="552" y2="484"/>
+    <line x1="482" y1="536" x2="552" y2="536"/>
+  </g>
+
+  <!-- Text lines -->
+  <g stroke="black" stroke-width="18" stroke-linecap="round">
+    <line x1="370" y1="690" x2="445" y2="690"/>
+    <line x1="485" y1="690" x2="570" y2="690"/>
+    <line x1="620" y1="690" x2="650" y2="690"/>
+
+    <line x1="370" y1="750" x2="420" y2="750"/>
+    <line x1="455" y1="750" x2="520" y2="750"/>
+    <line x1="555" y1="750" x2="650" y2="750"/>
+  </g>
+</svg>
