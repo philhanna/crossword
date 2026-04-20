@@ -1039,7 +1039,7 @@ function renderWordEditorPanel() {
       <label class="we-label">Answer</label>
       <input class="we-word-input" id="we-text" type="text"
              maxlength="${len}" value="${escapeHtml(text.replace(/ /g, '.'))}"
-             oninput="weUpdateDefinitionsBtn()"/>
+             oninput="weHandleTextInput(this.value)"/>
     </div>
 
     <!-- Clue -->
@@ -1094,11 +1094,35 @@ function renderWordEditorPanel() {
 function weListItemClick(word) {
     const inp = document.getElementById('we-text');
     if (inp) inp.value = word;
+    _weSyncAnswerFromInput();
     weUpdateDefinitionsBtn();
     // Highlight selected item
     document.querySelectorAll('#we-suggestion-list li').forEach(li => {
         li.style.background = li.dataset.word === word ? '#d0e8ff' : '';
     });
+}
+
+function _weGetRawInputText() {
+    const inp = document.getElementById('we-text');
+    if (inp) return inp.value;
+    return AppState.editingWord ? (AppState.editingWord.answer || '') : '';
+}
+
+function _weSyncAnswerFromInput() {
+    if (!AppState.editingWord) return '';
+    const len = AppState.editingWord.cells.length;
+    const rawText = _weGetRawInputText();
+    const normalized = rawText.replace(/\./g, ' ').toUpperCase().padEnd(len).slice(0, len);
+    AppState.editingWord.answer = normalized;
+    return rawText;
+}
+
+function weHandleTextInput(value) {
+    if (AppState.editingWord) {
+        const len = AppState.editingWord.cells.length;
+        AppState.editingWord.answer = value.replace(/\./g, ' ').toUpperCase().padEnd(len).slice(0, len);
+    }
+    weUpdateDefinitionsBtn();
 }
 
 function weUpdateDefinitionsBtn() {
@@ -1192,8 +1216,7 @@ async function doWordSuggestFetch() {
 
 async function _fetchPatternSuggestions() {
     { const m = document.getElementById('we-match'); if (m) m.style.display = 'none'; }
-    const inp     = document.getElementById('we-text');
-    const rawText = inp ? inp.value : (AppState.editingWord.answer || '');
+    const rawText = _weSyncAnswerFromInput();
     const pattern = rawText.replace(/ /g, '.').toUpperCase();
     if (!pattern) return;
     try {
@@ -1224,8 +1247,7 @@ async function _fetchConstrainedSuggestions() {
     const wn = AppState.puzzleWorkingName;
     { const m = document.getElementById('we-match'); if (m) m.style.display = 'none'; }
     try {
-        const inp = document.getElementById('we-text');
-        const rawText = inp ? inp.value : (ew.answer || '');
+        const rawText = _weSyncAnswerFromInput();
         const pattern = rawText.replace(/ /g, '.').toUpperCase();
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(wn)}/words/${ew.seq}/${ew.direction}/suggestions?pattern=${encodeURIComponent(pattern)}`);
