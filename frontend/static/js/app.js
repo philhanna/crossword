@@ -520,18 +520,16 @@ function _focusPuzzleSvg() {
 
 function handlePuzzleClick(event) {
     if (Date.now() < _ignorePuzzleClicksUntil) return;
-    _focusPuzzleSvg();
     if (AppState.editingWord) {
-        _clickState = 0;
         if (_clickTimeout) {
             clearTimeout(_clickTimeout);
             _clickTimeout = null;
         }
+        _clickState = 0;
         _clickEvent = null;
-        _ignorePuzzleClicksUntil = Date.now() + CLICK_DELAY;
         closeWordEditor();
-        return;
     }
+    _focusPuzzleSvg();
     _clickEvent = event;
     if (_clickState === 0) {
         _clickState = 1;
