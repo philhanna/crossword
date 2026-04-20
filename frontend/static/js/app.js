@@ -1171,6 +1171,14 @@ async function openWordEditor(seq, direction) {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(wn)}/words/${seq}/${direction}`);
         if (data.error) { showMessageLine(`Word not found: ${data.error}`, 'error', 0); return; }
+        const selectedWord = AppState.selectedWord;
+        if (selectedWord && selectedWord.seq === seq && selectedWord.direction === direction) {
+            _weCursorIdx = _peCursorIdx;
+        } else {
+            const text = (data.answer || '').padEnd(data.cells.length).slice(0, data.cells.length);
+            const firstBlank = text.indexOf(' ');
+            _weCursorIdx = firstBlank >= 0 ? firstBlank : 0;
+        }
         AppState.editingWord = {
             seq:       data.seq,
             direction: data.direction,
