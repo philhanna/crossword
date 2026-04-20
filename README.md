@@ -20,65 +20,8 @@ A web-based application for creating and editing crossword puzzles.
 
 ## Setup
 
-### Clone the repository
-
-Linux/macOS:
-
-```bash
-git clone https://github.com/philhanna/crossword
-cd crossword
-```
-
-Windows (`cmd.exe` or PowerShell):
-
-```powershell
-git clone https://github.com/philhanna/crossword
-cd crossword
-```
-
-### Install in a virtual environment
-
-Linux/macOS:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -e .
-```
-
-Windows Command Prompt:
-
-```bat
-py -m venv venv
-venv\Scripts\activate.bat
-pip install -e .
-```
-
-Windows PowerShell:
-
-```powershell
-py -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install -e .
-```
-
-### Upgrading
-
-Linux/macOS:
-
-```bash
-cd crossword
-git pull
-pip install -e .
-```
-
-Windows (`cmd.exe` or PowerShell):
-
-```powershell
-cd crossword
-git pull
-pip install -e .
-```
+See installation and setup instructions at
+[Installation](https://github.com/philhanna/crossword/wiki/Installation)
 
 ## Configuration
 
