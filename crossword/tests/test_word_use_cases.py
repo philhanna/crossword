@@ -235,6 +235,19 @@ def _make_mock_crossing(text, location, cells):
 class TestWordUseCasesGetWordConstraints:
     """Tests for get_word_constraints"""
 
+    def test_input_pattern_overrides_cached_letter_in_crossing_lookup(self, word_uc, mock_word_list):
+        """Live input letters are used when building crossing patterns."""
+        cw1 = _make_mock_crossing("A ", "1 down", [(1, 1), (2, 1)])
+        word = _make_mock_word(" ", 1, "1 across", [(1, 1)], [cw1])
+        mock_word_list.get_matches.return_value = ["BA"]
+
+        result = word_uc.get_word_constraints(word, input_pattern="B")
+
+        mock_word_list.get_matches.assert_called_once_with("^B.$", length=cw1.length)
+        assert result["word"] == "B"
+        assert result["crossers"][0]["letter"] == "B"
+        assert result["crossers"][0]["crossing_text"] == "B."
+
     def test_returns_required_keys(self, word_uc, mock_word_list):
         """Result contains word, length, crossers, pattern"""
         # 2-letter word at (1,1),(1,2)
@@ -381,6 +394,22 @@ class TestWordUseCasesGetWordConstraints:
 
 class TestWordUseCasesGetRankedSuggestions:
     """Tests for get_ranked_suggestions"""
+
+    def test_input_pattern_updates_crossing_constraints_before_ranking(self, word_uc, mock_word_list):
+        """Ranked suggestions use live input, not the word's cached text."""
+        cw1 = _make_mock_crossing("  ", "1 down", [(1, 1), (2, 1)])
+        word = _make_mock_word(" ", 1, "1 across", [(1, 1)], [cw1])
+        mock_word_list.get_matches.side_effect = [
+            ["ab", "ac"],
+            ["a"],
+        ]
+
+        result = word_uc.get_ranked_suggestions(word, input_pattern="A")
+
+        first_call = mock_word_list.get_matches.call_args_list[0]
+        assert first_call.args[0] == "^A.$"
+        assert first_call.kwargs["length"] == cw1.length
+        assert result == [{"word": "a", "score": 2}]
 
     def test_ranks_higher_scoring_candidate_first(self, word_uc, mock_word_list):
         """Candidate whose letters appear more in crossing words ranks first"""

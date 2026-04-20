@@ -72,7 +72,7 @@ class WordUseCases:
         all_words = self.word_list.get_all_words()
         return word_lower in all_words
 
-    def get_word_constraints(self, word) -> dict:
+    def get_word_constraints(self, word, input_pattern: str = None) -> dict:
         """
         Compute letter constraints for a word based on its crossing words.
 
@@ -82,6 +82,9 @@ class WordUseCases:
 
         Args:
             word: A Word domain object (AcrossWord or DownWord)
+            input_pattern: Optional string of letters and '.' wildcards from
+                the live word editor input. Specific letters override the
+                word's current text while computing crossing constraints.
 
         Returns:
             Dict with keys:
@@ -95,12 +98,17 @@ class WordUseCases:
         word_coords = list(word.cell_iterator())
         word_text = word.get_text()
         crossing_words = word.get_crossing_words()
+        effective_chars = list(word_text)
+        if input_pattern:
+            for i, ch in enumerate(input_pattern.upper()):
+                if i >= len(effective_chars):
+                    break
+                effective_chars[i] = " " if ch == "." else ch
+        effective_word_text = "".join(effective_chars)
 
         crossers = []
         for i, crossing_word in enumerate(crossing_words):
             crossing_text = crossing_word.get_text()
-            # Build regex pattern from crossing word: spaces/blanks become '.'
-            crossing_pattern = "^" + re.sub(r"[ ?]", ".", crossing_text) + "$"
 
             # Find where in the crossing word it intersects this word
             crossing_index = 1
@@ -108,6 +116,12 @@ class WordUseCases:
                 if (r, c) == word_coords[i]:
                     crossing_index = j + 1  # 1-indexed
                     break
+
+            crossing_chars = list(crossing_text)
+            if i < len(effective_word_text):
+                crossing_chars[crossing_index - 1] = effective_word_text[i]
+            # Build regex pattern from crossing word: spaces/blanks become '.'
+            crossing_pattern = "^" + re.sub(r"[ ?]", ".", "".join(crossing_chars)) + "$"
 
             # Look up all words matching the crossing pattern
             matches = self.word_list.get_matches(crossing_pattern, length=crossing_word.length)
@@ -121,13 +135,13 @@ class WordUseCases:
             regexp = letter_regexp(letter_set)
             if not regexp:
                 # Crossing word not in dictionary — fall back to current letter
-                regexp = word_text[i] if word_text[i] != " " else "."
+                regexp = effective_word_text[i] if effective_word_text[i] != " " else "."
                 nchoices = 1
 
             crossers.append({
                 "pos": i + 1,
-                "letter": word_text[i],
-                "crossing_text": crossing_text.replace(" ", "."),
+                "letter": effective_word_text[i],
+                "crossing_text": "".join(crossing_chars).replace(" ", "."),
                 "crossing_location": crossing_word.location,
                 "crossing_index": crossing_index,
                 "regexp": regexp,
@@ -138,7 +152,7 @@ class WordUseCases:
         pattern = "".join(c["regexp"] for c in crossers)
 
         return {
-            "word": word_text.replace(" ", "."),
+            "word": effective_word_text.replace(" ", "."),
             "length": word.length,
             "crossers": crossers,
             "pattern": pattern,
@@ -164,17 +178,9 @@ class WordUseCases:
             List of dicts sorted by score descending:
               [{"word": "crane", "score": 142}, ...]
         """
-        constraints = self.get_word_constraints(word)
+        constraints = self.get_word_constraints(word, input_pattern)
         crossers = constraints["crossers"]
-
-        if input_pattern:
-            pos_regexps = [c["regexp"] for c in crossers]
-            for i, ch in enumerate(input_pattern.upper()):
-                if i < len(pos_regexps) and ch != ".":
-                    pos_regexps[i] = ch
-            pattern = "".join(pos_regexps)
-        else:
-            pattern = constraints["pattern"]
+        pattern = constraints["pattern"]
 
         candidates = self.word_list.get_matches(self._pattern_to_regex(pattern), length=word.length)
 
