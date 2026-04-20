@@ -1,11 +1,44 @@
 # crossword.adapters.nytimes_export_adapter
 import os
 import re
+import shutil
 import subprocess
+import sys
 import tempfile
+from pathlib import Path
 
 from crossword import Puzzle, PuzzleToSVG
 from crossword.ports.export_port import ExportError
+
+
+def _find_chrome() -> str:
+    """Return the Chrome/Chromium executable path, or raise ExportError."""
+    if sys.platform == "win32":
+        candidates = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+            r"C:\Program Files\Chromium\Application\chrome.exe",
+        ]
+        for path in candidates:
+            if os.path.isfile(path):
+                return path
+    elif sys.platform == "darwin":
+        candidates = [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        ]
+        for path in candidates:
+            if os.path.isfile(path):
+                return path
+    else:
+        for name in ("google-chrome", "google-chrome-stable", "chromium-browser", "chromium"):
+            found = shutil.which(name)
+            if found:
+                return found
+    raise ExportError(
+        "Chrome/Chromium not found. Install Google Chrome and ensure it is on PATH."
+    )
 
 
 class NYTimesExportAdapter:
@@ -121,15 +154,18 @@ class NYTimesExportAdapter:
             with os.fdopen(html_fd, "w", encoding="utf-8") as f:
                 f.write(html)
 
+            # file:// URLs require three slashes and forward slashes on Windows
+            html_url = Path(html_path).as_uri()
+
             result = subprocess.run(
                 [
-                    "google-chrome",
+                    _find_chrome(),
                     "--headless=new",
                     "--disable-gpu",
                     "--no-sandbox",
                     "--print-to-pdf-no-header",
                     f"--print-to-pdf={pdf_path}",
-                    f"file://{html_path}",
+                    html_url,
                 ],
                 capture_output=True,
                 timeout=30,
