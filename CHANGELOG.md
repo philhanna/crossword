@@ -6,6 +6,24 @@ and the format is based on [Keep a Changelog].
 
 ## [Unreleased]
 
+### Added
+
+- Wire Help button to GitHub wiki home page
+- Open word editor automatically on cell click in puzzle editor
+
+### Changed
+
+- Use live typed input for ranked word suggestions
+- Use live word editor text when fetching suggestions
+- Replace `alert()` with message bar for error display
+- Reorder sidebar tabs; auto-focus Word tab on word selection
+- Move documentation (API reference, design docs, db schema) to GitHub wiki
+- Replace README sections with links to wiki
+
+### Fixed
+
+- Fix Word tab not activating on word selection
+
 ## [4.6.3] - 2026-04-18
 
 ### Added
