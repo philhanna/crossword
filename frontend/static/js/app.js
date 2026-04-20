@@ -520,6 +520,7 @@ function _focusPuzzleSvg() {
 
 function handlePuzzleClick(event) {
     if (Date.now() < _ignorePuzzleClicksUntil) return;
+    const wasEditingWord = !!AppState.editingWord;
     if (AppState.editingWord) {
         if (_clickTimeout) {
             clearTimeout(_clickTimeout);
@@ -536,17 +537,17 @@ function handlePuzzleClick(event) {
         _clickTimeout = setTimeout(() => {
             _clickState = 0;
             _clickTimeout = null;
-            puzzleClickAt(_clickEvent, 'across');
+            puzzleClickAt(_clickEvent, 'across', !wasEditingWord);
         }, CLICK_DELAY);
     } else {
         _clickState = 0;
         clearTimeout(_clickTimeout);
         _clickTimeout = null;
-        puzzleClickAt(event, 'down');
+        puzzleClickAt(event, 'down', !wasEditingWord);
     }
 }
 
-async function puzzleClickAt(event, direction) {
+async function puzzleClickAt(event, direction, openEditor = true) {
     const svg = document.getElementById('puzzle-svg');
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -561,7 +562,7 @@ async function puzzleClickAt(event, direction) {
     if (word) {
         await _peCommitWord();
         selectWord(word.seq, word.direction, r, c);
-        await openWordEditor(word.seq, word.direction);
+        if (openEditor) await openWordEditor(word.seq, word.direction);
     }
 }
 
