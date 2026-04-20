@@ -3,8 +3,10 @@ import os
 import re
 import subprocess
 import tempfile
+from pathlib import Path
 
 from crossword import Puzzle, GridToSVG
+from crossword.adapters.nytimes_export_adapter import _find_chrome
 from crossword.ports.export_port import ExportError
 
 _GRID_WIDTH = "4in"
@@ -138,15 +140,17 @@ class SolverPdfExportAdapter:
             with os.fdopen(html_fd, "w", encoding="utf-8") as f:
                 f.write(html)
 
+            html_url = Path(html_path).as_uri()
+
             result = subprocess.run(
                 [
-                    "google-chrome",
+                    _find_chrome(),
                     "--headless=new",
                     "--disable-gpu",
                     "--no-sandbox",
                     "--print-to-pdf-no-header",
                     f"--print-to-pdf={pdf_path}",
-                    f"file://{html_path}",
+                    html_url,
                 ],
                 capture_output=True,
                 timeout=30,
