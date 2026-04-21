@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.7.0] - 2026-04-20
+
+### Changed
+
+- Switch word list adapter from database to flat file format
+- Rename examples directory to samples
+- Rename example config file and sample crossword database
+
+### Documentation
+
+- Add docstrings to clear_work_files tool
+
 ## [4.6.4] - 2026-04-20
 
 ### Added
