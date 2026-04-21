@@ -35,6 +35,7 @@ def source_name(wc_name: str) -> str:
 
 
 def find_work_files(conn, placeholder: str) -> list[str]:
+    """Return work-copy puzzle names ordered by puzzle name."""
     cur = conn.cursor()
     cur.execute(
         f"SELECT puzzlename FROM puzzles WHERE puzzlename LIKE {placeholder} ORDER BY puzzlename",
@@ -44,6 +45,7 @@ def find_work_files(conn, placeholder: str) -> list[str]:
 
 
 def delete_work_files(conn, placeholder: str, puzzles: list[str]) -> None:
+    """Delete the given work-copy puzzle rows and commit the transaction."""
     cur = conn.cursor()
     for name in puzzles:
         cur.execute(f"DELETE FROM puzzles WHERE puzzlename = {placeholder}", (name,))
@@ -51,6 +53,7 @@ def delete_work_files(conn, placeholder: str, puzzles: list[str]) -> None:
 
 
 def connect(config: dict):
+    """Connect to the configured database and return driver-specific SQL metadata."""
     database_url = config.get("database_url")
     if database_url:
         import psycopg2
@@ -62,6 +65,7 @@ def connect(config: dict):
 
 
 def vacuum(conn, is_postgres: bool) -> None:
+    """Run VACUUM using the transaction mode required by the active database."""
     if is_postgres:
         old_level = conn.isolation_level
         conn.set_isolation_level(0)
@@ -72,6 +76,7 @@ def vacuum(conn, is_postgres: bool) -> None:
 
 
 def main() -> None:
+    """List and optionally delete stale work-copy puzzle rows from the database."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="List work files without deleting them")
     args = parser.parse_args()
