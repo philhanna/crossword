@@ -244,7 +244,7 @@ Bug fixes
 - Issue #199
 - Export menu: stale download filenames corrected
 - Export menu: success notification shown after download completes
-- Test suite: `words.db` path corrected to `examples/words.db`
+- Test suite: `words.db` path corrected to `samples/words.db`
 
 ## [3.3.0] - 2026-03-28
 

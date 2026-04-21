@@ -213,7 +213,7 @@ class TestSQLitePersistenceAdapter:
         Integration test: Load a puzzle from the production crossword.db.
         This validates the schema hasn't drifted.
         """
-        db_path = Path(__file__).resolve().parents[3] / "examples" / "crossword.db"
+        db_path = Path(__file__).resolve().parents[3] / "samples" / "crossword.db"
         if not db_path.exists():
             pytest.skip(f"crossword.db not found at {db_path}")
 
