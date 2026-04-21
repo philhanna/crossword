@@ -41,6 +41,6 @@ class WordListPort(ABC):
         Get all words in the dictionary.
 
         Returns:
-            List of all words in the dictionary (lowercase)
+            List of all words in the dictionary (uppercase)
         """
         pass
