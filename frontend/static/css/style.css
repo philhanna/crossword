@@ -1275,14 +1275,14 @@ kbd {
 }
 
 .message-line-notice {
-  background: #d8f0d8;
-  color: #1a4d1a;
+  background: #ffffff;
+  color: #059e05;
   border: 1px solid #a8d8a8;
 }
 
 .message-line-error {
-  background: #fde8e8;
-  color: #8a1f1f;
+  background: #ffffff;
+  color: #ff0000;
   border: 1px solid #f0a0a0;
 }
 
