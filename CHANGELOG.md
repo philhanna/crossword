@@ -124,7 +124,7 @@ and the format is based on [Keep a Changelog].
 
 ### Removed
 
-- Remove hardcoded `sample.crossword.db` default from `init_config()`
+- Remove hardcoded `crossword.db` default from `init_config()`
 - Remove word editor Reset button
 
 ## [4.2.1] - 2026-04-15

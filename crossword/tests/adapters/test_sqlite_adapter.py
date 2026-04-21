@@ -210,18 +210,18 @@ class TestSQLitePersistenceAdapter:
 
     def test_load_puzzle_from_samples_db(self):
         """
-        Integration test: Load a puzzle from the production sample.crossword.db.
+        Integration test: Load a puzzle from the production crossword.db.
         This validates the schema hasn't drifted.
         """
-        db_path = Path(__file__).resolve().parents[3] / "examples" / "sample.crossword.db"
+        db_path = Path(__file__).resolve().parents[3] / "examples" / "crossword.db"
         if not db_path.exists():
-            pytest.skip(f"sample.crossword.db not found at {db_path}")
+            pytest.skip(f"crossword.db not found at {db_path}")
 
         adapter = SQLitePersistenceAdapter(str(db_path))
 
         puzzles = adapter.list_puzzles(user_id=1)
         if not puzzles:
-            pytest.skip("No puzzles found in sample.crossword.db")
+            pytest.skip("No puzzles found in crossword.db")
 
         loaded = adapter.load_puzzle(user_id=1, name=puzzles[0])
 
