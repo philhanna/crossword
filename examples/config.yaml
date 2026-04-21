@@ -13,8 +13,8 @@ port: 5000
 # dbfile: fully qualified path to the SQLite 3 database
 dbfile: /path/to/crossword.db
 
-# word_dbfile: fully qualified path to the word list SQLite database
-word_dbfile: /path/to/words.db
+# word_file: fully qualified path to the ASCII word list file
+word_file: /path/to/words.txt
 
 # log_level: one of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 log_level: INFO
