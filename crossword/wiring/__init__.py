@@ -7,8 +7,6 @@ ready for HTTP handlers or CLI commands to call.
 
 import logging
 
-from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
-from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
 from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
@@ -16,6 +14,8 @@ from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
 from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDefinition
+from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
+from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
 from crossword.use_cases.export_use_cases import ExportUseCases
@@ -46,9 +46,9 @@ def make_app(config=None):
     Assemble adapters and wire them into use cases.
 
     Args:
-        config: Dict with optional keys 'dbfile', 'word_dbfile', 'word_file'
+        config: Dict with optional keys 'dbfile' and 'word_file'
                 (or None to use the platform default config path).
-                Word list load priority: word_dbfile → word_file → dbfile (legacy) → empty.
+                If 'word_file' is omitted, the word list starts empty.
 
     Returns:
         AppContainer instance with all use cases ready to use
@@ -87,19 +87,11 @@ def make_app(config=None):
         raise ValueError("config['dbfile'] is required")
     persistence = SQLitePersistenceAdapter(dbfile)
 
-    # Word list adapter — priority: word_dbfile → word_file → dbfile (legacy) → empty
-    word_dbfile = config.get("word_dbfile")
+    # Word list adapter — flat file only
     word_file = config.get("word_file")
-    word_adapter = SQLiteDictionaryAdapter()
-    if word_dbfile:
-        word_adapter.load_from_database(word_dbfile)
-    elif word_file:
+    word_adapter = FlatFileWordListAdapter()
+    if word_file:
         word_adapter.load_from_file(word_file)
-    elif dbfile:
-        try:
-            word_adapter.load_from_database(dbfile)
-        except Exception:
-            pass  # words table absent in puzzle DB — leave adapter empty
 
     # Export adapters
     acrosslite_adapter = AcrossLiteExportAdapter(author_name=config.get("author_name"))

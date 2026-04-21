@@ -1,12 +1,7 @@
-"""
-Tests for SQLiteDictionaryAdapter - Word list adapter tests
-"""
-
-import sqlite3
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-from crossword.adapters.sqlite_dictionary_adapter import SQLiteDictionaryAdapter
+import pytest
+
+from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
 
 FIXTURE_WORDS = [
     'hello', 'world', 'python', 'test', 'apple', 'application',
@@ -15,14 +10,14 @@ FIXTURE_WORDS = [
 
 
 def make_adapter(words=None):
-    adapter = SQLiteDictionaryAdapter()
+    adapter = FlatFileWordListAdapter()
     for w in (words or FIXTURE_WORDS):
         adapter._words_by_length.setdefault(len(w), []).append(w)
     return adapter
 
 
-class TestSQLiteDictionaryAdapter:
-    """Test suite for SQLiteDictionaryAdapter"""
+class TestFlatFileWordListAdapter:
+    """Test suite for FlatFileWordListAdapter"""
 
     @pytest.fixture
     def adapter(self):
@@ -87,24 +82,29 @@ class TestSQLiteDictionaryAdapter:
         assert 'bird' in matches   # 4 letters, starts with b
         assert 'books' not in matches  # 5 letters, filtered by length
 
-    def test_load_from_database(self):
-        db_path = Path(__file__).resolve().parents[3] / "examples" / "words.db"
-        if not db_path.exists():
-            pytest.skip(f"words.db not found at {db_path}")
+    def test_load_from_ascii_file(self, tmp_path):
+        word_file = tmp_path / "words.txt"
+        word_file.write_text("Delta\necho\n\necho\nFoxtrot\n", encoding="ascii")
 
-        adapter = SQLiteDictionaryAdapter()
-        adapter.load_from_database(str(db_path))
+        adapter = FlatFileWordListAdapter()
+        adapter.load_from_file(str(word_file))
+
+        assert adapter.get_all_words() == ["delta", "echo", "foxtrot"]
+
+    def test_loads_large_project_word_file(self):
+        word_file = Path(__file__).resolve().parents[1] / "data" / "words.txt"
+
+        adapter = FlatFileWordListAdapter()
+        adapter.load_from_file(str(word_file))
 
         words = adapter.get_all_words()
         assert len(words) > 70000
 
-    def test_word_pattern_search_crossword(self):
-        db_path = Path(__file__).resolve().parents[3] / "examples" / "words.db"
-        if not db_path.exists():
-            pytest.skip(f"words.db not found at {db_path}")
+    def test_word_pattern_search_project_word_file(self):
+        word_file = Path(__file__).resolve().parents[1] / "data" / "words.txt"
 
-        adapter = SQLiteDictionaryAdapter()
-        adapter.load_from_database(str(db_path))
+        adapter = FlatFileWordListAdapter()
+        adapter.load_from_file(str(word_file))
 
         matches = adapter.get_matches("^a.{4}$")
         assert len(matches) > 0
@@ -114,45 +114,15 @@ class TestSQLiteDictionaryAdapter:
         matches = adapter.get_matches("^[aeiou].[aeiou].$")
         assert len(matches) > 0
 
-    def test_load_from_ascii_file(self, tmp_path):
-        word_file = tmp_path / "words.txt"
-        word_file.write_text("Delta\necho\n\necho\nFoxtrot\n", encoding="ascii")
-
-        adapter = SQLiteDictionaryAdapter()
-        adapter.load_from_file(str(word_file))
-
-        assert adapter.get_all_words() == ["delta", "echo", "foxtrot"]
-
     def test_load_from_non_ascii_file_raises(self, tmp_path):
         word_file = tmp_path / "words.txt"
         word_file.write_text("cafe\ncaf\u00e9\n", encoding="utf-8")
 
-        adapter = SQLiteDictionaryAdapter()
+        adapter = FlatFileWordListAdapter()
         with pytest.raises(Exception, match="Failed to load words from file"):
             adapter.load_from_file(str(word_file))
 
-    def test_load_from_database_sqlite_error_raises(self):
-        adapter = SQLiteDictionaryAdapter()
-        with patch('sqlite3.connect', side_effect=sqlite3.Error("db error")):
-            with pytest.raises(Exception, match="Failed to load words from database"):
-                adapter.load_from_database("fake.db")
-
-    def test_load_from_postgres(self):
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = [("Hello",), ("WORLD",), ("python",)]
-
-        adapter = SQLiteDictionaryAdapter()
-        adapter.load_from_postgres(mock_conn)
-
-        words = adapter.get_all_words()
-        assert words == ["hello", "python", "world"]
-
-    def test_load_from_postgres_error_raises(self):
-        mock_conn = MagicMock()
-        mock_conn.cursor.side_effect = Exception("pg error")
-
-        adapter = SQLiteDictionaryAdapter()
-        with pytest.raises(Exception, match="Failed to load words from PostgreSQL"):
-            adapter.load_from_postgres(mock_conn)
+    def test_load_from_missing_file_raises(self):
+        adapter = FlatFileWordListAdapter()
+        with pytest.raises(Exception, match="Failed to load words from file"):
+            adapter.load_from_file("missing.txt")

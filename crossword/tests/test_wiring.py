@@ -12,25 +12,6 @@ from crossword.tests import TestPuzzle
 
 
 @pytest.fixture
-def temp_word_db():
-    """Create a temporary word-list database with a handful of words."""
-    fd, path = tempfile.mkstemp(suffix=".db")
-    os.close(fd)
-    conn = sqlite3.connect(path)
-    conn.execute("CREATE TABLE words (word TEXT UNIQUE NOT NULL)")
-    conn.executemany("INSERT INTO words (word) VALUES (?)", [
-        ("apple",), ("banana",), ("cherry",),
-    ])
-    conn.commit()
-    conn.close()
-    yield path
-    try:
-        os.remove(path)
-    except Exception:
-        pass
-
-
-@pytest.fixture
 def temp_word_file():
     """Create a temporary word-list text file with a handful of words."""
     fd, path = tempfile.mkstemp(suffix=".txt")
@@ -108,39 +89,15 @@ class TestMakeApp:
 
 
 class TestWordListWiring:
-    """Tests for word list loading priority in make_app()"""
-
-    def test_loads_word_dbfile(self, base_config, temp_word_db):
-        """word_dbfile present → adapter populated from dedicated word DB"""
-        app = make_app({**base_config, "word_dbfile": temp_word_db})
-        words = app.word_uc.get_all_words()
-        assert set(words) == {"apple", "banana", "cherry"}
-
-    def test_word_dbfile_takes_priority_over_dbfile(self, base_config, temp_word_db):
-        """word_dbfile wins over dbfile even when dbfile has a words table"""
-        # base_config's dbfile (puzzle DB) has no words — word_dbfile should still be used
-        app = make_app({**base_config, "word_dbfile": temp_word_db})
-        assert set(app.word_uc.get_all_words()) == {"apple", "banana", "cherry"}
+    """Tests for flat-file word list loading in make_app()"""
 
     def test_falls_back_to_word_file(self, base_config, temp_word_file):
-        """No word_dbfile, word_file present → SQLite adapter loads from text file"""
+        """word_file present → adapter loads from text file"""
         app = make_app({**base_config, "word_file": temp_word_file})
         assert set(app.word_uc.get_all_words()) == {"delta", "echo", "foxtrot"}
 
-    def test_falls_back_to_dbfile(self, base_config):
-        """No word_dbfile or word_file → adapter falls back to puzzle DB"""
-        # Insert a word directly into the puzzle DB's words table
-        conn = sqlite3.connect(base_config["dbfile"])
-        conn.execute("CREATE TABLE IF NOT EXISTS words (word TEXT UNIQUE NOT NULL)")
-        conn.execute("INSERT INTO words (word) VALUES ('golf')")
-        conn.commit()
-        conn.close()
-
-        app = make_app(base_config)
-        assert "golf" in app.word_uc.get_all_words()
-
     def test_empty_adapter_when_no_word_sources(self, base_config):
-        """No word sources configured → adapter is empty, no exception raised"""
+        """No word_file configured → adapter is empty, no exception raised"""
         app = make_app(base_config)
         assert app.word_uc.get_all_words() == []
 
