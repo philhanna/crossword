@@ -887,7 +887,7 @@ ${modeSpecific}`;
 function renderPuzzleEditorRhs() {
     const mode      = _currentEditorMode();
     const activeTab = _getActiveTab(mode);
-    const tabList   = mode === 'grid' ? ['grid', 'stats'] : ['word', 'clues', 'stats'];
+    const tabList   = mode === 'grid' ? ['grid', 'stats'] : ['word', 'clues'];
     let contentHtml;
 
     if (mode === 'grid') {
