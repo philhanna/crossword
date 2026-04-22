@@ -745,7 +745,12 @@ body.editor-open #workspace {
   gap: var(--sp-2);
   margin-top: var(--sp-3);
   padding-top: var(--sp-3);
+  padding-bottom: var(--sp-3);
   border-top: 1px solid var(--c-border);
+  position: sticky;
+  bottom: 0;
+  background: var(--c-sidebar-bg);
+  z-index: 5;
 }
 
 /* =========================================================
