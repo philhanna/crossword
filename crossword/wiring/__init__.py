@@ -9,6 +9,7 @@ import logging
 
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
 from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
+from crossword.adapters.xd_import_adapter import XdImportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
@@ -109,11 +110,12 @@ def make_app(config=None):
     # ========================================================================
 
     acrosslite_import_adapter = AcrossLiteImportAdapter()
+    xd_import_adapter = XdImportAdapter()
 
     word_uc = WordUseCases(word_adapter)
     puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc)
     export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter, solver_pdf_adapter)
-    import_uc = ImportUseCases(persistence, acrosslite_import_adapter)
+    import_uc = ImportUseCases(persistence, acrosslite_import_adapter, xd_import_adapter)
 
     if not config.get("host"):
         raise ValueError("config['host'] is required")

@@ -252,7 +252,7 @@ const MENU_ITEMS = [
     'menu-puzzle-new', 'menu-puzzle-open',
     'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-rename', 'menu-puzzle-close', 'menu-puzzle-delete',
     'menu-puzzle-title', 'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
-    'menu-import-acrosslite',
+    'menu-import-acrosslite', 'menu-import-xd',
     'menu-export-acrosslite', 'menu-export-cwcompiler', 'menu-export-nytimes', 'menu-export-solver-pdf',
 ];
 
@@ -266,6 +266,7 @@ function updateMenu() {
     home   ? menuEnable('menu-puzzle-new')     : menuDisable('menu-puzzle-new');
     home   ? menuEnable('menu-puzzle-open')    : menuDisable('menu-puzzle-open');
     home   ? menuEnable('menu-import-acrosslite')  : menuDisable('menu-import-acrosslite');
+    home   ? menuEnable('menu-import-xd')          : menuDisable('menu-import-xd');
     editor ? menuEnable('menu-puzzle-save')    : menuDisable('menu-puzzle-save');
     editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
     (editor && AppState.puzzleName) ? menuEnable('menu-puzzle-rename') : menuDisable('menu-puzzle-rename');
@@ -1623,6 +1624,45 @@ async function do_puzzle_import() {
 
                 try {
                     const data = await apiFetch('POST', '/api/import/acrosslite', { name, content });
+                    if (data.error) { showMessageLine(`Import failed: ${data.error}`, 'error', 0); return; }
+                    showMessageLine(`Imported "${name}" — opening…`, 'notice');
+                    await _openPuzzleInEditor(name);
+                } catch (e) {
+                    showMessageLine(`Import error: ${e.message || e}`, 'error', 0);
+                }
+            }
+        );
+    };
+    fileInput.click();
+}
+
+async function do_puzzle_import_xd() {
+    const fileInput = document.getElementById('xd-file-input');
+    fileInput.value = '';
+    fileInput.onchange = async (evt) => {
+        const file = evt.target.files[0];
+        if (!file) return;
+
+        const defaultName = file.name.replace(/\.xd$/i, '');
+
+        inputBox(
+            'Import xd puzzle',
+            '<b>Puzzle name:</b>',
+            defaultName,
+            async (name) => {
+                name = name.trim();
+                if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
+
+                let content;
+                try {
+                    content = await file.text();
+                } catch (e) {
+                    showMessageLine('Could not read file', 'error', 0);
+                    return;
+                }
+
+                try {
+                    const data = await apiFetch('POST', '/api/import/xd', { name, content });
                     if (data.error) { showMessageLine(`Import failed: ${data.error}`, 'error', 0); return; }
                     showMessageLine(`Imported "${name}" — opening…`, 'notice');
                     await _openPuzzleInEditor(name);

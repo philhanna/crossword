@@ -1,6 +1,7 @@
 # crossword.tests.adapters.test_acrosslite_import_adapter
 import pytest
-from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter, ImportError
+from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
+from crossword.ports.import_port import PuzzleImportError as ImportError
 
 # 3x3 all-white grid:
 #   numbered cells: 1=(1,1), 2=(1,2), 3=(1,3), 4=(2,1), 5=(3,1)
