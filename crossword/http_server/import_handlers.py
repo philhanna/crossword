@@ -8,7 +8,7 @@ Routes:
 
 import logging
 
-from crossword.adapters.acrosslite_import_adapter import ImportError
+from crossword.adapters.acrosslite_import_adapter import PuzzleImportError
 from crossword.ports.persistence_port import PersistenceError
 
 logger = logging.getLogger(__name__)
