@@ -1180,15 +1180,29 @@ function _weKeydown(e) {
     const ew = AppState.editingWord;
     const len = ew.cells.length;
 
-    if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && _weCursorIdx < len - 1) {
+    const isAcross    = ew.direction === 'across';
+    const forwardKey  = isAcross ? 'ArrowRight' : 'ArrowDown';
+    const backwardKey = isAcross ? 'ArrowLeft'  : 'ArrowUp';
+
+    if (e.key === forwardKey && _weCursorIdx < len - 1) {
         _weCursorIdx++;
         renderPuzzleEditorLhs();
         e.preventDefault();
         return;
     }
-    if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && _weCursorIdx > 0) {
+    if (e.key === backwardKey && _weCursorIdx > 0) {
         _weCursorIdx--;
         renderPuzzleEditorLhs();
+        e.preventDefault();
+        return;
+    }
+    if ((isAcross && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) ||
+        (!isAcross && (e.key === 'ArrowLeft' || e.key === 'ArrowRight'))) {
+        const [curR, curC] = ew.cells[_weCursorIdx];
+        const perpDir = isAcross ? 'down' : 'across';
+        const neighbor = findWordAtCell(curR, curC, perpDir);
+        closeWordEditor();
+        if (neighbor) selectWord(neighbor.seq, neighbor.direction, curR, curC);
         e.preventDefault();
         return;
     }
