@@ -12,6 +12,7 @@ from .persistence_port import PersistencePort, PersistenceError
 from .word_list_port import WordListPort
 from .export_port import ExportPort, ExportError
 from .definition_port import DefinitionProviderPort, DefinitionNotFound
+from .import_port import ImportPort, PuzzleImportError
 
 __all__ = [
     "PersistencePort",
@@ -21,4 +22,6 @@ __all__ = [
     "ExportError",
     "DefinitionProviderPort",
     "DefinitionNotFound",
+    "ImportPort",
+    "PuzzleImportError",
 ]

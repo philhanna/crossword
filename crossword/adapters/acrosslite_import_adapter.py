@@ -1,14 +1,10 @@
 # crossword.adapters.acrosslite_import_adapter
 from crossword import Grid, Puzzle
 from crossword.domain.word import Word
+from crossword.ports.import_port import ImportPort, PuzzleImportError
 
 
-class ImportError(Exception):
-    """Raised when an AcrossLite text file cannot be parsed or is invalid."""
-    pass
-
-
-class AcrossLiteImportAdapter:
+class AcrossLiteImportAdapter(ImportPort):
     """
     Imports a puzzle from AcrossLite text format (.txt).
 
@@ -66,12 +62,12 @@ class AcrossLiteImportAdapter:
         down_seqs = sorted(puzzle.down_words.keys())
 
         if len(across_clues) != len(across_seqs):
-            raise ImportError(
+            raise PuzzleImportError(
                 f"Across clue count mismatch: {len(across_clues)} clues "
                 f"for {len(across_seqs)} words"
             )
         if len(down_clues) != len(down_seqs):
-            raise ImportError(
+            raise PuzzleImportError(
                 f"Down clue count mismatch: {len(down_clues)} clues "
                 f"for {len(down_seqs)} words"
             )
@@ -107,7 +103,7 @@ class AcrossLiteImportAdapter:
                     sections["_HEADER"] = []
                 elif stripped:
                     # Non-blank line before header — not our format
-                    raise ImportError(
+                    raise PuzzleImportError(
                         "Not an AcrossLite text file "
                         "(expected '<ACROSS PUZZLE>' as first non-blank line)"
                     )
@@ -121,7 +117,7 @@ class AcrossLiteImportAdapter:
                 sections[current_section].append(line)
 
         if not header_seen:
-            raise ImportError(
+            raise PuzzleImportError(
                 "Not an AcrossLite text file (missing '<ACROSS PUZZLE>' header)"
             )
 
@@ -130,21 +126,21 @@ class AcrossLiteImportAdapter:
     def _validate_sections(self, sections: dict) -> None:
         for required in ("SIZE", "GRID", "ACROSS", "DOWN"):
             if required not in sections:
-                raise ImportError(f"Missing required section <{required}>")
+                raise PuzzleImportError(f"Missing required section <{required}>")
 
     def _validate_grid_lines(self, grid_lines: list[str], n: int) -> None:
         if len(grid_lines) != n:
-            raise ImportError(
+            raise PuzzleImportError(
                 f"Expected {n} grid rows, got {len(grid_lines)}"
             )
         for i, row in enumerate(grid_lines, 1):
             if len(row) != n:
-                raise ImportError(
+                raise PuzzleImportError(
                     f"Grid row {i} has {len(row)} characters, expected {n}"
                 )
             for ch in row:
                 if ch not in "." and not ch.isalpha() and ch != "X":
-                    raise ImportError(
+                    raise PuzzleImportError(
                         f"Invalid character in grid row {i}: {ch!r}"
                     )
 
@@ -162,15 +158,15 @@ class AcrossLiteImportAdapter:
         """Parse 'NxM' size string; require square grid; return N."""
         parts = size_str.lower().split("x")
         if len(parts) != 2:
-            raise ImportError(f"Invalid <SIZE> format: {size_str!r}")
+            raise PuzzleImportError(f"Invalid <SIZE> format: {size_str!r}")
         try:
             rows, cols = int(parts[0]), int(parts[1])
         except ValueError:
-            raise ImportError(f"Non-numeric <SIZE> values: {size_str!r}")
+            raise PuzzleImportError(f"Non-numeric <SIZE> values: {size_str!r}")
         if rows != cols:
-            raise ImportError(
+            raise PuzzleImportError(
                 f"Non-square puzzles are not supported: {size_str!r}"
             )
         if rows < 1:
-            raise ImportError(f"Invalid grid size: {rows}")
+            raise PuzzleImportError(f"Invalid grid size: {rows}")
         return rows
