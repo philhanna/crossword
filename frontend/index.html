@@ -49,6 +49,7 @@
       <button class="app-nav-btn">Import</button>
       <div class="w3-dropdown-content w3-card-4 app-dropdown">
         <a id="menu-import-acrosslite"     class="w3-bar-item w3-button" onclick="do_puzzle_import()">AcrossLite…</a>
+        <a id="menu-import-puz"            class="w3-bar-item w3-button" onclick="do_puzzle_import_puz()">.puz…</a>
         <a id="menu-import-xd"             class="w3-bar-item w3-button" onclick="do_puzzle_import_xd()">xd…</a>
       </div>
     </div>
@@ -82,6 +83,8 @@
 
 <!-- Hidden file input for AcrossLite import -->
 <input type="file" id="acrosslite-file-input" accept=".txt" style="display:none">
+<!-- Hidden file input for .puz import -->
+<input type="file" id="puz-file-input" accept=".puz" style="display:none">
 <!-- Hidden file input for xd import -->
 <input type="file" id="xd-file-input" accept=".xd" style="display:none">
 
