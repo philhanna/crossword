@@ -7,6 +7,7 @@ Public interface:
   export_puzzle_to_nytimes(user_id, name) -> bytes
   export_puzzle_to_json(user_id, name) -> str
   export_puzzle_to_solver_pdf(user_id, name) -> bytes
+  export_puzzle_to_puz(user_id, name) -> bytes
 """
 
 from crossword.ports.persistence_port import PersistencePort
@@ -15,13 +16,14 @@ from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
+from crossword.adapters.puz_export_adapter import PuzExportAdapter
 
 
 class ExportUseCases:
     """
     Orchestrates export operations via persistence and format-specific adapters.
 
-    Constructor injection: takes PersistencePort and the five export adapters.
+    Constructor injection: takes PersistencePort and the format-specific adapters.
     """
 
     def __init__(
@@ -32,6 +34,7 @@ class ExportUseCases:
         nytimes: NYTimesExportAdapter,
         json_adapter: JsonExportAdapter,
         solver_pdf: SolverPdfExportAdapter = None,
+        puz_adapter: PuzExportAdapter = None,
     ):
         self.persistence = persistence
         self._acrosslite = acrosslite
@@ -39,6 +42,7 @@ class ExportUseCases:
         self._nytimes = nytimes
         self._json = json_adapter
         self._solver_pdf = solver_pdf or SolverPdfExportAdapter()
+        self._puz = puz_adapter or PuzExportAdapter()
 
     def export_puzzle_to_acrosslite(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)
@@ -59,3 +63,7 @@ class ExportUseCases:
     def export_puzzle_to_solver_pdf(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)
         return self._solver_pdf.export_puzzle_to_solver_pdf(puzzle)
+
+    def export_puzzle_to_puz(self, user_id: int, name: str) -> bytes:
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        return self._puz.export_puzzle_to_puz(puzzle)

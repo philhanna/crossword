@@ -46,6 +46,7 @@ from crossword.http_server.export_handlers import (
     handle_export_puzzle_to_nytimes,
     handle_export_puzzle_to_json,
     handle_export_puzzle_to_solver_pdf,
+    handle_export_puzzle_to_puz,
 )
 from crossword.http_server.import_handlers import (
     handle_import_puzzle_from_acrosslite,
@@ -105,6 +106,7 @@ def register_routes(router):
     router.add_route("GET", r"^/api/export/puzzles/([^/]+)/nytimes$", handle_export_puzzle_to_nytimes)
     router.add_route("GET", r"^/api/export/puzzles/([^/]+)/json$", handle_export_puzzle_to_json)
     router.add_route("GET", r"^/api/export/puzzles/([^/]+)/solver-pdf$", handle_export_puzzle_to_solver_pdf)
+    router.add_route("GET", r"^/api/export/puzzles/([^/]+)/puz$", handle_export_puzzle_to_puz)
 
     # Import routes
     router.add_route("POST", r"^/api/import/acrosslite$", handle_import_puzzle_from_acrosslite)
