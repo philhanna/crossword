@@ -1442,7 +1442,7 @@ async function doWordConstraints() {
 
     const titleEl = document.getElementById('constraints-popup-title');
     const bodyEl  = document.getElementById('constraints-popup-body');
-    titleEl.textContent = `Constraints — ${ew.seq} ${ew.direction === 'A' ? 'Across' : 'Down'}`;
+    titleEl.textContent = `Constraints — ${ew.seq} ${ew.direction === 'across' ? 'Across' : 'Down'}`;
     bodyEl.innerHTML = 'Loading…';
     showElement('constraints-popup');
 
