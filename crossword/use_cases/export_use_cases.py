@@ -8,6 +8,7 @@ Public interface:
   export_puzzle_to_json(user_id, name) -> str
   export_puzzle_to_solver_pdf(user_id, name) -> bytes
   export_puzzle_to_puz(user_id, name) -> bytes
+  export_puzzle_to_xd(user_id, name) -> str
 """
 
 from crossword.ports.persistence_port import PersistencePort
@@ -17,6 +18,7 @@ from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
 from crossword.adapters.puz_export_adapter import PuzExportAdapter
+from crossword.adapters.xd_output_adapter import XdOutputAdapter
 
 
 class ExportUseCases:
@@ -35,6 +37,7 @@ class ExportUseCases:
         json_adapter: JsonExportAdapter,
         solver_pdf: SolverPdfExportAdapter = None,
         puz_adapter: PuzExportAdapter = None,
+        xd_adapter: XdOutputAdapter = None,
     ):
         self.persistence = persistence
         self._acrosslite = acrosslite
@@ -43,6 +46,7 @@ class ExportUseCases:
         self._json = json_adapter
         self._solver_pdf = solver_pdf or SolverPdfExportAdapter()
         self._puz = puz_adapter or PuzExportAdapter()
+        self._xd = xd_adapter or XdOutputAdapter()
 
     def export_puzzle_to_acrosslite(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)
@@ -67,3 +71,7 @@ class ExportUseCases:
     def export_puzzle_to_puz(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)
         return self._puz.export_puzzle_to_puz(puzzle)
+
+    def export_puzzle_to_xd(self, user_id: int, name: str) -> str:
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        return self._xd.export_puzzle_to_xd(puzzle)

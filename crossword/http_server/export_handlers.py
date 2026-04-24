@@ -8,6 +8,7 @@ Routes:
   GET /api/export/puzzles/<name>/json        → export_puzzle_to_json
   GET /api/export/puzzles/<name>/solver-pdf  → export_puzzle_to_solver_pdf
   GET /api/export/puzzles/<name>/puz         → export_puzzle_to_puz
+  GET /api/export/puzzles/<name>/xd          → export_puzzle_to_xd
 """
 
 import logging
@@ -172,6 +173,37 @@ def handle_export_puzzle_to_puz(path_params, query_params, body_params, session_
     try:
         puz_bytes = app.export_uc.export_puzzle_to_puz(current_user["id"], name)
         _send_download(request_handler, puz_bytes, "application/octet-stream", f"{name}.puz")
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return None
+    except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"Puzzle not found: {name}"}
+    except ExportError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_export_puzzle_to_xd(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Export a puzzle to xd format (.xd).
+    GET /api/export/puzzles/<name>/xd
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    name = path_params[0] if path_params else None
+    if not name:
+        logger.debug("  returning: %s", {"error": "Missing puzzle name"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": "Missing puzzle name"}
+    try:
+        xd_text = app.export_uc.export_puzzle_to_xd(current_user["id"], name)
+        _send_download(request_handler, xd_text.encode("utf-8"), "text/plain; charset=utf-8", f"{name}.xd")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
