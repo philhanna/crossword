@@ -34,6 +34,7 @@ class XdImportAdapter(ImportPort):
 
         n = len(grid_lines)
         self._validate_grid(grid_lines, n)
+        self._validate_symmetry(grid_lines, n)
 
         grid = Grid(n)
         for r, row in enumerate(grid_lines, 1):
@@ -55,17 +56,12 @@ class XdImportAdapter(ImportPort):
         across_seqs = sorted(puzzle.across_words.keys())
         down_seqs = sorted(puzzle.down_words.keys())
 
-        missing_across = [s for s in across_seqs if s not in across_clues]
-        if missing_across:
-            raise PuzzleImportError(f"Missing across clues for sequences: {missing_across}")
-        missing_down = [s for s in down_seqs if s not in down_clues]
-        if missing_down:
-            raise PuzzleImportError(f"Missing down clues for sequences: {missing_down}")
-
         for seq in across_seqs:
-            puzzle.set_clue(seq, Word.ACROSS, across_clues[seq])
+            if seq in across_clues:
+                puzzle.set_clue(seq, Word.ACROSS, across_clues[seq])
         for seq in down_seqs:
-            puzzle.set_clue(seq, Word.DOWN, down_clues[seq])
+            if seq in down_clues:
+                puzzle.set_clue(seq, Word.DOWN, down_clues[seq])
 
         return title, author, puzzle
 
@@ -96,10 +92,20 @@ class XdImportAdapter(ImportPort):
                     f"Grid row {i} has {len(row)} characters, expected {n}"
                 )
             for ch in row:
-                if ch not in ('#', '_') and not ch.isupper():
+                if ch not in ('#', '_', '.', ' ') and not ch.isupper():
                     raise PuzzleImportError(
                         f"Invalid character in grid row {i}: {ch!r}"
                     )
+
+    def _validate_symmetry(self, grid_lines: list[str], n: int) -> None:
+        for r in range(n):
+            for c in range(n):
+                if grid_lines[r][c] in ('#', '_'):
+                    if grid_lines[n - 1 - r][n - 1 - c] not in ('#', '_'):
+                        raise PuzzleImportError(
+                            f"Grid lacks 180° rotational symmetry: black cell at row {r + 1}, col {c + 1}"
+                            f" has no matching black cell at row {n - r}, col {n - c}"
+                        )
 
     def _parse_clues(self, block: str) -> tuple[dict[int, str], dict[int, str]]:
         across: dict[int, str] = {}
