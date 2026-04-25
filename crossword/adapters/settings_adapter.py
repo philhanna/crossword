@@ -26,7 +26,8 @@ def _load():
     if os.path.exists(path):
         with open(path) as f:
             return yaml.safe_load(f) or {}
-    return {}
+    from crossword import get_bootstrap_config
+    return get_bootstrap_config()
 
 
 def get_settings():
@@ -38,6 +39,7 @@ def put_settings(new_values):
     """Merge new_values into the user config file. Returns True if a restart is required."""
     path = _config_path()
     current = _load()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
 
     restart_required = False
     for k in SETTINGS_KEYS:
