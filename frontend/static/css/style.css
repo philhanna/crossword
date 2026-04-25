@@ -1341,6 +1341,8 @@ kbd {
 
 .settings-title { font-size: 1.25rem; font-weight: 600; }
 
+.settings-header-actions { display: flex; gap: 0.75rem; }
+
 .settings-close-btn {
   background: none;
   border: none;
