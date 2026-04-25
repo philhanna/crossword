@@ -1,16 +1,17 @@
 """
-Import a .xd puzzle file and write the grid as JSON to stdout.
+Import a .xd puzzle file and write it back out as .xd to stdout.
 
 Usage:
     python3 tools/user/import_xd_grid.py <file>
 """
 
 import argparse
-import json
 import sys
 
 sys.path.insert(0, ".")
 from crossword.adapters.xd_import_adapter import XdImportAdapter
+from crossword.adapters.xd_export_adapter import XdExportAdapter
+from crossword.domain.word import Word
 
 
 def main() -> None:
@@ -18,16 +19,19 @@ def main() -> None:
     parser.add_argument("file", help="Path to the .xd puzzle file")
     args = parser.parse_args()
 
-    adapter = XdImportAdapter()
-    content = open(args.file).read()
-    _title, _author, puzzle = adapter.import_puzzle(content)
+    _title, _author, puzzle = XdImportAdapter().import_puzzle(open(args.file).read())
 
-    grid = puzzle.grid
-    result = {
-        "file": args.file,
-        "grid": json.loads(grid.to_json()),
-    }
-    print(json.dumps(result))
+    for seq in puzzle.across_words:
+        puzzle.set_clue(seq, Word.ACROSS, None)
+    for seq in puzzle.down_words:
+        puzzle.set_clue(seq, Word.DOWN, None)
+
+    for r in range(1, puzzle.n + 1):
+        for c in range(1, puzzle.n + 1):
+            if not puzzle.is_black_cell(r, c):
+                puzzle.set_cell(r, c, ' ')
+
+    print(XdExportAdapter().export_puzzle_to_xd(puzzle))
 
 
 if __name__ == "__main__":

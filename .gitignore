@@ -10,5 +10,6 @@ build/
 dist/
 *.egg-info/
 server.log
+*.xd
 .coverage
 .codex
