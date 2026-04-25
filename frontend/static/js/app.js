@@ -522,7 +522,7 @@ function _focusPuzzleSvg() {
     }
 }
 
-function handlePuzzleClick(event) {
+async function handlePuzzleClick(event) {
     if (Date.now() < _ignorePuzzleClicksUntil) return;
     const wasEditingWord = !!AppState.editingWord;
     if (AppState.editingWord) {
@@ -532,7 +532,7 @@ function handlePuzzleClick(event) {
         }
         _clickState = 0;
         _clickEvent = null;
-        closeWordEditor();
+        await _weApplyAndClose();
     }
     _focusPuzzleSvg();
     _clickEvent = event;
@@ -1170,10 +1170,34 @@ function _weOnClueBlur(newVal) {
 }
 
 // ---------------------------------------------------------------------------
+// Word editor — change detection + apply-on-navigate
+// ---------------------------------------------------------------------------
+
+function _weHasChanges() {
+    const ew = AppState.editingWord;
+    if (!ew) return false;
+    const len     = ew.cells.length;
+    const textEl  = document.getElementById('we-text');
+    const clueEl  = document.getElementById('we-clue');
+    if (!textEl || !clueEl) return false;
+    const curText = (textEl.value || '').toUpperCase().replace(/\./g, ' ').padEnd(len).slice(0, len);
+    const origText = (ew._origAnswer || '').padEnd(len).slice(0, len);
+    return curText !== origText || (clueEl.value || '') !== ew._origClue;
+}
+
+async function _weApplyAndClose() {
+    if (_weHasChanges()) {
+        await doWordEditOK();
+    } else {
+        closeWordEditor();
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Word editor — keyboard handler
 // ---------------------------------------------------------------------------
 
-function _weKeydown(e) {
+async function _weKeydown(e) {
     if (!AppState.editingWord) return;
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') {
@@ -1210,7 +1234,7 @@ function _weKeydown(e) {
         const [curR, curC] = ew.cells[_weCursorIdx];
         const perpDir = isAcross ? 'down' : 'across';
         const neighbor = findWordAtCell(curR, curC, perpDir);
-        closeWordEditor();
+        await _weApplyAndClose();
         if (neighbor) selectWord(neighbor.seq, neighbor.direction, curR, curC);
         e.preventDefault();
         return;
@@ -1270,11 +1294,13 @@ async function openWordEditor(seq, direction) {
             _weCursorIdx = firstBlank >= 0 ? firstBlank : 0;
         }
         AppState.editingWord = {
-            seq:       data.seq,
-            direction: data.direction,
-            cells:     data.cells,
-            answer:    data.answer,
-            clue:      data.clue,
+            seq:         data.seq,
+            direction:   data.direction,
+            cells:       data.cells,
+            answer:      data.answer,
+            clue:        data.clue,
+            _origAnswer: data.answer || '',
+            _origClue:   data.clue   || '',
         };
         AppState.sidebarTab  = 'word';
         _weSuggestions = [];
