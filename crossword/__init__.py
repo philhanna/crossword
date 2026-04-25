@@ -20,13 +20,16 @@ def get_elapsed_time(stime, etime):
 
 
 def get_default_config_path():
-    import ntpath
     import os
+    import sys
 
     if os.name == "nt":
         appdata = os.environ.get("APPDATA")
         if appdata:
-            return ntpath.join(appdata, "crossword", "config.yaml")
+            return os.path.join(appdata, "crossword", "config.yaml")
+
+    if sys.platform == "darwin":
+        return os.path.expanduser("~/Library/Application Support/crossword/config.yaml")
 
     return os.path.expanduser("~/.config/crossword/config.yaml")
 
