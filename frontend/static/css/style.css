@@ -371,6 +371,15 @@ body.editor-open #workspace {
   margin-bottom: var(--sp-4);
 }
 
+.puzzle-title-display {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--c-text);
+  margin-bottom: var(--sp-3);
+  letter-spacing: 0.01em;
+}
+
 .grid-context-hint {
   font-size: 0.8125rem;
   color: var(--c-text-muted);
