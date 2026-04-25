@@ -2339,6 +2339,113 @@ async function do_export(format) {
 }
 
 // ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+const SETTINGS_SCHEMA = [
+  { key: 'host',
+    desc: 'IP address the server will bind to',
+    type: 'text' },
+  { key: 'port',
+    desc: 'TCP port the server will listen on',
+    type: 'text' },
+  { key: 'dbfile',
+    desc: 'Fully qualified path to the SQLite 3 database',
+    type: 'text' },
+  { key: 'word_file',
+    desc: 'Fully qualified path to the ASCII word list file',
+    type: 'text' },
+  { key: 'log_level',
+    desc: 'One of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET',
+    type: 'select',
+    choices: ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'] },
+  { key: 'message_line_timeout_ms',
+    desc: 'How many milliseconds for the message line to remain visible',
+    type: 'text' },
+  { key: 'author_name',
+    desc: 'NYTimes submission: author info printed on the grid page',
+    type: 'text' },
+  { key: 'author_address', type: 'text' },
+  { key: 'author_email',   type: 'text' },
+];
+
+function _renderSettingsRows(values) {
+    const tbody = document.getElementById('settings-rows');
+    tbody.innerHTML = '';
+    for (const field of SETTINGS_SCHEMA) {
+        if (field.desc) {
+            const descRow = document.createElement('tr');
+            descRow.className = 'settings-desc-row';
+            const td = document.createElement('td');
+            td.colSpan = 2;
+            td.className = 'settings-desc';
+            td.textContent = field.desc;
+            descRow.appendChild(td);
+            tbody.appendChild(descRow);
+        }
+        const row = document.createElement('tr');
+        const labelTd = document.createElement('td');
+        labelTd.className = 'settings-key';
+        labelTd.textContent = field.key;
+        const inputTd = document.createElement('td');
+        let control;
+        if (field.type === 'select') {
+            control = document.createElement('select');
+            control.id = `setting-${field.key}`;
+            for (const ch of field.choices) {
+                const opt = document.createElement('option');
+                opt.value = ch;
+                opt.textContent = ch;
+                if (ch === (values[field.key] ?? '')) opt.selected = true;
+                control.appendChild(opt);
+            }
+        } else {
+            control = document.createElement('input');
+            control.type = 'text';
+            control.id = `setting-${field.key}`;
+            control.value = values[field.key] ?? '';
+        }
+        inputTd.appendChild(control);
+        row.appendChild(labelTd);
+        row.appendChild(inputTd);
+        tbody.appendChild(row);
+    }
+}
+
+async function do_settings() {
+    try {
+        const values = await apiFetch('GET', '/api/settings');
+        _renderSettingsRows(values);
+        showElement('settings-panel');
+    } catch (e) {
+        showMessageLine('Failed to load settings.', 'error');
+    }
+}
+
+async function do_settings_save() {
+    const values = {};
+    for (const field of SETTINGS_SCHEMA) {
+        const el = document.getElementById(`setting-${field.key}`);
+        if (el) values[field.key] = el.value;
+    }
+    try {
+        const result = await apiFetch('PUT', '/api/settings', values);
+        hideElement('settings-panel');
+        if (result.restart_required) {
+            showMessageLine('Settings saved. Restart the server for some changes to take effect.', 'notice', 0);
+        } else {
+            showMessageLine('Settings saved.');
+        }
+    } catch (e) {
+        showMessageLine('Failed to save settings.', 'error');
+    }
+}
+
+function do_settings_cancel() {
+    hideElement('settings-panel');
+}
+
+// ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
 

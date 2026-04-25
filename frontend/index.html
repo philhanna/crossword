@@ -67,6 +67,8 @@
       </div>
     </div>
 
+    <a class="app-nav-btn" onclick="do_settings()">Settings…</a>
+
     <a class="app-nav-btn"
        href="https://github.com/philhanna/crossword/wiki"
        target="_blank">Help</a>
@@ -170,6 +172,23 @@
       <button class="dialog-close-btn" onclick="hideElement('ch')">&times;</button>
     </div>
     <div id="ch-list" class="chooser-list dialog-body"></div>
+  </div>
+</div>
+
+<!-- Settings panel -->
+<div id="settings-panel" class="settings-panel" style="display:none">
+  <div class="settings-header">
+    <span class="settings-title">Settings</span>
+    <button class="settings-close-btn" onclick="do_settings_cancel()">&times;</button>
+  </div>
+  <div class="settings-body">
+    <table class="settings-table">
+      <tbody id="settings-rows"></tbody>
+    </table>
+  </div>
+  <div class="settings-footer">
+    <button class="btn btn-secondary" onclick="do_settings_cancel()">Cancel</button>
+    <button class="btn btn-primary" onclick="do_settings_save()">Save</button>
   </div>
 </div>
 

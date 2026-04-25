@@ -103,6 +103,33 @@ def handle_get_theme_css(path_params, query_params, body_params, session_token, 
         return None
 
 
+def handle_get_settings(path_params, query_params, body_params, session_token, request_handler, **kwargs):
+    """
+    Return current user config values for the settings schema keys.
+    GET /api/settings
+    """
+    try:
+        from crossword.adapters.settings_adapter import get_settings
+        return get_settings()
+    except Exception as e:
+        request_handler._send_error(500, str(e))
+        return None
+
+
+def handle_put_settings(path_params, query_params, body_params, session_token, request_handler, **kwargs):
+    """
+    Write updated values to ~/.config/crossword/config.yaml.
+    PUT /api/settings
+    """
+    try:
+        from crossword.adapters.settings_adapter import put_settings
+        restart_required = put_settings(body_params)
+        return {'restart_required': restart_required}
+    except Exception as e:
+        request_handler._send_error(500, str(e))
+        return None
+
+
 def handle_get_static(path_params, query_params, body_params, session_token, request_handler, **kwargs):
     """
     Serve static assets (CSS, JS, etc.).
