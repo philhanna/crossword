@@ -3,8 +3,10 @@
 ## Overview
 
 Add a Settings screen to the frontend that lets the user view and edit the
-application configuration. The set of editable keys is defined by
-`samples/config.yaml` (the canonical schema). The current values are read from
+application configuration. The set of editable keys, their descriptions, and
+their control types are a static snapshot hardcoded in the frontend as
+`SETTINGS_SCHEMA` (derived from `samples/config.yaml` at design time, not
+loaded at runtime). The current values are read at runtime from
 `~/.config/crossword/config.yaml` (the user's installed config file).
 
 ---
@@ -32,49 +34,70 @@ layer on top, dismissed with Cancel or Save.
 
 ### Layout
 
+Each key is preceded by a full-width description row (spanning both columns)
+drawn from the comment above that key in `samples/config.yaml`.
+
 ```
-┌─────────────────────────────────────────────────┐
-│  Settings                                [✕]    │
-├──────────────────────────┬──────────────────────┤
-│  host                    │  [text input        ]│
-│  port                    │  [text input        ]│
-│  dbfile                  │  [text input        ]│
-│  word_file               │  [text input        ]│
-│  log_level               │  [dropdown ▾       ]│
-│  message_line_timeout_ms │  [text input        ]│
-│  author_name             │  [text input        ]│
-│  author_address          │  [text input        ]│
-│  author_email            │  [text input        ]│
-├──────────────────────────┴──────────────────────┤
-│                              [Cancel]   [Save]  │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  Settings                                         [✕]    │
+├──────────────────────────────────────────────────────────┤
+│  IP address the server will bind to                      │
+│  host                    │  [text input                ]  │
+│                                                          │
+│  TCP port the server will listen on                      │
+│  port                    │  [text input                ]  │
+│                                                          │
+│  Fully qualified path to the SQLite 3 database           │
+│  dbfile                  │  [text input                ]  │
+│                                                          │
+│  Fully qualified path to the ASCII word list file        │
+│  word_file               │  [text input                ]  │
+│                                                          │
+│  One of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET    │
+│  log_level               │  [dropdown ▾               ]  │
+│                                                          │
+│  How many milliseconds for the message line to remain    │
+│  visible                                                 │
+│  message_line_timeout_ms │  [text input                ]  │
+│                                                          │
+│  NYTimes submission: author info printed on the grid     │
+│  page                                                    │
+│  author_name             │  [text input                ]  │
+│  author_address          │  [text input                ]  │
+│  author_email            │  [text input                ]  │
+├──────────────────────────────────────────────────────────┤
+│                                  [Cancel]   [Save]       │
+└──────────────────────────────────────────────────────────┘
 ```
 
-- Left column: key names, right-aligned, styled as labels.
-- Right column: input controls, left-aligned, full width of the column.
+- Description row: spans both columns, styled as subdued italicized text,
+  no top padding, sits flush above its key row.
+- Left column: key name, right-aligned, styled as a label.
+- Right column: input control, left-aligned, full width of the column.
 - `log_level` renders as a `<select>` with options: `CRITICAL`, `ERROR`,
   `WARNING`, `INFO`, `DEBUG`, `NOTSET` (in that order).
 - All other keys render as `<input type="text">`.
-- The two columns together fill the modal body; the panel is wide enough to
-  avoid wrapping long file paths (min-width ~640 px).
+- Keys that share a comment block in `samples/config.yaml` (e.g.
+  `author_name`, `author_address`, `author_email`) share one description row
+  above the first of them; the remaining sibling keys have no description row.
+- The panel is wide enough to avoid wrapping long file paths (min-width ~640 px).
 
 ### Keys (from `samples/config.yaml`)
 
-| Key                        | Control type | Notes                                      |
-|----------------------------|--------------|--------------------------------------------|
-| `host`                     | text         |                                            |
-| `port`                     | text         |                                            |
-| `dbfile`                   | text         | Full path                                  |
-| `word_file`                | text         | Full path                                  |
-| `log_level`                | select       | CRITICAL / ERROR / WARNING / INFO / DEBUG / NOTSET |
-| `message_line_timeout_ms`  | text         |                                            |
-| `author_name`              | text         |                                            |
-| `author_address`           | text         |                                            |
-| `author_email`             | text         |                                            |
+| Key                        | Control type | Description (from config comment)                          |
+|----------------------------|--------------|------------------------------------------------------------|
+| `host`                     | text         | IP address the server will bind to                         |
+| `port`                     | text         | TCP port the server will listen on                         |
+| `dbfile`                   | text         | Fully qualified path to the SQLite 3 database              |
+| `word_file`                | text         | Fully qualified path to the ASCII word list file           |
+| `log_level`                | select       | One of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET       |
+| `message_line_timeout_ms`  | text         | How many milliseconds for the message line to remain visible |
+| `author_name`              | text         | NYTimes submission: author info printed on the grid page   |
+| `author_address`           | text         | *(shares description with `author_name`)*                  |
+| `author_email`             | text         | *(shares description with `author_name`)*                  |
 
-Keys are displayed in the order they appear in `samples/config.yaml`.
-If a key is present in `samples/config.yaml` but absent from the user's
-installed config, its input renders empty.
+Keys are displayed in the order defined by `SETTINGS_SCHEMA`.
+If a key is absent from the user's installed config, its input renders empty.
 
 ---
 
@@ -106,10 +129,10 @@ included with an empty string value `""`.
 
 **Implementation notes:**
 
-- The handler reads the key list from `samples/config.yaml` (loaded once at
-  startup or on each request — startup is preferred).
-- It then reads `~/.config/crossword/config.yaml` and returns only the
-  matching keys, coercing values to strings.
+- The key list is fixed (it mirrors `SETTINGS_SCHEMA` in the frontend); the
+  handler does not read `samples/config.yaml` at runtime.
+- The handler reads `~/.config/crossword/config.yaml` and returns the values
+  for those keys, coercing each to a string.
 
 ### `PUT /api/settings`
 
@@ -213,17 +236,81 @@ that mirrors `samples/config.yaml`:
 
 ```js
 const SETTINGS_SCHEMA = [
-  { key: 'host',                       type: 'text'   },
-  { key: 'port',                       type: 'text'   },
-  { key: 'dbfile',                     type: 'text'   },
-  { key: 'word_file',                  type: 'text'   },
-  { key: 'log_level',                  type: 'select',
+  { key: 'host',
+    desc: 'IP address the server will bind to',
+    type: 'text' },
+  { key: 'port',
+    desc: 'TCP port the server will listen on',
+    type: 'text' },
+  { key: 'dbfile',
+    desc: 'Fully qualified path to the SQLite 3 database',
+    type: 'text' },
+  { key: 'word_file',
+    desc: 'Fully qualified path to the ASCII word list file',
+    type: 'text' },
+  { key: 'log_level',
+    desc: 'One of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET',
+    type: 'select',
     choices: ['CRITICAL','ERROR','WARNING','INFO','DEBUG','NOTSET'] },
-  { key: 'message_line_timeout_ms',    type: 'text'   },
-  { key: 'author_name',                type: 'text'   },
-  { key: 'author_address',             type: 'text'   },
-  { key: 'author_email',               type: 'text'   },
+  { key: 'message_line_timeout_ms',
+    desc: 'How many milliseconds for the message line to remain visible',
+    type: 'text' },
+  { key: 'author_name',
+    desc: 'NYTimes submission: author info printed on the grid page',
+    type: 'text' },
+  { key: 'author_address',
+    type: 'text' },
+  { key: 'author_email',
+    type: 'text' },
 ];
+```
+
+When `desc` is present, the table rendering inserts a full-width row above the
+key row:
+
+```js
+function renderSettingsRows(values) {
+  const tbody = document.getElementById('settings-rows');
+  tbody.innerHTML = '';
+  for (const field of SETTINGS_SCHEMA) {
+    if (field.desc) {
+      const descRow = document.createElement('tr');
+      descRow.className = 'settings-desc-row';
+      const td = document.createElement('td');
+      td.colSpan = 2;
+      td.className = 'settings-desc';
+      td.textContent = field.desc;
+      descRow.appendChild(td);
+      tbody.appendChild(descRow);
+    }
+    const row = document.createElement('tr');
+    const labelTd = document.createElement('td');
+    labelTd.className = 'settings-key';
+    labelTd.textContent = field.key;
+    const inputTd = document.createElement('td');
+    let control;
+    if (field.type === 'select') {
+      control = document.createElement('select');
+      control.id = `setting-${field.key}`;
+      for (const ch of field.choices) {
+        const opt = document.createElement('option');
+        opt.value = ch;
+        opt.textContent = ch;
+        if (ch === (values[field.key] ?? '')) opt.selected = true;
+        control.appendChild(opt);
+      }
+    } else {
+      control = document.createElement('input');
+      control.type = 'text';
+      control.id = `setting-${field.key}`;
+      control.value = values[field.key] ?? '';
+    }
+    inputTd.appendChild(control);
+    row.appendChild(labelTd);
+    row.appendChild(inputTd);
+    tbody.appendChild(row);
+  }
+}
 ```
 
 ---
@@ -254,7 +341,13 @@ Add to `static/css/style.css`:
 .settings-body { flex: 1; overflow-y: auto; padding: 1.5rem; }
 .settings-table { width: 100%; border-collapse: collapse; }
 .settings-table td { padding: 0.4rem 0.75rem; vertical-align: middle; }
-.settings-table td:first-child {
+.settings-desc-row td { padding: 0.75rem 0.75rem 0; }
+.settings-desc {
+  font-style: italic;
+  font-size: 0.875rem;
+  color: #666;
+}
+.settings-key {
   width: 220px;
   text-align: right;
   font-weight: 500;
