@@ -1373,7 +1373,7 @@ kbd {
 
 .settings-body {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   max-width: 1080px;
   width: 100%;
   margin: 0 auto;
@@ -1383,86 +1383,130 @@ kbd {
   border-left: 1px solid var(--c-border);
   border-right: 1px solid var(--c-border);
   box-shadow: 0 16px 40px rgba(20, 28, 44, 0.18);
+  min-height: 0;
 }
 
-.settings-table {
+.settings-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--sp-6);
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--sp-2);
+}
+
+.settings-tab {
+  display: block;
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-}
-
-.settings-table td {
-  padding: 0.6rem 0.9rem;
-  vertical-align: middle;
-}
-
-.settings-desc-row td {
-  padding: var(--sp-6) 0 0.35rem;
-}
-
-.settings-desc-row:first-child td {
-  padding-top: 0;
-}
-
-.settings-desc {
-  display: inline-block;
-  margin: 0;
-  padding: 0.35rem 0.8rem;
-  background: rgba(20, 77, 113, 0.08);
-  border-left: 4px solid var(--c-primary-dk);
-  border-radius: 8px;
-  font-style: normal;
-  font-size: 0.84rem;
-  font-weight: 500;
-  line-height: 1.45;
-  color: var(--c-text-muted);
-}
-
-.settings-key {
-  width: 240px;
-  text-align: right;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--c-text-muted);
-  white-space: nowrap;
-  font-size: 0.88rem;
-  letter-spacing: 0.01em;
+  background: rgba(255,255,255,0.68);
+  border: 1px solid #ddd4c3;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 
-.settings-table tr:not(.settings-desc-row) td {
-  background: rgba(255,255,255,0.8);
-  border-top: 1px solid #e8e1d3;
-  border-bottom: 1px solid #e8e1d3;
+.settings-tab:hover {
+  background: rgba(255,255,255,0.9);
+  border-color: #cbbda3;
+  transform: translateX(2px);
 }
 
-.settings-table tr:not(.settings-desc-row) td:first-child {
-  border-left: 1px solid #e8e1d3;
-  border-radius: 12px 0 0 12px;
+.settings-tab.active {
+  background: linear-gradient(135deg, rgba(20, 77, 113, 0.16), rgba(255,255,255,0.96));
+  border-color: var(--c-primary-dk);
+  color: var(--c-text);
+  box-shadow: 0 10px 24px rgba(20, 28, 44, 0.12);
 }
 
-.settings-table tr:not(.settings-desc-row) td:last-child {
-  width: 100%;
-  border-right: 1px solid #e8e1d3;
-  border-radius: 0 12px 12px 0;
+.settings-tab:focus {
+  outline: none;
+  border-color: var(--c-primary-dk);
+  box-shadow: 0 0 0 3px rgba(59,110,165,0.14);
 }
 
-.settings-table input[type="text"],
-.settings-table select {
-  width: 100%;
-  min-height: 42px;
-  padding: 0.55rem 0.8rem;
-  font-family: var(--font-ui);
+.settings-panels {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.settings-panel-card {
+  display: none;
+  min-height: 100%;
+  padding: var(--sp-6);
+  background: rgba(255,255,255,0.82);
+  border: 1px solid #e0d7c9;
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+}
+
+.settings-panel-card.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-panel-title {
+  margin: 0 0 var(--sp-4);
+  font-size: 1.35rem;
+  color: var(--c-text);
+}
+
+.settings-panel-desc {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  background: rgba(20, 77, 113, 0.08);
+  border-left: 4px solid var(--c-primary-dk);
+  border-radius: 10px;
+  color: var(--c-text-muted);
   font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.settings-form-field {
+  margin-top: var(--sp-6);
+}
+
+.settings-input-label {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+.settings-input,
+.settings-form-field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
   color: var(--c-text);
   background: var(--c-surface);
   border: 1px solid var(--c-border);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
-.settings-table input[type="text"]:focus,
-.settings-table select:focus {
+.settings-input:focus,
+.settings-form-field select:focus {
   outline: none;
   border-color: var(--c-primary-dk);
   box-shadow: 0 0 0 3px rgba(59,110,165,0.14);
@@ -1557,25 +1601,26 @@ kbd {
     flex: 1 1 0;
   }
 
-  .settings-table,
-  .settings-table tbody,
-  .settings-table tr,
-  .settings-table td {
-    display: block;
-    width: 100%;
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
   }
 
-  .settings-key {
-    width: auto;
-    text-align: left;
-    border-bottom: none !important;
-    border-radius: 12px 12px 0 0 !important;
-    padding-bottom: 0.25rem;
+  .settings-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-right: 0;
+    padding-bottom: var(--sp-2);
   }
 
-  .settings-table tr:not(.settings-desc-row) td:last-child {
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-    margin-bottom: var(--sp-2);
+  .settings-tab {
+    flex: 0 0 auto;
+    min-width: 160px;
+  }
+
+  .settings-panel-card {
+    min-height: auto;
+    padding: var(--sp-4);
   }
 }

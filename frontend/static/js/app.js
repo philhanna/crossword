@@ -2372,29 +2372,71 @@ const SETTINGS_SCHEMA = [
   { key: 'author_email',   type: 'text' },
 ];
 
+function _activateSettingsTab(key) {
+    const tabs = document.querySelectorAll('.settings-tab');
+    const panels = document.querySelectorAll('.settings-panel-card');
+
+    for (const tab of tabs) {
+        const isActive = tab.dataset.key === key;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        tab.setAttribute('tabindex', isActive ? '0' : '-1');
+    }
+
+    for (const panel of panels) {
+        const isActive = panel.dataset.key === key;
+        panel.classList.toggle('active', isActive);
+        panel.hidden = !isActive;
+    }
+}
+
 function _renderSettingsRows(values) {
-    const tbody = document.getElementById('settings-rows');
-    tbody.innerHTML = '';
+    const tabs = document.getElementById('settings-tabs');
+    const panels = document.getElementById('settings-panels');
+    tabs.innerHTML = '';
+    panels.innerHTML = '';
+
     for (const field of SETTINGS_SCHEMA) {
-        if (field.desc) {
-            const descRow = document.createElement('tr');
-            descRow.className = 'settings-desc-row';
-            const td = document.createElement('td');
-            td.colSpan = 2;
-            td.className = 'settings-desc';
-            td.textContent = field.desc;
-            descRow.appendChild(td);
-            tbody.appendChild(descRow);
-        }
-        const row = document.createElement('tr');
-        const labelTd = document.createElement('td');
-        labelTd.className = 'settings-key';
-        labelTd.textContent = field.key;
-        const inputTd = document.createElement('td');
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.className = 'settings-tab';
+        tab.id = `settings-tab-${field.key}`;
+        tab.dataset.key = field.key;
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-controls', `settings-panel-${field.key}`);
+        tab.textContent = field.key;
+        tab.addEventListener('click', () => _activateSettingsTab(field.key));
+        tabs.appendChild(tab);
+
+        const panel = document.createElement('section');
+        panel.id = `settings-panel-${field.key}`;
+        panel.className = 'settings-panel-card';
+        panel.dataset.key = field.key;
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', `settings-tab-${field.key}`);
+
+        const title = document.createElement('h2');
+        title.className = 'settings-panel-title';
+        title.textContent = field.key;
+        panel.appendChild(title);
+
+        const desc = document.createElement('p');
+        desc.className = 'settings-panel-desc';
+        desc.textContent = field.desc || 'No description available.';
+        panel.appendChild(desc);
+
+        const formField = document.createElement('div');
+        formField.className = 'settings-form-field';
+
+        const label = document.createElement('label');
+        label.className = 'settings-input-label';
+        label.setAttribute('for', `setting-${field.key}`);
+        label.textContent = 'Value';
+        formField.appendChild(label);
+
         let control;
         if (field.type === 'select') {
             control = document.createElement('select');
-            control.id = `setting-${field.key}`;
             for (const ch of field.choices) {
                 const opt = document.createElement('option');
                 opt.value = ch;
@@ -2405,13 +2447,17 @@ function _renderSettingsRows(values) {
         } else {
             control = document.createElement('input');
             control.type = 'text';
-            control.id = `setting-${field.key}`;
             control.value = values[field.key] ?? '';
         }
-        inputTd.appendChild(control);
-        row.appendChild(labelTd);
-        row.appendChild(inputTd);
-        tbody.appendChild(row);
+        control.id = `setting-${field.key}`;
+        control.className = 'settings-input';
+        formField.appendChild(control);
+        panel.appendChild(formField);
+        panels.appendChild(panel);
+    }
+
+    if (SETTINGS_SCHEMA.length > 0) {
+        _activateSettingsTab(SETTINGS_SCHEMA[0].key);
     }
 }
 
