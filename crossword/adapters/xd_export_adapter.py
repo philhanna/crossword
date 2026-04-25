@@ -5,7 +5,7 @@ from crossword import Puzzle
 from crossword.ports.export_port import ExportError
 
 
-class XdOutputAdapter:
+class XdExportAdapter:
     """
     Exports a puzzle to the .xd crossword format.
 

@@ -1,9 +1,9 @@
-# crossword.tests.adapters.test_xd_output_adapter
+# crossword.tests.adapters.test_xd_export_adapter
 import re
 import pytest
 
 from crossword import Grid, Puzzle
-from crossword.adapters.xd_output_adapter import XdOutputAdapter
+from crossword.adapters.xd_export_adapter import XdExportAdapter
 from crossword.adapters.xd_import_adapter import XdImportAdapter
 from crossword.ports.export_port import ExportError
 
@@ -26,10 +26,10 @@ def puzzle():
 
 @pytest.fixture
 def adapter():
-    return XdOutputAdapter(author_name="Test Author")
+    return XdExportAdapter(author_name="Test Author")
 
 
-class TestXdOutputStructure:
+class TestXdExportStructure:
     def test_returns_string(self, adapter, puzzle):
         result = adapter.export_puzzle_to_xd(puzzle)
         assert isinstance(result, str)
@@ -64,7 +64,7 @@ class TestXdOutputStructure:
         grid.add_black_cell(2, 2)
         p = Puzzle(grid, title="Black")
         p.enter_puzzle_mode()
-        result = XdOutputAdapter().export_puzzle_to_xd(p)
+        result = XdExportAdapter().export_puzzle_to_xd(p)
         sections = re.split(r'\n{3,}', result.strip())
         grid_lines = sections[1].splitlines()
         assert grid_lines[1][1] == '#'
@@ -93,14 +93,14 @@ class TestXdOutputStructure:
     def test_empty_title_and_author(self):
         grid = Grid(3)
         p = Puzzle(grid)
-        result = XdOutputAdapter().export_puzzle_to_xd(p)
+        result = XdExportAdapter().export_puzzle_to_xd(p)
         assert "Title: \n" in result
         assert "Author: \n" in result
 
     def test_empty_cells_rendered_as_dot(self):
         grid = Grid(3)
         p = Puzzle(grid, title="Empty")
-        result = XdOutputAdapter().export_puzzle_to_xd(p)
+        result = XdExportAdapter().export_puzzle_to_xd(p)
         sections = re.split(r'\n{3,}', result.strip())
         for line in sections[1].splitlines():
             assert '.' in line or re.fullmatch(r'[A-Z#.]+', line.strip())
@@ -133,6 +133,6 @@ class TestXdRoundTrip:
 
 class TestXdExportError:
     def test_raises_export_error_on_failure(self):
-        adapter = XdOutputAdapter()
+        adapter = XdExportAdapter()
         with pytest.raises(ExportError):
             adapter.export_puzzle_to_xd(None)

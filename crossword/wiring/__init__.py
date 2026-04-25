@@ -16,7 +16,7 @@ from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
 from crossword.adapters.puz_export_adapter import PuzExportAdapter
-from crossword.adapters.xd_output_adapter import XdOutputAdapter
+from crossword.adapters.xd_export_adapter import XdExportAdapter
 from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDefinition
 from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
@@ -108,7 +108,7 @@ def make_app(config=None):
     json_adapter = JsonExportAdapter()
     solver_pdf_adapter = SolverPdfExportAdapter()
     puz_export_adapter = PuzExportAdapter(author_name=config.get("author_name"))
-    xd_output_adapter = XdOutputAdapter(author_name=config.get("author_name"))
+    xd_export_adapter = XdExportAdapter(author_name=config.get("author_name"))
 
     # ========================================================================
     # Instantiate Use Cases (with constructor injection)
@@ -120,7 +120,7 @@ def make_app(config=None):
 
     word_uc = WordUseCases(word_adapter)
     puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc)
-    export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter, solver_pdf_adapter, puz_export_adapter, xd_output_adapter)
+    export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter, solver_pdf_adapter, puz_export_adapter, xd_export_adapter)
     import_uc = ImportUseCases(persistence, acrosslite_import_adapter, xd_import_adapter, puz_import_adapter)
 
     if not config.get("host"):
