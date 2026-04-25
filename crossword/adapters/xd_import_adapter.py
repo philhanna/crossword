@@ -1,4 +1,3 @@
-# crossword.adapters.xd_import_adapter
 import re
 
 from crossword import Grid, Puzzle

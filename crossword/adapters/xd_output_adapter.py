@@ -1,4 +1,4 @@
-# crossword.adapters.xd_output_adapter
+from datetime import date
 from io import StringIO
 
 from crossword import Puzzle
@@ -31,6 +31,7 @@ class XdOutputAdapter:
             # Metadata
             fp.write(f"Title: {puzzle.title or ''}\n")
             fp.write(f"Author: {self.author_name or ''}\n")
+            fp.write(f"Date: {date.today().strftime('%Y-%m-%d')}\n")
 
             # Grid section (two blank lines = separator)
             fp.write("\n\n")
