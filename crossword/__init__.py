@@ -23,7 +23,7 @@ def get_default_config_path():
     import os
     import sys
 
-    if os.name == "nt":
+    if sys.platform == "win32":
         appdata = os.environ.get("APPDATA")
         if appdata:
             return os.path.join(appdata, "crossword", "config.yaml")
