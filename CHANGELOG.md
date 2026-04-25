@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.8.0] - 2026-04-25
+
+### Added
+
+- Settings screen accessible via gear icon in app bar
+- GET /api/settings and PUT /api/settings endpoints
+- Bootstrap config on first run when no config file exists
+- Settings panel with tabbed layout, theme color support
+- Sample database included in package
+
+### Changed
+
+- Handle macOS config path (`~/Library/Application Support/`) in addition to Windows and Linux
+- Use `sys.platform` consistently for OS detection
+- Added date to xd export output
+- Rename `XdOutputAdapter` to `XdExportAdapter`
+
+### Documentation
+
+- Add settings feature design document (`doc/settings_design.md`)
+
 ## [4.7.0] - 2026-04-20
 
 ### Changed
