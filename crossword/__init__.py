@@ -48,6 +48,7 @@ def get_bootstrap_config():
         'port': 5000,
         'log_level': "INFO",
         'message_line_timeout_ms': 2000,
+        'theme_color': "#154d71",
         'author_name': "Your Name",
         'author_address': "123 Main St, City, ST 12345",
         'author_email': "you@example.com",

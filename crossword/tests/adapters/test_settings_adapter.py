@@ -15,6 +15,7 @@ def test_get_settings_falls_back_to_bootstrap_config(tmp_path, monkeypatch):
     assert values["port"] == "5000"
     assert values["dbfile"].endswith("samples/crossword.db")
     assert values["word_file"].endswith("samples/words.txt")
+    assert values["theme_color"] == "#154d71"
 
 
 def test_put_settings_creates_parent_directory(tmp_path, monkeypatch):
@@ -26,6 +27,7 @@ def test_put_settings_creates_parent_directory(tmp_path, monkeypatch):
         "host": "127.0.0.1",
         "port": "5000",
         "dbfile": "/tmp/crossword.db",
+        "theme_color": "#123456",
     })
 
     assert restart_required is True
@@ -33,6 +35,7 @@ def test_put_settings_creates_parent_directory(tmp_path, monkeypatch):
     with open(config_path) as f:
         saved = yaml.safe_load(f)
     assert saved["dbfile"] == "/tmp/crossword.db"
+    assert saved["theme_color"] == "#123456"
 
 
 def test_put_settings_preserves_unknown_keys(tmp_path, monkeypatch):

@@ -22,6 +22,9 @@ log_level: INFO
 # How many milliseconds for the message line to remain visible
 message_line_timeout_ms: 2000
 
+# Theme color in RGB notation, like #FFFFF2
+theme_color: "#154d71"
+
 # NYTimes submission: author info printed on the grid page
 author_name: Your Name
 author_address: "123 Main St, City, ST 12345"
