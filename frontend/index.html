@@ -166,16 +166,22 @@
 
 <!-- Chooser dialog (scrollable list of grids or puzzles) -->
 <div id="ch" class="w3-modal" style="display:none">
-  <div class="w3-modal-content dialog-card" style="width:800px;max-width:95vw">
+  <div class="w3-modal-content dialog-card" style="width:900px;max-width:95vw">
     <div class="dialog-header">
       <span id="ch-title" class="dialog-title"></span>
       <button class="dialog-close-btn" onclick="hideElement('ch')">&times;</button>
     </div>
+    <div id="ch-sort" style="padding:6px 12px;border-bottom:1px solid #ddd;display:flex;gap:20px;align-items:center;font-size:13px">
+      <label style="cursor:pointer"><input type="radio" name="ch-sort" value="recent" checked onchange="chSetSort('recent')"> Most recent</label>
+      <label style="cursor:pointer"><input type="radio" name="ch-sort" value="alpha"         onchange="chSetSort('alpha')"> Alphabetical</label>
+    </div>
     <div id="ch-list" class="chooser-list dialog-body"></div>
-    <div id="ch-pagination" style="display:none;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #ddd">
-      <button id="ch-page-prev" class="w3-button w3-border" onclick="chPagePrev()">&#8249;</button>
+    <div id="ch-pagination" style="display:none;justify-content:center;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #ddd">
+      <button id="ch-page-first" class="w3-button w3-border" onclick="chPageFirst()">&#171;</button>
+      <button id="ch-page-prev"  class="w3-button w3-border" onclick="chPagePrev()">&#8249;</button>
       <span id="ch-page-label" style="font-size:13px"></span>
-      <button id="ch-page-next" class="w3-button w3-border" onclick="chPageNext()">&#8250;</button>
+      <button id="ch-page-next"  class="w3-button w3-border" onclick="chPageNext()">&#8250;</button>
+      <button id="ch-page-last"  class="w3-button w3-border" onclick="chPageLast()">&#187;</button>
     </div>
   </div>
 </div>

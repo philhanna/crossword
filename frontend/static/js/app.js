@@ -206,15 +206,18 @@ function showChooser(title, items, onSelect) {
     showElement('ch');
 }
 
-const CH_PAGE_SIZE = 4;
+const CH_PAGE_SIZE = 5;
 let _chPreviews  = [];
 let _chPage      = 0;
 let _chOnSelect  = null;
+let _chSortOrder = 'recent';
 
 async function showPreviewChooser(title, names, apiPrefix, onSelect) {
-    _chPreviews = [];
-    _chPage     = 0;
-    _chOnSelect = onSelect;
+    _chPreviews  = [];
+    _chPage      = 0;
+    _chOnSelect  = onSelect;
+    _chSortOrder = 'recent';
+    document.querySelector('input[name="ch-sort"][value="recent"]').checked = true;
 
     document.getElementById('ch-title').innerHTML = title;
     const listEl = document.getElementById('ch-list');
@@ -233,16 +236,21 @@ async function showPreviewChooser(title, names, apiPrefix, onSelect) {
 }
 
 function _chRender() {
-    const listEl   = document.getElementById('ch-list');
-    const pageDiv  = document.getElementById('ch-pagination');
-    const prevBtn  = document.getElementById('ch-page-prev');
-    const nextBtn  = document.getElementById('ch-page-next');
-    const labelEl  = document.getElementById('ch-page-label');
+    const listEl    = document.getElementById('ch-list');
+    const pageDiv   = document.getElementById('ch-pagination');
+    const firstBtn  = document.getElementById('ch-page-first');
+    const prevBtn   = document.getElementById('ch-page-prev');
+    const nextBtn   = document.getElementById('ch-page-next');
+    const lastBtn   = document.getElementById('ch-page-last');
+    const labelEl   = document.getElementById('ch-page-label');
 
-    const total     = _chPreviews.length;
+    const ordered   = _chSortOrder === 'alpha'
+        ? [..._chPreviews].sort((a, b) => a.name.localeCompare(b.name))
+        : _chPreviews;
+    const total     = ordered.length;
     const pageStart = _chPage * CH_PAGE_SIZE;
     const pageEnd   = Math.min(pageStart + CH_PAGE_SIZE, total);
-    const pageItems = _chPreviews.slice(pageStart, pageEnd);
+    const pageItems = ordered.slice(pageStart, pageEnd);
 
     listEl.innerHTML = '';
     for (const p of pageItems) {
@@ -270,22 +278,23 @@ function _chRender() {
     }
 
     if (total > CH_PAGE_SIZE) {
-        labelEl.textContent   = `${pageStart + 1}–${pageEnd} of ${total}`;
-        prevBtn.disabled      = _chPage === 0;
-        nextBtn.disabled      = pageEnd >= total;
-        pageDiv.style.display = 'flex';
+        const lastPage = Math.ceil(total / CH_PAGE_SIZE) - 1;
+        labelEl.textContent    = `${pageStart + 1}–${pageEnd} of ${total}`;
+        firstBtn.disabled      = _chPage === 0;
+        prevBtn.disabled       = _chPage === 0;
+        nextBtn.disabled       = pageEnd >= total;
+        lastBtn.disabled       = _chPage === lastPage;
+        pageDiv.style.display  = 'flex';
     } else {
         pageDiv.style.display = 'none';
     }
 }
 
-function chPagePrev() {
-    if (_chPage > 0) { _chPage--; _chRender(); }
-}
-
-function chPageNext() {
-    if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); }
-}
+function chSetSort(order) { _chSortOrder = order; _chPage = 0; _chRender(); }
+function chPageFirst() { _chPage = 0; _chRender(); }
+function chPagePrev()  { if (_chPage > 0) { _chPage--; _chRender(); } }
+function chPageNext()  { if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); } }
+function chPageLast()  { _chPage = Math.ceil(_chPreviews.length / CH_PAGE_SIZE) - 1; _chRender(); }
 
 // ---------------------------------------------------------------------------
 // Menu enable / disable
