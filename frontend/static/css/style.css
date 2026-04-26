@@ -1081,7 +1081,7 @@ kbd {
   gap: 12px;
   padding: 12px;
   overflow: hidden;
-  min-height: 220px;
+  height: 260px;
 }
 
 .chooser-list a {
