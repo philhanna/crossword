@@ -59,7 +59,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             cursor = self.conn.cursor()
 
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS puzzles (
+                CREATE TABLE IF NOT EXISTS grids (
                     id              INTEGER PRIMARY KEY,
                     userid          INTEGER NOT NULL,
                     puzzlename      TEXT NOT NULL,
@@ -71,20 +71,20 @@ class SQLitePersistenceAdapter(PersistencePort):
                 )
             """)
 
-            if self._table_exists("puzzles") and not self._column_exists("puzzles", "last_mode"):
+            if self._table_exists("grids") and not self._column_exists("grids", "last_mode"):
                 cursor.execute("""
-                    ALTER TABLE puzzles
+                    ALTER TABLE grids
                     ADD COLUMN last_mode TEXT NOT NULL DEFAULT 'puzzle'
                         CHECK (last_mode IN ('grid', 'puzzle'))
                 """)
 
-            if self._table_exists("puzzles") and not self._column_exists("puzzles", "n"):
-                cursor.execute("ALTER TABLE puzzles ADD COLUMN n INTEGER")
-                cursor.execute("UPDATE puzzles SET n = json_extract(jsonstr, '$.n')")
+            if self._table_exists("grids") and not self._column_exists("grids", "n"):
+                cursor.execute("ALTER TABLE grids ADD COLUMN n INTEGER")
+                cursor.execute("UPDATE grids SET n = json_extract(jsonstr, '$.n')")
 
             cursor.execute("""
-                CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_userid_puzzlename
-                ON puzzles(userid, puzzlename)
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_grids_userid_puzzlename
+                ON grids(userid, puzzlename)
             """)
 
             self.conn.commit()
@@ -121,7 +121,7 @@ class SQLitePersistenceAdapter(PersistencePort):
 
             # Check if puzzle already exists
             cursor.execute(
-                "SELECT id FROM puzzles WHERE userid = ? AND puzzlename = ?",
+                "SELECT id FROM grids WHERE userid = ? AND puzzlename = ?",
                 (user_id, name)
             )
             existing = cursor.fetchone()
@@ -131,7 +131,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             if existing:
                 # Update existing puzzle
                 cursor.execute(
-                    """UPDATE puzzles
+                    """UPDATE grids
                        SET jsonstr = ?, modified = ?, last_mode = ?, n = ?
                        WHERE userid = ? AND puzzlename = ?""",
                     (jsonstr, now, last_mode, n, user_id, name)
@@ -139,7 +139,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             else:
                 # Insert new puzzle
                 cursor.execute(
-                    """INSERT INTO puzzles (userid, puzzlename, created, modified, last_mode, jsonstr, n)
+                    """INSERT INTO grids (userid, puzzlename, created, modified, last_mode, jsonstr, n)
                        VALUES (?, ?, ?, ?, ?, ?, ?)""",
                     (user_id, name, now, now, last_mode, jsonstr, n)
                 )
@@ -153,7 +153,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         try:
             cursor = self.conn.cursor()
             cursor.execute(
-                "SELECT jsonstr, last_mode FROM puzzles WHERE userid = ? AND puzzlename = ?",
+                "SELECT jsonstr, last_mode FROM grids WHERE userid = ? AND puzzlename = ?",
                 (user_id, name)
             )
             row = cursor.fetchone()
@@ -178,7 +178,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         try:
             cursor = self.conn.cursor()
             cursor.execute(
-                "DELETE FROM puzzles WHERE userid = ? AND puzzlename = ?",
+                "DELETE FROM grids WHERE userid = ? AND puzzlename = ?",
                 (user_id, name)
             )
 
@@ -196,7 +196,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         try:
             cursor = self.conn.cursor()
             cursor.execute(
-                """SELECT puzzlename FROM puzzles
+                """SELECT puzzlename FROM grids
                    WHERE userid = ?
                    ORDER BY modified DESC""",
                 (user_id,)
