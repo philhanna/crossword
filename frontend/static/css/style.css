@@ -1076,9 +1076,12 @@ kbd {
    ========================================================= */
 
 .chooser-list {
-  overflow-y: auto;
-  max-height: 520px;
-  padding: var(--sp-2) 0;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+  min-height: 220px;
 }
 
 .chooser-list a {

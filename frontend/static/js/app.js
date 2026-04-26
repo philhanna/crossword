@@ -206,29 +206,54 @@ function showChooser(title, items, onSelect) {
     showElement('ch');
 }
 
+const CH_PAGE_SIZE = 4;
+let _chPreviews  = [];
+let _chPage      = 0;
+let _chOnSelect  = null;
+
 async function showPreviewChooser(title, names, apiPrefix, onSelect) {
+    _chPreviews = [];
+    _chPage     = 0;
+    _chOnSelect = onSelect;
+
     document.getElementById('ch-title').innerHTML = title;
     const listEl = document.getElementById('ch-list');
     listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews…</div>';
+    document.getElementById('ch-pagination').style.display = 'none';
     showElement('ch');
 
-    const previews = await Promise.all(
+    _chPreviews = await Promise.all(
         names.map(name =>
             apiFetch('GET', `${apiPrefix}/${encodeURIComponent(name)}/preview`)
                 .catch(() => ({ name, heading: name, svgstr: '', error: true }))
         )
     );
 
+    _chRender();
+}
+
+function _chRender() {
+    const listEl   = document.getElementById('ch-list');
+    const pageDiv  = document.getElementById('ch-pagination');
+    const prevBtn  = document.getElementById('ch-page-prev');
+    const nextBtn  = document.getElementById('ch-page-next');
+    const labelEl  = document.getElementById('ch-page-label');
+
+    const total     = _chPreviews.length;
+    const pageStart = _chPage * CH_PAGE_SIZE;
+    const pageEnd   = Math.min(pageStart + CH_PAGE_SIZE, total);
+    const pageItems = _chPreviews.slice(pageStart, pageEnd);
+
     listEl.innerHTML = '';
-    for (const p of previews) {
-        const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;cursor:pointer;padding:6px 8px;border-bottom:1px solid #ddd';
-        row.onmouseover = () => row.style.background = '#f1f1f1';
-        row.onmouseout  = () => row.style.background = '';
-        row.onclick     = () => { hideElement('ch'); onSelect(p.name); };
+    for (const p of pageItems) {
+        const card = document.createElement('div');
+        card.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:8px;border:1px solid #ddd;border-radius:4px;width:160px;flex-shrink:0';
+        card.onmouseover = () => card.style.background = '#f1f1f1';
+        card.onmouseout  = () => card.style.background = '';
+        card.onclick     = () => { hideElement('ch'); _chOnSelect(p.name); };
 
         const svgDiv = document.createElement('div');
-        svgDiv.style.cssText = 'flex-shrink:0;width:150px;overflow:hidden;margin-right:12px';
+        svgDiv.style.cssText = 'width:150px;height:150px;overflow:hidden';
         if (p.svgstr) {
             svgDiv.innerHTML = p.svgstr;
             const svg = svgDiv.querySelector('svg');
@@ -236,12 +261,30 @@ async function showPreviewChooser(title, names, apiPrefix, onSelect) {
         }
 
         const textDiv = document.createElement('div');
+        textDiv.style.cssText = 'margin-top:6px;text-align:center;font-size:13px;word-break:break-word;max-width:150px';
         textDiv.innerHTML = `<b>${escapeHtml(p.name)}</b><br><small class="w3-text-gray">${escapeHtml(p.heading || '')}</small>`;
 
-        row.appendChild(svgDiv);
-        row.appendChild(textDiv);
-        listEl.appendChild(row);
+        card.appendChild(svgDiv);
+        card.appendChild(textDiv);
+        listEl.appendChild(card);
     }
+
+    if (total > CH_PAGE_SIZE) {
+        labelEl.textContent   = `${pageStart + 1}–${pageEnd} of ${total}`;
+        prevBtn.disabled      = _chPage === 0;
+        nextBtn.disabled      = pageEnd >= total;
+        pageDiv.style.display = 'flex';
+    } else {
+        pageDiv.style.display = 'none';
+    }
+}
+
+function chPagePrev() {
+    if (_chPage > 0) { _chPage--; _chRender(); }
+}
+
+function chPageNext() {
+    if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); }
 }
 
 // ---------------------------------------------------------------------------

@@ -166,12 +166,17 @@
 
 <!-- Chooser dialog (scrollable list of grids or puzzles) -->
 <div id="ch" class="w3-modal" style="display:none">
-  <div class="w3-modal-content dialog-card" style="width:65%;max-width:95vw">
+  <div class="w3-modal-content dialog-card" style="width:800px;max-width:95vw">
     <div class="dialog-header">
       <span id="ch-title" class="dialog-title"></span>
       <button class="dialog-close-btn" onclick="hideElement('ch')">&times;</button>
     </div>
     <div id="ch-list" class="chooser-list dialog-body"></div>
+    <div id="ch-pagination" style="display:none;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #ddd">
+      <button id="ch-page-prev" class="w3-button w3-border" onclick="chPagePrev()">&#8249;</button>
+      <span id="ch-page-label" style="font-size:13px"></span>
+      <button id="ch-page-next" class="w3-button w3-border" onclick="chPageNext()">&#8250;</button>
+    </div>
   </div>
 </div>
 
