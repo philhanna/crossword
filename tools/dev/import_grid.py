@@ -18,16 +18,53 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import sqlite3
 import sys
+from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.adapters.xd_import_adapter import XdImportAdapter
 from crossword.domain.word import Word
+
+
+def _open_db(path: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(path)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS grids (
+            id          INTEGER PRIMARY KEY,
+            userid      INTEGER NOT NULL,
+            name        TEXT NOT NULL,
+            n           INTEGER NOT NULL,
+            created     TEXT NOT NULL,
+            modified    TEXT NOT NULL,
+            jsonstr     TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_grids_userid_name
+        ON grids(userid, name)
+    """)
+    conn.commit()
+    return conn
+
+
+def _list_names(conn: sqlite3.Connection, user_id: int) -> set[str]:
+    rows = conn.execute("SELECT name FROM grids WHERE userid = ?", (user_id,)).fetchall()
+    return {row[0] for row in rows}
+
+
+def _save(conn: sqlite3.Connection, user_id: int, name: str, n: int, jsonstr: str) -> None:
+    now = datetime.now().isoformat()
+    conn.execute(
+        """INSERT INTO grids (userid, name, n, created, modified, jsonstr)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (user_id, name, n, now, now, jsonstr),
+    )
+    conn.commit()
 
 
 def _grid_name(puzzle) -> str:
@@ -69,9 +106,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    db = SQLitePersistenceAdapter(args.db)
+    conn = _open_db(args.db)
     user_id = args.user_id
-    existing = set(db.list_puzzles(user_id))
+    existing = _list_names(conn, user_id)
 
     ok = 0
     skipped = 0
@@ -88,7 +125,7 @@ def main() -> None:
                 print(f"skip {name}  ({path})", file=sys.stderr)
                 skipped += 1
                 continue
-            db.save_puzzle(user_id, name, puzzle)
+            _save(conn, user_id, name, puzzle.n, puzzle.to_json())
             existing.add(name)
             print(f"ok   {name}  ({path.name})", file=sys.stderr)
             ok += 1
