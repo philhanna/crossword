@@ -931,6 +931,9 @@ function renderActionBar() {
   <button class="ab-btn" onclick="do_puzzle_save()">
     <i class="material-icons">save</i><span>Save</span>
   </button>
+  <button class="ab-btn" onclick="do_puzzle_close()">
+    <i class="material-icons">close</i><span>Close</span>
+  </button>
 </div>
 <div class="ab-divider"></div>
 <div class="ab-group">
