@@ -78,6 +78,10 @@ class SQLitePersistenceAdapter(PersistencePort):
                         CHECK (last_mode IN ('grid', 'puzzle'))
                 """)
 
+            if self._table_exists("puzzles") and not self._column_exists("puzzles", "n"):
+                cursor.execute("ALTER TABLE puzzles ADD COLUMN n INTEGER")
+                cursor.execute("UPDATE puzzles SET n = json_extract(jsonstr, '$.n')")
+
             cursor.execute("""
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_userid_puzzlename
                 ON puzzles(userid, puzzlename)
@@ -122,20 +126,22 @@ class SQLitePersistenceAdapter(PersistencePort):
             )
             existing = cursor.fetchone()
 
+            n = puzzle.n
+
             if existing:
                 # Update existing puzzle
                 cursor.execute(
                     """UPDATE puzzles
-                       SET jsonstr = ?, modified = ?, last_mode = ?
+                       SET jsonstr = ?, modified = ?, last_mode = ?, n = ?
                        WHERE userid = ? AND puzzlename = ?""",
-                    (jsonstr, now, last_mode, user_id, name)
+                    (jsonstr, now, last_mode, n, user_id, name)
                 )
             else:
                 # Insert new puzzle
                 cursor.execute(
-                    """INSERT INTO puzzles (userid, puzzlename, created, modified, last_mode, jsonstr)
-                       VALUES (?, ?, ?, ?, ?, ?)""",
-                    (user_id, name, now, now, last_mode, jsonstr)
+                    """INSERT INTO puzzles (userid, puzzlename, created, modified, last_mode, jsonstr, n)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (user_id, name, now, now, last_mode, jsonstr, n)
                 )
 
             self.conn.commit()
