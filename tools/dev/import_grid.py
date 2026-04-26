@@ -8,7 +8,7 @@ Reads .xd file paths from stdin (one per line) — suitable for use with find:
 Each puzzle is stripped of all filled letters and clues before storage,
 leaving only the black-cell pattern (the grid structure).
 
-Puzzle names have the form "Grid<n><hash8>" where <n> is the grid size and
+Puzzle names have the form "Grid<n>-<hash8>" where <n> is the grid size and
 <hash8> is the first 8 hex digits of a SHA-256 hash of the sorted black-cell
 coordinates.  Grids with identical structure get the same name and are skipped
 on re-import.
@@ -33,7 +33,7 @@ from crossword.domain.word import Word
 def _grid_name(puzzle) -> str:
     black = sorted(puzzle.grid.get_black_cells())
     digest = hashlib.sha256(str(black).encode()).hexdigest()[:8]
-    return f"Grid{puzzle.n}{digest}"
+    return f"Grid{puzzle.n}-{digest}"
 
 
 def _prepare_puzzle(path: Path):
