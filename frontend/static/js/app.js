@@ -782,7 +782,7 @@ function renderPuzzleEditorLhs() {
     updateAppBarPuzzleInfo();
     const puzzleTitle = pd && pd.puzzle.title ? pd.puzzle.title : '';
     const titleHtml = puzzleTitle
-        ? `<div class="puzzle-title-display">${escapeHtml(puzzleTitle)}</div>`
+        ? `<div class="puzzle-title-display" onclick="do_puzzle_title()" style="cursor:pointer">${escapeHtml(puzzleTitle)}</div>`
         : '';
     document.getElementById('lhs').innerHTML = `
 <div class="grid-canvas-frame">
