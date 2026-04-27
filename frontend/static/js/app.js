@@ -1180,6 +1180,11 @@ function weListItemClick(word) {
     });
 }
 
+async function weListItemDoubleClick(word) {
+    weListItemClick(word);
+    await doWordEditOK();
+}
+
 function _weGetRawInputText() {
     const inp = document.getElementById('we-text');
     if (inp) return inp.value;
@@ -1487,6 +1492,7 @@ function _weRenderSuggestionList() {
         li.onmouseover = () => { if (li.style.background !== 'rgb(208, 232, 255)') li.style.background = '#f5f5f5'; };
         li.onmouseout  = () => { if (li.style.background !== 'rgb(208, 232, 255)') li.style.background = ''; };
         li.onclick     = () => weListItemClick(word);
+        li.ondblclick  = () => weListItemDoubleClick(word);
 
         let inner = `<span style="font-family:Courier;font-size:14px;min-width:${word.length * 9}px">${escapeHtml(word)}</span>`;
         if (score !== null) {
