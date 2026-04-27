@@ -56,12 +56,17 @@ class XdImportAdapter(ImportPort):
         across_seqs = sorted(puzzle.across_words.keys())
         down_seqs = sorted(puzzle.down_words.keys())
 
+        missing_across = sorted(set(across_seqs) - set(across_clues))
+        if missing_across:
+            raise PuzzleImportError(f"Missing across clues for: {missing_across}")
+        missing_down = sorted(set(down_seqs) - set(down_clues))
+        if missing_down:
+            raise PuzzleImportError(f"Missing down clues for: {missing_down}")
+
         for seq in across_seqs:
-            if seq in across_clues:
-                puzzle.set_clue(seq, Word.ACROSS, across_clues[seq])
+            puzzle.set_clue(seq, Word.ACROSS, across_clues[seq])
         for seq in down_seqs:
-            if seq in down_clues:
-                puzzle.set_clue(seq, Word.DOWN, down_clues[seq])
+            puzzle.set_clue(seq, Word.DOWN, down_clues[seq])
 
         return title, author, puzzle
 
