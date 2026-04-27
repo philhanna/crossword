@@ -20,6 +20,10 @@ and the format is based on [Keep a Changelog].
 - Added `n` column to puzzles table for grid size
 - Use `Grid<n>-<hash8>` naming format (with hyphen separator)
 
+### Fixed
+
+- `XdImportAdapter` now raises `PuzzleImportError` when across or down clues are missing from the input
+
 ### Tools
 
 - Added bulk-import tool for `.xd` files into crossword database as blank grids
