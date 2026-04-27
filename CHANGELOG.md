@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.9.0] - 2026-04-27
+
+### Added
+
+- Double-click on suggested word applies it (same as Apply button)
+- Close button in chooser dialog
+- Sort order, first/last navigation, and wider chooser (5 cards)
+- Horizontal card layout with pagination for preview chooser
+- Puzzle title is clickable to open edit-title dialog
+
+### Changed
+
+- Renamed `puzzles` table to `grids`
+- Added `n` column to puzzles table for grid size
+- Use `Grid<n>-<hash8>` naming format (with hyphen separator)
+
+### Tools
+
+- Added bulk-import tool for `.xd` files into crossword database as blank grids
+- Rewrote import_xd_grid tool to round-trip `.xd` via export adapter
+- Added tool to import `.xd` puzzle file and write grid as JSON to stdout
+- Allow partially completed xd puzzles to be imported
+
 ## [4.8.0] - 2026-04-25
 
 ### Added
