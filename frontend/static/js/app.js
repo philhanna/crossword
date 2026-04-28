@@ -536,7 +536,7 @@ const CLICK_DELAY = 280;
 let _weSuggestions           = [];    // full list from last fetch: string[] or {word,score}[]
 let _weSuggestionsConstrained = false; // true when last fetch was constrained (has scores)
 let _wePage                  = 0;     // current page (0-indexed)
-const WE_PAGE_SIZE           = 20;
+const WE_PAGE_SIZE           = 5;
 
 // ---------------------------------------------------------------------------
 // Word editor — state
