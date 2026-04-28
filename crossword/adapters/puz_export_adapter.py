@@ -1,5 +1,6 @@
 # crossword.adapters.puz_export_adapter
 from datetime import date
+from typing import Optional
 
 import puz
 
@@ -21,6 +22,27 @@ class PuzExportAdapter:
         except Exception as e:
             raise ExportError(f".puz export failed: {e}") from e
 
+    @staticmethod
+    def _sanitize_text(text: Optional[str]) -> str:
+        if not text:
+            return ""
+
+        translated = text.translate(
+            str.maketrans(
+                {
+                    "\u2018": "'",
+                    "\u2019": "'",
+                    "\u201c": '"',
+                    "\u201d": '"',
+                    "\u2013": "-",
+                    "\u2014": "-",
+                    "\u2026": "...",
+                    "\u00a0": " ",
+                }
+            )
+        )
+        return translated.encode("latin-1", "replace").decode("latin-1")
+
     def _build_puz(self, puzzle: Puzzle) -> bytes:
         n = puzzle.n
         black = "."
@@ -41,13 +63,13 @@ class PuzExportAdapter:
         clues = []
         for seq in all_seqs:
             if seq in puzzle.across_words:
-                clues.append(puzzle.across_words[seq].get_clue() or "")
+                clues.append(self._sanitize_text(puzzle.across_words[seq].get_clue()))
             if seq in puzzle.down_words:
-                clues.append(puzzle.down_words[seq].get_clue() or "")
+                clues.append(self._sanitize_text(puzzle.down_words[seq].get_clue()))
 
         p = puz.Puzzle()
-        p.title = puzzle.title or ""
-        p.author = self.author_name or ""
+        p.title = self._sanitize_text(puzzle.title)
+        p.author = self._sanitize_text(self.author_name)
         p.copyright = str(date.today().year)
         p.width = n
         p.height = n
