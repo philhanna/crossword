@@ -442,9 +442,14 @@ async function _weKeydown(e) {
         if (e.key === 'Enter' && e.target.id !== 'we-text') { doWordEditOK();       e.preventDefault(); }
         return;
     }
-    // For buttons/other elements: Escape closes, Enter lets the focused element
-    // handle its own click (so Suggest button → search, OK button → save, etc.)
+    // For buttons and other controls, keep native Enter behavior. When focus is
+    // on the grid SVG itself, Enter should mirror the Apply button.
     if (e.key === 'Escape') { closeWordEditor(); e.preventDefault(); return; }
+    if (e.key === 'Enter' && e.target.closest && e.target.closest('#puzzle-svg')) {
+        doWordEditOK();
+        e.preventDefault();
+        return;
+    }
 
     const ew = AppState.editingWord;
     const len = ew.cells.length;
