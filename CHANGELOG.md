@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.9.1] - 2026-05-08
+
+### Added
+
+- Added words to dictionary
+
+### Fixed
+
+- Handle Enter on puzzle grid like Apply
+- Fix for issue #122
+
+### Changed
+
+- Refactored app.js
+- Added grid import tool
+- Set suggested word scroll height to 5
+- Bug fixes
+- Fixed unit tests
+- Added unit test for puz export adapter
+
 ## [4.9.0] - 2026-04-27
 
 ### Added
