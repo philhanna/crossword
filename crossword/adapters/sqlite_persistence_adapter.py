@@ -83,6 +83,16 @@ class SQLitePersistenceAdapter(PersistencePort):
                 ON puzzles(userid, puzzlename)
             """)
 
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS themes (
+                    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id        TEXT    NOT NULL,
+                    title          TEXT    NOT NULL,
+                    word_lengths   TEXT    NOT NULL,
+                    selected_words TEXT    NOT NULL
+                )
+            """)
+
             self.conn.commit()
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to ensure schema compatibility: {e}")

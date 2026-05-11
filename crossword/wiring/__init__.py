@@ -20,11 +20,14 @@ from crossword.adapters.xd_export_adapter import XdExportAdapter
 from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDefinition
 from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
+from crossword.adapters.sqlite_theme_adapter import SQLiteThemeAdapter
+from crossword.adapters.sqlite_grid_adapter import SQLiteGridAdapter
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
 from crossword.use_cases.export_use_cases import ExportUseCases
 from crossword.use_cases.import_use_cases import ImportUseCases
 from crossword.use_cases.definition_use_cases import DefinitionUseCases
+from crossword.use_cases.theme_use_cases import ThemeUseCases
 
 
 class AppContainer:
@@ -36,12 +39,13 @@ class AppContainer:
     """
 
     def __init__(self, puzzle_uc, word_uc, export_uc=None, import_uc=None,
-                 definition_uc=None, config=None):
+                 definition_uc=None, theme_uc=None, config=None):
         self.puzzle_uc = puzzle_uc
         self.word_uc = word_uc
         self.export_uc = export_uc
         self.import_uc = import_uc
         self.definition_uc = definition_uc
+        self.theme_uc = theme_uc
         self.config = config or {}
 
 
@@ -130,9 +134,13 @@ def make_app(config=None):
 
     definition_uc = DefinitionUseCases(DictionaryAPIDefinition())
 
+    theme_repo = SQLiteThemeAdapter(dbfile)
+    grid_adapter = SQLiteGridAdapter(config.get("grids_db"))
+    theme_uc = ThemeUseCases(theme_repo, grid_adapter)
+
     # ========================================================================
     # Assemble Container
     # ========================================================================
 
     return AppContainer(puzzle_uc, word_uc, export_uc, import_uc,
-                        definition_uc=definition_uc, config=config)
+                        definition_uc=definition_uc, theme_uc=theme_uc, config=config)

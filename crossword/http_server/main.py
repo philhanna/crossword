@@ -54,6 +54,16 @@ from crossword.http_server.import_handlers import (
     handle_import_puzzle_from_xd,
     handle_import_puzzle_from_puz,
 )
+from crossword.http_server.theme_handlers import (
+    handle_list_themes,
+    handle_create_theme,
+    handle_get_theme,
+    handle_update_theme,
+    handle_delete_theme,
+    handle_add_words,
+    handle_remove_word,
+    handle_search_grids,
+)
 
 
 def register_routes(router):
@@ -118,6 +128,16 @@ def register_routes(router):
     router.add_route("POST", r"^/api/import/acrosslite$", handle_import_puzzle_from_acrosslite)
     router.add_route("POST", r"^/api/import/puz$", handle_import_puzzle_from_puz)
     router.add_route("POST", r"^/api/import/xd$", handle_import_puzzle_from_xd)
+
+    # Theme routes — grids must come before the plain /<id> route (longer prefix)
+    router.add_route("GET",    r"^/api/themes$",                       handle_list_themes)
+    router.add_route("POST",   r"^/api/themes$",                       handle_create_theme)
+    router.add_route("GET",    r"^/api/themes/(\d+)/grids$",           handle_search_grids)
+    router.add_route("GET",    r"^/api/themes/(\d+)$",                 handle_get_theme)
+    router.add_route("PUT",    r"^/api/themes/(\d+)$",                 handle_update_theme)
+    router.add_route("DELETE", r"^/api/themes/(\d+)$",                 handle_delete_theme)
+    router.add_route("POST",   r"^/api/themes/(\d+)/words$",           handle_add_words)
+    router.add_route("DELETE", r"^/api/themes/(\d+)/words/([^/]+)$",   handle_remove_word)
 
 
 def run_http_server(config=None):
