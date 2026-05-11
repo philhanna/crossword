@@ -16,9 +16,7 @@ class Theme:
 
     @property
     def complete(self) -> bool:
-        return len(self.selected_words) == len(self.word_lengths) and all(
-            len(w) == n for w, n in zip(self.selected_words, self.word_lengths)
-        )
+        return sorted(len(w) for w in self.selected_words) == sorted(self.word_lengths)
 
 
 @dataclass
