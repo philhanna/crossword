@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+if [[ "$1" == "-h" || "$1" == "--help" || $# -lt 1 ]]; then
+  echo "Usage: $(basename "$0") <json>"
+  echo ""
+  echo "Restores a theme from a JSON string and prints the new ID."
+  echo "The JSON should be the output of get_theme."
+  echo "A new ID is assigned; the original ID in the JSON is ignored."
+  echo ""
+  echo "Examples:"
+  echo "  $(basename "$0") '{\"title\":\"Summer Fun\",\"word_lengths\":[5,6,5],\"selected_words\":[]}'"
+  echo "  $(basename "$0") $(cat <json file name>)"
+  exit 0
+fi
+
+curl -s -X POST http://localhost:5000/api/themes \
+  -H 'Content-Type: application/json' \
+  -d "$(echo "$1" | jq '{title, word_lengths, selected_words}')" \
+  | jq -r '.id'

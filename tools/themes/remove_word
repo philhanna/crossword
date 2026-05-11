@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+if [[ "$1" == "-h" || "$1" == "--help" || $# -lt 2 ]]; then
+  echo "Usage: $(basename "$0") <theme_id> <word>"
+  echo ""
+  echo "Removes a selected word from a theme."
+  echo ""
+  echo "Examples:"
+  echo "  $(basename "$0") 1 OHIO"
+  exit 0
+fi
+
+curl -s -X DELETE "http://localhost:5000/api/themes/$1/words/$2" \
+  | jq --indent 2 '.'

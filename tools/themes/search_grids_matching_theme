@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+if [[ "$1" == "-h" || "$1" == "--help" || $# -lt 2 ]]; then
+  echo "Usage: $(basename "$0") <theme_id> <size>"
+  echo ""
+  echo "Returns filenames of grids whose across slots match the theme's word_lengths."
+  echo ""
+  echo "Examples:"
+  echo "  $(basename "$0") 1 15"
+  exit 0
+fi
+
+curl -s "http://localhost:5000/api/themes/$1/grids?size=$2" | jq --indent 2 '.'

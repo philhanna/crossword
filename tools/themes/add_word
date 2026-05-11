@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+if [[ "$1" == "-h" || "$1" == "--help" || $# -lt 2 ]]; then
+  echo "Usage: $(basename "$0") <theme_id> <word> [word ...]"
+  echo ""
+  echo "Adds selected words to a theme."
+  echo ""
+  echo "Examples:"
+  echo "  $(basename "$0") 1 NILE OHIO RHINE"
+  exit 0
+fi
+
+theme_id="$1"
+shift
+words_json=$(printf '%s\n' "$@" | jq -R '.' | jq -s '.')
+
+curl -s -X POST "http://localhost:5000/api/themes/$theme_id/words" \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -n --argjson words "$words_json" '{"words": $words}')" \
+  | jq --indent 2 '.'

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+if [[ "$1" == "-h" || "$1" == "--help" || $# -lt 1 ]]; then
+  echo "Usage: $(basename "$0") <theme_id>"
+  echo ""
+  echo "Deletes a theme by ID."
+  echo ""
+  echo "Examples:"
+  echo "  $(basename "$0") 1"
+  exit 0
+fi
+
+curl -s -X DELETE "http://localhost:5000/api/themes/$1"

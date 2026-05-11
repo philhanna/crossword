@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+if [[ "$1" == "-h" || "$1" == "--help" || $# -lt 2 ]]; then
+  echo "Usage: $(basename "$0") <title> <word_length> [word_length ...]"
+  echo ""
+  echo "Creates a theme and prints its ID."
+  echo ""
+  echo "Examples:"
+  echo "  $(basename "$0") \"Summer Fun\" 5 6 7"
+  exit 0
+fi
+
+title="$1"
+shift
+word_lengths_json=$(printf '%s\n' "$@" | jq -R 'tonumber' | jq -s '.')
+
+curl -s -X POST http://localhost:5000/api/themes \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -n --arg title "$title" --argjson wl "$word_lengths_json" '{"title": $title, "word_lengths": $wl}')" \
+  | jq -r '.id'
