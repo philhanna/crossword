@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.11.1] - 2026-05-11
+
+### Added
+
+- Migrate theme management scripts from theme_editor project
+
+### Changed
+
+- Theme.complete() compares word lengths as sets, ignoring order
+
 ## [4.11.0] - 2026-05-11
 
 ### Changed
