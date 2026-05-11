@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.10.0] - 2026-05-11
+
+### Changed
+
+- Rework solver PDF layout
+
 ## [4.9.1] - 2026-05-08
 
 ### Added
