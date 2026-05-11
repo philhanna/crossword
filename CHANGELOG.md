@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.11.0] - 2026-05-11
+
+### Changed
+
+- Merge theme_editor functionality into crossword
+- Updated sample database with themes
+
 ## [4.10.0] - 2026-05-11
 
 ### Changed
