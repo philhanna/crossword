@@ -608,7 +608,7 @@ class TestPuzzleUseCasesGetFillOrder:
         def get_all_words(self):
             return ["aaa"]
 
-        def get_candidate_count(self, word):
+        def get_candidate_count(self, word, cache=None):
             return 3
 
     def test_get_fill_order_returns_ranked_items(self, mock_persistence, test_puzzle):

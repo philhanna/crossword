@@ -9,7 +9,7 @@ class StubWordUseCases:
     def get_all_words(self):
         return ["aaa", "bbb", "ccc"]
 
-    def get_candidate_count(self, word):
+    def get_candidate_count(self, word, cache=None):
         direction = "across" if word.direction == word.ACROSS else "down"
         return self.candidate_counts[(word.seq, direction)]
 

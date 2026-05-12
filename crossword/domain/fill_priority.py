@@ -91,12 +91,13 @@ class FillPriorityAnalyzer:
         if not self.word_uc or not self.word_uc.get_all_words():
             return []
 
+        cache = {}
         ranked = []
         for direction, words in (("across", puzzle.across_words), ("down", puzzle.down_words)):
             for seq, word in sorted(words.items()):
                 if word.is_complete():
                     continue
-                ranked.append(self._analyze_slot(seq, direction, word, puzzle))
+                ranked.append(self._analyze_slot(seq, direction, word, puzzle, cache))
 
         # Primary sort key is candidate_count (ascending) so the most
         # constrained slot rises to the top.  Subsequent keys break ties.
@@ -109,7 +110,7 @@ class FillPriorityAnalyzer:
         ))
         return ranked[:top_n]
 
-    def _analyze_slot(self, seq: int, direction: str, word, puzzle) -> FillPriorityItem:
+    def _analyze_slot(self, seq: int, direction: str, word, puzzle, cache: dict = None) -> FillPriorityItem:
         """Build a :class:`FillPriorityItem` for a single incomplete slot.
 
         Delegates candidate counting to the word use-case and connectivity
@@ -124,7 +125,7 @@ class FillPriorityAnalyzer:
         Returns:
             A fully populated :class:`FillPriorityItem`.
         """
-        candidate_count = self.word_uc.get_candidate_count(word)
+        candidate_count = self.word_uc.get_candidate_count(word, cache=cache)
 
         # Check whether removing this slot's cells disconnects the white-cell
         # graph.  component_count > 1 means the slot is a bridge.

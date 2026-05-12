@@ -72,7 +72,7 @@ class WordUseCases:
         all_words = self.word_list.get_all_words()
         return word_lower in all_words
 
-    def get_word_constraints(self, word, input_pattern: str = None) -> dict:
+    def get_word_constraints(self, word, input_pattern: str = None, cache: dict = None) -> dict:
         """
         Compute letter constraints for a word based on its crossing words.
 
@@ -124,7 +124,13 @@ class WordUseCases:
             crossing_pattern = "^" + re.sub(r"[ ?]", ".", "".join(crossing_chars)) + "$"
 
             # Look up all words matching the crossing pattern
-            matches = self.word_list.get_matches(crossing_pattern, length=crossing_word.length)
+            cache_key = (crossing_pattern, crossing_word.length)
+            if cache is not None and cache_key in cache:
+                matches = cache[cache_key]
+            else:
+                matches = self.word_list.get_matches(crossing_pattern, length=crossing_word.length)
+                if cache is not None:
+                    cache[cache_key] = matches
             letter_freq = {}
             for m in matches:
                 letter = m[crossing_index - 1].upper()
@@ -198,7 +204,7 @@ class WordUseCases:
             reverse=True,
         )
 
-    def get_candidate_count(self, word) -> int:
+    def get_candidate_count(self, word, cache: dict = None) -> int:
         """
         Return how many dictionary words satisfy the word's current crossing
         constraints.
@@ -209,7 +215,7 @@ class WordUseCases:
         Returns:
             Number of matching candidates in the dictionary
         """
-        constraints = self.get_word_constraints(word)
+        constraints = self.get_word_constraints(word, cache=cache)
         pattern = self._pattern_to_regex(constraints["pattern"])
         return len(self.word_list.get_matches(pattern, length=word.length))
 
