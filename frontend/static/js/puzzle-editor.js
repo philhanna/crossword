@@ -791,28 +791,56 @@ async function do_puzzle_import_puz() {
 }
 
 async function do_puzzle_new() {
-    inputBox(
-        'New puzzle',
-        '<b>Puzzle size:</b> <em>(an odd positive integer, e.g. 15)</em>',
-        '',
-        (sizeVal) => {
-            const n = Number(sizeVal);
-            if (!sizeVal || isNaN(n))  { showMessageLine(sizeVal + ' is not a number', 'error', 0); return; }
-            if (n % 2 === 0)           { showMessageLine(n + ' is not an odd number', 'error', 0); return; }
-            if (n < 1)                 { showMessageLine(n + ' is not a positive number', 'error', 0); return; }
-            (async () => {
-                try {
-                    const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
-                    const data = await apiFetch('POST', '/api/puzzles', { name: internalName, size: n });
-                    if (data.error) { showMessageLine(`Error creating puzzle: ${data.error}`, 'error', 0); return; }
-                    await _openPuzzleInEditor(internalName);
-                    AppState.puzzleName         = null;        // no user-facing name yet
-                    AppState.puzzleOriginalName = internalName;
-                    renderPuzzleEditorLhs();
-                } catch (e) { showMessageLine('Error creating puzzle', 'error', 0); }
-            })();
-        }
-    );
+    function promptForSize(sizeVal = '') {
+        inputBox(
+            'New puzzle',
+            '<b>Puzzle size:</b> <em>(an odd positive integer, e.g. 15)</em>',
+            sizeVal,
+            (enteredSize) => {
+                const n = Number(enteredSize);
+                if (!enteredSize || isNaN(n)) {
+                    messageBox(
+                        'Invalid puzzle size',
+                        `${escapeHtml(enteredSize)} is not a number.`,
+                        null,
+                        () => promptForSize(enteredSize)
+                    );
+                    return;
+                }
+                if (n % 2 === 0) {
+                    messageBox(
+                        'Invalid puzzle size',
+                        `${n} is not an odd number.`,
+                        null,
+                        () => promptForSize(enteredSize)
+                    );
+                    return;
+                }
+                if (n < 1) {
+                    messageBox(
+                        'Invalid puzzle size',
+                        `${n} is not a positive number.`,
+                        null,
+                        () => promptForSize(enteredSize)
+                    );
+                    return;
+                }
+                (async () => {
+                    try {
+                        const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
+                        const data = await apiFetch('POST', '/api/puzzles', { name: internalName, size: n });
+                        if (data.error) { showMessageLine(`Error creating puzzle: ${data.error}`, 'error', 0); return; }
+                        await _openPuzzleInEditor(internalName);
+                        AppState.puzzleName         = null;        // no user-facing name yet
+                        AppState.puzzleOriginalName = internalName;
+                        renderPuzzleEditorLhs();
+                    } catch (e) { showMessageLine('Error creating puzzle', 'error', 0); }
+                })();
+            }
+        );
+    }
+
+    promptForSize();
 }
 
 async function do_puzzle_save() {
