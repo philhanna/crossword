@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.11.4] - 2026-05-12
+
+### Changed
+
+- Cache fill order by word-text fingerprint
+- Reorganize docs directory and planning docs
+- Update README: version, frontend JS files, missing tools
+- Remove migrate196 tool and its tests
+- List modules per section in generated endpoints doc
+
 ## [4.11.3] - 2026-05-12
 
 ### Changed
