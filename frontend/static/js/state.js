@@ -23,7 +23,8 @@ const AppState = {
     showingFillOrder: false, // true = puzzle editor RHS shows fill-order panel
     sidebarTab: 'clues',     // active sidebar tab: 'clues'|'word'|'stats'|'fill-order'|'grid'
     _statsData: null,        // cached puzzle stats response
-    _fillOrderData: null,    // cached fill-order response
-    fillOrderLoading: false, // true while fill-order suggestions are loading
+    _fillOrderData: null,     // cached fill-order response
+    _fillOrderCellHash: null, // word-text fingerprint at time of last fill-order fetch
+    fillOrderLoading: false,  // true while fill-order suggestions are loading
     gridStructureChanged: false, // true after Grid-mode edits until user returns to Puzzle mode
 };

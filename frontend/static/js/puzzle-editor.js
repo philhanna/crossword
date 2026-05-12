@@ -361,6 +361,21 @@ ${errorsHtml}
 </table>`;
 }
 
+function _wordTextsKey(puzzleData) {
+    if (!puzzleData?.puzzle?.words) return '';
+    return puzzleData.puzzle.words
+        .map(w => `${w.seq}${w.direction}:${w.text ?? ''}`)
+        .join('|');
+}
+
+function _invalidateFillOrderIfChanged(newPuzzleData) {
+    if (AppState._fillOrderData &&
+            _wordTextsKey(newPuzzleData) !== AppState._fillOrderCellHash) {
+        AppState._fillOrderData   = null;
+        AppState._fillOrderCellHash = null;
+    }
+}
+
 function renderFillOrderPanel(data) {
     const rows = (data.fill_priority || []).map(item => {
         const countLabel = `${item.candidate_count} candidate${item.candidate_count === 1 ? '' : 's'}`;
@@ -418,11 +433,17 @@ async function _refreshPuzzleStatsIfVisible() {
 
 async function _refreshFillOrderIfVisible() {
     if (AppState.sidebarTab !== 'fill-order' || !AppState.puzzleWorkingName || _currentEditorMode() !== 'puzzle') return;
+    if (AppState._fillOrderData &&
+            _wordTextsKey(AppState.puzzleData) === AppState._fillOrderCellHash) {
+        renderPuzzleEditorRhs();
+        return;
+    }
     try {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/fill-order`);
         if (data.error) return;
-        AppState._fillOrderData = data;
+        AppState._fillOrderData   = data;
+        AppState._fillOrderCellHash = _wordTextsKey(AppState.puzzleData);
         renderPuzzleEditorRhs();
     } catch (e) {
         // Keep the current panel if the refresh fails.
@@ -508,13 +529,13 @@ async function _puzzleUndoRedo(action) {
     try {
         const data = await apiFetch('POST', path);
         if (data.error) { showMessageLine(`${action} failed: ${data.error}`, 'error', 0); return; }
+        _invalidateFillOrderIfChanged(data);
         AppState.puzzleData       = data;
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
         AppState.showingFillOrder = false;
         AppState.sidebarTab       = 'clues';
         AppState._statsData       = null;
-        AppState._fillOrderData   = null;
         renderPuzzleEditor();
     } catch (e) { showMessageLine(`Error during ${action}`, 'error', 0); }
 }
@@ -555,9 +576,10 @@ async function _switchToGridModeConfirmed() {
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
         AppState.showingFillOrder = false;
-        AppState.sidebarTab       = 'grid';
-        AppState._statsData       = null;
-        AppState._fillOrderData   = null;
+        AppState.sidebarTab         = 'grid';
+        AppState._statsData         = null;
+        AppState._fillOrderData     = null;
+        AppState._fillOrderCellHash = null;
         renderPuzzleEditor();
     } catch (e) { showMessageLine('Error switching to Grid mode', 'error', 0); }
 }
@@ -583,9 +605,10 @@ async function do_switch_to_puzzle_mode() {
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
         AppState.showingFillOrder = false;
-        AppState.sidebarTab       = 'clues';
-        AppState._statsData       = null;
-        AppState._fillOrderData   = null;
+        AppState.sidebarTab         = 'clues';
+        AppState._statsData         = null;
+        AppState._fillOrderData     = null;
+        AppState._fillOrderCellHash = null;
         AppState.gridStructureChanged = false;
         renderPuzzleEditor();
         if (hadGridStructureChange) {
@@ -645,9 +668,10 @@ async function _openPuzzleInEditor(name) {
     AppState.selectedWord      = null;
     AppState.showingStats      = false;
     AppState.showingFillOrder  = false;
-    AppState.sidebarTab        = 'clues';
-    AppState._statsData        = null;
-    AppState._fillOrderData    = null;
+    AppState.sidebarTab         = 'clues';
+    AppState._statsData         = null;
+    AppState._fillOrderData     = null;
+    AppState._fillOrderCellHash = null;
     AppState.gridStructureChanged = false;
     showView('editor');
 }
@@ -952,6 +976,7 @@ async function _doPuzzleCloseConfirmed() {
     AppState.sidebarTab         = 'clues';
     AppState._statsData         = null;
     AppState._fillOrderData     = null;
+    AppState._fillOrderCellHash = null;
     AppState.gridStructureChanged = false;
     if (wn) {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
@@ -1023,10 +1048,11 @@ async function do_puzzle_fill_order() {
         await _settlePuzzleEditingBeforeModeSwitch();
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
         if (data.error) { showMessageLine(`Error: ${data.error}`, 'error', 0); return; }
-        AppState._fillOrderData   = data;
-        AppState.showingStats     = false;
-        AppState.showingFillOrder = true;
-        AppState.sidebarTab       = 'fill-order';
+        AppState._fillOrderData     = data;
+        AppState._fillOrderCellHash = _wordTextsKey(AppState.puzzleData);
+        AppState.showingStats       = false;
+        AppState.showingFillOrder   = true;
+        AppState.sidebarTab         = 'fill-order';
         renderPuzzleEditor();
     } catch (e) { showMessageLine('Error fetching fill order', 'error', 0); }
     finally {
