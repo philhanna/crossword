@@ -108,7 +108,6 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 |--------|-------------|
 | `tools/dev/swagger.py` | Swagger UI for the REST API (`python3 tools/dev/swagger.py`) |
 | `tools/dev/gen_endpoints_doc.py` | Regenerate `docs/design/endpoints.md` from live route registrations |
-| `tools/dev/migrate196.py` | Migrate a pre-v3.2 database to the merged puzzle-only layout |
 | `tools/dev/import_grid.py` | Bulk-import `.xd` puzzle files as blank grids (reads paths from stdin) |
 | `tools/dev/impgrid.py` | Import a puzzle from an old `grids.db` into the main database |
 
