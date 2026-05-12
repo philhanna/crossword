@@ -5,6 +5,7 @@ SETTINGS_KEYS = [
     'host',
     'port',
     'dbfile',
+    'xdfile',
     'word_file',
     'log_level',
     'message_line_timeout_ms',
@@ -14,7 +15,7 @@ SETTINGS_KEYS = [
     'author_email',
 ]
 
-_RESTART_REQUIRED_KEYS = {'host', 'port', 'log_level', 'dbfile', 'word_file', 'theme_color'}
+_RESTART_REQUIRED_KEYS = {'host', 'port', 'log_level', 'dbfile', 'xdfile', 'word_file', 'theme_color'}
 
 
 def _config_path():

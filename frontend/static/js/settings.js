@@ -24,12 +24,17 @@ const SETTINGS_SCHEMA = [
   },
   {
     key: 'dbfile',
-    title: 'dbfile',
-    desc: 'Fully qualified path to the SQLite 3 database',
+    title: 'Database files',
+    desc: 'Fully qualified paths to the SQLite 3 database and the crossword archive database.',
     fields: [
       {
         key: 'dbfile',
-        label: 'Value',
+        label: 'dbfile',
+        type: 'text',
+      },
+      {
+        key: 'xdfile',
+        label: 'xdfile',
         type: 'text',
       },
     ],
