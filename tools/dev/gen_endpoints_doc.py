@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate docs/design/endpoints.md from live route registrations.
+Generate docs/endpoints.md from live route registrations.
 
 Imports register_routes() to discover all routes and their handler functions,
 then uses inspect to find source file and line number for each handler.
@@ -26,7 +26,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEV_TOOLS_DIR = os.path.join(ROOT, "tools", "dev")
-OUT_PATH = os.path.join(ROOT, "docs", "design", "endpoints.md")
+OUT_PATH = os.path.join(ROOT, "docs", "endpoints.md")
 
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -99,8 +99,8 @@ def _fallback_display(pattern):
 def _handler_link(handler_func):
     src_file = inspect.getfile(handler_func)
     _, start_line = inspect.getsourcelines(handler_func)
-    # Path relative to docs/design/ so the link works from that directory
-    link_path = os.path.relpath(src_file, os.path.join(ROOT, "docs", "design"))
+    # Path relative to docs/ so the link works from that directory
+    link_path = os.path.relpath(src_file, os.path.join(ROOT, "docs"))
     return f"[{handler_func.__name__}]({link_path}#L{start_line})"
 
 
