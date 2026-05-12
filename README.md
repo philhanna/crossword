@@ -2,7 +2,7 @@
 
 A web-based application for creating and editing crossword puzzles.
 
-**Version: 4.6.1**
+**Version: 4.11.3**
 
 ## Table of contents
 - [Requirements](#requirements)
@@ -84,7 +84,7 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 | Adapters | `SQLiteAdapter`, `DictionaryAdapter`, `ExportAdapter` |
 | Use Cases | `PuzzleUseCases`, `WordUseCases`, `ExportUseCases` |
 | HTTP Server | `BaseHTTPRequestHandler` with regex router (no Flask) |
-| Frontend | Single `index.html` + `static/js/app.js` + `static/css/style.css` |
+| Frontend | Single `index.html` + `static/css/style.css` + `static/js/{state,ui,svg,puzzle-editor,word-editor,settings}.js` |
 
 ## Tools
 
@@ -97,6 +97,7 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 | `tools/user/export_json.py` | Export a puzzle to JSON format (`.json`) |
 | `tools/user/export_nytimes.py` | Export a puzzle to NYTimes submission format (`.pdf`) |
 | `tools/user/export_solver_pdf.py` | Export a puzzle to the compact solver PDF format (`.pdf`) |
+| `tools/user/import_xd_grid.py` | Import a `.xd` puzzle file and write it back out as `.xd` to stdout |
 | `tools/user/clear_work_files.py` | Remove orphaned working-copy rows from the database |
 | `tools/user/grid_generator.py` | Generate candidate crossword grids |
 | `tools/user/lookup.py` | Look up dictionary entries from the command line |
@@ -108,6 +109,8 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 | `tools/dev/swagger.py` | Swagger UI for the REST API (`python3 tools/dev/swagger.py`) |
 | `tools/dev/gen_endpoints_doc.py` | Regenerate `docs/design/endpoints.md` from live route registrations |
 | `tools/dev/migrate196.py` | Migrate a pre-v3.2 database to the merged puzzle-only layout |
+| `tools/dev/import_grid.py` | Bulk-import `.xd` puzzle files as blank grids (reads paths from stdin) |
+| `tools/dev/impgrid.py` | Import a puzzle from an old `grids.db` into the main database |
 
 ## References
 
