@@ -13,6 +13,9 @@ port: 5000
 # dbfile: fully qualified path to the SQLite 3 database
 dbfile: /path/to/crossword.db
 
+# xdfile: fully qualified path to the crossword archive database
+xdfile: /path/to/xdfile.db
+
 # word_file: fully qualified path to the ASCII word list file
 word_file: /path/to/words.txt
 
