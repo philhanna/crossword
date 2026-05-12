@@ -300,7 +300,7 @@ function menuDisable(id) {
 function updateMenu() {
     const home   = AppState.view === 'home';
     const editor = AppState.view === 'editor';
-    const canClosePuzzle = editor && !AppState.editingWord;
+    const canClosePuzzle = editor && !_isWordEditorOpen();
 
     home   ? menuEnable('menu-puzzle-new')     : menuDisable('menu-puzzle-new');
     home   ? menuEnable('menu-puzzle-open')    : menuDisable('menu-puzzle-open');

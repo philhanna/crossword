@@ -108,7 +108,7 @@ An edit is complete, and must be sent to the server if dirty, in the following c
 ### Word editor
 
 7. Clicking `Apply` completes the current edit and sends it to the server.
-   The word remains the currently selected word.
+   The word remains the currently selected word, but the word editor is closed and the app returns to normal puzzle mode.
 
 8. Keyboard actions in the word editor that switch to another word should first complete the current edit, then move selection.
    This already partially exists in `_weApplyAndClose()`, but it should call the shared completion function.
@@ -116,6 +116,11 @@ An edit is complete, and must be sent to the server if dirty, in the following c
 ### Shared rule
 
 9. If the edit is not dirty, completion is still a state transition, but it should not call the server.
+
+### Event-handling rule
+
+10. Outside-click commit logic must never preempt toolbar, sidebar, menu, dialog, or form-control interactions.
+    A click on the action bar, right sidebar, app bar, or any modal should be handled by that control first, not treated as a generic "outside the puzzle" completion event.
 
 ## Selection Rules
 
@@ -154,18 +159,23 @@ That means:
    cross-direction arrows call the shared completion flow before changing selection
 8. Update `puzzleClickAt()` so clicking outside the current word triggers completion before switching words.
 9. Update `_peOutsideMousedown()` so outside clicks use the same completion helper instead of fire-and-forget save logic.
+   This handler must explicitly ignore clicks in `#action-bar`, `#rhs`, `.app-bar`, modal dialogs, and standard interactive controls (`button`, `a`, `input`, `textarea`, `select`, `label`).
+10. Prefer handling generic outside-click completion on `click` rather than `mousedown` unless there is a specific reason not to.
+    If `mousedown` is used, the implementation must account for DOM event ordering so it does not re-render the page before the clicked control's `click` handler runs.
 
 ### Phase 4: Rewire word editor behavior
 
-10. Update `openWordEditor()` to switch the shared selected word into `editorMode: 'word'` instead of creating `editingWord`.
-11. Update the word editor inputs so they read and write `draftText` and `draftClue` on the shared object.
-12. Replace `doWordEditOK()` and `_weApplyAndClose()` with wrappers around the shared completion helper.
+11. Update `openWordEditor()` to switch the shared selected word into `editorMode: 'word'` instead of creating `editingWord`.
+12. Update the word editor inputs so they read and write `draftText` and `draftClue` on the shared object.
+13. Replace `doWordEditOK()` and `_weApplyAndClose()` with wrappers around the shared completion helper.
+14. `doWordEditOK()` should complete the edit in puzzle mode and then close the word editor.
+    It should not leave `editorMode: 'word'` active after `Apply`.
 
 ### Phase 5: Simplify rendering
 
-13. Update `renderPuzzleEditorLhs()` to derive its `editState` from one object.
-14. Update `renderPuzzleEditorRhs()` and `renderWordEditorPanel()` to treat "word editor open" as a mode of the selected word, not a separate selected entity.
-15. Remove `AppState.editingWord` and dead branches that exist only to keep the two models in sync.
+15. Update `renderPuzzleEditorLhs()` to derive its `editState` from one object.
+16. Update `renderPuzzleEditorRhs()` and `renderWordEditorPanel()` to treat "word editor open" as a mode of the selected word, not a separate selected entity.
+17. Remove `AppState.editingWord` and dead branches that exist only to keep the two models in sync.
 
 ## Implementation Notes
 
@@ -194,6 +204,26 @@ This avoids losing the user's draft mentally and visually.
 
 After a successful save, always rebuild the selected-word draft from the returned `data.puzzle.words` entry instead of trusting the old local draft. That keeps cursor/display logic aligned with server-normalized data.
 
+### Separate state transitions from UI event interception
+
+The completion model should be implemented so that:
+
+- the state machine decides when a word edit is complete
+- event handlers decide which user interactions are allowed to trigger that completion
+
+Those are different responsibilities. A correct completion helper is not enough if a global outside-click handler fires for toolbar and sidebar interactions.
+
+### Do not infer "word editor open" from selection changes alone
+
+Selection changes should not set `editorMode: 'word'` unless the code also runs the full word-editor activation path.
+
+In other words:
+
+- select first
+- then explicitly call `openWordEditor()` when the UI should enter word-edit mode
+
+This avoids half-open editor states where the data says "word editor" but the keyboard handlers, toolbar state, and rendered panels were not actually switched over.
+
 ## Test Cases To Add
 
 Frontend tests are limited here, so this work should at least be covered with targeted behavior tests where possible and a manual checklist.
@@ -206,9 +236,11 @@ Frontend tests are limited here, so this work should at least be covered with ta
 4. Move from down to across using left/right and verify the old word saves before selection changes.
 5. Click another word in the grid and verify the old word saves first.
 6. Click outside the current word and verify the old word saves first.
-7. Click `Apply` in the word editor and verify the save occurs while selection remains on that word.
+7. Click `Apply` in the word editor and verify the save occurs, the word editor closes, and the selected word remains selected in puzzle mode.
 8. Open the word editor, change text, then switch words by keyboard and verify save-then-switch behavior.
-9. Trigger a server-side save error and verify selection does not move away.
+9. With a selected puzzle-mode word, click toolbar buttons such as `Fill Order`, `Stats`, `Edit word`, and `Close` and verify the toolbar click is not swallowed by outside-click commit logic.
+10. From the Fill Order panel, click a word and verify the word editor opens and the toolbar remains functional.
+11. Trigger a server-side save error and verify selection does not move away.
 
 ## Recommended Order
 

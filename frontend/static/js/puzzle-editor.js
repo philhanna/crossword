@@ -26,19 +26,18 @@ function renderPuzzleEditorLhs() {
     const pd   = AppState.puzzleData;
     const mode = _currentEditorMode();
 
-    const ew  = AppState.editingWord;
     const sw  = AppState.selectedWord;
-    const editState = mode === 'puzzle' && ew
-        ? { cells: ew.cells, cursorIdx: _weCursorIdx, text: ew.answer || '' }
+    const editState = mode === 'puzzle' && _isWordEditorOpen() && sw
+        ? { cells: sw.cells, cursorIdx: _getSelectedWordCursorIdx(), text: sw.draftText || '' }
         : mode === 'puzzle' && sw
-        ? { cells: sw.cells, cursorIdx: _peCursorIdx, text: sw.currentText }
+        ? { cells: sw.cells, cursorIdx: _getSelectedWordCursorIdx(), text: sw.draftText }
         : null;
     const clickHelp = mode === 'grid'
         ? `<div class="kb-hints">
              <span class="kb-hint"><kbd>Click</kbd> toggle cell</span>
              <span class="kb-hint"><kbd>Rotate</kbd> or <kbd>Generate</kbd> in toolbar</span>
            </div>`
-        : AppState.editingWord
+        : _isWordEditorOpen()
         ? `<div class="kb-hints">
              <span class="kb-hint"><kbd>Enter</kbd> suggest words</span>
              <span class="kb-hint"><kbd>Esc</kbd> cancel</span>
@@ -68,7 +67,7 @@ ${clickHelp}`;
     const svg = document.getElementById('puzzle-svg');
     if (svg && mode === 'puzzle') svg.addEventListener('click', handlePuzzleClick);
     if (svg && mode === 'grid') svg.addEventListener('click', handleGridModeClick);
-    if (mode === 'puzzle' && sw && !ew) _focusPuzzleSvg();
+    if (mode === 'puzzle' && sw && !_isWordEditorOpen()) _focusPuzzleSvg();
     _updatePuzzleUndoRedo();
 }
 
@@ -111,8 +110,8 @@ function renderActionBar() {
     const genDisabled = (size >= 9 && size % 2 === 1) ? '' : ' w3-disabled';
     const fillOrderDisabled = AppState.fillOrderLoading ? ' w3-disabled' : '';
     const fillOrderDisabledAttr = AppState.fillOrderLoading ? ' disabled' : '';
-    const closeDisabled = AppState.editingWord ? ' w3-disabled' : '';
-    const closeDisabledAttr = AppState.editingWord ? ' disabled' : '';
+    const closeDisabled = _isWordEditorOpen() ? ' w3-disabled' : '';
+    const closeDisabledAttr = _isWordEditorOpen() ? ' disabled' : '';
 
     const modeSpecific = mode === 'grid' ? `
 <div class="ab-group">
@@ -183,7 +182,7 @@ function renderPuzzleEditorRhs() {
     } else {
         switch (activeTab) {
             case 'word':
-                contentHtml = AppState.editingWord
+                contentHtml = _isWordEditorOpen()
                     ? renderWordEditorPanel()
                     : `<div class="sidebar-empty">Select a word in the grid, then click <b>Edit word</b> to edit it here.</div>`;
                 break;
@@ -210,7 +209,7 @@ function renderPuzzleEditorRhs() {
 
 function _getActiveTab(mode) {
     if (mode === 'grid') return AppState.sidebarTab === 'stats' ? 'stats' : 'grid';
-    if (AppState.editingWord) return 'word';
+    if (_isWordEditorOpen()) return 'word';
     return AppState.sidebarTab || 'clues';
 }
 
@@ -231,7 +230,7 @@ async function switchSidebarTab(tab) {
     if (tab === 'fill-order' && !AppState._fillOrderData) {
         await do_puzzle_fill_order(); return;
     }
-    if (tab === 'word' && !AppState.editingWord && AppState.selectedWord) {
+    if (tab === 'word' && !_isWordEditorOpen() && AppState.selectedWord) {
         await openWordEditor(AppState.selectedWord.seq, AppState.selectedWord.direction); return;
     }
     AppState.sidebarTab     = tab;
@@ -390,9 +389,12 @@ function closeStatsPanel() {
     renderPuzzleEditorRhs();
 }
 
-function _openWordFromFillOrder(seq, dir) {
-    selectWord(seq, dir);
-    openWordEditor(seq, dir);
+async function _openWordFromFillOrder(seq, dir) {
+    const result = await completeSelectedWordEdit({
+        nextSelection: { seq, direction: dir }
+    });
+    if (result.error) return;
+    await openWordEditor(seq, dir);
 }
 
 function closeFillOrderPanel() {
@@ -433,7 +435,6 @@ async function _refreshFillOrderIfVisible() {
 
 async function _applyGridModeUpdate(data) {
     AppState.puzzleData   = data;
-    AppState.editingWord  = null;
     AppState.selectedWord = null;
     AppState.gridStructureChanged = true;
     renderPuzzleEditor();
@@ -469,7 +470,7 @@ async function handleGridModeClick(event) {
 function _updatePuzzleUndoRedo() {
     const pd      = AppState.puzzleData;
     const mode    = _currentEditorMode();
-    const editing = !!AppState.editingWord;
+    const editing = _isWordEditorOpen();
     const ub      = document.getElementById('puzzle-undo-btn');
     const rb      = document.getElementById('puzzle-redo-btn');
     if (!ub || !rb) return;
@@ -485,11 +486,11 @@ function _updatePuzzleToolbar() {
     const eb = document.getElementById('puzzle-editword-btn');
     const cb = document.getElementById('puzzle-close-btn');
     if (eb) {
-        eb.classList.toggle('w3-disabled', mode !== 'puzzle' || !AppState.selectedWord || !!AppState.editingWord);
+        eb.classList.toggle('w3-disabled', mode !== 'puzzle' || !AppState.selectedWord || _isWordEditorOpen());
     }
     if (cb) {
-        cb.classList.toggle('w3-disabled', !!AppState.editingWord);
-        cb.disabled = !!AppState.editingWord;
+        cb.classList.toggle('w3-disabled', _isWordEditorOpen());
+        cb.disabled = _isWordEditorOpen();
     }
 }
 
@@ -508,7 +509,6 @@ async function _puzzleUndoRedo(action) {
         const data = await apiFetch('POST', path);
         if (data.error) { showMessageLine(`${action} failed: ${data.error}`, 'error', 0); return; }
         AppState.puzzleData       = data;
-        AppState.editingWord      = null;
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
         AppState.showingFillOrder = false;
@@ -524,15 +524,19 @@ async function _puzzleUndoRedo(action) {
 // ---------------------------------------------------------------------------
 
 async function _settlePuzzleEditingBeforeModeSwitch() {
-    if (AppState.editingWord) {
-        await doWordEditOK();
-        if (AppState.editingWord) {
+    if (_isWordEditorOpen()) {
+        const result = await completeSelectedWordEdit({ editorMode: 'puzzle' });
+        if (result.error) {
             throw new Error('Could not save current word edit');
         }
+        closeWordEditor();
         return;
     }
     if (AppState.selectedWord) {
-        await _peCommitWord();
+        const result = await _peCommitWord();
+        if (result && result.error) {
+            throw new Error('Could not save current word edit');
+        }
     }
 }
 
@@ -548,7 +552,6 @@ async function _switchToGridModeConfirmed() {
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/grid`);
         if (data.error) { showMessageLine(`Error switching modes: ${data.error}`, 'error', 0); return; }
         AppState.puzzleData       = data;
-        AppState.editingWord      = null;
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
         AppState.showingFillOrder = false;
@@ -577,7 +580,6 @@ async function do_switch_to_puzzle_mode() {
         if (data.error) { showMessageLine(`Error switching modes: ${data.error}`, 'error', 0); return; }
         const hadGridStructureChange = AppState.gridStructureChanged;
         AppState.puzzleData   = data;
-        AppState.editingWord  = null;
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
         AppState.showingFillOrder = false;
@@ -640,7 +642,6 @@ async function _openPuzzleInEditor(name) {
     AppState.puzzleWorkingName = wn;
     AppState.puzzleData        = puzzleData;
     AppState.puzzleSavedHash   = _hash(puzzleData.puzzle);
-    AppState.editingWord       = null;
     AppState.selectedWord      = null;
     AppState.showingStats      = false;
     AppState.showingFillOrder  = false;
@@ -853,7 +854,7 @@ async function do_puzzle_save() {
             `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name });
         if (data.error) { showMessageLine(`Save failed: ${data.error}`, 'error', 0); return; }
         AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
-        updateAppBarPuzzleInfo();
+        renderPuzzleEditor();
         showMessageLine(`Puzzle ${name} saved.`, 'notice');
     } catch (e) { showMessageLine('Error saving puzzle', 'error', 0); }
 }
@@ -873,19 +874,18 @@ async function _savePuzzleAsName(newName) {
     if (data.error) {
         throw new Error(data.error);
     }
+    AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
     if (!AppState.puzzleName) {
         // New (never-saved) puzzle: assign the name and clean up the __new__ entry
         const oldOriginal = AppState.puzzleOriginalName;
         AppState.puzzleName         = newName;
         AppState.puzzleOriginalName = newName;
-        AppState.puzzleSavedHash    = _hash(AppState.puzzleData.puzzle);
-        renderPuzzleEditorLhs();
-        updateMenu();
         if (oldOriginal && oldOriginal !== newName) {
             try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(oldOriginal)}`); }
             catch (e) { /* ignore */ }
         }
     }
+    renderPuzzleEditor();
     // For an existing named puzzle (true Save As), keep the editor on the original.
     showMessageLine(`Puzzle saved as "${newName}".`, 'notice');
 }
@@ -946,7 +946,6 @@ async function _doPuzzleCloseConfirmed() {
     AppState.puzzleWorkingName  = null;
     AppState.puzzleData         = null;
     AppState.puzzleSavedHash    = null;
-    AppState.editingWord        = null;
     AppState.selectedWord       = null;
     AppState.showingStats       = false;
     AppState.showingFillOrder   = false;
@@ -967,7 +966,7 @@ async function _doPuzzleCloseConfirmed() {
 }
 
 async function do_puzzle_close() {
-    if (AppState.editingWord) return;
+    if (_isWordEditorOpen()) return;
     const isDirty = AppState.puzzleData &&
         _hash(AppState.puzzleData.puzzle) !== AppState.puzzleSavedHash;
     if (isDirty) {
@@ -1006,9 +1005,8 @@ async function do_puzzle_stats() {
         AppState._statsData       = data;
         AppState.showingFillOrder = false;
         AppState.showingStats     = true;
-        AppState.editingWord      = null;
         AppState.sidebarTab       = 'stats';
-        renderPuzzleEditorRhs();
+        renderPuzzleEditor();
     } catch (e) { showMessageLine('Error fetching stats', 'error', 0); }
 }
 
@@ -1022,14 +1020,14 @@ async function do_puzzle_fill_order() {
         btn.disabled = true;
     }
     try {
+        await _settlePuzzleEditingBeforeModeSwitch();
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
         if (data.error) { showMessageLine(`Error: ${data.error}`, 'error', 0); return; }
         AppState._fillOrderData   = data;
         AppState.showingStats     = false;
         AppState.showingFillOrder = true;
-        AppState.editingWord      = null;
         AppState.sidebarTab       = 'fill-order';
-        renderPuzzleEditorRhs();
+        renderPuzzleEditor();
     } catch (e) { showMessageLine('Error fetching fill order', 'error', 0); }
     finally {
         AppState.fillOrderLoading = false;
