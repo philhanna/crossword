@@ -698,7 +698,11 @@ async function openWordEditor(seq, direction) {
 function closeWordEditor() {
     document.removeEventListener('keydown', _weKeydown);
     document.addEventListener('keydown', _peKeydown);
-    if (AppState.selectedWord) AppState.selectedWord.editorMode = 'puzzle';
+    if (AppState.selectedWord) {
+        AppState.selectedWord.draftText = AppState.selectedWord.originalText;
+        AppState.selectedWord.draftClue = AppState.selectedWord.originalClue;
+        AppState.selectedWord.editorMode = 'puzzle';
+    }
     AppState.showingStats = false;
     AppState.sidebarTab   = 'clues';
     _weSuggestions = [];
