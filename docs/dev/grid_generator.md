@@ -60,12 +60,12 @@ ORDER BY RAND()
 LIMIT    1;
 ```
 
-The `grid_text` column is a JSON array of `n` strings, each of length `n`,
-using `"."` for white cells and `"#"` for black cells.
+The `grid_text` column is a newline-separated string of `n` rows, each of
+length `n`, using `"."` for white cells and `"#"` for black cells.
 
 To build the `Grid`:
 
-1. Parse `grid_text` into a list of row strings.
+1. Split `grid_text` on `"\n"` to get a list of row strings.
 2. Iterate rows and columns (converting to 1-based indices) and collect every
    `[row, col]` tuple where the character is `"#"` into a `black_cells` list.
 3. Build `{"n": size, "black_cells": black_cells}`.
