@@ -50,15 +50,40 @@ No logic change — this is exactly what `Puzzle.generate_grid()` does today.
 
 ## Adapter 2 — `crossword/adapters/xd_grid_generator_adapter.py` (new)
 
-Details TBD. Skeleton:
+Opens the xdfile SQLite database and picks a random grid of size `n`:
+
+```sql
+SELECT   *
+FROM     grids
+WHERE    size = $n
+ORDER BY RAND()
+LIMIT    1;
+```
+
+The `grid_text` column is a JSON array of `n` strings, each of length `n`,
+using `"."` for white cells and `"#"` for black cells.
+
+To build the `Grid`:
+
+1. Parse `grid_text` into a list of row strings.
+2. Iterate rows and columns (converting to 1-based indices) and collect every
+   `[row, col]` tuple where the character is `"#"` into a `black_cells` list.
+3. Build `{"n": size, "black_cells": black_cells}`.
+4. Call `Grid.from_json(...)` with that dict to get the domain `Grid` object.
+
+If no row is found for the requested size, raise `RuntimeError` so the handler
+returns a `{"notice": ...}` response.
 
 ```python
 class XdGridGeneratorAdapter(GridGeneratorPort):
-    def __init__(self, xdfile: str): ...
+    def __init__(self, xdfile: str):
+        self.xdfile = xdfile
+
     def generate(self, n: int) -> Grid:
-        # pick a random puzzle of size n from the xdfile DB
-        # extract its black-cell pattern
-        # return a Grid with those black cells and all-white letters
+        # query xdfile DB for a random grid of size n
+        # parse grid_text JSON → black_cells list of 1-based [row, col] tuples
+        # return Grid.from_json({"n": n, "black_cells": black_cells})
+        # raise RuntimeError if no grid of that size exists
         ...
 ```
 
