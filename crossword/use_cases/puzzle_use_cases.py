@@ -45,9 +45,10 @@ class PuzzleUseCases:
     Constructor injection: takes a PersistencePort instance.
     """
 
-    def __init__(self, persistence: PersistencePort, word_uc=None):
+    def __init__(self, persistence: PersistencePort, word_uc=None, grid_generator=None):
         self.persistence = persistence
         self.word_uc = word_uc
+        self.grid_generator = grid_generator
 
     def create_puzzle(self, user_id: int, name: str, size: int) -> None:
         """
@@ -216,7 +217,8 @@ class PuzzleUseCases:
     def generate_grid(self, user_id: int, name: str) -> Puzzle:
         """Generate a random valid grid for the puzzle and save the change."""
         puzzle = self.persistence.load_puzzle(user_id, name)
-        puzzle.generate_grid()
+        newgrid = self.grid_generator.generate(puzzle.n)
+        puzzle.apply_generated_grid(newgrid)
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle
 

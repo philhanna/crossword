@@ -13,6 +13,7 @@ from .word_list_port import WordListPort
 from .export_port import ExportPort, ExportError
 from .definition_port import DefinitionProviderPort, DefinitionNotFound
 from .import_port import ImportPort, PuzzleImportError
+from .grid_generator_port import GridGeneratorPort
 
 __all__ = [
     "PersistencePort",
@@ -24,4 +25,5 @@ __all__ = [
     "DefinitionNotFound",
     "ImportPort",
     "PuzzleImportError",
+    "GridGeneratorPort",
 ]

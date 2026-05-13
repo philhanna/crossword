@@ -209,12 +209,7 @@ class Puzzle:
         newgrid.rotate()
         self._apply_new_grid(newgrid)
 
-    def generate_grid(self):
-        from .grid_generator import GridGenerator
-        gen = GridGenerator(self.n)
-        newgrid = gen.generate()
-        if newgrid is None:
-            raise RuntimeError("Grid generation failed: ran out of attempts")
+    def apply_generated_grid(self, newgrid: Grid):
         self.grid_undo_stack.append(self.grid.to_json())
         self.grid_redo_stack = []
         self._apply_new_grid(newgrid)

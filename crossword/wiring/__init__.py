@@ -7,6 +7,8 @@ ready for HTTP handlers or CLI commands to call.
 
 import logging
 
+from crossword.adapters.random_grid_generator_adapter import RandomGridGeneratorAdapter
+from crossword.adapters.xd_grid_generator_adapter import XdGridGeneratorAdapter
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
 from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
 from crossword.adapters.puz_import_adapter import PuzImportAdapter
@@ -118,8 +120,11 @@ def make_app(config=None):
     xd_import_adapter = XdImportAdapter()
     puz_import_adapter = PuzImportAdapter()
 
+    xdfile = config.get("xdfile")
+    grid_generator = XdGridGeneratorAdapter(xdfile) if xdfile else RandomGridGeneratorAdapter()
+
     word_uc = WordUseCases(word_adapter)
-    puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc)
+    puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc, grid_generator=grid_generator)
     export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter, solver_pdf_adapter, puz_export_adapter, xd_export_adapter)
     import_uc = ImportUseCases(persistence, acrosslite_import_adapter, xd_import_adapter, puz_import_adapter)
 
