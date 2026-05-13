@@ -49,6 +49,10 @@ class PuzzleUseCases:
         self.persistence = persistence
         self.word_uc = word_uc
         self.grid_generator = grid_generator
+        self._fill_order_cache: dict = {}
+
+    def _invalidate_fill_order(self, user_id, name):
+        self._fill_order_cache.pop((user_id, name), None)
 
     def create_puzzle(self, user_id: int, name: str, size: int) -> None:
         """
@@ -99,6 +103,7 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If puzzle not found or deletion fails
         """
+        self._invalidate_fill_order(user_id, name)
         self.persistence.delete_puzzle(user_id, name)
 
     def list_puzzles(self, user_id: int) -> list[str]:
@@ -157,6 +162,7 @@ class PuzzleUseCases:
             ValueError: If new_name is empty or invalid
         """
         self.copy_puzzle(user_id, old_name, new_name)
+        self._invalidate_fill_order(user_id, old_name)
         self.persistence.delete_puzzle(user_id, old_name)
 
     def open_puzzle_for_editing(self, user_id: int, name: str) -> str:
@@ -195,6 +201,7 @@ class PuzzleUseCases:
 
     def switch_to_puzzle_mode(self, user_id: int, name: str) -> Puzzle:
         """Enter Puzzle mode and reset Puzzle-mode history for this session."""
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
         puzzle.enter_puzzle_mode()
         self.persistence.save_puzzle(user_id, name, puzzle)
@@ -202,6 +209,7 @@ class PuzzleUseCases:
 
     def toggle_black_cell(self, user_id: int, name: str, r: int, c: int) -> Puzzle:
         """Toggle a black cell in the puzzle grid and save the change."""
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
         puzzle.toggle_black_cell(r, c)
         self.persistence.save_puzzle(user_id, name, puzzle)
@@ -209,6 +217,7 @@ class PuzzleUseCases:
 
     def rotate_grid(self, user_id: int, name: str) -> Puzzle:
         """Rotate the puzzle grid and save the change."""
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
         puzzle.rotate_grid()
         self.persistence.save_puzzle(user_id, name, puzzle)
@@ -216,6 +225,7 @@ class PuzzleUseCases:
 
     def generate_grid(self, user_id: int, name: str) -> Puzzle:
         """Generate a random valid grid for the puzzle and save the change."""
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
         newgrid = self.grid_generator.generate(puzzle.n)
         puzzle.apply_generated_grid(newgrid)
@@ -224,6 +234,7 @@ class PuzzleUseCases:
 
     def undo_grid(self, user_id: int, name: str) -> Puzzle:
         """Undo the last Grid-mode operation."""
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
         if puzzle.grid_undo_stack:
             puzzle.undo_grid_change()
@@ -232,6 +243,7 @@ class PuzzleUseCases:
 
     def redo_grid(self, user_id: int, name: str) -> Puzzle:
         """Redo the last undone Grid-mode operation."""
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
         if puzzle.grid_redo_stack:
             puzzle.redo_grid_change()
@@ -277,6 +289,7 @@ class PuzzleUseCases:
             PersistenceError: If load/save fails
             ValueError: If letter is invalid or cell is black
         """
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
 
         if puzzle.is_black_cell(r, c):
@@ -346,6 +359,8 @@ class PuzzleUseCases:
             PersistenceError: If load/save fails
             ValueError: If seq or direction is invalid
         """
+        if text is not None:
+            self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
         dir_lower = direction.lower()
 
@@ -384,6 +399,7 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If load/save fails
         """
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
 
         if puzzle.undo_stack:
@@ -406,6 +422,7 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If load/save fails
         """
+        self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
 
         if puzzle.redo_stack:
@@ -448,9 +465,12 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If puzzle not found
         """
+        key = (user_id, name)
+        if key in self._fill_order_cache:
+            return self._fill_order_cache[key]
         puzzle = self.persistence.load_puzzle(user_id, name)
         analyzer = FillPriorityAnalyzer(self.word_uc)
-        return {
+        result = {
             "fill_priority": [
                 {
                     "seq": item.seq,
@@ -464,6 +484,8 @@ class PuzzleUseCases:
                 for item in analyzer.rank_slots(puzzle, top_n=top_n)
             ]
         }
+        self._fill_order_cache[key] = result
+        return result
 
     def get_puzzle_preview(self, user_id: int, name: str) -> dict:
         """

@@ -625,3 +625,50 @@ class TestPuzzleUseCasesGetFillOrder:
             assert "pattern" in first
             assert "candidate_count" in first
             assert "reason" in first
+
+    def test_get_fill_order_cached_on_second_call(self, mock_persistence, test_puzzle):
+        """rank_slots is only called once when called twice with no edit between"""
+        from unittest.mock import patch
+        puzzle_uc = PuzzleUseCases(mock_persistence, word_uc=self._StubWordUseCases())
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        with patch("crossword.use_cases.puzzle_use_cases.FillPriorityAnalyzer") as MockAnalyzer:
+            mock_instance = MockAnalyzer.return_value
+            mock_instance.rank_slots.return_value = []
+            puzzle_uc.get_fill_order(1, "my_puzzle")
+            puzzle_uc.get_fill_order(1, "my_puzzle")
+
+        mock_instance.rank_slots.assert_called_once()
+
+    def test_get_fill_order_invalidated_by_set_cell_letter(self, mock_persistence, test_puzzle):
+        """rank_slots is called twice when set_cell_letter is called between get_fill_order calls"""
+        from unittest.mock import patch
+        puzzle_uc = PuzzleUseCases(mock_persistence, word_uc=self._StubWordUseCases())
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        with patch("crossword.use_cases.puzzle_use_cases.FillPriorityAnalyzer") as MockAnalyzer:
+            mock_instance = MockAnalyzer.return_value
+            mock_instance.rank_slots.return_value = []
+            puzzle_uc.get_fill_order(1, "my_puzzle")
+            puzzle_uc.set_cell_letter(1, "my_puzzle", 1, 2, "A")
+            puzzle_uc.get_fill_order(1, "my_puzzle")
+
+        assert mock_instance.rank_slots.call_count == 2
+
+    def test_get_fill_order_not_invalidated_by_clue_only_set_word_clue(self, mock_persistence, test_puzzle):
+        """rank_slots is called once when set_word_clue is called with no text"""
+        from unittest.mock import patch
+        puzzle_uc = PuzzleUseCases(mock_persistence, word_uc=self._StubWordUseCases())
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        with patch("crossword.use_cases.puzzle_use_cases.FillPriorityAnalyzer") as MockAnalyzer:
+            mock_instance = MockAnalyzer.return_value
+            mock_instance.rank_slots.return_value = []
+            puzzle_uc.get_fill_order(1, "my_puzzle")
+            # clue-only update — no text argument
+            seq = next(iter(test_puzzle.across_words)) if test_puzzle.across_words else None
+            if seq is not None:
+                puzzle_uc.set_word_clue(1, "my_puzzle", seq, "across", "A clue")
+            puzzle_uc.get_fill_order(1, "my_puzzle")
+
+        mock_instance.rank_slots.assert_called_once()
