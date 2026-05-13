@@ -65,6 +65,7 @@ function clearMessageLine() {
 }
 
 function showMessageLine(text, level = 'notice', timeoutMs = MESSAGE_LINE_TIMEOUT_MS) {
+    (level === 'error' ? console.error : console.log)(`[${level}] ${text}`);
     const ml = document.getElementById('ml');
     document.getElementById('ml-text').textContent = text;
     ml.classList.remove('message-line-notice', 'message-line-error');
