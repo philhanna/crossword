@@ -113,7 +113,13 @@ function _refreshSelectedWordFromPuzzleData(options = {}) {
 
 async function completeSelectedWordEdit(options = {}) {
     const sw = AppState.selectedWord;
-    if (!sw) return { saved: false, changedSelection: false, error: false };
+    if (!sw) {
+        if (options.nextSelection) {
+            const next = options.nextSelection;
+            selectWord(next.seq, next.direction, next.clickR, next.clickC, next.editorMode || 'puzzle');
+        }
+        return { saved: false, changedSelection: !!options.nextSelection, error: false };
+    }
 
     if (_isWordEditorOpen()) _syncSelectedWordFromInputs();
 
@@ -236,9 +242,13 @@ async function puzzleClickAt(event, direction, openEditor = true) {
                 nextSelection: { seq: word.seq, direction: word.direction, clickR: r, clickC: c }
             });
             if (result.error) return;
-        } else if (openEditor) {
-            await openWordEditor(word.seq, word.direction);
-            return;
+        } else {
+            const clickedIdx = current.cells.findIndex(([wr, wc]) => wr === r && wc === c);
+            if (clickedIdx >= 0) _setSelectedWordCursorIdx(clickedIdx);
+            if (openEditor) {
+                await openWordEditor(word.seq, word.direction);
+                return;
+            }
         }
         if (openEditor && !_isWordEditorOpen()) await openWordEditor(word.seq, word.direction);
         else renderPuzzleEditor();
