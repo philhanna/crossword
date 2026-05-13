@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.12.0] - 2026-05-12
+
+### Added
+
+- GridGeneratorPort with RandomGridGeneratorAdapter and XdGridGeneratorAdapter
+- xdfile setting: pick a random grid from the crossword archive database
+- Log showMessageLine calls to the browser console
+
+### Fixed
+
+- Fix xdfile grid_text parsing: split on newlines instead of json.loads
+
+### Changed
+
+- Restore word to original state when word editor is cancelled
+- Cache crosser pattern lookups in fill priority ranking
+
 ## [4.11.4] - 2026-05-12
 
 ### Changed
