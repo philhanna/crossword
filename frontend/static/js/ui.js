@@ -101,19 +101,22 @@ function messageBox(title, prompt, ok, okCallback, okLabel = 'OK') {
     showElement('mb');
 }
 
-function inputBox(title, label, value, onSubmit) {
+function inputBox(title, label, value, onSubmit, { required = true, onCancel = null } = {}) {
     document.getElementById('ib-title').innerHTML = title;
     document.getElementById('ib-label').innerHTML = label;
-    document.getElementById('ib-input').value = value;
-    const form = document.getElementById('ib-form');
-    form.onsubmit = (e) => {
+    const input = document.getElementById('ib-input');
+    input.value = value;
+    input.required = required;
+    const dismiss = () => { hideElement('ib'); if (onCancel) onCancel(); };
+    document.getElementById('ib-cancel').onclick = dismiss;
+    document.getElementById('ib-close').onclick = dismiss;
+    document.getElementById('ib-form').onsubmit = (e) => {
         e.preventDefault();
-        const entered = document.getElementById('ib-input').value;
         hideElement('ib');
-        onSubmit(entered);
+        onSubmit(input.value);
     };
     showElement('ib');
-    document.getElementById('ib-input').focus();
+    input.focus();
 }
 
 async function confirmOverwriteIfExists(kind, name, listExistingNames, onConfirmSave) {

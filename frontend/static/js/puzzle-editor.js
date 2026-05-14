@@ -859,49 +859,48 @@ async function do_puzzle_new() {
     }
 
     function promptForSpec(n, specVal = '') {
+        async function createPuzzle(spec) {
+            try {
+                const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
+                const data = await apiFetch('POST', '/api/puzzles', { name: internalName, size: n });
+                if (data.error) { showMessageLine(`Error creating puzzle: ${data.error}`, 'error', 0); return; }
+                await _openPuzzleInEditor(internalName);
+                AppState.puzzleName         = null;
+                AppState.puzzleOriginalName = internalName;
+                AppState.puzzleThemeSpec    = spec;
+                renderPuzzleEditorLhs();
+            } catch (e) { showMessageLine('Error creating puzzle', 'error', 0); }
+        }
         inputBox(
             'New puzzle',
             '<b>Theme word lengths</b> <em>(optional — palindromic comma-separated integers, e.g. 7,5,5,7)</em>',
             specVal,
             (enteredSpec) => {
                 const trimmed = enteredSpec.trim();
-                let spec = null;
-                if (trimmed) {
-                    const parts = trimmed.split(',').map(s => s.trim());
-                    const nums = parts.map(Number);
-                    if (nums.some(x => isNaN(x) || !Number.isInteger(x) || x < 1)) {
-                        messageBox(
-                            'Invalid theme spec',
-                            'Each value must be a positive integer.',
-                            null,
-                            () => promptForSpec(n, enteredSpec)
-                        );
-                        return;
-                    }
-                    if (JSON.stringify(nums) !== JSON.stringify([...nums].reverse())) {
-                        messageBox(
-                            'Invalid theme spec',
-                            'The list must be a palindrome (e.g. 7,5,5,7).',
-                            null,
-                            () => promptForSpec(n, enteredSpec)
-                        );
-                        return;
-                    }
-                    spec = nums;
+                if (!trimmed) { createPuzzle(null); return; }
+                const parts = trimmed.split(',').map(s => s.trim());
+                const nums = parts.map(Number);
+                if (nums.some(x => isNaN(x) || !Number.isInteger(x) || x < 1)) {
+                    messageBox(
+                        'Invalid theme spec',
+                        'Each value must be a positive integer.',
+                        null,
+                        () => promptForSpec(n, enteredSpec)
+                    );
+                    return;
                 }
-                (async () => {
-                    try {
-                        const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
-                        const data = await apiFetch('POST', '/api/puzzles', { name: internalName, size: n });
-                        if (data.error) { showMessageLine(`Error creating puzzle: ${data.error}`, 'error', 0); return; }
-                        await _openPuzzleInEditor(internalName);
-                        AppState.puzzleName         = null;        // no user-facing name yet
-                        AppState.puzzleOriginalName = internalName;
-                        AppState.puzzleThemeSpec    = spec;
-                        renderPuzzleEditorLhs();
-                    } catch (e) { showMessageLine('Error creating puzzle', 'error', 0); }
-                })();
-            }
+                if (JSON.stringify(nums) !== JSON.stringify([...nums].reverse())) {
+                    messageBox(
+                        'Invalid theme spec',
+                        'The list must be a palindrome (e.g. 7,5,5,7).',
+                        null,
+                        () => promptForSpec(n, enteredSpec)
+                    );
+                    return;
+                }
+                createPuzzle(nums);
+            },
+            { required: false, onCancel: () => createPuzzle(null) }
         );
     }
 

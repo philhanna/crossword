@@ -148,17 +148,17 @@
   <div class="w3-modal-content dialog-card" style="width:380px;max-width:90vw">
     <div class="dialog-header">
       <span id="ib-title" class="dialog-title"></span>
-      <button class="dialog-close-btn" onclick="hideElement('ib')">&times;</button>
+      <button class="dialog-close-btn" id="ib-close">&times;</button>
     </div>
     <form id="ib-form" name="ib-form" class="dialog-body">
       <p id="ib-prompt" class="dialog-prompt"></p>
       <div class="form-field">
         <label id="ib-label" class="form-label"></label>
-        <input type="text" id="ib-input" name="ib-input" class="form-input" value="" required>
+        <input type="text" id="ib-input" name="ib-input" class="form-input" value="">
       </div>
       <div class="dialog-actions">
         <button class="btn btn-primary" id="ib-ok" type="submit">OK</button>
-        <button class="btn btn-secondary" onclick="hideElement('ib');return false;">Cancel</button>
+        <button class="btn btn-secondary" id="ib-cancel" type="button">Cancel</button>
       </div>
     </form>
   </div>
