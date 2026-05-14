@@ -223,11 +223,11 @@ class PuzzleUseCases:
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle
 
-    def generate_grid(self, user_id: int, name: str) -> Puzzle:
+    def generate_grid(self, user_id: int, name: str, spec: list[int] | None = None) -> Puzzle:
         """Generate a random valid grid for the puzzle and save the change."""
         self._invalidate_fill_order(user_id, name)
         puzzle = self.persistence.load_puzzle(user_id, name)
-        newgrid = self.grid_generator.generate(puzzle.n)
+        newgrid = self.grid_generator.generate(puzzle.n, spec)
         puzzle.apply_generated_grid(newgrid)
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle

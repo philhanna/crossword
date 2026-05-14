@@ -635,8 +635,11 @@ async function do_puzzle_generate_grid() {
     const btn = document.getElementById('puzzle-generate-btn');
     if (btn) btn.classList.add('w3-disabled');
     try {
+        const specParam = AppState.puzzleThemeSpec
+            ? '?spec=' + AppState.puzzleThemeSpec.join(',')
+            : '';
         const data = await apiFetch('POST',
-            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/generate`);
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/generate${specParam}`);
         if (data.notice) { showMessageLine(data.notice, 'notice'); return; }
         if (data.error) { showMessageLine(`Error generating grid: ${data.error}`, 'error'); return; }
         await _applyGridModeUpdate(data);
@@ -850,6 +853,42 @@ async function do_puzzle_new() {
                     );
                     return;
                 }
+                promptForSpec(n);
+            }
+        );
+    }
+
+    function promptForSpec(n, specVal = '') {
+        inputBox(
+            'New puzzle',
+            '<b>Theme word lengths</b> <em>(optional — palindromic comma-separated integers, e.g. 7,5,5,7)</em>',
+            specVal,
+            (enteredSpec) => {
+                const trimmed = enteredSpec.trim();
+                let spec = null;
+                if (trimmed) {
+                    const parts = trimmed.split(',').map(s => s.trim());
+                    const nums = parts.map(Number);
+                    if (nums.some(x => isNaN(x) || !Number.isInteger(x) || x < 1)) {
+                        messageBox(
+                            'Invalid theme spec',
+                            'Each value must be a positive integer.',
+                            null,
+                            () => promptForSpec(n, enteredSpec)
+                        );
+                        return;
+                    }
+                    if (JSON.stringify(nums) !== JSON.stringify([...nums].reverse())) {
+                        messageBox(
+                            'Invalid theme spec',
+                            'The list must be a palindrome (e.g. 7,5,5,7).',
+                            null,
+                            () => promptForSpec(n, enteredSpec)
+                        );
+                        return;
+                    }
+                    spec = nums;
+                }
                 (async () => {
                     try {
                         const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
@@ -858,6 +897,7 @@ async function do_puzzle_new() {
                         await _openPuzzleInEditor(internalName);
                         AppState.puzzleName         = null;        // no user-facing name yet
                         AppState.puzzleOriginalName = internalName;
+                        AppState.puzzleThemeSpec    = spec;
                         renderPuzzleEditorLhs();
                     } catch (e) { showMessageLine('Error creating puzzle', 'error', 0); }
                 })();
@@ -978,6 +1018,7 @@ async function _doPuzzleCloseConfirmed() {
     AppState._fillOrderData     = null;
     AppState._fillOrderCellHash = null;
     AppState.gridStructureChanged = false;
+    AppState.puzzleThemeSpec      = null;
     if (wn) {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
         catch (e) { /* ignore cleanup errors */ }

@@ -5,7 +5,7 @@ from crossword.ports.grid_generator_port import GridGeneratorPort
 
 
 class RandomGridGeneratorAdapter(GridGeneratorPort):
-    def generate(self, n: int) -> Grid:
+    def generate(self, n: int, spec: list[int] | None = None) -> Grid:
         grid = GridGenerator(n).generate()
         if grid is None:
             raise RuntimeError("Grid generation failed: ran out of attempts")

@@ -33,6 +33,16 @@ from crossword.ports.persistence_port import PersistenceError
 logger = logging.getLogger(__name__)
 
 
+def _parse_spec(raw: str | None) -> list[int] | None:
+    """Parse a comma-separated spec query parameter into a list of ints, or None."""
+    if not raw:
+        return None
+    try:
+        return [int(x) for x in raw.split(",") if x.strip()]
+    except ValueError:
+        return None
+
+
 def _puzzle_response(puzzle):
     """Build the standard puzzle API response dict from a Puzzle object."""
     grid_cells = [False] * (puzzle.n * puzzle.n)
@@ -375,7 +385,8 @@ def handle_generate_puzzle_grid(path_params, query_params, body_params, session_
         if not name:
             return {"error": "Missing puzzle name"}
         user_id = current_user["id"]
-        puzzle = app.puzzle_uc.generate_grid(user_id, name)
+        spec = _parse_spec(query_params.get("spec"))
+        puzzle = app.puzzle_uc.generate_grid(user_id, name, spec)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:
