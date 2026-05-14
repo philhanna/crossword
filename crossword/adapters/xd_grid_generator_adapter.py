@@ -60,12 +60,17 @@ class XdGridGeneratorAdapter(GridGeneratorPort):
             )
             join_params.extend([length, counts[length]])
 
-        # NOT EXISTS: reject any slot (either direction) with a forbidden length
+        # NOT EXISTS: reject any slot (either direction) with a forbidden length,
+        # and reject any DOWN slot with a spec length
         forbidden_parts = ["sc_f.length > ?"]
         forbidden_params: list = [max_len]
         if gaps:
             forbidden_parts.append(f"sc_f.length IN ({','.join('?' * len(gaps))})")
             forbidden_params.extend(gaps)
+        forbidden_parts.append(
+            f"(sc_f.direction = 'D' AND sc_f.length IN ({','.join('?' * len(sorted_lengths))}))"
+        )
+        forbidden_params.extend(sorted_lengths)
 
         sql = (
             "SELECT g.grid_text, g.size\n"
