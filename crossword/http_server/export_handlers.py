@@ -48,7 +48,7 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
         return {"error": "Missing puzzle name"}
     try:
         txt = app.export_uc.export_puzzle_to_acrosslite(current_user["id"], name)
-        _send_download(request_handler, txt, "text/plain", f"acrosslite-{name}.txt")
+        _send_download(request_handler, txt, "text/plain", f"{name}.txt")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
