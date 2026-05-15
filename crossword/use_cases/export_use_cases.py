@@ -7,6 +7,7 @@ Public interface:
   export_puzzle_to_nytimes(user_id, name) -> bytes
   export_puzzle_to_json(user_id, name) -> str
   export_puzzle_to_solver_pdf(user_id, name) -> bytes
+  export_puzzle_to_solved_pdf(user_id, name) -> bytes
   export_puzzle_to_puz(user_id, name) -> bytes
   export_puzzle_to_xd(user_id, name) -> str
 """
@@ -17,6 +18,7 @@ from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
+from crossword.adapters.solved_pdf_export_adapter import SolvedPdfExportAdapter
 from crossword.adapters.puz_export_adapter import PuzExportAdapter
 from crossword.adapters.xd_export_adapter import XdExportAdapter
 
@@ -36,6 +38,7 @@ class ExportUseCases:
         nytimes: NYTimesExportAdapter,
         json_adapter: JsonExportAdapter,
         solver_pdf: SolverPdfExportAdapter = None,
+        solved_pdf: SolvedPdfExportAdapter = None,
         puz_adapter: PuzExportAdapter = None,
         xd_adapter: XdExportAdapter = None,
     ):
@@ -45,6 +48,7 @@ class ExportUseCases:
         self._nytimes = nytimes
         self._json = json_adapter
         self._solver_pdf = solver_pdf or SolverPdfExportAdapter()
+        self._solved_pdf = solved_pdf or SolvedPdfExportAdapter()
         self._puz = puz_adapter or PuzExportAdapter()
         self._xd = xd_adapter or XdExportAdapter()
 
@@ -67,6 +71,10 @@ class ExportUseCases:
     def export_puzzle_to_solver_pdf(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)
         return self._solver_pdf.export_puzzle_to_solver_pdf(puzzle)
+
+    def export_puzzle_to_solved_pdf(self, user_id: int, name: str) -> bytes:
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        return self._solved_pdf.export_puzzle_to_solved_pdf(puzzle)
 
     def export_puzzle_to_puz(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)

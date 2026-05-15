@@ -134,6 +134,25 @@ class ExportPort(ABC):
         pass
 
     @abstractmethod
+    def export_puzzle_to_solved_pdf(self, puzzle: Puzzle) -> bytes:
+        """
+        Export a puzzle to a solved PDF (filled-in grid + clues).
+
+        Same layout as export_puzzle_to_solver_pdf but with the answer letters
+        filled in every white cell.
+
+        Args:
+            puzzle: Puzzle object to export
+
+        Returns:
+            PDF file contents as bytes
+
+        Raises:
+            ExportError: If export fails
+        """
+        pass
+
+    @abstractmethod
     def export_puzzle_to_nytimes(self, puzzle: Puzzle) -> bytes:
         """
         Export a puzzle in NYTimes submission format (PDF).
