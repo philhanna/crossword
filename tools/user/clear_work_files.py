@@ -34,45 +34,29 @@ def source_name(wc_name: str) -> str:
     return "(unknown)"
 
 
-def find_work_files(conn, placeholder: str) -> list[str]:
-    """Return work-copy puzzle names ordered by puzzle name."""
+def find_work_files(conn) -> list[tuple[str, str]]:
+    """Return (name, modified) pairs for work-copy puzzles ordered by name."""
     cur = conn.cursor()
     cur.execute(
-        f"SELECT puzzlename FROM puzzles WHERE puzzlename LIKE {placeholder} ORDER BY puzzlename",
+        "SELECT puzzlename, modified FROM puzzles WHERE puzzlename LIKE ? ORDER BY puzzlename",
         (WC_PREFIX + "%",)
     )
-    return [row[0] for row in cur.fetchall()]
+    return [(row[0], row[1] or "") for row in cur.fetchall()]
 
 
-def delete_work_files(conn, placeholder: str, puzzles: list[str]) -> None:
+def delete_work_files(conn, puzzles: list[tuple[str, str]]) -> None:
     """Delete the given work-copy puzzle rows and commit the transaction."""
     cur = conn.cursor()
-    for name in puzzles:
-        cur.execute(f"DELETE FROM puzzles WHERE puzzlename = {placeholder}", (name,))
+    for name, _ in puzzles:
+        cur.execute("DELETE FROM puzzles WHERE puzzlename = ?", (name,))
     conn.commit()
 
 
 def connect(config: dict):
-    """Connect to the configured database and return driver-specific SQL metadata."""
-    database_url = config.get("database_url")
-    if database_url:
-        import psycopg2
-        return psycopg2.connect(database_url), "%s", str(database_url)
-    else:
-        import sqlite3
-        db = config["dbfile"]
-        return sqlite3.connect(db), "?", db
-
-
-def vacuum(conn, is_postgres: bool) -> None:
-    """Run VACUUM using the transaction mode required by the active database."""
-    if is_postgres:
-        old_level = conn.isolation_level
-        conn.set_isolation_level(0)
-        conn.cursor().execute("VACUUM")
-        conn.set_isolation_level(old_level)
-    else:
-        conn.execute("VACUUM")
+    """Connect to the SQLite database and return the connection."""
+    import sqlite3
+    db = config["dbfile"]
+    return sqlite3.connect(db), db
 
 
 def main() -> None:
@@ -82,17 +66,16 @@ def main() -> None:
     args = parser.parse_args()
 
     config = init_config()
-    conn, placeholder, db_label = connect(config)
-    is_postgres = config.get("database_url") is not None
+    conn, db_label = connect(config)
 
     print(f"Database: {db_label}\n")
 
     try:
-        puzzles = find_work_files(conn, placeholder)
+        puzzles = find_work_files(conn)
 
         print(f"Work-copy puzzles ({len(puzzles)}):")
-        for name in puzzles:
-            print(f"  {name}  (source: {source_name(name)})")
+        for name, modified in puzzles:
+            print(f"  {name}  (source: {source_name(name)}, modified: {modified})")
         if not puzzles:
             print("  (none)")
 
@@ -110,11 +93,11 @@ def main() -> None:
             print("Cancelled.")
             return
 
-        delete_work_files(conn, placeholder, puzzles)
+        delete_work_files(conn, puzzles)
         print(f"\nDeleted {total} row(s).")
 
         print("Vacuuming database...", end=" ", flush=True)
-        vacuum(conn, is_postgres)
+        conn.execute("VACUUM")
         print("done.")
     finally:
         conn.close()
