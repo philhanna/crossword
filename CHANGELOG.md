@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.13.0] - 2026-05-15
+
+### Added
+
+- Theme spec for puzzle creation and grid generation
+- Server-side fill-order cache in PuzzleUseCases
+
+### Fixed
+
+- Fix puzzle editor cursor to land on clicked cell, not word start
+
+### Changed
+
+- Forbid down words with spec lengths in XdGridGeneratorAdapter
+- Rename across lite text export files
+- Update words.txt
+
 ## [4.12.0] - 2026-05-12
 
 ### Added
