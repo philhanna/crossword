@@ -191,11 +191,14 @@ function renderPuzzleEditorRhs() {
                     ? renderStatsPanel(AppState._statsData)
                     : `<div class="sidebar-empty">Loading stats…</div>`;
                 break;
-            case 'fill-order':
-                contentHtml = AppState._fillOrderData
-                    ? renderFillOrderPanel(AppState._fillOrderData)
+            case 'fill-order': {
+                const _foData = AppState._fillOrderCache &&
+                    AppState._fillOrderCache.get(_cellLettersKey(AppState.puzzleData));
+                contentHtml = _foData
+                    ? renderFillOrderPanel(_foData)
                     : `<div class="sidebar-empty">Loading fill order…</div>`;
                 break;
+            }
             default:
                 contentHtml = renderClues();
         }
@@ -227,7 +230,8 @@ async function switchSidebarTab(tab) {
     if (tab === 'stats' && !AppState._statsData) {
         await do_puzzle_stats(); return;
     }
-    if (tab === 'fill-order' && !AppState._fillOrderData) {
+    if (tab === 'fill-order' && !(AppState._fillOrderCache &&
+            AppState._fillOrderCache.has(_cellLettersKey(AppState.puzzleData)))) {
         await do_puzzle_fill_order(); return;
     }
     if (tab === 'word' && !_isWordEditorOpen() && AppState.selectedWord) {
@@ -361,20 +365,14 @@ ${errorsHtml}
 </table>`;
 }
 
-function _wordTextsKey(puzzleData) {
-    if (!puzzleData?.puzzle?.words) return '';
-    return puzzleData.puzzle.words
-        .map(w => `${w.seq}${w.direction}:${w.text ?? ''}`)
+function _cellLettersKey(puzzleData) {
+    if (!puzzleData?.puzzle?.cells) return '';
+    return Object.entries(puzzleData.puzzle.cells)
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([idx, cell]) => `${idx}:${cell.letter ?? ''}`)
         .join('|');
 }
 
-function _invalidateFillOrderIfChanged(newPuzzleData) {
-    if (AppState._fillOrderData &&
-            _wordTextsKey(newPuzzleData) !== AppState._fillOrderCellHash) {
-        AppState._fillOrderData   = null;
-        AppState._fillOrderCellHash = null;
-    }
-}
 
 function renderFillOrderPanel(data) {
     const rows = (data.fill_priority || []).map(item => {
@@ -433,8 +431,8 @@ async function _refreshPuzzleStatsIfVisible() {
 
 async function _refreshFillOrderIfVisible() {
     if (AppState.sidebarTab !== 'fill-order' || !AppState.puzzleWorkingName || _currentEditorMode() !== 'puzzle') return;
-    if (AppState._fillOrderData &&
-            _wordTextsKey(AppState.puzzleData) === AppState._fillOrderCellHash) {
+    const key = _cellLettersKey(AppState.puzzleData);
+    if (AppState._fillOrderCache && AppState._fillOrderCache.has(key)) {
         renderPuzzleEditorRhs();
         return;
     }
@@ -442,8 +440,7 @@ async function _refreshFillOrderIfVisible() {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/fill-order`);
         if (data.error) return;
-        AppState._fillOrderData   = data;
-        AppState._fillOrderCellHash = _wordTextsKey(AppState.puzzleData);
+        if (AppState._fillOrderCache) AppState._fillOrderCache.set(key, data);
         renderPuzzleEditorRhs();
     } catch (e) {
         // Keep the current panel if the refresh fails.
@@ -529,7 +526,6 @@ async function _puzzleUndoRedo(action) {
     try {
         const data = await apiFetch('POST', path);
         if (data.error) { showMessageLine(`${action} failed: ${data.error}`, 'error', 0); return; }
-        _invalidateFillOrderIfChanged(data);
         AppState.puzzleData       = data;
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
@@ -578,8 +574,6 @@ async function _switchToGridModeConfirmed() {
         AppState.showingFillOrder = false;
         AppState.sidebarTab         = 'grid';
         AppState._statsData         = null;
-        AppState._fillOrderData     = null;
-        AppState._fillOrderCellHash = null;
         renderPuzzleEditor();
     } catch (e) { showMessageLine('Error switching to Grid mode', 'error', 0); }
 }
@@ -607,8 +601,6 @@ async function do_switch_to_puzzle_mode() {
         AppState.showingFillOrder = false;
         AppState.sidebarTab         = 'clues';
         AppState._statsData         = null;
-        AppState._fillOrderData     = null;
-        AppState._fillOrderCellHash = null;
         AppState.gridStructureChanged = false;
         renderPuzzleEditor();
         if (hadGridStructureChange) {
@@ -673,8 +665,7 @@ async function _openPuzzleInEditor(name) {
     AppState.showingFillOrder  = false;
     AppState.sidebarTab         = 'clues';
     AppState._statsData         = null;
-    AppState._fillOrderData     = null;
-    AppState._fillOrderCellHash = null;
+    AppState._fillOrderCache    = new Map();
     AppState.gridStructureChanged = false;
     showView('editor');
 }
@@ -1014,8 +1005,7 @@ async function _doPuzzleCloseConfirmed() {
     AppState.showingFillOrder   = false;
     AppState.sidebarTab         = 'clues';
     AppState._statsData         = null;
-    AppState._fillOrderData     = null;
-    AppState._fillOrderCellHash = null;
+    AppState._fillOrderCache    = null;
     AppState.gridStructureChanged = false;
     AppState.puzzleThemeSpec      = null;
     if (wn) {
@@ -1086,10 +1076,13 @@ async function do_puzzle_fill_order() {
     }
     try {
         await _settlePuzzleEditingBeforeModeSwitch();
-        const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
-        if (data.error) { showMessageLine(`Error: ${data.error}`, 'error', 0); return; }
-        AppState._fillOrderData     = data;
-        AppState._fillOrderCellHash = _wordTextsKey(AppState.puzzleData);
+        const key = _cellLettersKey(AppState.puzzleData);
+        let data = AppState._fillOrderCache && AppState._fillOrderCache.get(key);
+        if (!data) {
+            data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
+            if (data.error) { showMessageLine(`Error: ${data.error}`, 'error', 0); return; }
+            if (AppState._fillOrderCache) AppState._fillOrderCache.set(key, data);
+        }
         AppState.showingStats       = false;
         AppState.showingFillOrder   = true;
         AppState.sidebarTab         = 'fill-order';

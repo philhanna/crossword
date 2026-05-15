@@ -22,9 +22,8 @@ const AppState = {
     showingStats: false,     // true = puzzle editor RHS shows stats panel
     showingFillOrder: false, // true = puzzle editor RHS shows fill-order panel
     sidebarTab: 'clues',     // active sidebar tab: 'clues'|'word'|'stats'|'fill-order'|'grid'
-    _statsData: null,        // cached puzzle stats response
-    _fillOrderData: null,     // cached fill-order response
-    _fillOrderCellHash: null, // word-text fingerprint at time of last fill-order fetch
+    _statsData: null,         // cached puzzle stats response
+    _fillOrderCache: null,    // Map<cellHash, fill-order response> | null when no puzzle open
     fillOrderLoading: false,  // true while fill-order suggestions are loading
     gridStructureChanged: false, // true after Grid-mode edits until user returns to Puzzle mode
     puzzleThemeSpec: null,       // int[] | null — theme word lengths entered at puzzle creation
