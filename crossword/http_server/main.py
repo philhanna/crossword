@@ -2,6 +2,8 @@
 HTTP Server main entry point - registers all routes and starts the server.
 """
 
+import logging
+
 from crossword.http_server.server import create_server, start_server
 from crossword.wiring import make_app
 
@@ -54,6 +56,9 @@ from crossword.http_server.import_handlers import (
     handle_import_puzzle_from_xd,
     handle_import_puzzle_from_puz,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def register_routes(router):
@@ -128,17 +133,17 @@ def run_http_server(config=None):
         config: Configuration dict. Required keys: 'dbfile', 'host', 'port'.
                 If None, loaded from the platform default config path.
     """
-    print(f"Initializing app...")
+    logger.info("Initializing app")
     app_container = make_app(config)
 
     host = app_container.config["host"]
     port = int(app_container.config["port"])
 
-    print(f"Creating HTTP server...")
+    logger.info("Creating HTTP server")
     server, router = create_server(port=port, host=host)
 
-    print(f"Registering routes...")
+    logger.info("Registering routes")
     register_routes(router)
 
-    print(f"Starting HTTP server on http://{host}:{port}")
+    logger.info("Prepared HTTP server on http://%s:%s", host, port)
     start_server(server, router, app_container, host=host, port=port)

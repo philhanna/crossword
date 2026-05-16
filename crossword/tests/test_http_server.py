@@ -2,11 +2,13 @@
 Unit tests for HTTP server - router and request handler.
 """
 
-import pytest
 import json
 from unittest.mock import Mock, patch, MagicMock
-from crossword.http_server.server import Route, Router, RequestHandler, create_server
-from crossword.http_server.main import register_routes
+
+import pytest
+
+from crossword.http_server.server import Route, Router, RequestHandler, create_server, start_server
+from crossword.http_server.main import register_routes, run_http_server
 from crossword.http_server.puzzle_handlers import (
     _puzzle_response,
     handle_create_puzzle,
@@ -185,6 +187,16 @@ class TestRequestHandler:
 
         handler.send_response.assert_called_once_with(404)
 
+    def test_log_message_uses_logger(self, caplog):
+        """Request logging is emitted through the configured logger."""
+        handler = Mock(spec=RequestHandler)
+        handler.address_string.return_value = "127.0.0.1"
+
+        with caplog.at_level("INFO"):
+            RequestHandler.log_message(handler, '"%s" %s %s', "GET / HTTP/1.1", "200", "123")
+
+        assert '127.0.0.1 - "GET / HTTP/1.1" 200 123' in caplog.text
+
 
 class TestCreateServer:
     """Tests for create_server function"""
@@ -218,6 +230,43 @@ class TestCreateServer:
 
         assert server.server_address[1] == 8080
         assert server.server_address[0] == "0.0.0.0"
+
+
+class TestServerLogging:
+    """Tests for server lifecycle logging."""
+
+    def test_start_server_logs_with_logger(self, caplog):
+        server = Mock()
+        router = Mock()
+        router.routes = [Mock(), Mock()]
+        app_container = Mock()
+        server.serve_forever.side_effect = KeyboardInterrupt
+
+        with caplog.at_level("DEBUG"):
+            start_server(server, router, app_container, host="127.0.0.1", port=5000)
+
+        assert "Starting HTTP server on http://127.0.0.1:5000" in caplog.text
+        assert "Registered routes: 2" in caplog.text
+        assert "Shutting down server" in caplog.text
+        server.shutdown.assert_called_once()
+
+    def test_run_http_server_uses_logger_not_print(self):
+        config = {"host": "127.0.0.1", "port": 5000}
+        app_container = Mock()
+        app_container.config = config
+        server = Mock()
+        router = Mock()
+
+        with patch("crossword.http_server.main.make_app", return_value=app_container), \
+             patch("crossword.http_server.main.create_server", return_value=(server, router)), \
+             patch("crossword.http_server.main.start_server") as start_server_mock, \
+             patch("builtins.print") as print_mock:
+            run_http_server(config)
+
+        print_mock.assert_not_called()
+        start_server_mock.assert_called_once_with(
+            server, router, app_container, host="127.0.0.1", port=5000
+        )
 
 
 class TestRequestParsing:

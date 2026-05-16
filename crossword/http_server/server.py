@@ -2,6 +2,7 @@
 HTTP Server - custom request handler with regex-based router.
 """
 
+import logging
 import re
 import json
 from http.server import BaseHTTPRequestHandler
@@ -9,6 +10,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from io import BytesIO
 
 CURRENT_USER = {"id": 1}
+logger = logging.getLogger(__name__)
 
 
 class Route:
@@ -183,8 +185,8 @@ class RequestHandler(BaseHTTPRequestHandler):
         self._send_json({"error": message}, status=status)
 
     def log_message(self, format, *args):
-        """Suppress default request logging"""
-        pass
+        """Route request logging through the configured logger."""
+        logger.info("%s - %s", self.address_string(), format % args)
 
 
 def create_server(port: int = 8000, host: str = "127.0.0.1"):
@@ -225,11 +227,11 @@ def start_server(server, router, app_container, host: str = "127.0.0.1", port: i
     # Attach app to request handler
     RequestHandler.app = app_container
 
-    print(f"Starting HTTP server on http://{host}:{port}")
-    print(f"Registered routes: {len(router.routes)}")
+    logger.info("Starting HTTP server on http://%s:%s", host, port)
+    logger.debug("Registered routes: %s", len(router.routes))
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down server...")
+        logger.info("Shutting down server")
         server.shutdown()
