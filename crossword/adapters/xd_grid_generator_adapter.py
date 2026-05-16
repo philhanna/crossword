@@ -6,12 +6,17 @@ from collections import Counter
 from crossword.domain.grid import Grid
 from crossword.ports.grid_generator_port import GridGeneratorPort
 
+_XD_SIZES = {15, 21}
+
 
 class XdGridGeneratorAdapter(GridGeneratorPort):
     def __init__(self, xdfile: str):
         self.xdfile = xdfile
+        self._random = None  # lazy-init fallback
 
     def generate(self, n: int, spec: list[int] | None = None) -> Grid:
+        if n not in _XD_SIZES:
+            return self._random_fallback().generate(n, spec)
         with sqlite3.connect(self.xdfile) as conn:
             conn.row_factory = sqlite3.Row
             if spec:
@@ -87,3 +92,9 @@ class XdGridGeneratorAdapter(GridGeneratorPort):
         )
         params = join_params + [n] + forbidden_params
         return conn.execute(sql, params).fetchone()
+
+    def _random_fallback(self):
+        if self._random is None:
+            from crossword.adapters.random_grid_generator_adapter import RandomGridGeneratorAdapter
+            self._random = RandomGridGeneratorAdapter()
+        return self._random
