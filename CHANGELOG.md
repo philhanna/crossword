@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.13.1] - 2026-05-15
+
+### Added
+
+- Add solved PDF export (filled-in grid + clues)
+
+### Changed
+
+- Cache fill-order results by grid cell letters
+- Drop 'Across-Lite' prefix from text export file name
+- Remove PostgreSQL support from clear_work_files.py; show modified date
+
 ## [4.13.0] - 2026-05-15
 
 ### Added
