@@ -1,9 +1,11 @@
 """
-Clear working-copy rows from the puzzles table.
+Clear working-copy and new-puzzle rows from the puzzles table.
 
 Working copies are rows whose name starts with '__wc__'. They are created
 when a puzzle is opened for editing and should be cleaned up on close, but
 can accumulate if the app is killed or crashes.
+
+New-puzzle rows start with '__new__' and are similarly temporary.
 
 Usage:
     python3 tools/clear_work_files.py [--dry-run]
@@ -20,6 +22,8 @@ from crossword import init_config
 
 
 WC_PREFIX = "__wc__"
+NEW_PREFIX = "__new__"
+TEMP_PREFIXES = (WC_PREFIX, NEW_PREFIX)
 
 
 def source_name(wc_name: str) -> str:
@@ -27,7 +31,10 @@ def source_name(wc_name: str) -> str:
 
     New format: __wc__<name>__<uuid8>  → returns <name>
     Old format: __wc__<uuid8>          → returns '(unknown)'
+    __new__ rows → returns '(new)'
     """
+    if wc_name.startswith(NEW_PREFIX):
+        return "(new)"
     body = wc_name[len(WC_PREFIX):]       # strip leading __wc__
     if "__" in body:
         return body.rsplit("__", 1)[0]    # everything before the last __<uuid8>
@@ -35,11 +42,13 @@ def source_name(wc_name: str) -> str:
 
 
 def find_work_files(conn) -> list[tuple[str, str]]:
-    """Return (name, modified) pairs for work-copy puzzles ordered by name."""
+    """Return (name, modified) pairs for work-copy and new-puzzle rows ordered by name."""
     cur = conn.cursor()
     cur.execute(
-        "SELECT puzzlename, modified FROM puzzles WHERE puzzlename LIKE ? ORDER BY puzzlename",
-        (WC_PREFIX + "%",)
+        "SELECT puzzlename, modified FROM puzzles"
+        " WHERE puzzlename LIKE ? OR puzzlename LIKE ?"
+        " ORDER BY puzzlename",
+        (WC_PREFIX + "%", NEW_PREFIX + "%")
     )
     return [(row[0], row[1] or "") for row in cur.fetchall()]
 
@@ -73,7 +82,7 @@ def main() -> None:
     try:
         puzzles = find_work_files(conn)
 
-        print(f"Work-copy puzzles ({len(puzzles)}):")
+        print(f"Temporary puzzles ({len(puzzles)}):")
         for name, modified in puzzles:
             print(f"  {name}  (source: {source_name(name)}, modified: {modified})")
         if not puzzles:
