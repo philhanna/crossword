@@ -227,6 +227,10 @@ function renderSidebarTabs(activeTab, tabs) {
 }
 
 async function switchSidebarTab(tab) {
+    if (tab === 'clues' && _isWordEditorOpen()) {
+        closeWordEditor();
+        return;
+    }
     if (tab === 'stats' && !AppState._statsData) {
         await do_puzzle_stats(); return;
     }
