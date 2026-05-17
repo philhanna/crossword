@@ -2,30 +2,18 @@
 
 ## Goal
 
-`GET /api/puzzles/<name>/fill-order` is the most expensive endpoint in the
-server.  Each call runs `FillPriorityAnalyzer.rank_slots()`, which queries the
-word list for candidate counts on every incomplete slot and performs a BFS
-connectivity check for each one.  The result only changes when the puzzle's
-word-text content or grid structure changes.  A server-side cache eliminates
-redundant computation when the client polls the endpoint repeatedly without
-editing the puzzle in between.
+`GET /api/puzzles/<name>/fill-order` is one of the more expensive puzzle
+endpoints. Each call runs `FillPriorityAnalyzer.rank_slots()`, which asks the
+word list for candidate counts across incomplete slots and performs
+connectivity analysis. The result only changes when the puzzle's grid layout
+or fill text changes, so repeated polling is a good fit for a server-side
+cache.
 
-## Current state
+## Implementation
 
-`PuzzleUseCases.get_fill_order()` (`puzzle_use_cases.py:435`) constructs a
-fresh `FillPriorityAnalyzer` and calls `rank_slots()` on every request.  There
-is a small per-call dict (`cache = {}` at `fill_priority.py:94`) that avoids
-re-querying identical crossing patterns within a single ranking pass, but
-nothing persists across HTTP requests.
-
-## Design
-
-### Where the cache lives
-
-Add a `_fill_order_cache: dict` attribute to `PuzzleUseCases.__init__`.  The
-use-case class already owns `get_fill_order()` and every mutating method that
-would invalidate it, so no other layer needs to change.  `AppContainer` and all
-HTTP handlers are untouched.
+The cache now lives in
+[`PuzzleUseCases`](../../crossword/use_cases/puzzle_use_cases.py) as
+`self._fill_order_cache: dict`, keyed by `(user_id, name)`.
 
 ```python
 def __init__(self, persistence, word_uc=None, grid_generator=None):
@@ -33,87 +21,64 @@ def __init__(self, persistence, word_uc=None, grid_generator=None):
     self.word_uc = word_uc
     self.grid_generator = grid_generator
     self._fill_order_cache: dict = {}
-```
 
-### Cache key
-
-`(user_id, name)` — a 2-tuple.  Each user's working copy of a puzzle is
-independent, so user isolation is required.
-
-### Read path
-
-In `get_fill_order()`, check the cache before computing:
-
-```python
-def get_fill_order(self, user_id, name, top_n=10):
-    key = (user_id, name)
-    if key in self._fill_order_cache:
-        return self._fill_order_cache[key]
-    puzzle = self.persistence.load_puzzle(user_id, name)
-    analyzer = FillPriorityAnalyzer(self.word_uc)
-    result = {
-        "fill_priority": [
-            { ... }
-            for item in analyzer.rank_slots(puzzle, top_n=top_n)
-        ]
-    }
-    self._fill_order_cache[key] = result
-    return result
-```
-
-### Invalidation helper
-
-```python
 def _invalidate_fill_order(self, user_id, name):
     self._fill_order_cache.pop((user_id, name), None)
 ```
 
-Call this at the start of every mutating method listed below, before the
-persistence or domain operation, so a failed operation leaves no stale entry.
+`get_fill_order()` checks the cache before loading the puzzle or constructing a
+new analyzer. On a miss, it computes the API payload, stores it under the
+`(user_id, name)` key, and returns it.
 
-## Invalidation table
+## Invalidation rules
 
-| Method | Reason |
-|---|---|
-| `toggle_black_cell` | Grid structure changes; word slots are added, removed, or resized |
-| `rotate_grid` | All slots change position and direction |
-| `generate_grid` | Entire grid layout replaced |
-| `undo_grid` | Grid structure reverted |
-| `redo_grid` | Grid structure reapplied |
-| `switch_to_puzzle_mode` | Word slots are rebuilt from the current grid |
-| `set_cell_letter` | One or more word patterns change |
-| `set_word_clue` (when `text` is provided) | Word text changes; invalidate only when `text is not None` |
-| `undo_puzzle` | A word-text change is reverted |
-| `redo_puzzle` | A word-text change is reapplied |
-| `rename_puzzle` | The old cache key becomes orphaned; drop it |
-| `delete_puzzle` | Same — drop the key to avoid unbounded growth |
+The use-case layer owns both cache reads and all puzzle mutations that can
+change fill-order analysis, so invalidation stays local to
+`puzzle_use_cases.py`.
 
-### Methods that do NOT invalidate
+These methods invalidate the cache before mutating or deleting puzzle state:
 
 | Method | Reason |
 |---|---|
+| `delete_puzzle` | Removes the entry and avoids orphaned cache growth |
+| `rename_puzzle` | Drops the old `(user_id, old_name)` key |
+| `switch_to_puzzle_mode` | Rebuilds puzzle-mode word structures from the grid |
+| `toggle_black_cell` | Changes slot boundaries and crossings |
+| `rotate_grid` | Repositions and reshapes all slots |
+| `generate_grid` | Replaces the grid layout entirely |
+| `undo_grid` | Reverts a grid edit that may alter slot structure |
+| `redo_grid` | Reapplies a grid edit that may alter slot structure |
+| `set_cell_letter` | Changes one or more crossing patterns |
+| `set_word_clue` when `text is not None` | Changes the stored fill text |
+| `undo_puzzle` | Reverts a fill-text edit |
+| `redo_puzzle` | Reapplies a fill-text edit |
+
+These methods intentionally do not invalidate:
+
+| Method | Reason |
+|---|---|
+| `create_puzzle` | No prior cache entry exists |
+| `copy_puzzle` | Source entry remains valid; copy starts cold |
 | `set_puzzle_title` | Title is not part of fill analysis |
-| `set_word_clue` (clue only, no `text`) | Clue text does not affect word patterns or candidate counts |
-| `switch_to_grid_mode` | Only changes the mode flag; word content is unchanged |
-| `copy_puzzle` | Source entry remains valid; new name starts with no cache entry |
-| `create_puzzle` | New puzzle; no existing cache entry to invalidate |
+| `set_word_clue` with clue-only updates | Clue text does not affect patterns or candidate counts |
+| `switch_to_grid_mode` | Only flips editing mode; puzzle content is unchanged |
 
-## Files changed
+## Behavior notes
 
-| File | Change |
-|---|---|
-| `crossword/use_cases/puzzle_use_cases.py` | Add `_fill_order_cache` in `__init__`; add `_invalidate_fill_order()`; update `get_fill_order()` to check cache; call `_invalidate_fill_order()` in the ten methods listed above |
+- The cached value is the final API-shaped dict, not raw analyzer objects.
+- The cache is process-local and in-memory; restarting the server clears it.
+- `top_n` is not part of the cache key today, so callers should continue using
+  the endpoint's standard access pattern rather than mixing multiple limits for
+  the same puzzle in one process.
 
-No other files need to change.
+## Tests
 
-## Testing
+Coverage lives in
+[`crossword/tests/test_puzzle_use_cases.py`](../../crossword/tests/test_puzzle_use_cases.py):
 
-Add a test in `crossword/tests/test_puzzle_use_cases.py` that:
-
-1. Calls `get_fill_order()` twice without any edit between calls and asserts
-   that `FillPriorityAnalyzer.rank_slots` is only called once (mock or spy on
-   the analyzer).
-2. Calls `set_cell_letter()` between two `get_fill_order()` calls and asserts
-   that `rank_slots` is called both times (cache was invalidated).
-3. Calls `set_word_clue()` with a clue only (no `text`) and asserts the cache
-   is not invalidated.
+1. `test_get_fill_order_cached_on_second_call` verifies repeated reads reuse
+   the cached result.
+2. `test_get_fill_order_invalidated_by_set_cell_letter` verifies a fill edit
+   forces recomputation.
+3. `test_get_fill_order_not_invalidated_by_clue_only_set_word_clue` verifies
+   clue-only updates keep the cached result.
