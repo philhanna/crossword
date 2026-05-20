@@ -68,6 +68,8 @@ class TestPortSignatures:
         required_methods = [
             "export_puzzle_to_acrosslite",
             "export_puzzle_to_xml",
+            "export_puzzle_to_solver_pdf",
+            "export_puzzle_to_solved_pdf",
             "export_puzzle_to_nytimes",
         ]
         for method_name in required_methods:

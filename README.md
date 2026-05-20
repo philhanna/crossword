@@ -66,6 +66,7 @@ Available from anywhere via the **Export** menu:
 | Crossword Compiler (.xml) | XML export |
 | New York Times (.pdf) | NYT submission PDF |
 | Solver PDF (.pdf) | Empty grid plus compact clue list for solving/printing |
+| Solved PDF (.pdf) | Filled-in grid plus clue list for answer-key printing |
 
 ### Working copy pattern
 All edits target an invisible working copy (`__wc__<uuid>`). Choosing **Save** commits

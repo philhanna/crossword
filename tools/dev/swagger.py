@@ -818,6 +818,20 @@ SPEC = {
             },
         },
 
+        "/api/export/puzzles/{name}/solved-pdf": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["export"],
+                "summary": "Export puzzle to solved PDF (filled-in grid + clues)",
+                "responses": {
+                    "200": {"description": "PDF file",
+                            "content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
         "/api/export/puzzles/{name}/acrosslite": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "get": {

@@ -71,8 +71,9 @@ Modules: `export_handlers.py`
 |--------|------|---------|
 | GET | `/api/export/puzzles/{name}/acrosslite` | [handle_export_puzzle_to_acrosslite](../../crossword/http_server/export_handlers.py#L37) |
 | GET | `/api/export/puzzles/{name}/xml` | [handle_export_puzzle_to_xml](../../crossword/http_server/export_handlers.py#L68) |
-| GET | `/api/export/puzzles/{name}/nytimes` | [handle_export_puzzle_to_nytimes](../../crossword/http_server/export_handlers.py#L223) |
+| GET | `/api/export/puzzles/{name}/nytimes` | [handle_export_puzzle_to_nytimes](../../crossword/http_server/export_handlers.py#L255) |
 | GET | `/api/export/puzzles/{name}/json` | [handle_export_puzzle_to_json](../../crossword/http_server/export_handlers.py#L99) |
-| GET | `/api/export/puzzles/{name}/solver-pdf` | [handle_export_puzzle_to_solver_pdf](../../crossword/http_server/export_handlers.py#L130) |
-| GET | `/api/export/puzzles/{param}/puz` | [handle_export_puzzle_to_puz](../../crossword/http_server/export_handlers.py#L161) |
-| GET | `/api/export/puzzles/{param}/xd` | [handle_export_puzzle_to_xd](../../crossword/http_server/export_handlers.py#L192) |
+| GET | `/api/export/puzzles/{name}/solver-pdf` | [handle_export_puzzle_to_solver_pdf](../../crossword/http_server/export_handlers.py#L131) |
+| GET | `/api/export/puzzles/{name}/solved-pdf` | [handle_export_puzzle_to_solved_pdf](../../crossword/http_server/export_handlers.py#L161) |
+| GET | `/api/export/puzzles/{name}/puz` | [handle_export_puzzle_to_puz](../../crossword/http_server/export_handlers.py#L193) |
+| GET | `/api/export/puzzles/{name}/xd` | [handle_export_puzzle_to_xd](../../crossword/http_server/export_handlers.py#L224) |

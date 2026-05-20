@@ -1140,9 +1140,9 @@ async function do_puzzle_delete() {
 // ---------------------------------------------------------------------------
 
 async function _downloadExport(name, format) {
-    const endpointMap = { puz: 'acrosslite', puzbin: 'puz', xd: 'xd', xml: 'xml', nyt: 'nytimes', solver: 'solver-pdf' };
-    const filenameMap = { puz: `${name}.txt`, puzbin: `${name}.puz`, xd: `${name}.xd`, xml: `${name}.xml`, nyt: `nytimes-${name}.pdf`, solver: `${name}-solver.pdf` };
-    const labelMap  = { puz: 'Across Lite', puzbin: '.puz Binary', xd: 'xword xd', xml: 'Crossword Compiler XML', nyt: 'New York Times', solver: 'Solver PDF' };
+    const endpointMap = { puz: 'acrosslite', puzbin: 'puz', xd: 'xd', xml: 'xml', nyt: 'nytimes', solver: 'solver-pdf', solved: 'solved-pdf' };
+    const filenameMap = { puz: `${name}.txt`, puzbin: `${name}.puz`, xd: `${name}.xd`, xml: `${name}.xml`, nyt: `nytimes-${name}.pdf`, solver: `${name}-solver.pdf`, solved: `${name}-solved.pdf` };
+    const labelMap  = { puz: 'Across Lite', puzbin: '.puz Binary', xd: 'xword xd', xml: 'Crossword Compiler XML', nyt: 'New York Times', solver: 'Solver PDF', solved: 'Solved PDF' };
     const endpoint = endpointMap[format];
     const filename = filenameMap[format];
     try {

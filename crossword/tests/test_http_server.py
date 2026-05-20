@@ -307,6 +307,7 @@ class TestMergedPuzzleRoutes:
         assert router.get_handler("POST", "/api/puzzles/demo/grid/rotate") is not None
         assert router.get_handler("POST", "/api/puzzles/demo/grid/undo") is not None
         assert router.get_handler("POST", "/api/puzzles/demo/grid/redo") is not None
+        assert router.get_handler("GET", "/api/export/puzzles/demo/solved-pdf") is not None
 
 
 class TestMergedPuzzleHandlers:
