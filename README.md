@@ -23,6 +23,18 @@ A web-based application for creating and editing crossword puzzles.
 See installation and setup instructions at
 [Installation](https://github.com/philhanna/crossword/wiki/Installation)
 
+For a quick local sample setup, copy [`samples/config.yaml`](/home/saspeh/dev/python/crossword/samples/config.yaml)
+to your user config location:
+
+- Linux/macOS: `~/.config/crossword/config.yaml`
+- Windows: `%APPDATA%\crossword\config.yaml`
+
+The sample config is prewired to the bundled sample files:
+
+- `dbfile: samples/crossword.db`
+- `xdfile: samples/sample_grids.db`
+- `word_file: samples/words.txt`
+
 ## Configuration
 
 See [Configuration](https://github.com/philhanna/crossword/wiki/Configuration) in the wiki.
@@ -30,6 +42,11 @@ See [Configuration](https://github.com/philhanna/crossword/wiki/Configuration) i
 ## Running the server
 
 See [Running the Server](https://github.com/philhanna/crossword/wiki/Running-The-Server) in the wiki.
+
+From the repository root you can also start the app directly with:
+
+- Windows: `run_server.bat`
+- Any platform with Python on `PATH`: `python -m crossword.http_server`
 
 ## Using the application
 
