@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.13.2] - 2026-05-21
+
+### Added
+
+- Bundle sample grids and xd-puzzles.db database
+- Expose solved PDF export in menu
+
+### Changed
+
+- Point sample config at bundled databases and word list
+- Update README with sample config quick-start and direct server run commands
+- Combine new puzzle prompts into one dialog
+- Honor configured server log level
+- Refresh fill-order cache documentation
+- Clear `__new__` entries as well as `__work__` in clear_work_files
+- Fall back to random generator for non-standard puzzle sizes
+
+### Fixed
+
+- Close word editor before showing clues tab
+
 ## [4.13.1] - 2026-05-15
 
 ### Added
