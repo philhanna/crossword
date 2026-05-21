@@ -17,7 +17,7 @@ dbfile: samples/crossword.db
 xdfile: samples/sample_grids.db
 
 # word_file: fully qualified path to the ASCII word list file
-word_file: /path/to/words.txt
+word_file: samples/words.txt
 
 # log_level: one of CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 log_level: INFO
