@@ -1,5 +1,4 @@
 # crossword.tests.adapters.test_export_adapter
-import json
 import pytest
 from unittest.mock import patch
 
@@ -7,7 +6,6 @@ from crossword import Grid, Puzzle, Word
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
-from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.ports.export_port import ExportError
 
 
@@ -193,59 +191,3 @@ class TestNYTimesExportAdapter:
                 adapter._html_to_pdf(html)
 
 
-class TestJsonExportAdapter:
-    @pytest.fixture
-    def adapter(self):
-        return JsonExportAdapter()
-
-    def test_returns_string(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_json(puzzle)
-        assert isinstance(result, str)
-
-    def test_valid_json(self, adapter, puzzle):
-        result = adapter.export_puzzle_to_json(puzzle)
-        doc = json.loads(result)
-        assert isinstance(doc, dict)
-
-    def test_has_required_keys(self, adapter, puzzle):
-        doc = json.loads(adapter.export_puzzle_to_json(puzzle))
-        for key in ("title", "size", "grid", "across", "down"):
-            assert key in doc, f"Missing key: {key}"
-
-    def test_title(self, adapter, puzzle):
-        doc = json.loads(adapter.export_puzzle_to_json(puzzle))
-        assert doc["title"] == "Test Puzzle"
-
-    def test_size(self, adapter, puzzle):
-        doc = json.loads(adapter.export_puzzle_to_json(puzzle))
-        assert doc["size"] == puzzle.n
-
-    def test_grid_row_count(self, adapter, puzzle):
-        doc = json.loads(adapter.export_puzzle_to_json(puzzle))
-        assert len(doc["grid"]) == puzzle.n
-
-    def test_grid_black_cell(self, adapter, puzzle):
-        doc = json.loads(adapter.export_puzzle_to_json(puzzle))
-        # (2,2) is black → row index 1, col index 1 should be '.'
-        assert doc["grid"][1][1] == "."
-
-    def test_across_words_present(self, adapter, puzzle):
-        doc = json.loads(adapter.export_puzzle_to_json(puzzle))
-        assert len(doc["across"]) == len(puzzle.across_words)
-
-    def test_down_words_present(self, adapter, puzzle):
-        doc = json.loads(adapter.export_puzzle_to_json(puzzle))
-        assert len(doc["down"]) == len(puzzle.down_words)
-
-    def test_word_has_seq_text_clue(self, adapter, puzzle):
-        doc = json.loads(adapter.export_puzzle_to_json(puzzle))
-        for word in doc["across"] + doc["down"]:
-            assert "seq" in word
-            assert "text" in word
-            assert "clue" in word
-
-    def test_export_error_wraps_exception(self, adapter, puzzle):
-        with patch.object(adapter, '_build_json', side_effect=RuntimeError("boom")):
-            from crossword.ports.export_port import ExportError
-            with pytest.raises(ExportError, match="JSON export failed"):
-                adapter.export_puzzle_to_json(puzzle)

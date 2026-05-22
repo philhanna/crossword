@@ -96,25 +96,6 @@ class ExportPort(ABC):
         pass
 
     @abstractmethod
-    def export_puzzle_to_json(self, puzzle: Puzzle) -> str:
-        """
-        Export a puzzle to JSON format.
-
-        Produces a clean JSON document with title, grid size, cell layout,
-        and all across/down words with text and clues.
-
-        Args:
-            puzzle: Puzzle object to export
-
-        Returns:
-            JSON as a string
-
-        Raises:
-            ExportError: If export fails
-        """
-        pass
-
-    @abstractmethod
     def export_puzzle_to_solver_pdf(self, puzzle: Puzzle) -> bytes:
         """
         Export a puzzle to a compact solver PDF.

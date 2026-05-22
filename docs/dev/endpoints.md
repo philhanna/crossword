@@ -71,12 +71,11 @@ Modules: `export_handlers.py`
 
 | Method | Path | Handler |
 |--------|------|---------|
-| GET | `/api/export/puzzles/{name}/acrosslite` | [handle_export_puzzle_to_acrosslite](../../crossword/http_server/export_handlers.py#L39) |
-| GET | `/api/export/puzzles/{name}/xml` | [handle_export_puzzle_to_xml](../../crossword/http_server/export_handlers.py#L70) |
-| GET | `/api/export/puzzles/{name}/nytimes` | [handle_export_puzzle_to_nytimes](../../crossword/http_server/export_handlers.py#L287) |
-| GET | `/api/export/puzzles/{name}/json` | [handle_export_puzzle_to_json](../../crossword/http_server/export_handlers.py#L101) |
-| GET | `/api/export/puzzles/{name}/solver-pdf` | [handle_export_puzzle_to_solver_pdf](../../crossword/http_server/export_handlers.py#L132) |
-| GET | `/api/export/puzzles/{name}/solved-pdf` | [handle_export_puzzle_to_solved_pdf](../../crossword/http_server/export_handlers.py#L163) |
-| GET | `/api/export/puzzles/{param}/puz` | [handle_export_puzzle_to_puz](../../crossword/http_server/export_handlers.py#L194) |
-| GET | `/api/export/puzzles/{param}/xd` | [handle_export_puzzle_to_xd](../../crossword/http_server/export_handlers.py#L225) |
-| GET | `/api/export/puzzles/{param}/ipuz` | [handle_export_puzzle_to_ipuz](../../crossword/http_server/export_handlers.py#L256) |
+| GET | `/api/export/puzzles/{name}/acrosslite` | [handle_export_puzzle_to_acrosslite](../../crossword/http_server/export_handlers.py#L38) |
+| GET | `/api/export/puzzles/{name}/xml` | [handle_export_puzzle_to_xml](../../crossword/http_server/export_handlers.py#L69) |
+| GET | `/api/export/puzzles/{name}/nytimes` | [handle_export_puzzle_to_nytimes](../../crossword/http_server/export_handlers.py#L255) |
+| GET | `/api/export/puzzles/{name}/solver-pdf` | [handle_export_puzzle_to_solver_pdf](../../crossword/http_server/export_handlers.py#L100) |
+| GET | `/api/export/puzzles/{name}/solved-pdf` | [handle_export_puzzle_to_solved_pdf](../../crossword/http_server/export_handlers.py#L131) |
+| GET | `/api/export/puzzles/{param}/puz` | [handle_export_puzzle_to_puz](../../crossword/http_server/export_handlers.py#L162) |
+| GET | `/api/export/puzzles/{param}/xd` | [handle_export_puzzle_to_xd](../../crossword/http_server/export_handlers.py#L193) |
+| GET | `/api/export/puzzles/{param}/ipuz` | [handle_export_puzzle_to_ipuz](../../crossword/http_server/export_handlers.py#L224) |

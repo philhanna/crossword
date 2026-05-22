@@ -5,7 +5,6 @@ Public interface:
   export_puzzle_to_acrosslite(user_id, name) -> bytes
   export_puzzle_to_xml(user_id, name) -> str
   export_puzzle_to_nytimes(user_id, name) -> bytes
-  export_puzzle_to_json(user_id, name) -> str
   export_puzzle_to_solver_pdf(user_id, name) -> bytes
   export_puzzle_to_solved_pdf(user_id, name) -> bytes
   export_puzzle_to_puz(user_id, name) -> bytes
@@ -17,7 +16,6 @@ from crossword.ports.persistence_port import PersistencePort
 from crossword.adapters.acrosslite_export_adapter import AcrossLiteExportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
-from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
 from crossword.adapters.solved_pdf_export_adapter import SolvedPdfExportAdapter
 from crossword.adapters.puz_export_adapter import PuzExportAdapter
@@ -38,7 +36,6 @@ class ExportUseCases:
         acrosslite: AcrossLiteExportAdapter,
         xml: CcxmlExportAdapter,
         nytimes: NYTimesExportAdapter,
-        json_adapter: JsonExportAdapter,
         solver_pdf: SolverPdfExportAdapter = None,
         solved_pdf: SolvedPdfExportAdapter = None,
         puz_adapter: PuzExportAdapter = None,
@@ -49,7 +46,6 @@ class ExportUseCases:
         self._acrosslite = acrosslite
         self._xml = xml
         self._nytimes = nytimes
-        self._json = json_adapter
         self._solver_pdf = solver_pdf or SolverPdfExportAdapter()
         self._solved_pdf = solved_pdf or SolvedPdfExportAdapter()
         self._puz = puz_adapter or PuzExportAdapter()
@@ -67,10 +63,6 @@ class ExportUseCases:
     def export_puzzle_to_nytimes(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)
         return self._nytimes.export_puzzle_to_nytimes(puzzle)
-
-    def export_puzzle_to_json(self, user_id: int, name: str) -> str:
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        return self._json.export_puzzle_to_json(puzzle)
 
     def export_puzzle_to_solver_pdf(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)

@@ -790,20 +790,6 @@ SPEC = {
         # ================================================================
         # EXPORT
         # ================================================================
-        "/api/export/puzzles/{name}/json": {
-            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
-            "get": {
-                "tags": ["export"],
-                "summary": "Export puzzle to JSON (file download)",
-                "responses": {
-                    "200": {"description": "JSON file",
-                            "content": {"application/json": {"schema": {"type": "string", "format": "binary"}}}},
-                    "404": {"description": "Not found",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                },
-            },
-        },
-
         "/api/export/puzzles/{name}/solver-pdf": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "get": {

@@ -17,7 +17,6 @@ from crossword.adapters.ipuz_import_adapter import IpuzImportAdapter
 from crossword.adapters.ccxml_import_adapter import CcxmlImportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
-from crossword.adapters.json_export_adapter import JsonExportAdapter
 from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
 from crossword.adapters.solved_pdf_export_adapter import SolvedPdfExportAdapter
 from crossword.adapters.puz_export_adapter import PuzExportAdapter
@@ -111,7 +110,6 @@ def make_app(config=None):
         author_address=config.get("author_address"),
         author_email=config.get("author_email"),
     )
-    json_adapter = JsonExportAdapter()
     solver_pdf_adapter = SolverPdfExportAdapter()
     solved_pdf_adapter = SolvedPdfExportAdapter()
     puz_export_adapter = PuzExportAdapter(author_name=config.get("author_name"))
@@ -133,7 +131,7 @@ def make_app(config=None):
 
     word_uc = WordUseCases(word_adapter)
     puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc, grid_generator=grid_generator)
-    export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter, solver_pdf_adapter, solved_pdf_adapter, puz_export_adapter, xd_export_adapter, ipuz_export_adapter)
+    export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, solver_pdf_adapter, solved_pdf_adapter, puz_export_adapter, xd_export_adapter, ipuz_export_adapter)
     import_uc = ImportUseCases(persistence, acrosslite_import_adapter, xd_import_adapter, puz_import_adapter, ipuz_import_adapter, ccxml_import_adapter)
 
     if not config.get("host"):
