@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.14.0] - 2026-05-22
+
+### Added
+
+- ipuz export format
+- ipuz import format
+- Crossword Compiler XML import format
+
+### Changed
+
+- Updated composer logo image
+- Sanitize HTML entities and inline tags in imported clue text across all
+  text-based import adapters (AcrossLite, xd, ipuz, Crossword Compiler XML)
+
 ## [4.13.2] - 2026-05-21
 
 ### Added
