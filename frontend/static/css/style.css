@@ -21,7 +21,7 @@
   --c-error:        #9b1c1c;
 
   /* Layout */
-  --app-bar-h:    64px;
+  --app-bar-h:    72px;
   --action-bar-h: 44px;
 
   /* Spacing */
@@ -86,7 +86,7 @@ h3 { font-size: 1.05rem; }
 }
 
 .app-bar-logo {
-  height: 44px;
+  height: 64px;
   width: auto;
   opacity: 0.85;
 }
