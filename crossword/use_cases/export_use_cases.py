@@ -10,6 +10,7 @@ Public interface:
   export_puzzle_to_solved_pdf(user_id, name) -> bytes
   export_puzzle_to_puz(user_id, name) -> bytes
   export_puzzle_to_xd(user_id, name) -> str
+  export_puzzle_to_ipuz(user_id, name) -> str
 """
 
 from crossword.ports.persistence_port import PersistencePort
@@ -21,6 +22,7 @@ from crossword.adapters.solver_pdf_export_adapter import SolverPdfExportAdapter
 from crossword.adapters.solved_pdf_export_adapter import SolvedPdfExportAdapter
 from crossword.adapters.puz_export_adapter import PuzExportAdapter
 from crossword.adapters.xd_export_adapter import XdExportAdapter
+from crossword.adapters.ipuz_export_adapter import IpuzExportAdapter
 
 
 class ExportUseCases:
@@ -41,6 +43,7 @@ class ExportUseCases:
         solved_pdf: SolvedPdfExportAdapter = None,
         puz_adapter: PuzExportAdapter = None,
         xd_adapter: XdExportAdapter = None,
+        ipuz_adapter: IpuzExportAdapter = None,
     ):
         self.persistence = persistence
         self._acrosslite = acrosslite
@@ -51,6 +54,7 @@ class ExportUseCases:
         self._solved_pdf = solved_pdf or SolvedPdfExportAdapter()
         self._puz = puz_adapter or PuzExportAdapter()
         self._xd = xd_adapter or XdExportAdapter()
+        self._ipuz = ipuz_adapter or IpuzExportAdapter()
 
     def export_puzzle_to_acrosslite(self, user_id: int, name: str) -> bytes:
         puzzle = self.persistence.load_puzzle(user_id, name)
@@ -83,3 +87,7 @@ class ExportUseCases:
     def export_puzzle_to_xd(self, user_id: int, name: str) -> str:
         puzzle = self.persistence.load_puzzle(user_id, name)
         return self._xd.export_puzzle_to_xd(puzzle)
+
+    def export_puzzle_to_ipuz(self, user_id: int, name: str) -> str:
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        return self._ipuz.export_puzzle_to_ipuz(puzzle)

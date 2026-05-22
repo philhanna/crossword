@@ -153,6 +153,26 @@ class ExportPort(ABC):
         pass
 
     @abstractmethod
+    def export_puzzle_to_ipuz(self, puzzle: Puzzle) -> str:
+        """
+        Export a puzzle to ipuz format.
+
+        Produces a JSON document conforming to the ipuz crossword spec
+        (http://www.ipuz.org/), including puzzle grid, solution grid, and
+        across/down clues.
+
+        Args:
+            puzzle: Puzzle object to export
+
+        Returns:
+            ipuz JSON as a string
+
+        Raises:
+            ExportError: If export fails
+        """
+        pass
+
+    @abstractmethod
     def export_puzzle_to_nytimes(self, puzzle: Puzzle) -> bytes:
         """
         Export a puzzle in NYTimes submission format (PDF).
