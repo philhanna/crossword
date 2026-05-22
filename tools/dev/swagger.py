@@ -905,6 +905,130 @@ SPEC = {
                 },
             },
         },
+
+        "/api/import/xd": {
+            "post": {
+                "tags": ["import"],
+                "summary": "Import a puzzle from .xd text format",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "required": ["name", "content"],
+                        "properties": {
+                            "name":    {"type": "string", "example": "mypuzzle",
+                                        "description": "Name to save the imported puzzle under"},
+                            "content": {"type": "string",
+                                        "description": ".xd file contents"},
+                        },
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Imported",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                },
+                            }}}},
+                    "400": {"description": "Validation or parse error",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/import/puz": {
+            "post": {
+                "tags": ["import"],
+                "summary": "Import a puzzle from AcrossLite binary (.puz) format",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "required": ["name", "content_b64"],
+                        "properties": {
+                            "name":        {"type": "string", "example": "mypuzzle",
+                                            "description": "Name to save the imported puzzle under"},
+                            "content_b64": {"type": "string",
+                                            "description": "Base64-encoded raw bytes of the .puz file"},
+                        },
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Imported",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                },
+                            }}}},
+                    "400": {"description": "Validation or parse error",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/import/ipuz": {
+            "post": {
+                "tags": ["import"],
+                "summary": "Import a puzzle from ipuz JSON format",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "required": ["name", "content"],
+                        "properties": {
+                            "name":    {"type": "string", "example": "mypuzzle",
+                                        "description": "Name to save the imported puzzle under"},
+                            "content": {"type": "string",
+                                        "description": "ipuz file contents (JSON, optionally wrapped in ipuz(...))"},
+                        },
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Imported",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                },
+                            }}}},
+                    "400": {"description": "Validation or parse error",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/import/ccxml": {
+            "post": {
+                "tags": ["import"],
+                "summary": "Import a puzzle from Crossword Compiler XML format",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "required": ["name", "content"],
+                        "properties": {
+                            "name":    {"type": "string", "example": "mypuzzle",
+                                        "description": "Name to save the imported puzzle under"},
+                            "content": {"type": "string",
+                                        "description": "Crossword Compiler XML file contents"},
+                        },
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Imported",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {"type": "string"},
+                                },
+                            }}}},
+                    "400": {"description": "Validation or parse error",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
     },
 }
 
