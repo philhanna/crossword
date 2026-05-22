@@ -149,6 +149,22 @@ class TestCcxmlImportSuccess:
         _, _, puzzle = adapter.import_puzzle('\n'.join(parts))
         assert puzzle.is_black_cell(3, 3)
 
+    def test_html_entities_in_clues_unescaped(self, adapter):
+        xml = _build_sample_xml().replace(
+            "Across clue 1",
+            "Say &amp;quot;hi&amp;quot; &amp;mdash; quick",
+        )
+        _, _, puzzle = adapter.import_puzzle(xml)
+        assert puzzle.get_clue(1, Word.ACROSS) == 'Say "hi" — quick'
+
+    def test_html_tags_in_clues_stripped(self, adapter):
+        xml = _build_sample_xml().replace(
+            "Across clue 1",
+            "see &lt;i&gt;this&lt;/i&gt;",
+        )
+        _, _, puzzle = adapter.import_puzzle(xml)
+        assert puzzle.get_clue(1, Word.ACROSS) == "see this"
+
     def test_no_namespace_accepted(self, adapter):
         """Files lacking the xmlns declarations should still parse."""
         xml = """<?xml version="1.0"?>

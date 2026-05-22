@@ -1,7 +1,11 @@
 # crossword.adapters.ipuz_import_adapter
+import html
 import json
+import re
 
 from crossword import Grid, Puzzle
+
+_TAG_RE = re.compile(r"</?[a-zA-Z][^>]*>")
 from crossword.domain.word import Word
 from crossword.ports.import_port import ImportPort, PuzzleImportError
 
@@ -172,14 +176,19 @@ class IpuzImportAdapter(ImportPort):
     def _parse_clue_entry(self, entry) -> tuple[int | None, str]:
         if isinstance(entry, list) and len(entry) >= 2:
             try:
-                return int(entry[0]), str(entry[1])
+                return int(entry[0]), _clean_clue(entry[1])
             except (TypeError, ValueError):
                 return None, ""
         if isinstance(entry, dict):
             num = entry.get("number")
             clue = entry.get("clue", "")
             try:
-                return int(num), str(clue)
+                return int(num), _clean_clue(clue)
             except (TypeError, ValueError):
                 return None, ""
         return None, ""
+
+
+def _clean_clue(value) -> str:
+    text = html.unescape(str(value))
+    return _TAG_RE.sub("", text)

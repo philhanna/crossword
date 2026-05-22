@@ -1,5 +1,10 @@
 # crossword.adapters.acrosslite_import_adapter
+import html
+import re
+
 from crossword import Grid, Puzzle
+
+_TAG_RE = re.compile(r"</?[a-zA-Z][^>]*>")
 from crossword.domain.word import Word
 from crossword.ports.import_port import ImportPort, PuzzleImportError
 
@@ -55,8 +60,8 @@ class AcrossLiteImportAdapter(ImportPort):
                     puzzle.set_cell(r, c, ch.upper())
 
         # Map clues to words
-        across_clues = [line.strip() for line in sections.get("ACROSS", [])]
-        down_clues = [line.strip() for line in sections.get("DOWN", [])]
+        across_clues = [_TAG_RE.sub("", html.unescape(line.strip())) for line in sections.get("ACROSS", [])]
+        down_clues = [_TAG_RE.sub("", html.unescape(line.strip())) for line in sections.get("DOWN", [])]
 
         across_seqs = sorted(puzzle.across_words.keys())
         down_seqs = sorted(puzzle.down_words.keys())

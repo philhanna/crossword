@@ -1,6 +1,9 @@
+import html
 import re
 
 from crossword import Grid, Puzzle
+
+_TAG_RE = re.compile(r"</?[a-zA-Z][^>]*>")
 from crossword.domain.word import Word
 from crossword.ports.import_port import ImportPort, PuzzleImportError
 
@@ -123,6 +126,8 @@ class XdImportAdapter(ImportPort):
             direction, seq, clue_text = m.group(1), int(m.group(2)), m.group(3)
             clue_text = clue_text.split(' ~ ')[0].strip()
             clue_text = re.sub(r'\{[/*_-](.*?)[/*_-]\}', r'\1', clue_text)
+            clue_text = html.unescape(clue_text)
+            clue_text = _TAG_RE.sub("", clue_text)
             if direction == 'A':
                 across[seq] = clue_text
             else:

@@ -136,6 +136,30 @@ class TestIpuzImportSuccess:
         _, _, puzzle = adapter.import_puzzle(json.dumps(doc))
         assert puzzle.is_black_cell(2, 2)
 
+    def test_html_entities_in_clues_unescaped(self, adapter):
+        doc = _sample_doc()
+        doc["clues"]["Across"] = [
+            [1, "Say &quot;hi&quot; &mdash; quick"],
+            [4, "AT&amp;T"],
+            [5, "5 &lt; 6"],
+        ]
+        _, _, puzzle = adapter.import_puzzle(json.dumps(doc))
+        assert puzzle.get_clue(1, Word.ACROSS) == 'Say "hi" — quick'
+        assert puzzle.get_clue(4, Word.ACROSS) == "AT&T"
+        assert puzzle.get_clue(5, Word.ACROSS) == "5 < 6"
+
+    def test_html_tags_in_clues_stripped(self, adapter):
+        doc = _sample_doc()
+        doc["clues"]["Across"] = [
+            [1, "see <i>this</i>"],
+            [4, "a <b>bold</b> claim"],
+            [5, "&lt;i&gt;escaped&lt;/i&gt; tag"],
+        ]
+        _, _, puzzle = adapter.import_puzzle(json.dumps(doc))
+        assert puzzle.get_clue(1, Word.ACROSS) == "see this"
+        assert puzzle.get_clue(4, Word.ACROSS) == "a bold claim"
+        assert puzzle.get_clue(5, Word.ACROSS) == "escaped tag"
+
     def test_callback_wrapped_ipuz_accepted(self, adapter):
         content = "ipuz(" + json.dumps(_sample_doc()) + ")"
         title, _, _ = adapter.import_puzzle(content)

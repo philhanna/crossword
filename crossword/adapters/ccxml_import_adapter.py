@@ -1,5 +1,9 @@
 # crossword.adapters.ccxml_import_adapter
+import html
+import re
 import xml.etree.ElementTree as ET
+
+_TAG_RE = re.compile(r"</?[a-zA-Z][^>]*>")
 
 from crossword import Grid, Puzzle
 from crossword.domain.word import Word
@@ -174,7 +178,8 @@ class CcxmlImportAdapter(ImportPort):
                 seq = self._clue_number(clue)
                 if seq is None:
                     continue
-                bucket[seq] = self._text_of(clue).strip()
+                text = html.unescape(self._text_of(clue))
+                bucket[seq] = _TAG_RE.sub("", text).strip()
         return across, down
 
     def _clues_direction(self, clues_elem: ET.Element, word_directions: dict) -> str | None:
