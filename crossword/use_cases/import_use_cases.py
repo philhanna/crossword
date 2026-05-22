@@ -7,11 +7,13 @@ Public interface:
   import_puzzle_from_xd(user_id, name, content) -> None
   import_puzzle_from_puz(user_id, name, content) -> None
   import_puzzle_from_ipuz(user_id, name, content) -> None
+  import_puzzle_from_ccxml(user_id, name, content) -> None
 """
 
 import logging
 
 from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
+from crossword.adapters.ccxml_import_adapter import CcxmlImportAdapter
 from crossword.adapters.ipuz_import_adapter import IpuzImportAdapter
 from crossword.adapters.puz_import_adapter import PuzImportAdapter
 from crossword.adapters.xd_import_adapter import XdImportAdapter
@@ -30,12 +32,14 @@ class ImportUseCases:
 
     def __init__(self, persistence: PersistencePort, acrosslite_adapter: AcrossLiteImportAdapter,
                  xd_adapter: XdImportAdapter = None, puz_adapter: PuzImportAdapter = None,
-                 ipuz_adapter: IpuzImportAdapter = None):
+                 ipuz_adapter: IpuzImportAdapter = None,
+                 ccxml_adapter: CcxmlImportAdapter = None):
         self.persistence = persistence
         self.acrosslite_adapter = acrosslite_adapter
         self.xd_adapter = xd_adapter or XdImportAdapter()
         self.puz_adapter = puz_adapter or PuzImportAdapter()
         self.ipuz_adapter = ipuz_adapter or IpuzImportAdapter()
+        self.ccxml_adapter = ccxml_adapter or CcxmlImportAdapter()
 
     def import_puzzle_from_acrosslite(self, user_id: int, name: str, content: str) -> None:
         """
@@ -93,6 +97,25 @@ class ImportUseCases:
         _title, _author, puzzle = self.ipuz_adapter.import_puzzle(content)
         self.persistence.save_puzzle(user_id, name, puzzle)
         logger.info("Imported puzzle %r from ipuz format for user %s", name, user_id)
+
+    def import_puzzle_from_ccxml(self, user_id: int, name: str, content: str) -> None:
+        """
+        Parse Crossword Compiler XML content, create a Puzzle, and save it.
+
+        Args:
+            user_id: The user who will own this puzzle
+            name: Name/identifier for the new puzzle
+            content: Full text content of a Crossword Compiler .xml file
+
+        Raises:
+            ValueError: If name is invalid or already exists
+            PuzzleImportError: If the content cannot be parsed
+            PersistenceError: If saving fails
+        """
+        validate_new_public_name("puzzle", name, self.persistence.list_puzzles(user_id))
+        _title, _author, puzzle = self.ccxml_adapter.import_puzzle(content)
+        self.persistence.save_puzzle(user_id, name, puzzle)
+        logger.info("Imported puzzle %r from Crossword Compiler XML format for user %s", name, user_id)
 
     def import_puzzle_from_puz(self, user_id: int, name: str, content: bytes) -> None:
         """

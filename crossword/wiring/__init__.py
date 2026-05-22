@@ -14,6 +14,7 @@ from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
 from crossword.adapters.puz_import_adapter import PuzImportAdapter
 from crossword.adapters.xd_import_adapter import XdImportAdapter
 from crossword.adapters.ipuz_import_adapter import IpuzImportAdapter
+from crossword.adapters.ccxml_import_adapter import CcxmlImportAdapter
 from crossword.adapters.ccxml_export_adapter import CcxmlExportAdapter
 from crossword.adapters.nytimes_export_adapter import NYTimesExportAdapter
 from crossword.adapters.json_export_adapter import JsonExportAdapter
@@ -125,6 +126,7 @@ def make_app(config=None):
     xd_import_adapter = XdImportAdapter()
     puz_import_adapter = PuzImportAdapter()
     ipuz_import_adapter = IpuzImportAdapter()
+    ccxml_import_adapter = CcxmlImportAdapter()
 
     xdfile = config.get("xdfile")
     grid_generator = XdGridGeneratorAdapter(xdfile) if xdfile else RandomGridGeneratorAdapter()
@@ -132,7 +134,7 @@ def make_app(config=None):
     word_uc = WordUseCases(word_adapter)
     puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc, grid_generator=grid_generator)
     export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, json_adapter, solver_pdf_adapter, solved_pdf_adapter, puz_export_adapter, xd_export_adapter, ipuz_export_adapter)
-    import_uc = ImportUseCases(persistence, acrosslite_import_adapter, xd_import_adapter, puz_import_adapter, ipuz_import_adapter)
+    import_uc = ImportUseCases(persistence, acrosslite_import_adapter, xd_import_adapter, puz_import_adapter, ipuz_import_adapter, ccxml_import_adapter)
 
     if not config.get("host"):
         raise ValueError("config['host'] is required")

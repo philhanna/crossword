@@ -58,6 +58,7 @@ from crossword.http_server.import_handlers import (
     handle_import_puzzle_from_xd,
     handle_import_puzzle_from_puz,
     handle_import_puzzle_from_ipuz,
+    handle_import_puzzle_from_ccxml,
 )
 
 
@@ -129,6 +130,7 @@ def register_routes(router):
     router.add_route("POST", r"^/api/import/puz$", handle_import_puzzle_from_puz)
     router.add_route("POST", r"^/api/import/xd$", handle_import_puzzle_from_xd)
     router.add_route("POST", r"^/api/import/ipuz$", handle_import_puzzle_from_ipuz)
+    router.add_route("POST", r"^/api/import/ccxml$", handle_import_puzzle_from_ccxml)
 
 
 def run_http_server(config=None):

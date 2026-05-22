@@ -812,6 +812,45 @@ async function do_puzzle_import_ipuz() {
     fileInput.click();
 }
 
+async function do_puzzle_import_ccxml() {
+    const fileInput = document.getElementById('ccxml-file-input');
+    fileInput.value = '';
+    fileInput.onchange = async (evt) => {
+        const file = evt.target.files[0];
+        if (!file) return;
+
+        const defaultName = file.name.replace(/\.xml$/i, '');
+
+        inputBox(
+            'Import Crossword Compiler puzzle',
+            '<b>Puzzle name:</b>',
+            defaultName,
+            async (name) => {
+                name = name.trim();
+                if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
+
+                let content;
+                try {
+                    content = await file.text();
+                } catch (e) {
+                    showMessageLine('Could not read file', 'error', 0);
+                    return;
+                }
+
+                try {
+                    const data = await apiFetch('POST', '/api/import/ccxml', { name, content });
+                    if (data.error) { showMessageLine(`Import failed: ${data.error}`, 'error', 0); return; }
+                    showMessageLine(`Imported "${name}" — opening…`, 'notice');
+                    await _openPuzzleInEditor(name);
+                } catch (e) {
+                    showMessageLine(`Import error: ${e.message || e}`, 'error', 0);
+                }
+            }
+        );
+    };
+    fileInput.click();
+}
+
 async function do_puzzle_import_puz() {
     const fileInput = document.getElementById('puz-file-input');
     fileInput.value = '';
