@@ -812,6 +812,39 @@ body.editor-open #workspace {
   margin: var(--sp-4) 0 var(--sp-2) 0;
 }
 
+.stats-subtabs {
+  display: flex;
+  border-bottom: 2px solid var(--c-border);
+  margin: var(--sp-4) 0 var(--sp-3) 0;
+}
+
+.stats-subtab {
+  flex: 1;
+  padding: var(--sp-2) var(--sp-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  text-align: center;
+}
+
+.stats-subtab:hover {
+  color: var(--c-text);
+  background: #eceaf4;
+}
+
+.stats-subtab-active {
+  color: var(--c-primary);
+  border-bottom-color: var(--c-primary);
+  font-weight: 600;
+}
+
 .stat-error-box {
   background: #fff5f5;
   border: 1px solid #fecaca;

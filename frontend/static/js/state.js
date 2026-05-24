@@ -27,4 +27,5 @@ const AppState = {
     fillOrderLoading: false,  // true while fill-order suggestions are loading
     gridStructureChanged: false, // true after Grid-mode edits until user returns to Puzzle mode
     puzzleThemeSpec: null,       // int[] | null — theme word lengths entered at puzzle creation
+    statsSubTab: 'slots',        // active stats sub-tab: 'slots' | 'words'
 };

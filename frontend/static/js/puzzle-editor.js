@@ -330,17 +330,16 @@ function renderStatsPanel(stats) {
     const errorsHtml = allErrors.length === 0 ? '' :
         `<div class="stat-error-box">${allErrors.map(e => escapeHtml(e)).join('<br>')}</div>`;
 
-    const wlRows = Object.entries(stats.wordlengths)
-        .sort((a, b) => Number(b[0]) - Number(a[0]))
-        .map(([len, entry]) => {
-            const across = (entry.alist || []).join(', ') || '—';
-            const down   = (entry.dlist || []).join(', ') || '—';
-            return `<tr>
-  <td>${len}</td>
-  <td style="word-break:break-word">${escapeHtml(across)}</td>
-  <td style="word-break:break-word">${escapeHtml(down)}</td>
-</tr>`;
-        }).join('');
+    const subTab = AppState.statsSubTab === 'words' ? 'words' : 'slots';
+    const tabsHtml = `
+<div class="stats-subtabs">
+  <button class="stats-subtab${subTab === 'slots' ? ' stats-subtab-active' : ''}" onclick="setStatsSubTab('slots')">Slots</button>
+  <button class="stats-subtab${subTab === 'words' ? ' stats-subtab-active' : ''}" onclick="setStatsSubTab('words')">Words</button>
+</div>`;
+
+    const bodyHtml = subTab === 'words'
+        ? _renderStatsWordsTable()
+        : _renderStatsSlotsTable(stats);
 
     return `
 <div class="stat-cards">
@@ -362,11 +361,62 @@ function renderStatsPanel(stats) {
   </div>
 </div>
 ${errorsHtml}
-<div class="stat-section-title">Word lengths</div>
+${tabsHtml}
+${bodyHtml}`;
+}
+
+function _renderStatsSlotsTable(stats) {
+    const wlRows = Object.entries(stats.wordlengths)
+        .sort((a, b) => Number(b[0]) - Number(a[0]))
+        .map(([len, entry]) => {
+            const across = (entry.alist || []).join(', ') || '—';
+            const down   = (entry.dlist || []).join(', ') || '—';
+            return `<tr>
+  <td>${len}</td>
+  <td style="word-break:break-word">${escapeHtml(across)}</td>
+  <td style="word-break:break-word">${escapeHtml(down)}</td>
+</tr>`;
+        }).join('');
+
+    return `
 <table class="stat-table">
   <tr><th>Length</th><th>Across</th><th>Down</th></tr>
   ${wlRows}
 </table>`;
+}
+
+function _renderStatsWordsTable() {
+    const words = (AppState.puzzleData && AppState.puzzleData.puzzle && AppState.puzzleData.puzzle.words) || [];
+    const byLen = new Map();
+    for (const w of words) {
+        const text = (w.answer || '').trim();
+        if (!text || text.includes(' ')) continue;
+        const len = text.length;
+        if (len < 3) continue;
+        if (!byLen.has(len)) byLen.set(len, []);
+        byLen.get(len).push(text);
+    }
+    const lengths = [...byLen.keys()].sort((a, b) => b - a);
+    if (lengths.length === 0) {
+        return `<div class="sidebar-empty">No completed words yet.</div>`;
+    }
+    const rows = lengths.map(len => {
+        const list = byLen.get(len).slice().sort().join(', ');
+        return `<tr>
+  <td>${len}</td>
+  <td style="word-break:break-word">${escapeHtml(list)}</td>
+</tr>`;
+    }).join('');
+    return `
+<table class="stat-table">
+  <tr><th>Length</th><th>Words</th></tr>
+  ${rows}
+</table>`;
+}
+
+function setStatsSubTab(tab) {
+    AppState.statsSubTab = (tab === 'words') ? 'words' : 'slots';
+    renderPuzzleEditorRhs();
 }
 
 function _cellLettersKey(puzzleData) {
