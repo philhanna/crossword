@@ -845,6 +845,16 @@ body.editor-open #workspace {
   font-weight: 600;
 }
 
+.stat-word-link {
+  color: var(--c-primary);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.stat-word-link:hover {
+  text-decoration: underline;
+}
+
 .stat-error-box {
   background: #fff5f5;
   border: 1px solid #fecaca;

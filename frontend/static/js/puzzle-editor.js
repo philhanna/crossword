@@ -394,17 +394,20 @@ function _renderStatsWordsTable() {
         const len = text.length;
         if (len < 3) continue;
         if (!byLen.has(len)) byLen.set(len, []);
-        byLen.get(len).push(text);
+        byLen.get(len).push({ text, seq: w.seq, direction: w.direction });
     }
     const lengths = [...byLen.keys()].sort((a, b) => b - a);
     if (lengths.length === 0) {
         return `<div class="sidebar-empty">No completed words yet.</div>`;
     }
     const rows = lengths.map(len => {
-        const list = byLen.get(len).slice().sort().join(', ');
+        const items = byLen.get(len).slice().sort((a, b) => a.text.localeCompare(b.text));
+        const links = items.map(item =>
+            `<a class="stat-word-link" onclick="_openWordFromStats(${item.seq},'${item.direction}');return false;">${escapeHtml(item.text)}</a>`
+        ).join(', ');
         return `<tr>
   <td>${len}</td>
-  <td style="word-break:break-word">${escapeHtml(list)}</td>
+  <td style="word-break:break-word">${links}</td>
 </tr>`;
     }).join('');
     return `
@@ -412,6 +415,14 @@ function _renderStatsWordsTable() {
   <tr><th>Length</th><th>Words</th></tr>
   ${rows}
 </table>`;
+}
+
+async function _openWordFromStats(seq, dir) {
+    const result = await completeSelectedWordEdit({
+        nextSelection: { seq, direction: dir }
+    });
+    if (result.error) return;
+    await openWordEditor(seq, dir);
 }
 
 function setStatsSubTab(tab) {
