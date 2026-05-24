@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [4.15.0] - 2026-05-24
+
+### Added
+
+- Slots/Words sub-tabs in the puzzle Stats panel
+- Words tab lists all completed words (length ≥ 3) grouped by length
+- Clicking a word in the Words tab opens the word editor for that slot
+
+### Changed
+
+- Removed old docs and tools
+
 ## [4.14.0] - 2026-05-22
 
 ### Added
