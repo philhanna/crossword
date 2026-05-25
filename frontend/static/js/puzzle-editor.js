@@ -389,7 +389,7 @@ function _renderStatsWordsTable() {
     const words = (AppState.puzzleData && AppState.puzzleData.puzzle && AppState.puzzleData.puzzle.words) || [];
     const byLen = new Map();
     for (const w of words) {
-        const text = (w.answer || '').trim();
+        const text = w.answer || '';
         if (!text || text.includes(' ')) continue;
         const len = text.length;
         if (len < 3) continue;
