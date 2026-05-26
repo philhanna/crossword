@@ -964,7 +964,7 @@ async function do_puzzle_new() {
                 },
                 {
                     name: 'spec',
-                    label: '<b>Theme word lengths</b> <em>(optional — palindromic comma-separated integers, e.g. 7,5,5,7)</em>',
+                    label: '<b>Theme word lengths</b> <em>(optional — palindromic integers with any delimiter, e.g. 7,5,5,7)</em>',
                     value: specVal,
                     required: false,
                 },
@@ -1002,7 +1002,7 @@ async function do_puzzle_new() {
                 const trimmedSpec = enteredSpec.trim();
                 let spec = null;
                 if (trimmedSpec) {
-                    const parts = trimmedSpec.split(',').map(s => s.trim());
+                    const parts = trimmedSpec.split(/[^0-9]+/).filter(s => s.length > 0);
                     const nums = parts.map(Number);
                     if (nums.some(x => isNaN(x) || !Number.isInteger(x) || x < 1)) {
                         messageBox(
