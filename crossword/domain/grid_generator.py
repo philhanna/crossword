@@ -55,7 +55,7 @@ class GridGenerator:
         """Initialise the generator and pre-compute legal row templates.
 
         Args:
-            n: Grid size (must be an odd integer >= 9).
+            n: Grid size (must be an odd integer >= 5).
             seed: Optional random seed for reproducible output.
             min_black_pct: Minimum fraction of cells that must be BLACK
             max_black_pct: Maximum fraction of cells that may be BLACK
@@ -68,8 +68,8 @@ class GridGenerator:
             RuntimeError: If no legal row templates can be generated for
                 the given n (should not occur in practice).
         """
-        if n < 9 or n % 2 == 0:
-            raise ValueError("n must be an odd integer >= 9")
+        if n < 5 or n % 2 == 0:
+            raise ValueError("n must be an odd integer >= 5")
         if not (0.0 <= min_black_pct <= max_black_pct <= 1.0):
             raise ValueError("require 0.0 <= min_black_pct <= max_black_pct <= 1.0")
 
