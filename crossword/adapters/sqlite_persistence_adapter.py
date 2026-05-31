@@ -40,7 +40,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         cursor = self.conn.cursor()
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
-            (table_name,)
+            (table_name,),
         )
         return cursor.fetchone() is not None
 
@@ -70,13 +70,6 @@ class SQLitePersistenceAdapter(PersistencePort):
                     jsonstr         TEXT NOT NULL
                 )
             """)
-
-            if self._table_exists("puzzles") and not self._column_exists("puzzles", "last_mode"):
-                cursor.execute("""
-                    ALTER TABLE puzzles
-                    ADD COLUMN last_mode TEXT NOT NULL DEFAULT 'puzzle'
-                        CHECK (last_mode IN ('grid', 'puzzle'))
-                """)
 
             cursor.execute("""
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_userid_puzzlename
@@ -118,7 +111,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             # Check if puzzle already exists
             cursor.execute(
                 "SELECT id FROM puzzles WHERE userid = ? AND puzzlename = ?",
-                (user_id, name)
+                (user_id, name),
             )
             existing = cursor.fetchone()
 
@@ -128,14 +121,14 @@ class SQLitePersistenceAdapter(PersistencePort):
                     """UPDATE puzzles
                        SET jsonstr = ?, modified = ?, last_mode = ?
                        WHERE userid = ? AND puzzlename = ?""",
-                    (jsonstr, now, last_mode, user_id, name)
+                    (jsonstr, now, last_mode, user_id, name),
                 )
             else:
                 # Insert new puzzle
                 cursor.execute(
                     """INSERT INTO puzzles (userid, puzzlename, created, modified, last_mode, jsonstr)
                        VALUES (?, ?, ?, ?, ?, ?)""",
-                    (user_id, name, now, now, last_mode, jsonstr)
+                    (user_id, name, now, now, last_mode, jsonstr),
                 )
 
             self.conn.commit()
@@ -148,14 +141,14 @@ class SQLitePersistenceAdapter(PersistencePort):
             cursor = self.conn.cursor()
             cursor.execute(
                 "SELECT jsonstr, last_mode FROM puzzles WHERE userid = ? AND puzzlename = ?",
-                (user_id, name)
+                (user_id, name),
             )
             row = cursor.fetchone()
 
             if not row:
                 raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
 
-            puzzle = Puzzle.from_json(row['jsonstr'])
+            puzzle = Puzzle.from_json(row["jsonstr"])
             row_last_mode = row["last_mode"] if "last_mode" in row.keys() else None
             if row_last_mode:
                 puzzle.last_mode = row_last_mode
@@ -173,7 +166,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             cursor = self.conn.cursor()
             cursor.execute(
                 "DELETE FROM puzzles WHERE userid = ? AND puzzlename = ?",
-                (user_id, name)
+                (user_id, name),
             )
 
             if cursor.rowcount == 0:
@@ -193,16 +186,16 @@ class SQLitePersistenceAdapter(PersistencePort):
                 """SELECT puzzlename FROM puzzles
                    WHERE userid = ?
                    ORDER BY modified DESC""",
-                (user_id,)
+                (user_id,),
             )
             rows = cursor.fetchall()
-            return [row['puzzlename'] for row in rows if row['puzzlename'] is not None]
+            return [row["puzzlename"] for row in rows if row["puzzlename"] is not None]
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to list puzzles: {e}")
 
     def close(self) -> None:
         """Close the database connection."""
-        if hasattr(self, 'conn') and self.conn:
+        if hasattr(self, "conn") and self.conn:
             self.conn.close()
 
     def __del__(self):
