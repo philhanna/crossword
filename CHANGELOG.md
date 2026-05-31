@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [Unreleased]
+
+### Added
+
+- `grid_generator` CLI
+
+### Changed
+
+- Reordered import and export menu formats
+- Lowered minimum grid size to 5
+- Accept any delimiter in New Puzzle theme word lengths
+- Exclude partially-filled words from the Stats Words table
+
 ## [4.15.0] - 2026-05-24
 
 ### Added
