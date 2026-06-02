@@ -1042,6 +1042,9 @@ async function do_puzzle_new() {
             AppState.puzzleOriginalName = internalName;
             AppState.puzzleThemeSpec    = spec;
             renderPuzzleEditorLhs();
+            if (spec) {
+                await do_puzzle_generate_grid();
+            }
         } catch (e) { showMessageLine('Error creating puzzle', 'error', 0); }
     }
 
