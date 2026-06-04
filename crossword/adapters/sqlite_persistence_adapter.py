@@ -71,6 +71,13 @@ class SQLitePersistenceAdapter(PersistencePort):
                 )
             """)
 
+            # Migrate legacy puzzles tables that predate the last_mode column.
+            if not self._column_exists("puzzles", "last_mode"):
+                cursor.execute(
+                    "ALTER TABLE puzzles ADD COLUMN last_mode TEXT NOT NULL "
+                    "DEFAULT 'puzzle'"
+                )
+
             cursor.execute("""
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_userid_puzzlename
                 ON puzzles(userid, puzzlename)

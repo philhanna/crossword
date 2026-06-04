@@ -73,7 +73,7 @@ class TestGridGeneratorInit:
 
     def test_too_small_raises(self):
         with pytest.raises(ValueError):
-            GridGenerator(7)
+            GridGenerator(3)
 
     def test_invalid_black_pct_raises(self):
         with pytest.raises(ValueError):

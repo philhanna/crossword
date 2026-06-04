@@ -63,7 +63,7 @@ class GridGenerator:
                 before giving up.
 
         Raises:
-            ValueError: If n is even or < 9, or if the black-percentage
+            ValueError: If n is even or < 5, or if the black-percentage
                 bounds are invalid.
             RuntimeError: If no legal row templates can be generated for
                 the given n (should not occur in practice).
