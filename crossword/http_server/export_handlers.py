@@ -266,7 +266,10 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
         return {"error": "Missing puzzle name"}
     try:
         pdf_bytes = app.export_uc.export_puzzle_to_nytimes(current_user["id"], name)
-        _send_download(request_handler, pdf_bytes, "application/pdf", f"nytimes-{name}.pdf")
+        from crossword.adapters.settings_adapter import get_settings
+        author_name = get_settings().get("author_name", "").strip()
+        last_name = author_name.split()[-1] if author_name else "nytimes"
+        _send_download(request_handler, pdf_bytes, "application/pdf", f"{last_name}_{name}.pdf")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
