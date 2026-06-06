@@ -42,15 +42,6 @@ from crossword.use_cases._name_validation import validate_new_public_name, valid
 logger = logging.getLogger(__name__)
 
 
-class PuzzleReadOnlyError(Exception):
-    """Raised when an edit is attempted on a read-only puzzle state.
-
-    Read-only states (submitted/published/archived) must be reopened
-    (-> draft) before they can be edited again.
-    """
-    pass
-
-
 class PuzzleUseCases:
     """
     Orchestrates puzzle operations via the persistence port.
@@ -169,14 +160,7 @@ class PuzzleUseCases:
         return puzzle
 
     def _auto_set_state_on_save(self, user_id: int, name: str, puzzle: Puzzle) -> None:
-        """Advance a puzzle's state along the completion ladder after a save.
-
-        Read-only states are left untouched (defensive: they can't be open for
-        editing in the first place).
-        """
-        current = self.persistence.get_puzzle_state(user_id, name)
-        if current is not None and current["state"] in ps.READ_ONLY:
-            return
+        """Advance a puzzle's state along the completion ladder after a save."""
         computed = ps.detect_completion_state(puzzle)
         self.persistence.set_puzzle_state(user_id, name, computed)
 
@@ -281,15 +265,7 @@ class PuzzleUseCases:
 
         Raises:
             PersistenceError: If puzzle not found or save fails
-            PuzzleReadOnlyError: If the puzzle is in a read-only state and must
-                be reopened before editing
         """
-        current = self.persistence.get_puzzle_state(user_id, name)
-        if current is not None and current["state"] in ps.READ_ONLY:
-            raise PuzzleReadOnlyError(
-                f"Puzzle '{name}' is {current['state']} and is read-only; "
-                f"reopen it to edit."
-            )
         working_name = f"__wc__{name}__{uuid.uuid4().hex[:8]}"
         puzzle = self.persistence.load_puzzle(user_id, name)
         puzzle.grid_undo_stack = []

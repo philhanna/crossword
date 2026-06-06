@@ -24,11 +24,10 @@ current `state` plus its state-specific fields (`publisher`, `date_submitted`,
 kept.
 
 > **Resolved decisions** (see §11 for the full list):
-> `submitted`/`published`/`archived` are **read-only** (editing is
-> blocked until the user reopens the puzzle → `draft`); **rename** is refactored
-> to preserve the puzzle `id`; **publisher** is a **free-form
-> text field** and is **required** when moving to `submitted`, as are the
-> relevant dates.
+> any puzzle may be opened for editing regardless of state (there is no
+> read-only lock); **rename** is refactored to preserve the puzzle `id`;
+> **publisher** is a **free-form text field** and is **required** when moving to
+> `submitted`, as are the relevant dates.
 
 ---
 
@@ -171,34 +170,22 @@ Let `current` = the puzzle's current `state` column (or `None` for a name that
 doesn't exist yet), and `computed` = the ladder result above.
 
 1. **Create** (`create_puzzle`): set `state = draft`.
-2. **Save / Save As** (`copy_puzzle`):
-   - `current is None` (Save As to a brand-new name) → set `computed`.
-   - `current ∈ {submitted, published, archived}` → **no auto change**. In
-     practice this can't be reached, because those states are read-only and a
-     working copy can't have been opened (§ editing lock); the guard stays as a
-     defensive no-op.
-   - `current ∈ {draft, filled, finished}` → set `computed`. This allows forward
-     moves (draft→filled→finished) **and** backward moves (e.g. finished→filled
-     when a cell is later cleared), which reflects reality.
+2. **Save / Save As** (`copy_puzzle`): always set `computed`, regardless of the
+   current state. This allows forward moves (draft→filled→finished) **and**
+   backward moves (e.g. finished→filled when a cell is later cleared, or a saved
+   `submitted` puzzle dropping back onto the completion ladder), which reflects
+   reality.
 
 Each save simply overwrites the `state` column with the computed value; there is
 no history to keep meaningful, so no on-change guard is needed.
 
-### Editing lock for read-only states
+### No editing lock
 
-`submitted`, `published`, and `archived` are **read-only**. Editing is blocked at
-the single choke point where editing begins — `open_puzzle_for_editing()`:
-
-- If the puzzle's current state ∈ {`submitted`, `published`, `archived`}, the use
-  case **refuses to open a working copy** and signals the caller (e.g. raises a
-  domain error / returns a `read_only` flag). The HTTP handler maps this to a
-  `409`/`403` with a clear message.
-- To edit such a puzzle the user must first **Reopen** it from the dashboard,
-  which is just `set_puzzle_state(… , 'draft')`. After reopening, the normal
-  open/edit/save flow applies and auto-detection takes over again.
-
-Because every edit path requires `open_puzzle_for_editing()` first, locking at
-open is sufficient — no per-edit guards are needed.
+Any puzzle may be opened for editing regardless of its state —
+`open_puzzle_for_editing()` always creates a working copy. A subsequent Save
+recomputes the state from the puzzle's contents (§ "What happens on Save"), so a
+`submitted`/`published`/`archived` puzzle that is edited and saved is reclassified
+by the completion ladder.
 
 ### User-driven transitions
 
@@ -228,10 +215,6 @@ ALL_STATES = [DRAFT, FILLED, FINISHED, SUBMITTED, PUBLISHED, ARCHIVED]
 
 # states the auto-detector may assign, lowest → highest
 COMPLETION_LADDER = [DRAFT, FILLED, FINISHED]
-
-# read-only, user-owned states the auto-detector must not overwrite and that
-# block editing until the user reopens the puzzle
-READ_ONLY = {SUBMITTED, PUBLISHED, ARCHIVED}
 
 
 def detect_completion_state(puzzle) -> str:
@@ -317,10 +300,7 @@ Add a private helper and call it from the two hook points:
 ```python
 def _auto_set_state_on_save(self, user_id, name, puzzle):
     from crossword.domain import puzzle_state as ps
-    current = self.persistence.get_puzzle_state(user_id, name)
     computed = ps.detect_completion_state(puzzle)
-    if current is not None and current["state"] in ps.READ_ONLY:
-        return                       # defensive: read-only puzzles can't be open
     self.persistence.set_puzzle_state(user_id, name, computed)
 ```
 
@@ -331,8 +311,7 @@ def _auto_set_state_on_save(self, user_id, name, puzzle):
   after `save_puzzle`, call `_auto_set_state_on_save(user_id, new_name, puzzle)`.
   This covers both Save (dest = original name) and Save As (dest = new name).
 - **`open_puzzle_for_editing`** ([168-193](../../crossword/use_cases/puzzle_use_cases.py#L168-L193)):
-  before creating the working copy, read the current state; if it is in
-  `READ_ONLY`, raise a `PuzzleReadOnlyError` (new, caught by the handler).
+  always creates the working copy — no state check.
 - **`rename_puzzle`** ([151-166](../../crossword/use_cases/puzzle_use_cases.py#L151-L166)):
   replace the copy+delete body with a single call to the new
   `persistence.rename_puzzle(...)`. State is preserved automatically (same row).
@@ -367,10 +346,6 @@ Add to [puzzle_handlers.py](../../crossword/http_server/puzzle_handlers.py)
 - `PUT` body: `{ "state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06" }`
   (only the fields relevant to the target state). `publisher` is free-form text.
   Missing required fields → `400`.
-- `handle_open_puzzle_for_editing`
-  ([puzzle_handlers.py:226-253](../../crossword/http_server/puzzle_handlers.py#L226-L253))
-  must catch `PuzzleReadOnlyError` and return a `409`/`403` so the front-end can
-  prompt the user to Reopen.
 - All handlers extract `user_id = current_user["id"]` like the rest of the file.
 
 Document the new endpoints in [docs/dev/endpoints.md](endpoints.md) and the
@@ -390,12 +365,12 @@ A **Puzzle Dashboard** view is the natural home:
   as free-form text + submitted date), **Mark published** (prompt for
   date), **Archive**, and **Reopen** (→ draft). Each calls `PUT …/state`.
 - Filter/group by state (e.g. hide `archived` by default).
-- Puzzles in a read-only state (`submitted`/`published`/`archived`) show **Open**
-  as disabled; the user must **Reopen** first. If they try to open one anyway,
-  the `409`/`403` from the open endpoint drives a "Reopen to edit?" prompt.
+- Any puzzle can be opened for editing regardless of state. Editing a
+  `submitted`/`published`/`archived` puzzle and saving it reclassifies it via the
+  completion ladder, so the dashboard may warn before opening such a puzzle.
 
-`filled`/`finished` are shown but **read-only** in the UI — they are driven by
-Save. Publisher is entered as free-form text.
+`filled`/`finished` are shown but not directly editable in the UI — they are
+driven by Save. Publisher is entered as free-form text.
 
 This section is intentionally a sketch — finalize the layout before building.
 
@@ -478,12 +453,12 @@ import `SQLitePersistenceAdapter`.
   `rename_puzzle` preserves `id` + state and rejects a clashing name; delete
   removes the row (and its state).
 - **Use case:** `create_puzzle` → `draft`; `copy_puzzle` advances
-  draft→filled→finished and backward finished→filled; `open_puzzle_for_editing`
-  raises on read-only states; `set_puzzle_state` enforces required fields
-  (incl. non-empty free-form publisher on submit), and Reopen (→ draft) clears
-  the lock.
+  draft→filled→finished and backward finished→filled, and recomputes the state
+  regardless of the source state; `open_puzzle_for_editing` creates a working
+  copy for any state; `set_puzzle_state` enforces required fields (incl.
+  non-empty free-form publisher on submit), and Reopen (→ draft).
 - **HTTP:** the two new routes happy-path; bad-state and missing-required-field
-  rejection; open of a read-only puzzle returns `409`/`403`.
+  rejection.
 - **Migration:** writes a fresh DB without touching the source; refuses when the
   destination already exists; copies only real puzzles (preserving `id`), skips
   working copies and `NULL` names; sets each copied puzzle's `state` to its
@@ -494,9 +469,9 @@ import `SQLitePersistenceAdapter`.
 
 ## 11. Resolved decisions
 
-1. **Read-only terminal states.** `submitted`/`published`/`archived` block
-   editing; `open_puzzle_for_editing` refuses and the user must **Reopen**
-   (→ draft) first.
+1. **No editing lock.** Any puzzle may be opened for editing regardless of
+   state; `open_puzzle_for_editing` always creates a working copy, and Save
+   reclassifies the puzzle via the completion ladder.
 2. **Rename preserves state.** Rename is refactored to a true
    `UPDATE puzzles SET puzzlename = ?`, keeping the puzzle `id` and its state
    columns.
@@ -512,10 +487,8 @@ import `SQLitePersistenceAdapter`.
 2. Adapter: state columns in the `puzzles` `CREATE TABLE` (no `ALTER TABLE`),
    `set_puzzle_state` / `get_puzzle_state`, in-place `rename_puzzle` (+ tests).
 3. Port: declare the state methods and the new `rename_puzzle`.
-4. Use cases: auto-set state on `copy_puzzle`, read-only lock in
-   `open_puzzle_for_editing`, refactored `rename_puzzle`, `set_puzzle_state`
-   with free-form publisher field (+ tests).
+4. Use cases: auto-set state on `copy_puzzle`, refactored `rename_puzzle`,
+   `set_puzzle_state` with free-form publisher field (+ tests).
 5. Migration tool + dry-run (+ tests); run it against the dev DB.
-6. HTTP endpoints + read-only `409`/`403` on open + endpoints.md / Swagger
-   (+ tests).
+6. HTTP endpoints + endpoints.md / Swagger (+ tests).
 7. Front-end dashboard — design first, then build.

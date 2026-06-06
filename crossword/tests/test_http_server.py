@@ -20,7 +20,6 @@ from crossword.http_server.puzzle_handlers import (
     handle_set_puzzle_state,
     handle_open_puzzle_for_editing,
 )
-from crossword.use_cases.puzzle_use_cases import PuzzleReadOnlyError
 from crossword.tests import TestPuzzle
 
 
@@ -507,14 +506,3 @@ class TestPuzzleStateHandlers:
         assert response is None
         request_handler._send_json.assert_called_once()
         assert request_handler._send_json.call_args.kwargs["status"] == 400
-
-    def test_open_read_only_returns_409(self, request_handler, app):
-        app.puzzle_uc.open_puzzle_for_editing.side_effect = PuzzleReadOnlyError("read-only")
-        response = handle_open_puzzle_for_editing(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        assert response is None
-        request_handler._send_json.assert_called_once()
-        assert request_handler._send_json.call_args.kwargs["status"] == 409
-        assert request_handler._send_json.call_args.args[0]["read_only"] is True

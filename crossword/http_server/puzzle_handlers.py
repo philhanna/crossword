@@ -31,7 +31,6 @@ Routes:
 
 import logging
 from crossword.ports.persistence_port import PersistenceError
-from crossword.use_cases.puzzle_use_cases import PuzzleReadOnlyError
 
 logger = logging.getLogger(__name__)
 
@@ -247,11 +246,6 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"original_name": name, "working_name": working_name}
 
-    except PuzzleReadOnlyError as e:
-        logger.debug("  returning 409: %s", {"error": str(e)})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        request_handler._send_json({"error": str(e), "read_only": True}, status=409)
-        return None
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)

@@ -7,7 +7,7 @@ from unittest.mock import Mock
 from crossword import Grid, Puzzle
 from crossword.domain import puzzle_state as ps
 from crossword.tests import TestPuzzle
-from crossword.use_cases.puzzle_use_cases import PuzzleUseCases, PuzzleReadOnlyError
+from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.ports.persistence_port import PersistenceError
 
 
@@ -724,22 +724,22 @@ class TestPuzzleUseCasesAutoState:
         puzzle_uc.copy_puzzle(1, "src", "dest")
         mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FILLED)
 
-    def test_copy_does_not_overwrite_read_only_state(self, puzzle_uc, mock_persistence):
+    def test_copy_recomputes_state_regardless_of_source(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
         mock_persistence.get_puzzle_state.return_value = {"state": ps.SUBMITTED}
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_not_called()
+        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FINISHED)
 
 
-class TestPuzzleUseCasesOpenReadOnly:
-    """open_puzzle_for_editing refuses read-only states."""
+class TestPuzzleUseCasesOpen:
+    """open_puzzle_for_editing creates a working copy for any state."""
 
     @pytest.mark.parametrize("state", [ps.SUBMITTED, ps.PUBLISHED, ps.ARCHIVED])
-    def test_open_read_only_raises(self, puzzle_uc, mock_persistence, state):
+    def test_open_any_state_succeeds(self, puzzle_uc, mock_persistence, state):
         mock_persistence.get_puzzle_state.return_value = {"state": state}
-        with pytest.raises(PuzzleReadOnlyError):
-            puzzle_uc.open_puzzle_for_editing(1, "p")
-        mock_persistence.save_puzzle.assert_not_called()
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_atlantic_puzzle()
+        working_name = puzzle_uc.open_puzzle_for_editing(1, "p")
+        assert working_name.startswith("__wc__p__")
 
     @pytest.mark.parametrize("state", [ps.DRAFT, ps.FILLED, ps.FINISHED])
     def test_open_editable_state_succeeds(self, puzzle_uc, mock_persistence, state):

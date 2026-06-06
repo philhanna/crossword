@@ -82,6 +82,3 @@ class TestStateConstants:
 
     def test_completion_ladder(self):
         assert ps.COMPLETION_LADDER == [ps.DRAFT, ps.FILLED, ps.FINISHED]
-
-    def test_read_only(self):
-        assert ps.READ_ONLY == {ps.SUBMITTED, ps.PUBLISHED, ps.ARCHIVED}

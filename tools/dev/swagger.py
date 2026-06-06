@@ -328,8 +328,6 @@ SPEC = {
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WorkingCopySession"}}}},
                     "404": {"description": "Puzzle not found",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
-                    "409": {"description": "Puzzle is in a read-only state (submitted/published/archived); reopen to edit",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },
         },
