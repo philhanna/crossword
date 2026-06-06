@@ -24,8 +24,8 @@ change, so the full history is preserved.
 > **Resolved decisions** (see §11 for the full list): there is **no `onhold`
 > state**; `submitted`/`published`/`archived` are **read-only** (editing is
 > blocked until the user reopens the puzzle → `draft`); **rename** is refactored
-> to preserve the puzzle `id` and its history; **publisher** comes from a
-> config-driven list and is **required** when moving to `submitted`, as are the
+> to preserve the puzzle `id` and its history; **publisher** is a **free-form
+> text field** and is **required** when moving to `submitted`, as are the
 > relevant dates.
 
 ---
@@ -199,8 +199,8 @@ open is sufficient — no per-edit guards are needed.
 Set explicitly via the dashboard (§8): `submitted` (requires `publisher` +
 `date_submitted`), `published` (requires `date_published`), `archived`, and
 **Reopen** (→ `draft`). `set_puzzle_state()` validates the target state, enforces
-the required fields, validates `publisher` against the configured list, and
-records the row.
+the required fields, and records the row. `publisher` is a free-form text field
+(no value validation beyond being non-empty when required).
 
 ---
 
@@ -346,14 +346,11 @@ def set_puzzle_state(self, user_id, name, state, *,
                      date_published=None) -> dict:
     """Validate `state` ∈ ALL_STATES; enforce required fields per target state
     (publisher + date_submitted for 'submitted'; date_published for 'published');
-    validate publisher against the configured publisher list; record the row and
-    return the new current-state dict."""
-```
+    record the row and return the new current-state dict.
 
-> The configured publisher list (NYT, LAT, WSJ, DTH, …) is injected into
-> `PuzzleUseCases` (constructor arg, sourced from config) so the domain/use-case
-> layer doesn't read config directly — consistent with the existing wiring in
-> [wiring/__init__.py](../../crossword/wiring/__init__.py).
+    `publisher` is free-form text — required to be non-empty when moving to
+    'submitted', but otherwise unvalidated."""
+```
 
 ---
 
@@ -369,8 +366,8 @@ Add to [puzzle_handlers.py](../../crossword/http_server/puzzle_handlers.py)
 | `PUT` | `/api/puzzles/<name>/state` | `handle_set_puzzle_state` | User transition (incl. Reopen → draft) |
 
 - `PUT` body: `{ "state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06" }`
-  (only the fields relevant to the target state). Missing required fields → `400`;
-  unknown publisher → `400`.
+  (only the fields relevant to the target state). `publisher` is free-form text.
+  Missing required fields → `400`.
 - `handle_open_puzzle_for_editing`
   ([puzzle_handlers.py:226-253](../../crossword/http_server/puzzle_handlers.py#L226-L253))
   must catch `PuzzleReadOnlyError` and return a `409`/`403` so the front-end can
@@ -378,9 +375,7 @@ Add to [puzzle_handlers.py](../../crossword/http_server/puzzle_handlers.py)
 - All handlers extract `user_id = current_user["id"]` like the rest of the file.
 
 Document the new endpoints in [docs/dev/endpoints.md](endpoints.md) and the
-Swagger spec used by `tools/dev/swagger.py`. Add a `publishers` list to the
-config (e.g. `samples/config.yaml`) and surface it via a small read endpoint or
-the existing settings payload so the dashboard can populate its picker.
+Swagger spec used by `tools/dev/swagger.py`.
 
 ---
 
@@ -393,7 +388,7 @@ A **Puzzle Dashboard** view is the natural home:
   publisher · submitted · published**. Source: `list_puzzles` + per-puzzle
   `GET …/state` (or a future batched endpoint).
 - Per-row actions to set user-owned states: **Submit** (prompt for publisher
-  from the configured list + submitted date), **Mark published** (prompt for
+  as free-form text + submitted date), **Mark published** (prompt for
   date), **Archive**, and **Reopen** (→ draft). Each calls `PUT …/state`.
 - A **history** drawer per puzzle (`GET …/state/history`) showing the timeline.
 - Filter/group by state (e.g. hide `archived` by default).
@@ -402,8 +397,7 @@ A **Puzzle Dashboard** view is the natural home:
   the `409`/`403` from the open endpoint drives a "Reopen to edit?" prompt.
 
 `filled`/`finished` are shown but **read-only** in the UI — they are driven by
-Save. Publisher choices come from the config-driven list; the NYTimes export
-already implies a known-publisher concept (`nytimes_export_adapter`).
+Save. Publisher is entered as free-form text.
 
 This section is intentionally a sketch — finalize the layout before building.
 
@@ -443,8 +437,8 @@ This section is intentionally a sketch — finalize the layout before building.
   `id` + history and rejects a clashing name; delete removes history.
 - **Use case:** `create_puzzle` → one `draft` row; `copy_puzzle` advances
   draft→filled→finished and backward finished→filled; `open_puzzle_for_editing`
-  raises on read-only states; `set_puzzle_state` enforces required fields,
-  validates publisher against the configured list, and Reopen (→ draft) clears
+  raises on read-only states; `set_puzzle_state` enforces required fields
+  (incl. non-empty free-form publisher on submit), and Reopen (→ draft) clears
   the lock.
 - **HTTP:** the three new routes happy-path; bad-state and missing-required-field
   rejection; open of a read-only puzzle returns `409`/`403`.
@@ -463,9 +457,9 @@ This section is intentionally a sketch — finalize the layout before building.
 3. **Rename preserves history.** Rename is refactored to a true
    `UPDATE puzzles SET puzzlename = ?`, keeping the puzzle `id` and its
    `puzzle_state` history.
-4. **Publisher + required fields.** `publisher` comes from a config-driven list;
-   moving to `submitted` requires `publisher` + `date_submitted`, and moving to
-   `published` requires `date_published`.
+4. **Publisher + required fields.** `publisher` is a free-form text field;
+   moving to `submitted` requires a non-empty `publisher` + `date_submitted`, and
+   moving to `published` requires `date_published`.
 
 ---
 
@@ -477,8 +471,8 @@ This section is intentionally a sketch — finalize the layout before building.
 3. Port: declare the state methods and the new `rename_puzzle`.
 4. Use cases: auto-record on `create_puzzle`/`copy_puzzle`, read-only lock in
    `open_puzzle_for_editing`, refactored `rename_puzzle`, `set_puzzle_state`
-   with config-driven publisher list (+ tests).
+   with free-form publisher field (+ tests).
 5. Migration tool + dry-run (+ tests); run it against the dev DB.
 6. HTTP endpoints + read-only `409`/`403` on open + endpoints.md / Swagger
-   + config `publishers` list (+ tests).
+   (+ tests).
 7. Front-end dashboard — design first, then build.
