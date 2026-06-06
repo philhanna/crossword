@@ -1,7 +1,7 @@
 """
 Puzzle lifecycle states and the pure auto-detection ladder.
 
-See docs/dev/dashboard.md for the full lifecycle. The auto-detector only ever
+See docs/dev/puzzle_state.md for the full lifecycle. The auto-detector only ever
 assigns the completion-ladder states (draft/filled/finished); the read-only
 states are user-owned and set from the dashboard.
 """

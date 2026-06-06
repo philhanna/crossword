@@ -12,7 +12,7 @@ NOT EXISTS, no ALTER TABLE, and no column-existence probing.
 It copies every real puzzle (preserving its id), skipping working copies
 (__wc__ / __new__) and legacy NULL names, and sets each puzzle's `state` column
 to an auto-detected value via the completion ladder (draft/filled/finished) —
-see docs/dev/dashboard.md §2-§3 — so a fully filled-and-clued puzzle migrates as
+see docs/dev/puzzle_state.md §2-§3 — so a fully filled-and-clued puzzle migrates as
 'finished', not 'draft'. The publisher / date columns are left NULL; they are
 only ever set later from the dashboard.
 
@@ -22,7 +22,7 @@ classify each puzzle. It does not import SQLitePersistenceAdapter.
 
 The schema DDL below is copied from
 crossword/adapters/sqlite_persistence_adapter.py::_ensure_schema_compatibility
-(with the state columns from docs/dev/dashboard.md §1), which remains the
+(with the state columns from docs/dev/puzzle_state.md §1), which remains the
 source of truth for the running app. Keep them in sync by hand.
 
 Usage:
