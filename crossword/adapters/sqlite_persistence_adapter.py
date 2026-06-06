@@ -253,16 +253,24 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to rename puzzle: {e}")
 
-    def list_puzzles(self, user_id: int) -> list[str]:
+    def list_puzzles(self, user_id: int, state: str | None = None) -> list[str]:
         """Get list of puzzle names for a user, sorted by most recently modified."""
         try:
             cursor = self.conn.cursor()
-            cursor.execute(
-                """SELECT puzzlename FROM puzzles
-                   WHERE userid = ?
-                   ORDER BY modified DESC""",
-                (user_id,),
-            )
+            if state is None:
+                cursor.execute(
+                    """SELECT puzzlename FROM puzzles
+                       WHERE userid = ?
+                       ORDER BY modified DESC""",
+                    (user_id,),
+                )
+            else:
+                cursor.execute(
+                    """SELECT puzzlename FROM puzzles
+                       WHERE userid = ? AND state = ?
+                       ORDER BY modified DESC""",
+                    (user_id, state),
+                )
             rows = cursor.fetchall()
             return [row["puzzlename"] for row in rows if row["puzzlename"] is not None]
         except sqlite3.Error as e:

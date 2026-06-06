@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 from crossword import Grid, Puzzle
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
+from crossword.domain import puzzle_state as ps
 from crossword.ports.persistence_port import PersistenceError
 
 
@@ -80,6 +81,33 @@ class TestSQLitePersistenceAdapter:
         assert len(puzzles) == 2
         assert "puzzle1" in puzzles
         assert "puzzle2" in puzzles
+
+    def test_list_puzzles_filters_by_state(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="drafty", puzzle=sample_puzzle)
+        adapter.save_puzzle(user_id=1, name="submittedy", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="submittedy", state=ps.SUBMITTED,
+                                 publisher="NYT", date_submitted="2026-06-06")
+
+        puzzles = adapter.list_puzzles(user_id=1, state=ps.SUBMITTED)
+
+        assert puzzles == ["submittedy"]
+
+    def test_list_puzzles_filtered_results_stay_most_recent_first(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="older", puzzle=sample_puzzle)
+        adapter.save_puzzle(user_id=1, name="newer", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="older", state=ps.DRAFT)
+        adapter.set_puzzle_state(user_id=1, name="newer", state=ps.DRAFT)
+
+        cur = adapter.conn.cursor()
+        cur.execute("UPDATE puzzles SET modified = ? WHERE userid = ? AND puzzlename = ?",
+                    ("2026-01-01T00:00:00", 1, "older"))
+        cur.execute("UPDATE puzzles SET modified = ? WHERE userid = ? AND puzzlename = ?",
+                    ("2026-06-06T00:00:00", 1, "newer"))
+        adapter.conn.commit()
+
+        puzzles = adapter.list_puzzles(user_id=1, state=ps.DRAFT)
+
+        assert puzzles == ["newer", "older"]
 
     def test_init_schema_adds_last_mode_column(self, adapter):
         cur = adapter.conn.cursor()

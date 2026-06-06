@@ -133,7 +133,7 @@ class PersistencePort(ABC):
         pass
 
     @abstractmethod
-    def list_puzzles(self, user_id: int) -> list[str]:
+    def list_puzzles(self, user_id: int, state: str | None = None) -> list[str]:
         """
         Get list of puzzle names for a user.
 
@@ -141,6 +141,7 @@ class PersistencePort(ABC):
 
         Args:
             user_id: The user who owns these puzzles
+            state: Optional lifecycle-state filter to apply at storage time
 
         Returns:
             List of puzzle name strings, sorted most recent first

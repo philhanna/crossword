@@ -184,6 +184,18 @@
     <div id="ch-sort" style="padding:6px 12px;border-bottom:1px solid #ddd;display:flex;gap:20px;align-items:center;font-size:13px">
       <label style="cursor:pointer"><input type="radio" name="ch-sort" value="recent" checked onchange="chSetSort('recent')"> Most recent</label>
       <label style="cursor:pointer"><input type="radio" name="ch-sort" value="alpha"         onchange="chSetSort('alpha')"> Alphabetical</label>
+      <label id="ch-state-filter-wrap" style="display:none;align-items:center;gap:8px;margin-left:auto">
+        <span>Puzzle state</span>
+        <select id="ch-state-filter" class="form-input" onchange="chSetPuzzleStateFilter(this.value)" style="width:auto;min-width:140px">
+          <option value="all">all</option>
+          <option value="draft">draft</option>
+          <option value="filled">filled</option>
+          <option value="finished">finished</option>
+          <option value="submitted">submitted</option>
+          <option value="published">published</option>
+          <option value="archived">archived</option>
+        </select>
+      </label>
     </div>
     <div id="ch-list" class="chooser-list dialog-body"></div>
     <div id="ch-pagination" style="display:none;justify-content:center;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #ddd">

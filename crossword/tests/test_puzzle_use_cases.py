@@ -176,7 +176,7 @@ class TestPuzzleUseCasesList:
         result = puzzle_uc.list_puzzles(1)
 
         assert result == ["puzzle1", "puzzle2"]
-        mock_persistence.list_puzzles.assert_called_once_with(1)
+        mock_persistence.list_puzzles.assert_called_once_with(1, state=None)
 
     def test_list_puzzles_empty(self, puzzle_uc, mock_persistence):
         """List puzzles when none exist"""
@@ -185,6 +185,20 @@ class TestPuzzleUseCasesList:
         result = puzzle_uc.list_puzzles(1)
 
         assert result == []
+
+    def test_list_puzzles_all_maps_to_no_filter(self, puzzle_uc, mock_persistence):
+        puzzle_uc.list_puzzles(1, state="all")
+
+        mock_persistence.list_puzzles.assert_called_once_with(1, state=None)
+
+    def test_list_puzzles_specific_state_filters(self, puzzle_uc, mock_persistence):
+        puzzle_uc.list_puzzles(1, state=ps.DRAFT)
+
+        mock_persistence.list_puzzles.assert_called_once_with(1, state=ps.DRAFT)
+
+    def test_list_puzzles_invalid_state_raises(self, puzzle_uc):
+        with pytest.raises(ValueError, match="Invalid state"):
+            puzzle_uc.list_puzzles(1, state="bogus")
 
 
 class TestPuzzleUseCasesOpenForEditing:

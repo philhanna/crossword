@@ -365,8 +365,40 @@ class TestMergedPuzzleHandlers:
             app=app, current_user={"id": 1, "username": "test"}
         )
 
-        app.puzzle_uc.list_puzzles.assert_called_once_with(1)
+        app.puzzle_uc.list_puzzles.assert_called_once_with(1, state=None)
         assert response == {"puzzles": ["alpha", "beta"]}
+
+    def test_handle_list_puzzles_passes_state_query_param(self, request_handler, app):
+        app.puzzle_uc.list_puzzles.return_value = ["alpha"]
+
+        response = handle_list_puzzles(
+            (), {"state": "draft"}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        app.puzzle_uc.list_puzzles.assert_called_once_with(1, state="draft")
+        assert response == {"puzzles": ["alpha"]}
+
+    def test_handle_list_puzzles_state_all_is_forwarded(self, request_handler, app):
+        app.puzzle_uc.list_puzzles.return_value = ["alpha"]
+
+        response = handle_list_puzzles(
+            (), {"state": "all"}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        app.puzzle_uc.list_puzzles.assert_called_once_with(1, state="all")
+        assert response == {"puzzles": ["alpha"]}
+
+    def test_handle_list_puzzles_invalid_state_returns_error(self, request_handler, app):
+        app.puzzle_uc.list_puzzles.side_effect = ValueError("Invalid state: 'bogus'")
+
+        response = handle_list_puzzles(
+            (), {"state": "bogus"}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        assert response == {"error": "Invalid state: 'bogus'"}
 
     def test_handle_switch_to_grid_mode(self, request_handler, app):
         puzzle = TestPuzzle.create_puzzle()

@@ -116,7 +116,8 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
     try:
         user_id = current_user["id"]
-        puzzles = app.puzzle_uc.list_puzzles(user_id)
+        state = query_params.get("state")
+        puzzles = app.puzzle_uc.list_puzzles(user_id, state=state)
         puzzles = [name for name in puzzles if not name.startswith("__new__")]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"puzzles": puzzles}

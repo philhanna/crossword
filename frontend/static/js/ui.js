@@ -220,27 +220,57 @@ let _chPreviews  = [];
 let _chPage      = 0;
 let _chOnSelect  = null;
 let _chSortOrder = 'recent';
+let _chLoadItems = null;
+let _chEmptyMessage = 'No items found.';
+let _chStateFilter = 'all';
+let _chApiPrefix = '';
 
-async function showPreviewChooser(title, names, apiPrefix, onSelect) {
-    _chPreviews  = [];
-    _chPage      = 0;
-    _chOnSelect  = onSelect;
-    _chSortOrder = 'recent';
-    document.querySelector('input[name="ch-sort"][value="recent"]').checked = true;
-
-    document.getElementById('ch-title').innerHTML = title;
-    const listEl = document.getElementById('ch-list');
-    listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews…</div>';
-    document.getElementById('ch-pagination').style.display = 'none';
-    showElement('ch');
-
-    _chPreviews = await Promise.all(
+async function _chLoadPreviewsFromNames(names, apiPrefix) {
+    return await Promise.all(
         names.map(name =>
             apiFetch('GET', `${apiPrefix}/${encodeURIComponent(name)}/preview`)
                 .catch(() => ({ name, heading: name, svgstr: '', error: true }))
         )
     );
+}
 
+async function _chReload() {
+    const listEl = document.getElementById('ch-list');
+    listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews...</div>';
+    document.getElementById('ch-pagination').style.display = 'none';
+
+    const names = await _chLoadItems(_chStateFilter);
+    _chPreviews = await _chLoadPreviewsFromNames(names, _chApiPrefix);
+    _chRender();
+}
+
+async function showPreviewChooser(title, names, apiPrefix, onSelect, options = {}) {
+    _chPreviews  = [];
+    _chPage      = 0;
+    _chOnSelect  = onSelect;
+    _chSortOrder = 'recent';
+    _chLoadItems = options.loadItems || null;
+    _chEmptyMessage = options.emptyMessage || 'No items found.';
+    _chStateFilter = options.initialStateFilter || 'all';
+    _chApiPrefix = apiPrefix;
+    document.querySelector('input[name="ch-sort"][value="recent"]').checked = true;
+
+    document.getElementById('ch-title').innerHTML = title;
+    const listEl = document.getElementById('ch-list');
+    const stateFilterWrap = document.getElementById('ch-state-filter-wrap');
+    const stateFilter = document.getElementById('ch-state-filter');
+    stateFilterWrap.style.display = options.stateFilterEnabled ? 'inline-flex' : 'none';
+    stateFilter.value = _chStateFilter;
+    listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews...</div>';
+    document.getElementById('ch-pagination').style.display = 'none';
+    showElement('ch');
+
+    if (_chLoadItems) {
+        await _chReload();
+        return;
+    }
+
+    _chPreviews = await _chLoadPreviewsFromNames(names, apiPrefix);
     _chRender();
 }
 
@@ -257,6 +287,11 @@ function _chRender() {
         ? [..._chPreviews].sort((a, b) => a.name.localeCompare(b.name))
         : _chPreviews;
     const total     = ordered.length;
+    if (total === 0) {
+        listEl.innerHTML = `<div class="w3-container w3-padding">${escapeHtml(_chEmptyMessage)}</div>`;
+        pageDiv.style.display = 'none';
+        return;
+    }
     const pageStart = _chPage * CH_PAGE_SIZE;
     const pageEnd   = Math.min(pageStart + CH_PAGE_SIZE, total);
     const pageItems = ordered.slice(pageStart, pageEnd);
@@ -300,6 +335,16 @@ function _chRender() {
 }
 
 function chSetSort(order) { _chSortOrder = order; _chPage = 0; _chRender(); }
+async function chSetPuzzleStateFilter(value) {
+    _chStateFilter = value;
+    _chPage = 0;
+    if (!_chLoadItems) return;
+    try {
+        await _chReload();
+    } catch (e) {
+        showMessageLine(`Error listing puzzles: ${e.message}`, 'error', 0);
+    }
+}
 function chPageFirst() { _chPage = 0; _chRender(); }
 function chPagePrev()  { if (_chPage > 0) { _chPage--; _chRender(); } }
 function chPageNext()  { if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); } }

@@ -5,7 +5,7 @@ Public interface:
   create_puzzle(user_id, name, size) -> None
   load_puzzle(user_id, name) -> Puzzle
   delete_puzzle(user_id, name) -> None
-  list_puzzles(user_id) -> list[str]
+  list_puzzles(user_id, state=None) -> list[str]
   copy_puzzle(user_id, source_name, new_name) -> Puzzle
   rename_puzzle(user_id, old_name, new_name) -> None
   get_puzzle_state(user_id, name) -> dict
@@ -119,20 +119,26 @@ class PuzzleUseCases:
         self._invalidate_fill_order(user_id, name)
         self.persistence.delete_puzzle(user_id, name)
 
-    def list_puzzles(self, user_id: int) -> list[str]:
+    def list_puzzles(self, user_id: int, state: str | None = None) -> list[str]:
         """
         List all puzzle names owned by the user.
 
         Args:
             user_id: The user who owns the puzzles
+            state: Optional lifecycle-state filter; "all"/None means no filter
 
         Returns:
             List of puzzle names, sorted most recent first
 
         Raises:
             PersistenceError: If listing fails
+            ValueError: If state is not "all" or a valid lifecycle state
         """
-        return self.persistence.list_puzzles(user_id)
+        if state in (None, "", "all"):
+            return self.persistence.list_puzzles(user_id, state=None)
+        if state not in ps.ALL_STATES:
+            raise ValueError(f"Invalid state: {state!r}")
+        return self.persistence.list_puzzles(user_id, state=state)
 
     def copy_puzzle(self, user_id: int, source_name: str, new_name: str) -> Puzzle:
         """

@@ -737,20 +737,23 @@ async function _openPuzzleInEditor(name) {
 
 async function do_puzzle_open() {
     try {
-        const listData = await apiFetch('GET', '/api/puzzles');
-        if (listData.error) { showMessageLine(`Error: ${listData.error}`, 'error', 0); return; }
-        const puzzles = (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
-        if (puzzles.length === 0) {
-            showMessageLine('No saved puzzles found.', 'notice');
-            return;
-        }
-        showPreviewChooser('Open puzzle', puzzles, '/api/puzzles', async (name) => {
+        await showPreviewChooser('Open puzzle', [], '/api/puzzles', async (name) => {
             try {
                 await _openPuzzleInEditor(name);
             } catch (e) { showMessageLine('Error opening puzzle', 'error', 0); }
+        }, {
+            stateFilterEnabled: true,
+            initialStateFilter: 'all',
+            emptyMessage: 'No saved puzzles found for that state.',
+            loadItems: async (state) => {
+                const path = `/api/puzzles?state=${encodeURIComponent(state || 'all')}`;
+                const listData = await apiFetch('GET', path);
+                if (listData.error) throw new Error(listData.error);
+                return (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
+            },
         });
     } catch (e) {
-        showMessageLine('Error listing puzzles', 'error', 0);
+        showMessageLine(`Error listing puzzles: ${e.message}`, 'error', 0);
     }
 }
 
