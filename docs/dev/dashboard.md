@@ -21,8 +21,8 @@ The lifecycle:
 State is recorded in a **new `puzzle_state` table** with one row per state
 change, so the full history is preserved.
 
-> **Resolved decisions** (see §11 for the full list): there is **no `onhold`
-> state**; `submitted`/`published`/`archived` are **read-only** (editing is
+> **Resolved decisions** (see §11 for the full list):
+> `submitted`/`published`/`archived` are **read-only** (editing is
 > blocked until the user reopens the puzzle → `draft`); **rename** is refactored
 > to preserve the puzzle `id` and its history; **publisher** is a **free-form
 > text field** and is **required** when moving to `submitted`, as are the
@@ -156,7 +156,7 @@ draft (0)  <  filled (1)  <  finished (2)
 - otherwise → `draft`.
 
 `submitted`, `published`, `archived` are **user-owned** states set only from the
-dashboard. There is **no `onhold` state**.
+dashboard.
 
 ### What happens on Save / Save As / create
 
@@ -449,15 +449,13 @@ This section is intentionally a sketch — finalize the layout before building.
 
 ## 11. Resolved decisions
 
-1. **No `onhold` state.** It was dropped from the lifecycle entirely; the states
-   are `draft`, `filled`, `finished`, `submitted`, `published`, `archived`.
-2. **Read-only terminal states.** `submitted`/`published`/`archived` block
+1. **Read-only terminal states.** `submitted`/`published`/`archived` block
    editing; `open_puzzle_for_editing` refuses and the user must **Reopen**
    (→ draft) first.
-3. **Rename preserves history.** Rename is refactored to a true
+2. **Rename preserves history.** Rename is refactored to a true
    `UPDATE puzzles SET puzzlename = ?`, keeping the puzzle `id` and its
    `puzzle_state` history.
-4. **Publisher + required fields.** `publisher` is a free-form text field;
+3. **Publisher + required fields.** `publisher` is a free-form text field;
    moving to `submitted` requires a non-empty `publisher` + `date_submitted`, and
    moving to `published` requires `date_published`.
 
