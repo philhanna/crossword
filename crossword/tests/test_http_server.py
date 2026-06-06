@@ -16,7 +16,11 @@ from crossword.http_server.puzzle_handlers import (
     handle_switch_to_grid_mode,
     handle_switch_to_puzzle_mode,
     handle_toggle_puzzle_black_cell,
+    handle_get_puzzle_state,
+    handle_set_puzzle_state,
+    handle_open_puzzle_for_editing,
 )
+from crossword.use_cases.puzzle_use_cases import PuzzleReadOnlyError
 from crossword.tests import TestPuzzle
 
 
@@ -308,6 +312,8 @@ class TestMergedPuzzleRoutes:
         assert router.get_handler("POST", "/api/puzzles/demo/grid/undo") is not None
         assert router.get_handler("POST", "/api/puzzles/demo/grid/redo") is not None
         assert router.get_handler("GET", "/api/export/puzzles/demo/solved-pdf") is not None
+        assert router.get_handler("GET", "/api/puzzles/demo/state") is not None
+        assert router.get_handler("PUT", "/api/puzzles/demo/state") is not None
 
 
 class TestMergedPuzzleHandlers:
@@ -400,3 +406,83 @@ class TestMergedPuzzleHandlers:
 
         app.puzzle_uc.toggle_black_cell.assert_called_once_with(1, "demo", 1, 1)
         assert response["grid"]["cells"][0] is True
+
+
+class TestPuzzleStateHandlers:
+    """Handler tests for the puzzle-state endpoints."""
+
+    @pytest.fixture
+    def request_handler(self):
+        handler = Mock()
+        handler.command = "PUT"
+        handler.path = "/api/puzzles/demo/state"
+        return handler
+
+    @pytest.fixture
+    def app(self):
+        app = Mock()
+        app.puzzle_uc = Mock()
+        return app
+
+    def test_get_puzzle_state(self, request_handler, app):
+        app.puzzle_uc.get_puzzle_state.return_value = {
+            "state": "submitted", "publisher": "NYT",
+            "date_submitted": "2026-06-06", "date_published": None,
+        }
+        response = handle_get_puzzle_state(
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        app.puzzle_uc.get_puzzle_state.assert_called_once_with(1, "demo")
+        assert response == {
+            "name": "demo", "state": "submitted", "publisher": "NYT",
+            "date_submitted": "2026-06-06", "date_published": None,
+        }
+
+    def test_set_puzzle_state_happy_path(self, request_handler, app):
+        app.puzzle_uc.set_puzzle_state.return_value = {
+            "state": "submitted", "publisher": "NYT",
+            "date_submitted": "2026-06-06", "date_published": None,
+        }
+        response = handle_set_puzzle_state(
+            ("demo",), {},
+            {"state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06"},
+            None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        app.puzzle_uc.set_puzzle_state.assert_called_once_with(
+            1, "demo", "submitted",
+            publisher="NYT", date_submitted="2026-06-06", date_published=None,
+        )
+        assert response["state"] == "submitted"
+
+    def test_set_puzzle_state_missing_state_returns_400(self, request_handler, app):
+        response = handle_set_puzzle_state(
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        assert response is None
+        request_handler._send_json.assert_called_once()
+        assert request_handler._send_json.call_args.kwargs["status"] == 400
+        app.puzzle_uc.set_puzzle_state.assert_not_called()
+
+    def test_set_puzzle_state_validation_error_returns_400(self, request_handler, app):
+        app.puzzle_uc.set_puzzle_state.side_effect = ValueError("publisher is required")
+        response = handle_set_puzzle_state(
+            ("demo",), {}, {"state": "submitted"}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        assert response is None
+        request_handler._send_json.assert_called_once()
+        assert request_handler._send_json.call_args.kwargs["status"] == 400
+
+    def test_open_read_only_returns_409(self, request_handler, app):
+        app.puzzle_uc.open_puzzle_for_editing.side_effect = PuzzleReadOnlyError("read-only")
+        response = handle_open_puzzle_for_editing(
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        assert response is None
+        request_handler._send_json.assert_called_once()
+        assert request_handler._send_json.call_args.kwargs["status"] == 409
+        assert request_handler._send_json.call_args.args[0]["read_only"] is True

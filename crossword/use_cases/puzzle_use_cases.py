@@ -7,6 +7,9 @@ Public interface:
   delete_puzzle(user_id, name) -> None
   list_puzzles(user_id) -> list[str]
   copy_puzzle(user_id, source_name, new_name) -> Puzzle
+  rename_puzzle(user_id, old_name, new_name) -> None
+  get_puzzle_state(user_id, name) -> dict
+  set_puzzle_state(user_id, name, state, **fields) -> dict
   open_puzzle_for_editing(user_id, name) -> str
   switch_to_grid_mode(user_id, name) -> Puzzle
   switch_to_puzzle_mode(user_id, name) -> Puzzle
@@ -30,12 +33,22 @@ import logging
 import uuid
 
 from crossword import Grid, Puzzle, PuzzleToSVG
+from crossword.domain import puzzle_state as ps
 from crossword.domain.fill_priority import FillPriorityAnalyzer
 from crossword.domain.word import Word
 from crossword.ports.persistence_port import PersistencePort, PersistenceError
 from crossword.use_cases._name_validation import validate_new_public_name, validate_public_name
 
 logger = logging.getLogger(__name__)
+
+
+class PuzzleReadOnlyError(Exception):
+    """Raised when an edit is attempted on a read-only puzzle state.
+
+    Read-only states (submitted/published/archived) must be reopened
+    (-> draft) before they can be edited again.
+    """
+    pass
 
 
 class PuzzleUseCases:
@@ -146,11 +159,24 @@ class PuzzleUseCases:
         puzzle.undo_stack = []
         puzzle.redo_stack = []
         self.persistence.save_puzzle(user_id, new_name, puzzle)
+        self._auto_set_state_on_save(user_id, new_name, puzzle)
         return puzzle
+
+    def _auto_set_state_on_save(self, user_id: int, name: str, puzzle: Puzzle) -> None:
+        """Advance a puzzle's state along the completion ladder after a save.
+
+        Read-only states are left untouched (defensive: they can't be open for
+        editing in the first place).
+        """
+        current = self.persistence.get_puzzle_state(user_id, name)
+        if current is not None and current["state"] in ps.READ_ONLY:
+            return
+        computed = ps.detect_completion_state(puzzle)
+        self.persistence.set_puzzle_state(user_id, name, computed)
 
     def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
         """
-        Rename a puzzle by copying it to the new name and deleting the old one.
+        Rename a puzzle in place, preserving its id and state.
 
         Args:
             user_id: The user who owns the puzzle
@@ -158,12 +184,79 @@ class PuzzleUseCases:
             new_name: Desired new name
 
         Raises:
-            PersistenceError: If source not found or save/delete fails
+            PersistenceError: If source not found or new_name is taken
             ValueError: If new_name is empty or invalid
         """
-        self.copy_puzzle(user_id, old_name, new_name)
+        if not new_name or not new_name.strip():
+            raise ValueError("new_name must not be empty")
+        validate_public_name("puzzle", new_name)
         self._invalidate_fill_order(user_id, old_name)
-        self.persistence.delete_puzzle(user_id, old_name)
+        self.persistence.rename_puzzle(user_id, old_name, new_name)
+
+    def get_puzzle_state(self, user_id: int, name: str) -> dict:
+        """
+        Return the puzzle's current state columns.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+
+        Returns:
+            Dict with keys: state, publisher, date_submitted, date_published
+
+        Raises:
+            PersistenceError: If the puzzle is not found
+        """
+        state = self.persistence.get_puzzle_state(user_id, name)
+        if state is None:
+            raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+        return state
+
+    def set_puzzle_state(self, user_id: int, name: str, state: str, *,
+                         publisher: str = None, date_submitted: str = None,
+                         date_published: str = None) -> dict:
+        """
+        Apply a user-driven state transition and return the new state dict.
+
+        Validates `state` against ALL_STATES and enforces the required fields
+        for each target state: 'submitted' needs a non-empty free-form
+        `publisher` plus `date_submitted`; 'published' needs `date_published`.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            state: Target lifecycle state (must be in ALL_STATES)
+            publisher: Free-form publisher text (required for 'submitted')
+            date_submitted: ISO date (required for 'submitted')
+            date_published: ISO date (required for 'published')
+
+        Returns:
+            Dict with keys: state, publisher, date_submitted, date_published
+
+        Raises:
+            ValueError: If state is invalid or a required field is missing
+            PersistenceError: If the puzzle is not found
+        """
+        if state not in ps.ALL_STATES:
+            raise ValueError(f"Invalid state: {state!r}")
+
+        if state == ps.SUBMITTED:
+            if not (publisher or "").strip():
+                raise ValueError("publisher is required when submitting")
+            if not (date_submitted or "").strip():
+                raise ValueError("date_submitted is required when submitting")
+        elif state == ps.PUBLISHED:
+            if not (date_published or "").strip():
+                raise ValueError("date_published is required when publishing")
+
+        self._invalidate_fill_order(user_id, name)
+        self.persistence.set_puzzle_state(
+            user_id, name, state,
+            publisher=publisher,
+            date_submitted=date_submitted,
+            date_published=date_published,
+        )
+        return self.get_puzzle_state(user_id, name)
 
     def open_puzzle_for_editing(self, user_id: int, name: str) -> str:
         """
@@ -182,7 +275,15 @@ class PuzzleUseCases:
 
         Raises:
             PersistenceError: If puzzle not found or save fails
+            PuzzleReadOnlyError: If the puzzle is in a read-only state and must
+                be reopened before editing
         """
+        current = self.persistence.get_puzzle_state(user_id, name)
+        if current is not None and current["state"] in ps.READ_ONLY:
+            raise PuzzleReadOnlyError(
+                f"Puzzle '{name}' is {current['state']} and is read-only; "
+                f"reopen it to edit."
+            )
         working_name = f"__wc__{name}__{uuid.uuid4().hex[:8]}"
         puzzle = self.persistence.load_puzzle(user_id, name)
         puzzle.grid_undo_stack = []

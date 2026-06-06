@@ -67,7 +67,14 @@ class SQLitePersistenceAdapter(PersistencePort):
                     modified        TEXT NOT NULL,
                     last_mode       TEXT NOT NULL DEFAULT 'puzzle'
                                         CHECK (last_mode IN ('grid', 'puzzle')),
-                    jsonstr         TEXT NOT NULL
+                    jsonstr         TEXT NOT NULL,
+                    state           TEXT NOT NULL DEFAULT 'draft'
+                                        CHECK (state IN (
+                                            'draft','filled','finished',
+                                            'submitted','published','archived')),
+                    publisher       TEXT,
+                    date_submitted  TEXT,
+                    date_published  TEXT
                 )
             """)
 
@@ -177,6 +184,74 @@ class SQLitePersistenceAdapter(PersistencePort):
             raise
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to delete puzzle: {e}")
+
+    def set_puzzle_state(self, user_id: int, name: str, state: str, *,
+                         publisher: str | None = None,
+                         date_submitted: str | None = None,
+                         date_published: str | None = None) -> None:
+        """Overwrite the puzzle's state columns in place."""
+        try:
+            now = datetime.now().isoformat()
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """UPDATE puzzles
+                   SET state = ?, publisher = ?, date_submitted = ?,
+                       date_published = ?, modified = ?
+                   WHERE userid = ? AND puzzlename = ?""",
+                (state, publisher, date_submitted, date_published, now, user_id, name),
+            )
+
+            if cursor.rowcount == 0:
+                raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+
+            self.conn.commit()
+        except PersistenceError:
+            raise
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Failed to set puzzle state: {e}")
+
+    def get_puzzle_state(self, user_id: int, name: str) -> dict | None:
+        """Return the puzzle's current state columns as a dict, or None if absent."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """SELECT state, publisher, date_submitted, date_published
+                   FROM puzzles WHERE userid = ? AND puzzlename = ?""",
+                (user_id, name),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "state": row["state"],
+                "publisher": row["publisher"],
+                "date_submitted": row["date_submitted"],
+                "date_published": row["date_published"],
+            }
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Failed to get puzzle state: {e}")
+
+    def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
+        """Rename in place, preserving id and all columns (state included)."""
+        try:
+            now = datetime.now().isoformat()
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """UPDATE puzzles SET puzzlename = ?, modified = ?
+                   WHERE userid = ? AND puzzlename = ?""",
+                (new_name, now, user_id, old_name),
+            )
+
+            if cursor.rowcount == 0:
+                raise PersistenceError(f"Puzzle '{old_name}' not found for user {user_id}")
+
+            self.conn.commit()
+        except PersistenceError:
+            raise
+        except sqlite3.IntegrityError:
+            raise PersistenceError(f"Puzzle '{new_name}' already exists for user {user_id}")
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Failed to rename puzzle: {e}")
 
     def list_puzzles(self, user_id: int) -> list[str]:
         """Get list of puzzle names for a user, sorted by most recently modified."""

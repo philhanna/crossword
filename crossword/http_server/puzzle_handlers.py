@@ -8,6 +8,8 @@ Routes:
   DELETE /api/puzzles/<name>       → delete_puzzle
   POST   /api/puzzles/<name>/copy          → copy_puzzle
   POST   /api/puzzles/<name>/rename        → rename_puzzle
+  GET    /api/puzzles/<name>/state         → get_puzzle_state
+  PUT    /api/puzzles/<name>/state         → set_puzzle_state
   POST   /api/puzzles/<name>/open          → open_puzzle_for_editing
   POST   /api/puzzles/<name>/mode/grid     → switch_to_grid_mode
   POST   /api/puzzles/<name>/mode/puzzle   → switch_to_puzzle_mode
@@ -29,6 +31,7 @@ Routes:
 
 import logging
 from crossword.ports.persistence_port import PersistenceError
+from crossword.use_cases.puzzle_use_cases import PuzzleReadOnlyError
 
 logger = logging.getLogger(__name__)
 
@@ -243,6 +246,90 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"original_name": name, "working_name": working_name}
 
+    except PuzzleReadOnlyError as e:
+        logger.debug("  returning 409: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        request_handler._send_json({"error": str(e), "read_only": True}, status=409)
+        return None
+    except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_get_puzzle_state(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Return a puzzle's current lifecycle state and its state-specific fields.
+    GET /api/puzzles/<name>/state
+    Returns: { "state": "...", "publisher": ..., "date_submitted": ..., "date_published": ... }
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing puzzle name"}
+
+        user_id = current_user["id"]
+        state = app.puzzle_uc.get_puzzle_state(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"name": name, **state}
+
+    except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_set_puzzle_state(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Apply a user-driven state transition (including Reopen -> draft).
+    PUT /api/puzzles/<name>/state
+    Body: { "state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06" }
+    Only the fields relevant to the target state are needed. Missing required
+    fields or an invalid state -> 400.
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing puzzle name"}
+
+        state = body_params.get("state")
+        if not state or not isinstance(state, str):
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'state'"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            request_handler._send_json({"error": "Missing or invalid 'state'"}, status=400)
+            return None
+
+        user_id = current_user["id"]
+        new_state = app.puzzle_uc.set_puzzle_state(
+            user_id, name, state,
+            publisher=body_params.get("publisher"),
+            date_submitted=body_params.get("date_submitted"),
+            date_published=body_params.get("date_published"),
+        )
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"name": name, **new_state}
+
+    except ValueError as e:
+        logger.debug("  returning 400: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        request_handler._send_json({"error": str(e)}, status=400)
+        return None
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)

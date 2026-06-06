@@ -100,6 +100,77 @@ class TestSQLitePersistenceAdapter:
         assert row["last_mode"] == "puzzle"
 
     # ======================================================================
+    # Puzzle state columns
+    # ======================================================================
+
+    def test_schema_has_state_columns(self, adapter):
+        cur = adapter.conn.cursor()
+        cur.execute("PRAGMA table_info(puzzles)")
+        columns = {row["name"] for row in cur.fetchall()}
+        assert {"state", "publisher", "date_submitted", "date_published"} <= columns
+
+    def test_new_puzzle_defaults_to_draft(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        state = adapter.get_puzzle_state(user_id=1, name="p")
+        assert state["state"] == "draft"
+        assert state["publisher"] is None
+        assert state["date_submitted"] is None
+        assert state["date_published"] is None
+
+    def test_get_puzzle_state_none_when_absent(self, adapter):
+        assert adapter.get_puzzle_state(user_id=1, name="nope") is None
+
+    def test_set_puzzle_state_overwrites_columns(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(
+            user_id=1, name="p", state="submitted",
+            publisher="NYT", date_submitted="2026-06-06",
+        )
+        state = adapter.get_puzzle_state(user_id=1, name="p")
+        assert state == {
+            "state": "submitted",
+            "publisher": "NYT",
+            "date_submitted": "2026-06-06",
+            "date_published": None,
+        }
+
+    def test_set_puzzle_state_not_found_raises(self, adapter):
+        with pytest.raises(PersistenceError, match="not found"):
+            adapter.set_puzzle_state(user_id=1, name="nope", state="draft")
+
+    def test_rename_puzzle_preserves_id_and_state(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="old", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="old", state="archived")
+        cur = adapter.conn.cursor()
+        cur.execute("SELECT id FROM puzzles WHERE userid = 1 AND puzzlename = 'old'")
+        old_id = cur.fetchone()["id"]
+
+        adapter.rename_puzzle(user_id=1, old_name="old", new_name="new")
+
+        cur.execute("SELECT id, state FROM puzzles WHERE userid = 1 AND puzzlename = 'new'")
+        row = cur.fetchone()
+        assert row["id"] == old_id
+        assert row["state"] == "archived"
+        assert adapter.get_puzzle_state(user_id=1, name="old") is None
+
+    def test_rename_puzzle_not_found_raises(self, adapter):
+        with pytest.raises(PersistenceError, match="not found"):
+            adapter.rename_puzzle(user_id=1, old_name="nope", new_name="new")
+
+    def test_rename_puzzle_rejects_clashing_name(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="a", puzzle=sample_puzzle)
+        adapter.save_puzzle(user_id=1, name="b", puzzle=sample_puzzle)
+        with pytest.raises(PersistenceError, match="already exists"):
+            adapter.rename_puzzle(user_id=1, old_name="a", new_name="b")
+
+    def test_delete_removes_row_and_state(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="published",
+                                 date_published="2026-06-06")
+        adapter.delete_puzzle(user_id=1, name="p")
+        assert adapter.get_puzzle_state(user_id=1, name="p") is None
+
+    # ======================================================================
     # Error paths
     # ======================================================================
 

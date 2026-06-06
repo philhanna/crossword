@@ -106,6 +106,17 @@ SPEC = {
                                       "description": "Temporary working copy name. Target all edits here until Save/Close."},
                 },
             },
+            "PuzzleState": {
+                "type": "object",
+                "properties": {
+                    "name":           {"type": "string"},
+                    "state":          {"type": "string",
+                                       "enum": ["draft", "filled", "finished", "submitted", "published", "archived"]},
+                    "publisher":      {"type": "string", "nullable": True, "description": "Free-form publisher text (submitted)"},
+                    "date_submitted": {"type": "string", "nullable": True, "description": "ISO date (submitted)"},
+                    "date_published": {"type": "string", "nullable": True, "description": "ISO date (published)"},
+                },
+            },
             "PreviewData": {
                 "type": "object",
                 "properties": {
@@ -315,6 +326,50 @@ SPEC = {
                 "responses": {
                     "200": {"description": "Working copy session info",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WorkingCopySession"}}}},
+                    "404": {"description": "Puzzle not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                    "409": {"description": "Puzzle is in a read-only state (submitted/published/archived); reopen to edit",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/state": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["puzzles"],
+                "summary": "Get a puzzle's lifecycle state",
+                "responses": {
+                    "200": {"description": "Current state and state-specific fields",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleState"}}}},
+                    "404": {"description": "Puzzle not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+            "put": {
+                "tags": ["puzzles"],
+                "summary": "Apply a user-driven state transition (incl. Reopen -> draft)",
+                "description": "Sets a user-owned state. `submitted` requires a non-empty free-form `publisher` and `date_submitted`; `published` requires `date_published`. `archived` and `draft` (Reopen) need no extra fields.",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "required": ["state"],
+                        "properties": {
+                            "state": {"type": "string",
+                                      "enum": ["draft", "filled", "finished", "submitted", "published", "archived"],
+                                      "example": "submitted"},
+                            "publisher": {"type": "string", "example": "NYT"},
+                            "date_submitted": {"type": "string", "example": "2026-06-06"},
+                            "date_published": {"type": "string", "example": "2026-06-20"},
+                        },
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Updated state",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleState"}}}},
+                    "400": {"description": "Invalid state or missing required field",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                     "404": {"description": "Puzzle not found",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },

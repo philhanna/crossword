@@ -5,7 +5,9 @@ Unit tests for PuzzleUseCases
 import pytest
 from unittest.mock import Mock
 from crossword import Grid, Puzzle
-from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
+from crossword.domain import puzzle_state as ps
+from crossword.tests import TestPuzzle
+from crossword.use_cases.puzzle_use_cases import PuzzleUseCases, PuzzleReadOnlyError
 from crossword.ports.persistence_port import PersistenceError
 
 
@@ -14,6 +16,9 @@ def mock_persistence():
     """Create a mock persistence adapter"""
     persistence = Mock()
     persistence.list_puzzles.return_value = []
+    # Default: puzzles have no recorded state (brand-new name). Individual
+    # tests override this when they need a specific current state.
+    persistence.get_puzzle_state.return_value = None
     return persistence
 
 
@@ -672,3 +677,123 @@ class TestPuzzleUseCasesGetFillOrder:
             puzzle_uc.get_fill_order(1, "my_puzzle")
 
         mock_instance.rank_slots.assert_called_once()
+
+
+class TestPuzzleUseCasesAutoState:
+    """copy_puzzle auto-advances state along the completion ladder."""
+
+    def test_copy_empty_puzzle_sets_draft(self, puzzle_uc, mock_persistence):
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_atlantic_puzzle()
+        puzzle_uc.copy_puzzle(1, "src", "dest")
+        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.DRAFT)
+
+    def test_copy_filled_no_clues_sets_filled(self, puzzle_uc, mock_persistence):
+        puzzle = TestPuzzle.create_solved_atlantic_puzzle()
+        for word in list(puzzle.across_words.values()) + list(puzzle.down_words.values()):
+            word.set_clue(None)
+        mock_persistence.load_puzzle.return_value = puzzle
+        puzzle_uc.copy_puzzle(1, "src", "dest")
+        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FILLED)
+
+    def test_copy_solved_puzzle_sets_finished(self, puzzle_uc, mock_persistence):
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
+        puzzle_uc.copy_puzzle(1, "src", "dest")
+        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FINISHED)
+
+    def test_copy_allows_backward_move(self, puzzle_uc, mock_persistence):
+        """A previously finished puzzle whose clues were cleared moves back to filled."""
+        puzzle = TestPuzzle.create_solved_atlantic_puzzle()
+        for word in list(puzzle.across_words.values()) + list(puzzle.down_words.values()):
+            word.set_clue(None)
+        mock_persistence.load_puzzle.return_value = puzzle
+        mock_persistence.get_puzzle_state.return_value = {"state": ps.FINISHED}
+        puzzle_uc.copy_puzzle(1, "src", "dest")
+        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FILLED)
+
+    def test_copy_does_not_overwrite_read_only_state(self, puzzle_uc, mock_persistence):
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
+        mock_persistence.get_puzzle_state.return_value = {"state": ps.SUBMITTED}
+        puzzle_uc.copy_puzzle(1, "src", "dest")
+        mock_persistence.set_puzzle_state.assert_not_called()
+
+
+class TestPuzzleUseCasesOpenReadOnly:
+    """open_puzzle_for_editing refuses read-only states."""
+
+    @pytest.mark.parametrize("state", [ps.SUBMITTED, ps.PUBLISHED, ps.ARCHIVED])
+    def test_open_read_only_raises(self, puzzle_uc, mock_persistence, state):
+        mock_persistence.get_puzzle_state.return_value = {"state": state}
+        with pytest.raises(PuzzleReadOnlyError):
+            puzzle_uc.open_puzzle_for_editing(1, "p")
+        mock_persistence.save_puzzle.assert_not_called()
+
+    @pytest.mark.parametrize("state", [ps.DRAFT, ps.FILLED, ps.FINISHED])
+    def test_open_editable_state_succeeds(self, puzzle_uc, mock_persistence, state):
+        mock_persistence.get_puzzle_state.return_value = {"state": state}
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_atlantic_puzzle()
+        working_name = puzzle_uc.open_puzzle_for_editing(1, "p")
+        assert working_name.startswith("__wc__p__")
+
+    def test_open_unknown_state_succeeds(self, puzzle_uc, mock_persistence):
+        mock_persistence.get_puzzle_state.return_value = None
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_atlantic_puzzle()
+        working_name = puzzle_uc.open_puzzle_for_editing(1, "p")
+        assert working_name.startswith("__wc__p__")
+
+
+class TestPuzzleUseCasesRename:
+    """rename_puzzle delegates to a true in-place rename."""
+
+    def test_rename_calls_persistence_rename(self, puzzle_uc, mock_persistence):
+        puzzle_uc.rename_puzzle(1, "old", "new")
+        mock_persistence.rename_puzzle.assert_called_once_with(1, "old", "new")
+        mock_persistence.copy_puzzle.assert_not_called()
+        mock_persistence.delete_puzzle.assert_not_called()
+
+    def test_rename_rejects_empty_name(self, puzzle_uc, mock_persistence):
+        with pytest.raises(ValueError):
+            puzzle_uc.rename_puzzle(1, "old", "   ")
+        mock_persistence.rename_puzzle.assert_not_called()
+
+
+class TestPuzzleUseCasesSetState:
+    """set_puzzle_state validates targets and required fields."""
+
+    def test_invalid_state_raises(self, puzzle_uc):
+        with pytest.raises(ValueError, match="Invalid state"):
+            puzzle_uc.set_puzzle_state(1, "p", "bogus")
+
+    def test_submitted_requires_publisher(self, puzzle_uc):
+        with pytest.raises(ValueError, match="publisher is required"):
+            puzzle_uc.set_puzzle_state(1, "p", ps.SUBMITTED, date_submitted="2026-06-06")
+
+    def test_submitted_requires_date(self, puzzle_uc):
+        with pytest.raises(ValueError, match="date_submitted is required"):
+            puzzle_uc.set_puzzle_state(1, "p", ps.SUBMITTED, publisher="NYT")
+
+    def test_published_requires_date(self, puzzle_uc):
+        with pytest.raises(ValueError, match="date_published is required"):
+            puzzle_uc.set_puzzle_state(1, "p", ps.PUBLISHED)
+
+    def test_submitted_success(self, puzzle_uc, mock_persistence):
+        mock_persistence.get_puzzle_state.return_value = {
+            "state": ps.SUBMITTED, "publisher": "NYT",
+            "date_submitted": "2026-06-06", "date_published": None,
+        }
+        result = puzzle_uc.set_puzzle_state(
+            1, "p", ps.SUBMITTED, publisher="NYT", date_submitted="2026-06-06")
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "p", ps.SUBMITTED, publisher="NYT",
+            date_submitted="2026-06-06", date_published=None)
+        assert result["state"] == ps.SUBMITTED
+
+    def test_reopen_to_draft_clears_fields(self, puzzle_uc, mock_persistence):
+        mock_persistence.get_puzzle_state.return_value = {
+            "state": ps.DRAFT, "publisher": None,
+            "date_submitted": None, "date_published": None,
+        }
+        result = puzzle_uc.set_puzzle_state(1, "p", ps.DRAFT)
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "p", ps.DRAFT, publisher=None,
+            date_submitted=None, date_published=None)
+        assert result["state"] == ps.DRAFT

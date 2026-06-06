@@ -79,6 +79,60 @@ class PersistencePort(ABC):
         pass
 
     @abstractmethod
+    def set_puzzle_state(self, user_id: int, name: str, state: str, *,
+                         publisher: str | None = None,
+                         date_submitted: str | None = None,
+                         date_published: str | None = None) -> None:
+        """
+        Overwrite the puzzle's state columns in place.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            state: The new lifecycle state
+            publisher: Free-form publisher text (for 'submitted')
+            date_submitted: ISO date (for 'submitted')
+            date_published: ISO date (for 'published')
+
+        Raises:
+            PersistenceError: If the puzzle is not found or the write fails
+        """
+        pass
+
+    @abstractmethod
+    def get_puzzle_state(self, user_id: int, name: str) -> dict | None:
+        """
+        Return the puzzle's current state columns as a dict, or None if the
+        puzzle doesn't exist.
+
+        Keys: state, publisher, date_submitted, date_published.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+
+        Raises:
+            PersistenceError: If the read fails
+        """
+        pass
+
+    @abstractmethod
+    def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
+        """
+        Rename a puzzle in place, preserving its id and all columns (state
+        included).
+
+        Args:
+            user_id: The user who owns this puzzle
+            old_name: Current name of the puzzle
+            new_name: Desired new name
+
+        Raises:
+            PersistenceError: If the puzzle is not found or new_name is taken
+        """
+        pass
+
+    @abstractmethod
     def list_puzzles(self, user_id: int) -> list[str]:
         """
         Get list of puzzle names for a user.
