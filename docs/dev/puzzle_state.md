@@ -123,11 +123,11 @@ CREATE TABLE IF NOT EXISTS puzzles (
     modified        TEXT NOT NULL,
     last_mode       TEXT NOT NULL DEFAULT 'puzzle'
                         CHECK (last_mode IN ('grid', 'puzzle')),
-    jsonstr         TEXT NOT NULL,
     state           TEXT NOT NULL DEFAULT 'draft'
                         CHECK (state IN (
                             'draft','filled','finished',
                             'submitted','published','archived')),
+    jsonstr         TEXT NOT NULL,
     publisher       TEXT,                     -- NYT, LAT, WSJ, DTH, ...
     date_submitted  TEXT,                     -- ISO date, only for 'submitted'
     date_published  TEXT                      -- ISO date, only for 'published'

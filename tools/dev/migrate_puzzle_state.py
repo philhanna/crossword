@@ -60,11 +60,11 @@ CREATE TABLE puzzles (
     modified        TEXT NOT NULL,
     last_mode       TEXT NOT NULL DEFAULT 'puzzle'
                         CHECK (last_mode IN ('grid', 'puzzle')),
-    jsonstr         TEXT NOT NULL,
     state           TEXT NOT NULL DEFAULT 'draft'
                         CHECK (state IN (
                             'draft','filled','finished',
                             'submitted','published','archived')),
+    jsonstr         TEXT NOT NULL,
     publisher       TEXT,
     date_submitted  TEXT,
     date_published  TEXT
