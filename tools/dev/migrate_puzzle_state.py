@@ -1,18 +1,20 @@
 """
-Rebuild the crossword database into a new file with the puzzle_state schema.
+Rebuild the crossword database into a new file with the puzzle-state columns.
 
 This is a one-off migration. It reads the existing database (read-only, never
-modified) and writes a brand-new SQLite file containing the full target schema
-(puzzles + puzzle_state). Because the destination is fresh, the schema is created
-once, unconditionally — there is no CREATE TABLE IF NOT EXISTS, no ALTER TABLE,
-and no column-existence probing.
+modified) and writes a brand-new SQLite file containing the full target schema:
+the puzzles table now carries its state directly as extra columns (state +
+publisher / date_submitted / date_published). There is no separate state table
+and no history — only the current state is kept. Because the destination is
+fresh, the schema is created once, unconditionally — there is no CREATE TABLE IF
+NOT EXISTS, no ALTER TABLE, and no column-existence probing.
 
-It copies every real puzzle (preserving its id, so puzzle_state foreign keys line
-up), skipping working copies (__wc__ / __new__) and legacy NULL names, and seeds
-one puzzle_state row per copied puzzle using the puzzle's created timestamp. The
-seeded state is auto-detected from the puzzle's contents via the completion
-ladder (draft/filled/finished) — see docs/dev/dashboard.md §2-§3 — so a fully
-filled-and-clued puzzle migrates as 'finished', not 'draft'.
+It copies every real puzzle (preserving its id), skipping working copies
+(__wc__ / __new__) and legacy NULL names, and sets each puzzle's `state` column
+to an auto-detected value via the completion ladder (draft/filled/finished) —
+see docs/dev/dashboard.md §2-§3 — so a fully filled-and-clued puzzle migrates as
+'finished', not 'draft'. The publisher / date columns are left NULL; they are
+only ever set later from the dashboard.
 
 Uses plain sqlite3 for the schema and row copy, and reuses the domain code
 (Puzzle.from_json + crossword.domain.puzzle_state.detect_completion_state) to
@@ -20,7 +22,7 @@ classify each puzzle. It does not import SQLitePersistenceAdapter.
 
 The schema DDL below is copied from
 crossword/adapters/sqlite_persistence_adapter.py::_ensure_schema_compatibility
-(plus the puzzle_state table from docs/dev/dashboard.md §1), which remains the
+(with the state columns from docs/dev/dashboard.md §1), which remains the
 source of truth for the running app. Keep them in sync by hand.
 
 Usage:
@@ -58,33 +60,23 @@ CREATE TABLE puzzles (
     modified        TEXT NOT NULL,
     last_mode       TEXT NOT NULL DEFAULT 'puzzle'
                         CHECK (last_mode IN ('grid', 'puzzle')),
-    jsonstr         TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_puzzles_userid_puzzlename
-    ON puzzles(userid, puzzlename);
-
-CREATE TABLE puzzle_state (
-    ts              TEXT    NOT NULL,
-    puzzle_id       INTEGER NOT NULL,
-    state           TEXT    NOT NULL
+    jsonstr         TEXT NOT NULL,
+    state           TEXT NOT NULL DEFAULT 'draft'
                         CHECK (state IN (
                             'draft','filled','finished',
                             'submitted','published','archived')),
     publisher       TEXT,
     date_submitted  TEXT,
-    date_published  TEXT,
-    PRIMARY KEY (ts, puzzle_id),
-    FOREIGN KEY (puzzle_id) REFERENCES puzzles(id) ON DELETE CASCADE
+    date_published  TEXT
 );
 
-CREATE INDEX idx_puzzle_state_puzzle
-    ON puzzle_state(puzzle_id, ts DESC);
+CREATE UNIQUE INDEX idx_puzzles_userid_puzzlename
+    ON puzzles(userid, puzzlename);
 """
 
 
 def main() -> None:
-    """Read the old DB and rebuild it into a new file with the puzzle_state schema."""
+    """Read the old DB and rebuild it into a new file with the puzzle-state columns."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -115,7 +107,7 @@ def main() -> None:
     states = [(row, detect_state(row)) for row in puzzles]
 
     print(f"Real puzzles to copy: {len(puzzles)}")
-    print("State rows to seed (auto-detected):")
+    print("State assigned (auto-detected):")
     for state in ps.COMPLETION_LADDER:
         count = sum(1 for _, s in states if s == state)
         print(f"  {state:<9} {count}")
@@ -126,13 +118,12 @@ def main() -> None:
 
     new_conn = create_new_database(new_path)
     try:
-        copy_puzzles(new_conn, puzzles)
-        backfill_states(new_conn, states)
+        copy_puzzles(new_conn, states)
         new_conn.commit()
     finally:
         new_conn.close()
 
-    print(f"\nCreated {new_path} with {len(puzzles)} puzzle(s) and {len(states)} state row(s).")
+    print(f"\nCreated {new_path} with {len(puzzles)} puzzle(s).")
     print("Point the app at it: update 'dbfile' in ~/.config/crossword/config.yaml.")
 
 
@@ -181,12 +172,12 @@ def create_new_database(path: str) -> sqlite3.Connection:
     return conn
 
 
-def copy_puzzles(conn: sqlite3.Connection, puzzles: list[sqlite3.Row]) -> None:
-    """Insert the given puzzle rows into the new DB, preserving each id."""
+def copy_puzzles(conn: sqlite3.Connection, states: list[tuple[sqlite3.Row, str]]) -> None:
+    """Insert the given puzzle rows into the new DB, preserving each id and its auto-detected state."""
     conn.executemany(
         "INSERT INTO puzzles"
-        " (id, userid, puzzlename, created, modified, last_mode, jsonstr)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        " (id, userid, puzzlename, created, modified, last_mode, jsonstr, state)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [
             (
                 row["id"],
@@ -196,17 +187,10 @@ def copy_puzzles(conn: sqlite3.Connection, puzzles: list[sqlite3.Row]) -> None:
                 row["modified"],
                 row["last_mode"],
                 row["jsonstr"],
+                state,
             )
-            for row in puzzles
+            for row, state in states
         ],
-    )
-
-
-def backfill_states(conn: sqlite3.Connection, states: list[tuple[sqlite3.Row, str]]) -> None:
-    """Seed one puzzle_state row per puzzle (auto-detected state), dated at created ts."""
-    conn.executemany(
-        "INSERT INTO puzzle_state (ts, puzzle_id, state) VALUES (?, ?, ?)",
-        [(row["created"], row["id"], state) for row, state in states],
     )
 
 

@@ -2,10 +2,10 @@
 
 ## Goal
 
-Give every puzzle an explicit **lifecycle state** and keep a **history** of how it
-moved through that lifecycle. Some transitions happen automatically when the
-puzzle is saved (the system inspects the puzzle and advances it); the rest are
-driven by the user from new front-end controls (a "dashboard").
+Give every puzzle an explicit **lifecycle state**. Some transitions happen
+automatically when the puzzle is saved (the system inspects the puzzle and
+advances it); the rest are driven by the user from new front-end controls (a
+"dashboard"). Only the **current** state is kept — there is no separate history.
 
 The lifecycle:
 
@@ -18,13 +18,15 @@ The lifecycle:
 | `published` | Published | User |
 | `archived` | Saved old puzzle | User |
 
-State is recorded in a **new `puzzle_state` table** with one row per state
-change, so the full history is preserved.
+State is stored **directly on the `puzzles` table** as extra columns — the
+current `state` plus its state-specific fields (`publisher`, `date_submitted`,
+`date_published`). Each save overwrites the columns in place; no history rows are
+kept.
 
 > **Resolved decisions** (see §11 for the full list):
 > `submitted`/`published`/`archived` are **read-only** (editing is
 > blocked until the user reopens the puzzle → `draft`); **rename** is refactored
-> to preserve the puzzle `id` and its history; **publisher** is a **free-form
+> to preserve the puzzle `id`; **publisher** is a **free-form
 > text field** and is **required** when moving to `submitted`, as are the
 > relevant dates.
 
@@ -51,14 +53,16 @@ CREATE TABLE IF NOT EXISTS puzzles (
 CREATE UNIQUE INDEX idx_puzzles_userid_puzzlename ON puzzles(userid, puzzlename);
 ```
 
-- The integer **`id`** is the natural foreign-key target for `puzzle_state`.
+- The state columns are added to this same table (§1).
 - A puzzle is addressed throughout the use cases by `(user_id, puzzlename)`; the
   adapter resolves that to `id` internally
   ([save_puzzle:110-143](../../crossword/adapters/sqlite_persistence_adapter.py#L110-L143)).
 - There is **no migration framework** — schema evolution is done inline in
   `_ensure_schema_compatibility()`, using `CREATE TABLE IF NOT EXISTS` and
-  `ALTER TABLE` guarded by `_column_exists()`. The new table follows the same
-  pattern.
+  `ALTER TABLE` guarded by `_column_exists()`. The state columns, however, are
+  **not** added inline — they are part of the `CREATE TABLE` (§1), and existing
+  databases are upgraded once by the migration tool (§9) rather than altered in
+  place.
 
 ### Working-copy / save pattern
 
@@ -80,9 +84,10 @@ collapse the working copy back onto a real name via `copy_puzzle()`:
 So the **two hook points for auto-detection** are `create_puzzle()` (→ `draft`)
 and `copy_puzzle()` (→ recompute on every Save / Save As).
 
-> Working copies (`__wc__…`, `__new__…`) are transient and must **never** get
-> state-history rows. State is only recorded against real, user-visible puzzle
-> names — i.e. the *destination* of `copy_puzzle()` / `create_puzzle()`.
+> Working copies (`__wc__…`, `__new__…`) are transient and carry whatever state
+> they were cloned with. The meaningful state lives on real, user-visible puzzle
+> names — i.e. the *destination* of `copy_puzzle()` / `create_puzzle()`, which is
+> where the auto-detector writes.
 
 ### Completeness signals available today
 
@@ -99,44 +104,46 @@ exist:
 
 ---
 
-## 1. Data model — the `puzzle_state` table
+## 1. Data model — state columns on `puzzles`
 
-Add to `_ensure_schema_compatibility()`
+State lives directly on the `puzzles` table as four extra columns. The
+`CREATE TABLE IF NOT EXISTS puzzles` in `_ensure_schema_compatibility()`
 ([sqlite_persistence_adapter.py:53-88](../../crossword/adapters/sqlite_persistence_adapter.py#L53-L88))
-so it is auto-created on first connect, exactly like `puzzles`:
+simply **carries the columns** — no `ALTER TABLE`, no `_column_exists()` probing.
+The running app never mutates an existing schema; databases that predate these
+columns are upgraded **once** by the migration tool (§9), which rebuilds into a
+fresh file with this exact table:
 
 ```sql
-CREATE TABLE IF NOT EXISTS puzzle_state (
-    ts              TEXT    NOT NULL,         -- ISO timestamp of the change
-    puzzle_id       INTEGER NOT NULL,         -- FK -> puzzles(id)
-    state           TEXT    NOT NULL          -- draft|filled|finished|
-                                              --   submitted|published|archived
+CREATE TABLE IF NOT EXISTS puzzles (
+    id              INTEGER PRIMARY KEY,
+    userid          INTEGER NOT NULL,
+    puzzlename      TEXT NOT NULL,
+    created         TEXT NOT NULL,
+    modified        TEXT NOT NULL,
+    last_mode       TEXT NOT NULL DEFAULT 'puzzle'
+                        CHECK (last_mode IN ('grid', 'puzzle')),
+    jsonstr         TEXT NOT NULL,
+    state           TEXT NOT NULL DEFAULT 'draft'
                         CHECK (state IN (
                             'draft','filled','finished',
                             'submitted','published','archived')),
-    -- state-specific columns, NULL when not applicable
     publisher       TEXT,                     -- NYT, LAT, WSJ, DTH, ...
     date_submitted  TEXT,                     -- ISO date, only for 'submitted'
-    date_published  TEXT,                     -- ISO date, only for 'published'
-    PRIMARY KEY (ts, puzzle_id),
-    FOREIGN KEY (puzzle_id) REFERENCES puzzles(id) ON DELETE CASCADE
+    date_published  TEXT                      -- ISO date, only for 'published'
 );
-
-CREATE INDEX IF NOT EXISTS idx_puzzle_state_puzzle
-    ON puzzle_state(puzzle_id, ts DESC);
 ```
 
 Notes:
 
-- **PK = `(ts, puzzle_id)`** as specified. The supporting index
-  `(puzzle_id, ts DESC)` makes "latest state for this puzzle" a single fast
-  lookup.
-- **`ON DELETE CASCADE`** keeps history from leaking when a puzzle is deleted.
-  SQLite enforces FKs only when `PRAGMA foreign_keys = ON` — set this pragma in
-  the adapter constructor (it is currently off by default). Even without the
-  pragma, the delete path should clean up explicitly.
-- The state-specific columns are deliberately nullable rather than a separate
-  table — the set is small and fixed.
+- **`state` defaults to `draft`** and is constrained by the `CHECK` to the six
+  valid states — both come from the `CREATE TABLE`, so they apply to every
+  database the app creates or is pointed at after migration.
+- The state-specific columns are deliberately nullable — they apply only to the
+  user-owned states.
+- Because state is a column on the puzzle row, it is read in the same `SELECT`
+  that loads the puzzle and deleted with it — no extra table, no foreign keys,
+  no cascade.
 
 ---
 
@@ -160,23 +167,22 @@ dashboard.
 
 ### What happens on Save / Save As / create
 
-Let `current` = the puzzle's latest recorded state (or `None`), and
-`computed` = the ladder result above.
+Let `current` = the puzzle's current `state` column (or `None` for a name that
+doesn't exist yet), and `computed` = the ladder result above.
 
-1. **Create** (`create_puzzle`): record `draft` (first-ever row).
+1. **Create** (`create_puzzle`): set `state = draft`.
 2. **Save / Save As** (`copy_puzzle`):
-   - `current is None` (Save As to a brand-new name) → record `computed`.
+   - `current is None` (Save As to a brand-new name) → set `computed`.
    - `current ∈ {submitted, published, archived}` → **no auto change**. In
      practice this can't be reached, because those states are read-only and a
      working copy can't have been opened (§ editing lock); the guard stays as a
      defensive no-op.
-   - `current ∈ {draft, filled, finished}` → if `computed != current`, record
-     `computed`. This allows forward moves (draft→filled→finished) **and**
-     backward moves (e.g. finished→filled when a cell is later cleared), which
-     reflects reality.
-3. **Record only on change** — never write a `puzzle_state` row whose `state`
-   (and state-specific columns) equal the latest row. This keeps the history
-   meaningful and avoids a row on every keystroke-driven save.
+   - `current ∈ {draft, filled, finished}` → set `computed`. This allows forward
+     moves (draft→filled→finished) **and** backward moves (e.g. finished→filled
+     when a cell is later cleared), which reflects reality.
+
+Each save simply overwrites the `state` column with the computed value; there is
+no history to keep meaningful, so no on-change guard is needed.
 
 ### Editing lock for read-only states
 
@@ -199,8 +205,8 @@ open is sufficient — no per-edit guards are needed.
 Set explicitly via the dashboard (§8): `submitted` (requires `publisher` +
 `date_submitted`), `published` (requires `date_published`), `archived`, and
 **Reopen** (→ `draft`). `set_puzzle_state()` validates the target state, enforces
-the required fields, and records the row. `publisher` is a free-form text field
-(no value validation beyond being non-empty when required).
+the required fields, and writes the columns. `publisher` is a free-form text
+field (no value validation beyond being non-empty when required).
 
 ---
 
@@ -264,45 +270,42 @@ Add state operations to
 keyed by `(user_id, name)` so use cases never deal with raw row ids.
 
 ```python
-def record_puzzle_state(self, user_id: int, name: str, state: str, *,
-                        publisher: str | None = None,
-                        date_submitted: str | None = None,
-                        date_published: str | None = None,
-                        when: str | None = None) -> None:
-    """Append a state-history row for the puzzle, only if it differs from the
-    current latest row. `when` defaults to now (ISO)."""
+def set_puzzle_state(self, user_id: int, name: str, state: str, *,
+                     publisher: str | None = None,
+                     date_submitted: str | None = None,
+                     date_published: str | None = None) -> None:
+    """Overwrite the puzzle's state columns in place
+    (UPDATE puzzles SET state = ?, publisher = ?, ...)."""
 
-def get_current_puzzle_state(self, user_id: int, name: str) -> dict | None:
-    """Latest state row as a dict, or None if no history."""
-
-def get_puzzle_state_history(self, user_id: int, name: str) -> list[dict]:
-    """All state rows, newest first."""
+def get_puzzle_state(self, user_id: int, name: str) -> dict | None:
+    """The puzzle's current state columns as a dict, or None if the puzzle
+    doesn't exist."""
 
 def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
-    """Rename in place: UPDATE puzzles SET puzzlename = ?. Preserves id, so the
-    puzzle_state history follows automatically. Raises if new_name is taken."""
+    """Rename in place: UPDATE puzzles SET puzzlename = ?. Preserves id and all
+    its columns (state included). Raises if new_name is taken."""
 ```
 
 ---
 
 ## 5. Adapter changes — `SQLitePersistenceAdapter`
 
-- **Schema:** add the `puzzle_state` CREATE TABLE + index to
-  `_ensure_schema_compatibility()`; enable `PRAGMA foreign_keys = ON` in
-  `__init__`.
-- **`record_puzzle_state`:** resolve `(userid, name) → id`; read the latest row;
-  if `state` + state-specific columns are unchanged, return without inserting;
-  otherwise `INSERT` with `ts = when or datetime.now().isoformat()`. Guard
-  against `ts` collisions (same-millisecond saves) — if `INSERT` hits the PK,
-  retry once with a nudged timestamp.
-- **`get_current_puzzle_state`:** `SELECT … ORDER BY ts DESC LIMIT 1`.
-- **`get_puzzle_state_history`:** `SELECT … ORDER BY ts DESC`.
+- **Schema:** the four state columns are part of the `CREATE TABLE IF NOT
+  EXISTS puzzles` in `_ensure_schema_compatibility()` (§1) — no `ALTER TABLE`.
+- **`set_puzzle_state`:** `UPDATE puzzles SET state = ?, publisher = ?,
+  date_submitted = ?, date_published = ?, modified = ? WHERE userid = ? AND
+  puzzlename = ?`.
+- **`get_puzzle_state`:** `SELECT state, publisher, date_submitted,
+  date_published FROM puzzles WHERE userid = ? AND puzzlename = ?` → dict, or
+  `None` if the row is absent. (Loading the full puzzle already returns these
+  columns too.)
 - **`rename_puzzle`:** `UPDATE puzzles SET puzzlename = ?, modified = ? WHERE
   userid = ? AND puzzlename = ?`. The unique index on `(userid, puzzlename)`
   rejects a clashing name — translate that into a `PersistenceError`. Because
-  `id` is unchanged, `puzzle_state` rows need no touching.
-- **`delete_puzzle`:** also `DELETE FROM puzzle_state WHERE puzzle_id = ?`
-  (belt-and-suspenders alongside the cascade)
+  the row (and its state columns) is unchanged otherwise, nothing else is
+  touched.
+- **`delete_puzzle`:** unchanged — the state columns live on the row that
+  `delete_puzzle` already removes
   ([delete_puzzle:170-186](../../crossword/adapters/sqlite_persistence_adapter.py#L170-L186)).
 
 ---
@@ -312,31 +315,28 @@ def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
 Add a private helper and call it from the two hook points:
 
 ```python
-def _auto_record_state_on_save(self, user_id, name, puzzle):
+def _auto_set_state_on_save(self, user_id, name, puzzle):
     from crossword.domain import puzzle_state as ps
-    current = self.persistence.get_current_puzzle_state(user_id, name)
+    current = self.persistence.get_puzzle_state(user_id, name)
     computed = ps.detect_completion_state(puzzle)
-    if current is None:
-        self.persistence.record_puzzle_state(user_id, name, computed)
-        return
-    if current["state"] in ps.READ_ONLY:
+    if current is not None and current["state"] in ps.READ_ONLY:
         return                       # defensive: read-only puzzles can't be open
-    if computed != current["state"]:
-        self.persistence.record_puzzle_state(user_id, name, computed)
+    self.persistence.set_puzzle_state(user_id, name, computed)
 ```
 
 - **`create_puzzle`** ([57-77](../../crossword/use_cases/puzzle_use_cases.py#L57-L77)):
-  after `save_puzzle`, `record_puzzle_state(user_id, name, DRAFT)`.
+  the row is created with `state = draft` (the column default), so no extra call
+  is needed.
 - **`copy_puzzle`** ([124-149](../../crossword/use_cases/puzzle_use_cases.py#L124-L149)):
-  after `save_puzzle`, call `_auto_record_state_on_save(user_id, new_name, puzzle)`.
+  after `save_puzzle`, call `_auto_set_state_on_save(user_id, new_name, puzzle)`.
   This covers both Save (dest = original name) and Save As (dest = new name).
 - **`open_puzzle_for_editing`** ([168-193](../../crossword/use_cases/puzzle_use_cases.py#L168-L193)):
   before creating the working copy, read the current state; if it is in
   `READ_ONLY`, raise a `PuzzleReadOnlyError` (new, caught by the handler).
 - **`rename_puzzle`** ([151-166](../../crossword/use_cases/puzzle_use_cases.py#L151-L166)):
   replace the copy+delete body with a single call to the new
-  `persistence.rename_puzzle(...)`. History is preserved automatically (same
-  `id`). Drop the `copy_puzzle` indirection here.
+  `persistence.rename_puzzle(...)`. State is preserved automatically (same row).
+  Drop the `copy_puzzle` indirection here.
 
 New public method for user-driven transitions:
 
@@ -346,7 +346,7 @@ def set_puzzle_state(self, user_id, name, state, *,
                      date_published=None) -> dict:
     """Validate `state` ∈ ALL_STATES; enforce required fields per target state
     (publisher + date_submitted for 'submitted'; date_published for 'published');
-    record the row and return the new current-state dict.
+    write the columns and return the new state dict.
 
     `publisher` is free-form text — required to be non-empty when moving to
     'submitted', but otherwise unvalidated."""
@@ -362,7 +362,6 @@ Add to [puzzle_handlers.py](../../crossword/http_server/puzzle_handlers.py)
 | Method | Route | Handler | Purpose |
 |---|---|---|---|
 | `GET` | `/api/puzzles/<name>/state` | `handle_get_puzzle_state` | Current state + fields |
-| `GET` | `/api/puzzles/<name>/state/history` | `handle_get_puzzle_state_history` | Full history |
 | `PUT` | `/api/puzzles/<name>/state` | `handle_set_puzzle_state` | User transition (incl. Reopen → draft) |
 
 - `PUT` body: `{ "state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06" }`
@@ -390,7 +389,6 @@ A **Puzzle Dashboard** view is the natural home:
 - Per-row actions to set user-owned states: **Submit** (prompt for publisher
   as free-form text + submitted date), **Mark published** (prompt for
   date), **Archive**, and **Reopen** (→ draft). Each calls `PUT …/state`.
-- A **history** drawer per puzzle (`GET …/state/history`) showing the timeline.
 - Filter/group by state (e.g. hide `archived` by default).
 - Puzzles in a read-only state (`submitted`/`published`/`archived`) show **Open**
   as disabled; the user must **Reopen** first. If they try to open one anyway,
@@ -410,11 +408,17 @@ This section is intentionally a sketch — finalize the layout before building.
 [clear_work_files.py](../../tools/user/clear_work_files.py)).
 
 This is a **rebuild, not an in-place upgrade**: it reads the existing database
-and writes a **brand-new** SQLite file with the full target schema. The old file
-is opened read-only and never modified. Because the destination is fresh, the
-schema is defined **once, unconditionally** — no `CREATE TABLE IF NOT EXISTS`, no
-`ALTER TABLE`, no `_column_exists()` guards. The single user runs it once,
-verifies the result, then points the app at the new file.
+and writes a **brand-new** SQLite file with the full target schema (the `puzzles`
+table carrying the state columns directly). The old file is opened read-only and
+never modified. Because the destination is fresh, the schema is defined **once,
+unconditionally** — no `CREATE TABLE IF NOT EXISTS`, no `ALTER TABLE`, no
+`_column_exists()` guards. The single user runs it once, verifies the result,
+then points the app at the new file.
+
+This is the **only** way an existing database gains the state columns — the
+running app never runs `ALTER TABLE`. The rebuild also lets the tool **backfill**
+each puzzle's `state` with its real, auto-detected value rather than a flat
+`draft`.
 
 It uses **plain `sqlite3`** for the schema and the row copy, and **reuses the
 domain code** to classify each puzzle — `Puzzle.from_json()` plus
@@ -428,35 +432,33 @@ import `SQLitePersistenceAdapter`.
 - `--new-dbfile` — destination DB. **Required.** Must **not already exist** — the
   tool refuses to overlay or overwrite (no `--force`); the old DB is never the
   destination.
-- `--dry-run` — report counts (puzzles to copy, working copies skipped, state
-  rows to backfill) and write nothing, like `clear_work_files.py`.
+- `--dry-run` — report counts (puzzles to copy, working copies skipped, the
+  auto-detected state breakdown) and write nothing, like `clear_work_files.py`.
 
 **Procedure**
 
 1. Open `--old-dbfile` read-only (`file:...?mode=ro` URI). Refuse if
    `--new-dbfile` already exists.
 2. Create the new DB and define the **complete** schema in one unconditional
-   pass — the `puzzles` table + its unique index, and the `puzzle_state` table +
-   index (DDL exactly as in §1). Copy the DDL from
+   pass — the `puzzles` table (including the state columns) + its unique index
+   (DDL exactly as in §1's `CREATE TABLE` form). Copy the DDL from
    `_ensure_schema_compatibility()`
    ([sqlite_persistence_adapter.py:53-88](../../crossword/adapters/sqlite_persistence_adapter.py#L53-L88))
    so it stays faithful; that method remains the schema source of truth for the
    running app.
-3. Copy puzzle rows, **preserving `id`** (explicit `INSERT … (id, userid, …)`),
-   **excluding working copies** — `puzzlename` starting with `__wc__` or
-   `__new__`, and skipping legacy `NULL` names (see
+3. Copy puzzle rows, **preserving `id`** (explicit `INSERT … (id, userid, …,
+   state)`), **excluding working copies** — `puzzlename` starting with `__wc__`
+   or `__new__`, and skipping legacy `NULL` names (see
    [list_puzzles:199](../../crossword/adapters/sqlite_persistence_adapter.py#L199)).
-   Preserving `id` keeps the `puzzle_state` foreign keys valid.
-4. For every copied puzzle, insert one `puzzle_state` row using the puzzle's
-   `created` timestamp as `ts` so the history reads sensibly. The state is
-   **auto-detected** from the puzzle's contents via the completion ladder
-   (§2–§3): `Puzzle.from_json(jsonstr)` → `detect_completion_state(puzzle)`,
-   yielding `draft` / `filled` / `finished`. A fully filled-and-clued puzzle
-   therefore migrates as `finished`, not `draft`.
-5. After it finishes, swap the app over: update `dbfile` in
+   The `state` column is **auto-detected** from the puzzle's contents via the
+   completion ladder (§2–§3): `Puzzle.from_json(jsonstr)` →
+   `detect_completion_state(puzzle)`, yielding `draft` / `filled` / `finished`. A
+   fully filled-and-clued puzzle therefore migrates as `finished`, not `draft`.
+   The `publisher` / date columns are left NULL.
+4. After it finishes, swap the app over: update `dbfile` in
    `~/.config/crossword/config.yaml` (or rename the new file into place).
 
-> The seeded state reflects each puzzle's real completeness via the same
+> Each puzzle's migrated `state` reflects its real completeness via the same
 > `detect_completion_state` the running app uses — never a flat `draft`. The
 > user-owned states (`submitted`/`published`/`archived`) are out of scope for the
 > backfill; they are only ever set later from the dashboard.
@@ -471,21 +473,22 @@ import `SQLitePersistenceAdapter`.
 
 - **Domain:** `is_filled` / `all_clues_complete` / `detect_completion_state`
   across empty, partial, fully-filled-no-clues, fully-finished puzzles.
-- **Adapter:** table created; `record_puzzle_state` dedups on unchanged state;
-  history ordering newest-first; PK-collision retry; `rename_puzzle` preserves
-  `id` + history and rejects a clashing name; delete removes history.
-- **Use case:** `create_puzzle` → one `draft` row; `copy_puzzle` advances
+- **Adapter:** state columns added/created; `set_puzzle_state` overwrites the
+  columns in place; `get_puzzle_state` returns the current values (or `None`);
+  `rename_puzzle` preserves `id` + state and rejects a clashing name; delete
+  removes the row (and its state).
+- **Use case:** `create_puzzle` → `draft`; `copy_puzzle` advances
   draft→filled→finished and backward finished→filled; `open_puzzle_for_editing`
   raises on read-only states; `set_puzzle_state` enforces required fields
   (incl. non-empty free-form publisher on submit), and Reopen (→ draft) clears
   the lock.
-- **HTTP:** the three new routes happy-path; bad-state and missing-required-field
+- **HTTP:** the two new routes happy-path; bad-state and missing-required-field
   rejection; open of a read-only puzzle returns `409`/`403`.
 - **Migration:** writes a fresh DB without touching the source; refuses when the
   destination already exists; copies only real puzzles (preserving `id`), skips
-  working copies and `NULL` names; backfills one auto-detected state row
-  (`draft`/`filled`/`finished` via `detect_completion_state`) per copied puzzle
-  using its `created` ts; honors `--dry-run`.
+  working copies and `NULL` names; sets each copied puzzle's `state` to its
+  auto-detected value (`draft`/`filled`/`finished` via `detect_completion_state`);
+  honors `--dry-run`.
 
 ---
 
@@ -494,9 +497,9 @@ import `SQLitePersistenceAdapter`.
 1. **Read-only terminal states.** `submitted`/`published`/`archived` block
    editing; `open_puzzle_for_editing` refuses and the user must **Reopen**
    (→ draft) first.
-2. **Rename preserves history.** Rename is refactored to a true
-   `UPDATE puzzles SET puzzlename = ?`, keeping the puzzle `id` and its
-   `puzzle_state` history.
+2. **Rename preserves state.** Rename is refactored to a true
+   `UPDATE puzzles SET puzzlename = ?`, keeping the puzzle `id` and its state
+   columns.
 3. **Publisher + required fields.** `publisher` is a free-form text field;
    moving to `submitted` requires a non-empty `publisher` + `date_submitted`, and
    moving to `published` requires `date_published`.
@@ -506,10 +509,10 @@ import `SQLitePersistenceAdapter`.
 ## 12. Suggested implementation order
 
 1. Domain: `puzzle_state.py` + `Puzzle.is_filled` / `all_clues_complete` (+ tests).
-2. Adapter: `puzzle_state` table, FK pragma, record/get/history, in-place
-   `rename_puzzle`, delete cleanup (+ tests).
+2. Adapter: state columns in the `puzzles` `CREATE TABLE` (no `ALTER TABLE`),
+   `set_puzzle_state` / `get_puzzle_state`, in-place `rename_puzzle` (+ tests).
 3. Port: declare the state methods and the new `rename_puzzle`.
-4. Use cases: auto-record on `create_puzzle`/`copy_puzzle`, read-only lock in
+4. Use cases: auto-set state on `copy_puzzle`, read-only lock in
    `open_puzzle_for_editing`, refactored `rename_puzzle`, `set_puzzle_state`
    with free-form publisher field (+ tests).
 5. Migration tool + dry-run (+ tests); run it against the dev DB.
