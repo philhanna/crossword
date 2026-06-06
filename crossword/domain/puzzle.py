@@ -476,6 +476,16 @@ class Puzzle:
 
         return error_list
 
+    def is_filled(self):
+        """ True if the puzzle has at least one word and every word is complete """
+        words = list(self.across_words.values()) + list(self.down_words.values())
+        return bool(words) and all(w.is_complete() for w in words)
+
+    def all_clues_complete(self):
+        """ True if every word has a non-empty clue """
+        words = list(self.across_words.values()) + list(self.down_words.values())
+        return bool(words) and all((w.get_clue() or "").strip() for w in words)
+
     def get_statistics(self):
         """ Returns a dictionary of grid statistics """
         stats = dict()

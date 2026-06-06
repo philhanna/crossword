@@ -407,24 +407,63 @@ This section is intentionally a sketch — finalize the layout before building.
 
 `tools/dev/migrate_puzzle_state.py` (sibling of
 [import_grid.py](../../tools/dev/import_grid.py) and
-[clear_work_files.py](../../tools/user/clear_work_files.py)):
+[clear_work_files.py](../../tools/user/clear_work_files.py)).
 
-1. Resolve the dbfile the same way the app does (config / `DATABASE_URL`), or
-   take `--dbfile`.
-2. Open the DB through `SQLitePersistenceAdapter` so the `puzzle_state` table is
-   created by `_ensure_schema_compatibility()`.
-3. For every row in `puzzles` **excluding working copies** (`puzzlename` starting
-   with `__wc__` or `__new__`, and skipping legacy `NULL` names — see
-   [list_puzzles:199](../../crossword/adapters/sqlite_persistence_adapter.py#L199))
-   that has **no** `puzzle_state` row: insert one `draft` row, using the puzzle's
-   `created` timestamp as `ts` so the history reads sensibly.
-4. Support `--dry-run` (report counts, change nothing) like `clear_work_files.py`.
-5. Idempotent: re-running adds nothing for puzzles that already have history.
+This is a **rebuild, not an in-place upgrade**: it reads the existing database
+and writes a **brand-new** SQLite file with the full target schema. The old file
+is opened read-only and never modified. Because the destination is fresh, the
+schema is defined **once, unconditionally** — no `CREATE TABLE IF NOT EXISTS`, no
+`ALTER TABLE`, no `_column_exists()` guards. The single user runs it once,
+verifies the result, then points the app at the new file.
 
-> Per spec, the default backfill state is **`draft`** for every existing puzzle,
-> regardless of how complete it actually is. (If desired later, a `--detect`
-> flag could instead backfill via `detect_completion_state`, but the spec asks
-> for `draft`.)
+It uses **plain `sqlite3`** for the schema and the row copy, and **reuses the
+domain code** to classify each puzzle — `Puzzle.from_json()` plus
+`crossword.domain.puzzle_state.detect_completion_state()` (§3). It does **not**
+import `SQLitePersistenceAdapter`.
+
+**Arguments**
+
+- `--old-dbfile` — source DB. Default: resolved the same way the app does
+  (config / `DATABASE_URL`).
+- `--new-dbfile` — destination DB. **Required.** Must **not already exist** — the
+  tool refuses to overlay or overwrite (no `--force`); the old DB is never the
+  destination.
+- `--dry-run` — report counts (puzzles to copy, working copies skipped, state
+  rows to backfill) and write nothing, like `clear_work_files.py`.
+
+**Procedure**
+
+1. Open `--old-dbfile` read-only (`file:...?mode=ro` URI). Refuse if
+   `--new-dbfile` already exists.
+2. Create the new DB and define the **complete** schema in one unconditional
+   pass — the `puzzles` table + its unique index, and the `puzzle_state` table +
+   index (DDL exactly as in §1). Copy the DDL from
+   `_ensure_schema_compatibility()`
+   ([sqlite_persistence_adapter.py:53-88](../../crossword/adapters/sqlite_persistence_adapter.py#L53-L88))
+   so it stays faithful; that method remains the schema source of truth for the
+   running app.
+3. Copy puzzle rows, **preserving `id`** (explicit `INSERT … (id, userid, …)`),
+   **excluding working copies** — `puzzlename` starting with `__wc__` or
+   `__new__`, and skipping legacy `NULL` names (see
+   [list_puzzles:199](../../crossword/adapters/sqlite_persistence_adapter.py#L199)).
+   Preserving `id` keeps the `puzzle_state` foreign keys valid.
+4. For every copied puzzle, insert one `puzzle_state` row using the puzzle's
+   `created` timestamp as `ts` so the history reads sensibly. The state is
+   **auto-detected** from the puzzle's contents via the completion ladder
+   (§2–§3): `Puzzle.from_json(jsonstr)` → `detect_completion_state(puzzle)`,
+   yielding `draft` / `filled` / `finished`. A fully filled-and-clued puzzle
+   therefore migrates as `finished`, not `draft`.
+5. After it finishes, swap the app over: update `dbfile` in
+   `~/.config/crossword/config.yaml` (or rename the new file into place).
+
+> The seeded state reflects each puzzle's real completeness via the same
+> `detect_completion_state` the running app uses — never a flat `draft`. The
+> user-owned states (`submitted`/`published`/`archived`) are out of scope for the
+> backfill; they are only ever set later from the dashboard.
+
+> Idempotency is not a concern here: the destination is always a fresh file, so
+> there is nothing to re-apply onto. Re-running means deleting the new file and
+> rebuilding from the old one again.
 
 ---
 
@@ -442,8 +481,11 @@ This section is intentionally a sketch — finalize the layout before building.
   the lock.
 - **HTTP:** the three new routes happy-path; bad-state and missing-required-field
   rejection; open of a read-only puzzle returns `409`/`403`.
-- **Migration:** backfills only real puzzles, skips working copies, idempotent,
-  honors `--dry-run`.
+- **Migration:** writes a fresh DB without touching the source; refuses when the
+  destination already exists; copies only real puzzles (preserving `id`), skips
+  working copies and `NULL` names; backfills one auto-detected state row
+  (`draft`/`filled`/`finished` via `detect_completion_state`) per copied puzzle
+  using its `created` ts; honors `--dry-run`.
 
 ---
 
