@@ -4,7 +4,21 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
-## [Unreleased]
+## [4.16.0] - 2026-06-06
+
+### Added
+
+- Puzzle state lifecycle: state detection, persistence, and transitions
+- HTTP API for reading and updating puzzle state
+- Filter puzzles by state in the puzzle open dialog
+- Puzzle-state migration tool and domain tests
+
+### Changed
+
+- Store puzzle state as columns on the puzzles table (dropped the history table)
+- Removed references to the 'onhold' state
+
+## [4.15.1] - 2026-06-06
 
 ### Added
 
