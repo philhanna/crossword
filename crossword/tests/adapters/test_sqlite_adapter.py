@@ -109,6 +109,46 @@ class TestSQLitePersistenceAdapter:
 
         assert puzzles == ["newer", "older"]
 
+    def test_list_puzzle_summaries_returns_columns(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p1", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p1", state=ps.SUBMITTED,
+                                 publisher="NYT", date_submitted="2026-06-06")
+
+        summaries = adapter.list_puzzle_summaries(user_id=1)
+
+        assert len(summaries) == 1
+        row = summaries[0]
+        assert row["name"] == "p1"
+        assert row["state"] == ps.SUBMITTED
+        assert row["publisher"] == "NYT"
+        assert row["date_submitted"] == "2026-06-06"
+        assert row["date_published"] is None
+        assert row["modified"]
+
+    def test_list_puzzle_summaries_excludes_working_copies(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="real", puzzle=sample_puzzle)
+        adapter.save_puzzle(user_id=1, name="__wc__real__abcd1234", puzzle=sample_puzzle)
+        adapter.save_puzzle(user_id=1, name="__new__scratch", puzzle=sample_puzzle)
+
+        names = [r["name"] for r in adapter.list_puzzle_summaries(user_id=1)]
+
+        assert names == ["real"]
+
+    def test_list_puzzle_summaries_ordered_most_recent_first(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="older", puzzle=sample_puzzle)
+        adapter.save_puzzle(user_id=1, name="newer", puzzle=sample_puzzle)
+
+        cur = adapter.conn.cursor()
+        cur.execute("UPDATE puzzles SET modified = ? WHERE userid = ? AND puzzlename = ?",
+                    ("2026-01-01T00:00:00", 1, "older"))
+        cur.execute("UPDATE puzzles SET modified = ? WHERE userid = ? AND puzzlename = ?",
+                    ("2026-06-06T00:00:00", 1, "newer"))
+        adapter.conn.commit()
+
+        names = [r["name"] for r in adapter.list_puzzle_summaries(user_id=1)]
+
+        assert names == ["newer", "older"]
+
     def test_init_schema_adds_last_mode_column(self, adapter):
         cur = adapter.conn.cursor()
         cur.execute("PRAGMA table_info(puzzles)")

@@ -27,6 +27,7 @@ Public interface:
   get_puzzle_preview(user_id, name) -> dict
   get_puzzle_stats(user_id, name) -> dict
   get_fill_order(user_id, name, top_n=10) -> dict
+  get_dashboard(user_id) -> dict
 """
 
 import logging
@@ -569,6 +570,47 @@ class PuzzleUseCases:
         }
         self._fill_order_cache[key] = result
         return result
+
+    def get_dashboard(self, user_id: int) -> dict:
+        """Return all real puzzles with the summary metadata the dashboard needs.
+
+        Excludes working copies (__wc__ / __new__) and legacy NULL names — the
+        same set list_puzzles already returns. One row per puzzle, sorted most
+        recently modified first.
+
+        Returns:
+            {"puzzles": [ {name, title, state, publisher, date_submitted,
+                           date_published, modified, size, word_count,
+                           top_lengths: [{length, count}, ...],   # top 2 desc
+                           fill_pct}  ... ]}
+        """
+        summaries = self.persistence.list_puzzle_summaries(user_id)
+        return {"puzzles": [self._dashboard_row(user_id, s) for s in summaries]}
+
+    def _dashboard_row(self, user_id: int, summary: dict) -> dict:
+        """Build one dashboard row from a summary plus the loaded puzzle."""
+        name = summary["name"]
+        puzzle = self.persistence.load_puzzle(user_id, name)
+
+        wlens = puzzle.get_word_lengths()
+        top_lengths = []
+        for wlen in sorted(wlens.keys(), reverse=True)[:2]:
+            count = len(wlens[wlen]["alist"]) + len(wlens[wlen]["dlist"])
+            top_lengths.append({"length": wlen, "count": count})
+
+        return {
+            "name": name,
+            "title": puzzle.title or "",
+            "state": summary["state"],
+            "publisher": summary["publisher"],
+            "date_submitted": summary["date_submitted"],
+            "date_published": summary["date_published"],
+            "modified": summary["modified"],
+            "size": puzzle.n,
+            "word_count": puzzle.get_word_count(),
+            "top_lengths": top_lengths,
+            "fill_pct": round(puzzle.fill_fraction() * 100),
+        }
 
     def get_puzzle_preview(self, user_id: int, name: str) -> dict:
         """

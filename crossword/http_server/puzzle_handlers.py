@@ -2,6 +2,7 @@
 Puzzle handlers - CRUD operations on puzzles via HTTP.
 
 Routes:
+  GET    /api/dashboard            → get_dashboard
   GET    /api/puzzles              → list_puzzles
   POST   /api/puzzles              → create_puzzle
   GET    /api/puzzles/<name>       → load_puzzle
@@ -120,6 +121,24 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
         puzzles = [name for name in puzzles if not name.startswith("__new__")]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"puzzles": puzzles}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
+
+def handle_get_dashboard(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Return all real puzzles with the summary metadata the dashboard needs.
+    GET /api/dashboard
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        user_id = current_user["id"]
+        data = app.puzzle_uc.get_dashboard(user_id)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return data
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)

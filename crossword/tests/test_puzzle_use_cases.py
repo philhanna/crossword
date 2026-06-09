@@ -201,6 +201,68 @@ class TestPuzzleUseCasesList:
             puzzle_uc.list_puzzles(1, state="bogus")
 
 
+class TestPuzzleUseCasesGetDashboard:
+    """Tests for get_dashboard"""
+
+    def test_get_dashboard_one_row_per_summary(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.list_puzzle_summaries.return_value = [
+            {"name": "alpha", "modified": "2026-06-06T00:00:00", "state": "draft",
+             "publisher": None, "date_submitted": None, "date_published": None},
+            {"name": "beta", "modified": "2026-01-01T00:00:00", "state": "submitted",
+             "publisher": "NYT", "date_submitted": "2026-01-01", "date_published": None},
+        ]
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        result = puzzle_uc.get_dashboard(1)
+
+        assert [r["name"] for r in result["puzzles"]] == ["alpha", "beta"]
+
+    def test_get_dashboard_row_shape(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.list_puzzle_summaries.return_value = [
+            {"name": "alpha", "modified": "2026-06-06T00:00:00", "state": "submitted",
+             "publisher": "NYT", "date_submitted": "2026-06-06", "date_published": None},
+        ]
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        row = puzzle_uc.get_dashboard(1)["puzzles"][0]
+
+        assert set(row.keys()) == {
+            "name", "title", "state", "publisher", "date_submitted",
+            "date_published", "modified", "size", "word_count",
+            "top_lengths", "fill_pct",
+        }
+        assert row["title"] == test_puzzle.title
+        assert row["state"] == "submitted"
+        assert row["publisher"] == "NYT"
+        assert row["size"] == test_puzzle.n
+        assert row["word_count"] == test_puzzle.get_word_count()
+        assert row["fill_pct"] == 0  # blank puzzle
+
+    def test_get_dashboard_top_lengths_are_two_largest(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.list_puzzle_summaries.return_value = [
+            {"name": "alpha", "modified": "2026-06-06T00:00:00", "state": "draft",
+             "publisher": None, "date_submitted": None, "date_published": None},
+        ]
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        top = puzzle_uc.get_dashboard(1)["puzzles"][0]["top_lengths"]
+
+        wlens = test_puzzle.get_word_lengths()
+        expected = sorted(wlens.keys(), reverse=True)[:2]
+        assert [t["length"] for t in top] == expected
+        assert len(top) <= 2
+        for t in top:
+            wlen = t["length"]
+            assert t["count"] == len(wlens[wlen]["alist"]) + len(wlens[wlen]["dlist"])
+
+    def test_get_dashboard_empty(self, puzzle_uc, mock_persistence):
+        mock_persistence.list_puzzle_summaries.return_value = []
+
+        result = puzzle_uc.get_dashboard(1)
+
+        assert result == {"puzzles": []}
+
+
 class TestPuzzleUseCasesOpenForEditing:
     """Tests for open_puzzle_for_editing"""
 

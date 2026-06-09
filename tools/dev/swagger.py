@@ -228,6 +228,49 @@ SPEC = {
         # ================================================================
         # PUZZLES
         # ================================================================
+        "/api/dashboard": {
+            "get": {
+                "tags": ["puzzles"],
+                "summary": "Get all real puzzles with dashboard summary metadata",
+                "responses": {
+                    "200": {"description": "All real puzzles, most recently modified first",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "puzzles": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {"type": "string"},
+                                                "title": {"type": "string"},
+                                                "state": {"type": "string"},
+                                                "publisher": {"type": "string", "nullable": True},
+                                                "date_submitted": {"type": "string", "nullable": True},
+                                                "date_published": {"type": "string", "nullable": True},
+                                                "modified": {"type": "string"},
+                                                "size": {"type": "integer"},
+                                                "word_count": {"type": "integer"},
+                                                "top_lengths": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "length": {"type": "integer"},
+                                                            "count": {"type": "integer"},
+                                                        },
+                                                    },
+                                                },
+                                                "fill_pct": {"type": "integer"},
+                                            },
+                                        },
+                                    },
+                                },
+                            }}}},
+                },
+            },
+        },
+
         "/api/puzzles": {
             "get": {
                 "tags": ["puzzles"],

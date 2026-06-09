@@ -28,6 +28,7 @@ Modules: `puzzle_handlers.py`, `word_handlers.py`
 
 | Method | Path | Handler |
 |--------|------|---------|
+| GET | `/api/dashboard` | [handle_get_dashboard](../../crossword/http_server/puzzle_handlers.py#L109) |
 | GET | `/api/puzzles` | [handle_list_puzzles](../../crossword/http_server/puzzle_handlers.py#L110) |
 | POST | `/api/puzzles` | [handle_create_puzzle](../../crossword/http_server/puzzle_handlers.py#L129) |
 | GET | `/api/puzzles/{name}` | [handle_load_puzzle](../../crossword/http_server/puzzle_handlers.py#L170) |

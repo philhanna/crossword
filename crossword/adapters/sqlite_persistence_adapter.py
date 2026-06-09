@@ -276,6 +276,36 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to list puzzles: {e}")
 
+    def list_puzzle_summaries(self, user_id: int) -> list[dict]:
+        """Return summary rows for the user's real puzzles, most recent first."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """SELECT puzzlename, modified, state, publisher,
+                          date_submitted, date_published
+                   FROM puzzles
+                   WHERE userid = ?
+                     AND puzzlename IS NOT NULL
+                     AND puzzlename NOT LIKE '@_@_wc@_@_%' ESCAPE '@'
+                     AND puzzlename NOT LIKE '@_@_new@_@_%' ESCAPE '@'
+                   ORDER BY modified DESC""",
+                (user_id,),
+            )
+            rows = cursor.fetchall()
+            return [
+                {
+                    "name": row["puzzlename"],
+                    "modified": row["modified"],
+                    "state": row["state"],
+                    "publisher": row["publisher"],
+                    "date_submitted": row["date_submitted"],
+                    "date_published": row["date_published"],
+                }
+                for row in rows
+            ]
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Failed to list puzzle summaries: {e}")
+
     def close(self) -> None:
         """Close the database connection."""
         if hasattr(self, "conn") and self.conn:

@@ -150,3 +150,23 @@ class PersistencePort(ABC):
             PersistenceError: If listing fails
         """
         pass
+
+    @abstractmethod
+    def list_puzzle_summaries(self, user_id: int) -> list[dict]:
+        """
+        Return summary rows for the user's real puzzles, most recent first.
+
+        Each row is a dict with keys: name, modified, state, publisher,
+        date_submitted, date_published. Excludes working copies
+        (puzzlename LIKE '__wc__%' / '__new__%') and legacy NULL names.
+
+        Args:
+            user_id: The user who owns these puzzles
+
+        Returns:
+            List of summary dicts, sorted most recently modified first
+
+        Raises:
+            PersistenceError: If listing fails
+        """
+        pass

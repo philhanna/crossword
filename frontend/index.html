@@ -25,6 +25,9 @@
 
   <nav id="top-menu" class="app-bar-nav">
 
+    <!-- Dashboard -->
+    <a id="menu-dashboard" class="app-nav-btn" onclick="showView('dashboard')">Dashboard</a>
+
     <!-- Puzzle menu -->
     <div class="w3-dropdown-hover">
       <button class="app-nav-btn">Puzzle</button>
@@ -208,6 +211,62 @@
   </div>
 </div>
 
+<!-- State-change dialog (dashboard) -->
+<div id="state-dialog" class="w3-modal" style="display:none"
+     onclick="if(event.target===this)_dashCloseStateDialog(true)">
+  <div class="w3-modal-content dialog-card" style="width:420px;max-width:92vw">
+    <div class="dialog-header">
+      <i class="material-icons dialog-header-icon">flag</i>
+      <span class="dialog-title">Change puzzle state</span>
+      <button class="dialog-close-btn" id="state-dialog-close">&times;</button>
+    </div>
+    <div class="dialog-body">
+      <div class="form-field">
+        <label class="form-label">Puzzle</label>
+        <div id="state-dialog-name" class="dialog-prompt"></div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Current state</label>
+        <div id="state-dialog-current" class="dialog-prompt"></div>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="state-dialog-new">New state</label>
+        <select id="state-dialog-new" class="form-input"></select>
+      </div>
+      <div class="form-field" id="state-dialog-publisher-row">
+        <label class="form-label" for="state-dialog-publisher">Publisher</label>
+        <input type="text" id="state-dialog-publisher" class="form-input">
+      </div>
+      <div class="form-field" id="state-dialog-date-row">
+        <label class="form-label" for="state-dialog-date">Date</label>
+        <input type="date" id="state-dialog-date" class="form-input">
+      </div>
+      <div id="state-dialog-error" class="message-line-error" style="color:#b00;font-size:13px;min-height:16px"></div>
+      <div class="dialog-actions">
+        <button class="btn btn-primary" id="state-dialog-ok" type="button">OK</button>
+        <button class="btn btn-secondary" id="state-dialog-cancel" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Puzzle-preview popup (open-from-dashboard) -->
+<div id="preview-popup" class="w3-modal" style="display:none"
+     onclick="if(event.target===this)hideElement('preview-popup')">
+  <div class="w3-modal-content dialog-card" style="width:480px;max-width:95vw">
+    <div class="dialog-header">
+      <i class="material-icons dialog-header-icon">grid_on</i>
+      <span id="preview-popup-title" class="dialog-title"></span>
+      <button class="dialog-close-btn" id="preview-popup-close">&times;</button>
+    </div>
+    <div id="preview-popup-body" class="dialog-body" style="max-height:70vh;overflow-y:auto"></div>
+    <div class="dialog-actions" style="padding:12px">
+      <button class="btn btn-primary" id="preview-popup-open" type="button">Open</button>
+      <button class="btn btn-secondary" id="preview-popup-cancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Settings panel -->
 <div id="settings-panel" class="settings-panel" style="display:none">
   <div class="settings-header">
@@ -229,6 +288,7 @@
 <script src="/static/js/ui.js"></script>
 <script src="/static/js/svg.js"></script>
 <script src="/static/js/word-editor.js"></script>
+<script src="/static/js/dashboard.js"></script>
 <script src="/static/js/puzzle-editor.js"></script>
 <script src="/static/js/settings.js"></script>
 </body>

@@ -481,6 +481,19 @@ class Puzzle:
         words = list(self.across_words.values()) + list(self.down_words.values())
         return bool(words) and all(w.is_complete() for w in words)
 
+    def fill_fraction(self):
+        """Fraction (0.0-1.0) of white cells that contain a letter.
+
+        White cells are all non-black cells; a cell is 'filled' when its value
+        is neither WHITE (' ') nor BLACK ('*'). Returns 0.0 when there are no
+        white cells.
+        """
+        white = [v for v in self.cells.values() if v != Puzzle.BLACK]
+        if not white:
+            return 0.0
+        filled = sum(1 for v in white if v != Puzzle.WHITE)
+        return filled / len(white)
+
     def all_clues_complete(self):
         """ True if every word has a non-empty clue """
         words = list(self.across_words.values()) + list(self.down_words.values())

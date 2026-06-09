@@ -381,15 +381,15 @@ function menuDisable(id) {
 }
 
 function updateMenu() {
-    const home   = AppState.view === 'home';
+    const onDashboard = AppState.view === 'dashboard';
     const editor = AppState.view === 'editor';
     const canClosePuzzle = editor && !_isWordEditorOpen();
 
-    home   ? menuEnable('menu-puzzle-new')     : menuDisable('menu-puzzle-new');
-    home   ? menuEnable('menu-puzzle-open')    : menuDisable('menu-puzzle-open');
-    home   ? menuEnable('menu-import-acrosslite')  : menuDisable('menu-import-acrosslite');
-    home   ? menuEnable('menu-import-puz')         : menuDisable('menu-import-puz');
-    home   ? menuEnable('menu-import-xd')          : menuDisable('menu-import-xd');
+    onDashboard ? menuEnable('menu-puzzle-new')     : menuDisable('menu-puzzle-new');
+    onDashboard ? menuEnable('menu-puzzle-open')    : menuDisable('menu-puzzle-open');
+    onDashboard ? menuEnable('menu-import-acrosslite')  : menuDisable('menu-import-acrosslite');
+    onDashboard ? menuEnable('menu-import-puz')         : menuDisable('menu-import-puz');
+    onDashboard ? menuEnable('menu-import-xd')          : menuDisable('menu-import-xd');
     editor ? menuEnable('menu-puzzle-save')    : menuDisable('menu-puzzle-save');
     editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
     (editor && AppState.puzzleName) ? menuEnable('menu-puzzle-rename') : menuDisable('menu-puzzle-rename');
@@ -414,15 +414,19 @@ function updateMenu() {
 // ---------------------------------------------------------------------------
 
 function showView(view) {
+    // 'home' is an alias for the dashboard, which replaced the welcome screen.
+    if (view === 'home') view = 'dashboard';
     AppState.view = view;
     updateMenu();
+    const workspace = document.getElementById('workspace');
     document.getElementById('lhs').innerHTML = '';
     document.getElementById('rhs').innerHTML = '';
+    if (workspace) workspace.classList.toggle('workspace--full', view === 'dashboard');
     switch (view) {
-        case 'home':
+        case 'dashboard':
             updateAppBarPuzzleInfo();
             renderActionBar();
-            renderHome();
+            renderDashboard();
             break;
         case 'editor':
             renderPuzzleEditor();
@@ -432,11 +436,4 @@ function showView(view) {
             document.getElementById('lhs').innerHTML =
                 `<div class="home-welcome"><p>Unknown view: ${view}</p></div>`;
     }
-}
-
-function renderHome() {
-    document.getElementById('lhs').innerHTML =
-        `<div class="home-welcome">
-  <p>Use the Puzzle menu to create or open a crossword for editing.</p>
-</div>`;
 }
