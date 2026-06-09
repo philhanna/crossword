@@ -136,6 +136,9 @@ function renderActionBar() {
 </div>
 <div class="ab-divider"></div>
 <div class="ab-group">
+  <button id="puzzle-delete-btn" class="ab-btn" onclick="do_puzzle_delete_current()">
+    <i class="material-icons">delete</i><span>Delete</span>
+  </button>
   <button id="puzzle-editword-btn" class="ab-btn" onclick="do_puzzle_edit_word()">
     <i class="material-icons">edit</i><span>Edit word</span>
   </button>
@@ -568,8 +571,13 @@ function _updatePuzzleToolbar() {
     const mode = _currentEditorMode();
     const eb = document.getElementById('puzzle-editword-btn');
     const cb = document.getElementById('puzzle-close-btn');
+    const db = document.getElementById('puzzle-delete-btn');
     if (eb) {
         eb.classList.toggle('w3-disabled', mode !== 'puzzle' || !AppState.selectedWord || _isWordEditorOpen());
+    }
+    if (db) {
+        db.classList.toggle('w3-disabled', _isWordEditorOpen());
+        db.disabled = _isWordEditorOpen();
     }
     if (cb) {
         cb.classList.toggle('w3-disabled', _isWordEditorOpen());
@@ -1248,6 +1256,30 @@ async function do_puzzle_fill_order() {
         AppState.fillOrderLoading = false;
         renderActionBar();
     }
+}
+
+async function do_puzzle_delete_current() {
+    // Delete the puzzle currently open in the editor, using the same
+    // confirmation dialog as the Puzzle > Delete menu item.
+    if (_isWordEditorOpen()) return;
+    const name = AppState.puzzleName;
+    if (!name) {
+        showMessageLine('This puzzle has not been saved yet.', 'notice');
+        return;
+    }
+    messageBox(
+        'Delete puzzle',
+        `Are you sure you want to delete puzzle <b>'${escapeHtml(name)}'</b>?`,
+        null,
+        async () => {
+            try {
+                const data = await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
+                if (data && data.error) { showMessageLine(`Error deleting puzzle: ${data.error}`, 'error', 0); return; }
+                await _doPuzzleCloseConfirmed();
+                showMessageLine(`Puzzle ${name} deleted.`, 'notice');
+            } catch (e) { showMessageLine('Error deleting puzzle', 'error', 0); }
+        }
+    );
 }
 
 async function do_puzzle_delete() {
