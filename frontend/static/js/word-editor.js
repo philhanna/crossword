@@ -74,6 +74,12 @@ function _selectedWordHasChanges() {
     return sw.draftText !== sw.originalText || sw.draftClue !== sw.originalClue;
 }
 
+function _selectedWordIsComplete() {
+    const sw = AppState.selectedWord;
+    if (!sw) return false;
+    return !((sw.draftText || '').includes(' '));
+}
+
 function _hydrateSelectedWord(word, options = {}) {
     if (!word) return null;
     const len = word.cells.length;
@@ -122,6 +128,10 @@ async function completeSelectedWordEdit(options = {}) {
     }
 
     if (_isWordEditorOpen()) _syncSelectedWordFromInputs();
+
+    if (!_selectedWordIsComplete()) {
+        sw.draftClue = '';
+    }
 
     const cursorIdx = sw.cursorIdx || 0;
     const editorMode = options.editorMode !== undefined ? options.editorMode : sw.editorMode;

@@ -461,10 +461,8 @@ class PuzzleUseCases:
             word_dir = Word.ACROSS if dir_lower == "across" else Word.DOWN
             puzzle.set_text(seq, word_dir, text)
 
-        if dir_lower == "across":
-            puzzle.across_words[seq].set_clue(clue)
-        else:
-            puzzle.down_words[seq].set_clue(clue)
+        word = puzzle.across_words[seq] if dir_lower == "across" else puzzle.down_words[seq]
+        word.set_clue(clue if word.is_complete() else None)
 
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle

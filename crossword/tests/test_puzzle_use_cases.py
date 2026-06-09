@@ -506,6 +506,8 @@ class TestPuzzleUseCasesSetWordClue:
 
         if test_puzzle.across_words:
             first_seq = list(test_puzzle.across_words.keys())[0]
+            word = test_puzzle.across_words[first_seq]
+            word.set_text("A" * word.length)
             result = puzzle_uc.set_word_clue(1, "test_puzzle", first_seq, "across", "Test clue")
             assert test_puzzle.across_words[first_seq].get_clue() == "Test clue"
             mock_persistence.save_puzzle.assert_called_once()
@@ -516,6 +518,8 @@ class TestPuzzleUseCasesSetWordClue:
 
         if test_puzzle.down_words:
             first_seq = list(test_puzzle.down_words.keys())[0]
+            word = test_puzzle.down_words[first_seq]
+            word.set_text("A" * word.length)
             result = puzzle_uc.set_word_clue(1, "test_puzzle", first_seq, "down", "Test clue")
             assert test_puzzle.down_words[first_seq].get_clue() == "Test clue"
             mock_persistence.save_puzzle.assert_called_once()
@@ -526,6 +530,37 @@ class TestPuzzleUseCasesSetWordClue:
 
         with pytest.raises(ValueError, match="Direction must be 'across' or 'down'"):
             puzzle_uc.set_word_clue(1, "test_puzzle", 1, "invalid", "Clue")
+
+    def test_set_word_clue_clears_clue_for_incomplete_word_when_text_saved(
+            self, puzzle_uc, mock_persistence, test_puzzle):
+        """Incomplete words cannot keep clues when text save leaves blanks."""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        first_seq = list(test_puzzle.across_words.keys())[0]
+        word = test_puzzle.across_words[first_seq]
+        incomplete_text = "A" + (" " * (word.length - 1))
+
+        puzzle_uc.set_word_clue(
+            1, "test_puzzle", first_seq, "across", "Should be cleared", incomplete_text
+        )
+
+        assert word.get_text() == incomplete_text
+        assert word.get_clue() is None
+        mock_persistence.save_puzzle.assert_called_once()
+
+    def test_set_word_clue_clears_clue_for_existing_incomplete_word(
+            self, puzzle_uc, mock_persistence, test_puzzle):
+        """Incomplete words cannot keep clues even when only clue text is saved."""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        first_seq = list(test_puzzle.across_words.keys())[0]
+        word = test_puzzle.across_words[first_seq]
+        word.set_text("B" + (" " * (word.length - 1)))
+
+        puzzle_uc.set_word_clue(1, "test_puzzle", first_seq, "across", "Should be cleared")
+
+        assert word.get_clue() is None
+        mock_persistence.save_puzzle.assert_called_once()
 
 
 class TestPuzzleUseCasesUndo:
