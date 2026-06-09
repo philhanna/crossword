@@ -19,20 +19,35 @@ const DASH_TABS = [...ALL_STATES, 'all'];
 const DashboardState = {
     puzzles: [],          // rows from GET /api/dashboard, modified DESC
     activeTab: 'all',     // active bottom-half tab
+    sortKey: null,        // column key to sort by; null keeps the default (modified DESC)
+    sortDir: 'asc',       // 'asc' or 'desc'
 };
+
+// Bottom-half table columns. `pubOnly` columns only show on publisher tabs.
+// `val` extracts the sort value; `numeric` columns compare numerically.
+const DASH_COLUMNS = [
+    { key: 'state',     label: 'State',     pubOnly: false, val: r => r.state || '' },
+    { key: 'publisher', label: 'Publisher', pubOnly: true,  val: r => r.publisher || '' },
+    { key: 'name',      label: 'Name',      pubOnly: false, val: r => r.name || '' },
+    { key: 'title',     label: 'Title',     pubOnly: false, val: r => _dashDisplayTitle(r) || '' },
+    { key: 'size',      label: 'Size',      pubOnly: false, val: r => r.size, numeric: true },
+    { key: 'words',     label: 'Words',     pubOnly: false, val: r => r.word_count, numeric: true },
+    { key: 'modified',  label: 'Modified',  pubOnly: false, val: r => r.modified || '' },
+];
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function fmtMonthDay(iso) {
-    // Parse an ISO-ish timestamp and format as MM/dd. Guards against blanks.
+    // Parse an ISO-ish timestamp and format as MM/dd/yy. Guards against blanks.
     if (!iso) return '';
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    return `${mm}/${dd}`;
+    const yy = String(d.getFullYear() % 100).padStart(2, '0');
+    return `${mm}/${dd}/${yy}`;
 }
 
 function _dashRowLengths(row) {
@@ -154,21 +169,42 @@ function _dashShowsPublisher(tab) {
     return tab === 'submitted' || tab === 'published' || tab === 'all';
 }
 
+function _dashSortRows(rows) {
+    // Sort a copy of `rows` by the active sort column; null key keeps load order.
+    const key = DashboardState.sortKey;
+    if (!key) return rows;
+    const col = DASH_COLUMNS.find(c => c.key === key);
+    if (!col) return rows;
+    const dir = DashboardState.sortDir === 'desc' ? -1 : 1;
+    return rows.slice().sort((a, b) => {
+        const av = col.val(a), bv = col.val(b);
+        const cmp = col.numeric
+            ? (av || 0) - (bv || 0)
+            : String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' });
+        return cmp * dir;
+    });
+}
+
 function _dashTableBodyHtml() {
     const tab = DashboardState.activeTab;
     const showPub = _dashShowsPublisher(tab);
-    const rows = (tab === 'all')
+    let rows = (tab === 'all')
         ? DashboardState.puzzles
         : DashboardState.puzzles.filter(p => p.state === tab);
+    rows = _dashSortRows(rows);
 
-    const headers = ['State'];
-    if (showPub) headers.push('Publisher');
-    headers.push('Name', 'Title', 'Size', 'Words', 'Modified');
-    const thead = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    const cols = DASH_COLUMNS.filter(c => !c.pubOnly || showPub);
+    const thead = `<tr>${cols.map(c => {
+        let ind = '';
+        if (DashboardState.sortKey === c.key) {
+            ind = DashboardState.sortDir === 'desc' ? ' ▼' : ' ▲';
+        }
+        return `<th class="dash-sortable" data-dash-sort="${c.key}">${c.label}${ind}</th>`;
+    }).join('')}</tr>`;
 
     if (rows.length === 0) {
         return `<table class="dash-table"><thead>${thead}</thead>
-          <tbody><tr><td colspan="${headers.length}" class="dash-empty">No puzzles.</td></tr></tbody></table>`;
+          <tbody><tr><td colspan="${cols.length}" class="dash-empty">No puzzles.</td></tr></tbody></table>`;
     }
 
     const body = rows.map(row => {
@@ -214,9 +250,9 @@ function bindDashboardEvents() {
         };
     });
 
-    // Name / title click → preview popup.
+    // Name / title click → open the puzzle directly.
     root.querySelectorAll('[data-dash-preview]').forEach(el => {
-        el.onclick = () => showPuzzlePreview(el.getAttribute('data-dash-preview'));
+        el.onclick = () => _dashOpenPuzzle(el.getAttribute('data-dash-preview'));
     });
 
     _bindDashTableBody(root);
@@ -232,8 +268,38 @@ function _bindDashTableBody(root) {
         };
     });
     root.querySelectorAll('.dash-table [data-dash-preview]').forEach(el => {
-        el.onclick = () => showPuzzlePreview(el.getAttribute('data-dash-preview'));
+        el.onclick = () => _dashOpenPuzzle(el.getAttribute('data-dash-preview'));
     });
+
+    // Column-heading clicks → sort; clicking the active column flips direction.
+    root.querySelectorAll('.dash-table [data-dash-sort]').forEach(th => {
+        th.onclick = () => {
+            const key = th.getAttribute('data-dash-sort');
+            if (DashboardState.sortKey === key) {
+                DashboardState.sortDir = DashboardState.sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                DashboardState.sortKey = key;
+                DashboardState.sortDir = 'asc';
+            }
+            const scroll = root.querySelector('.dash-table-scroll');
+            if (scroll) {
+                scroll.innerHTML = _dashTableBodyHtml();
+                _bindDashTableBody(root);
+            }
+        };
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Open-from-dashboard
+// ---------------------------------------------------------------------------
+
+async function _dashOpenPuzzle(name) {
+    try {
+        await _openPuzzleInEditor(name);
+    } catch (e) {
+        showMessageLine('Error opening puzzle', 'error', 0);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -325,55 +391,4 @@ function _dashCloseStateDialog(revert) {
         if (row) _dashStateRevertSelect.value = row.state;
     }
     _dashStateRevertSelect = null;
-}
-
-// ---------------------------------------------------------------------------
-// Puzzle-preview popup (open-from-dashboard)
-// ---------------------------------------------------------------------------
-
-async function showPuzzlePreview(name) {
-    const body = document.getElementById('preview-popup-body');
-    document.getElementById('preview-popup-title').textContent = name;
-    body.innerHTML = '<div class="w3-container w3-padding">Loading preview...</div>';
-    showElement('preview-popup');
-
-    let data;
-    try {
-        data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(name)}/preview`);
-    } catch (e) {
-        body.innerHTML = `<div class="w3-container w3-padding">Error: ${escapeHtml(e.message)}</div>`;
-        return;
-    }
-    if (data.error) {
-        body.innerHTML = `<div class="w3-container w3-padding">Error: ${escapeHtml(data.error)}</div>`;
-        return;
-    }
-
-    const svgDiv = document.createElement('div');
-    svgDiv.style.cssText = 'display:flex;flex-direction:column;align-items:center';
-    if (data.svgstr) {
-        svgDiv.innerHTML = data.svgstr;
-        const svg = svgDiv.querySelector('svg');
-        if (svg && data.width) {
-            svg.setAttribute('width', data.width);
-            svg.setAttribute('height', data.width);
-        }
-    }
-    const heading = document.createElement('div');
-    heading.style.cssText = 'margin-top:8px;text-align:center;font-size:13px';
-    heading.innerHTML = `<small class="w3-text-gray">${escapeHtml(data.heading || '')}</small>`;
-    body.innerHTML = '';
-    body.appendChild(svgDiv);
-    body.appendChild(heading);
-
-    document.getElementById('preview-popup-cancel').onclick = () => hideElement('preview-popup');
-    document.getElementById('preview-popup-close').onclick = () => hideElement('preview-popup');
-    document.getElementById('preview-popup-open').onclick = async () => {
-        hideElement('preview-popup');
-        try {
-            await _openPuzzleInEditor(name);
-        } catch (e) {
-            showMessageLine('Error opening puzzle', 'error', 0);
-        }
-    };
 }

@@ -1738,7 +1738,7 @@ kbd {
 }
 .dash-row-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-2);
 }
@@ -1748,7 +1748,7 @@ kbd {
   color: var(--c-text);
 }
 .dash-row-meta {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--c-text-muted);
 }
 .dash-row-extra {
@@ -1775,6 +1775,8 @@ kbd {
 .progress-bar {
   width: 90px;
   height: 8px;
+  /* center the bar on the title's text line (0.9rem, line-height ~1.2) */
+  margin-top: 4px;
   background: #e0e0e0;
   border-radius: 4px;
   overflow: hidden;
@@ -1841,6 +1843,14 @@ kbd {
   background: var(--c-sidebar-bg);
   font-weight: 600;
   z-index: 1;
+}
+.dash-table th.dash-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.dash-table th.dash-sortable:hover {
+  background: var(--c-hover-bg, var(--c-border));
 }
 .dash-empty {
   color: var(--c-text-muted);
