@@ -87,9 +87,13 @@ function updateAppBarPuzzleInfo() {
     const saveHtml = isDirty
         ? `<span class="save-status save-status-dirty">● Unsaved</span>`
         : `<span class="save-status save-status-saved">✓ Saved</span>`;
+    const stateHtml = AppState.puzzleState
+        ? `<span class="state-label">State: ${escapeHtml(AppState.puzzleState)}</span>`
+        : '';
     el.innerHTML =
         `<span class="puzzle-info-name">${escapeHtml(name)}</span>` +
         `<span class="${badgeClass}">${badgeText}</span>` +
+        stateHtml +
         saveHtml;
 }
 
@@ -728,6 +732,11 @@ async function _openPuzzleInEditor(name) {
     if (puzzleData.error) {
         throw new Error(puzzleData.error);
     }
+    let stateInfo = null;
+    try {
+        stateInfo = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(name)}/state`);
+    } catch (e) { /* state label is informational only — non-fatal */ }
+    AppState.puzzleState       = (stateInfo && !stateInfo.error) ? stateInfo.state : null;
     AppState.puzzleName        = name;
     AppState.puzzleOriginalName = name;
     AppState.puzzleWorkingName = wn;
@@ -1162,6 +1171,7 @@ async function _doPuzzleCloseConfirmed() {
     AppState.puzzleName         = null;
     AppState.puzzleOriginalName = null;
     AppState.puzzleWorkingName  = null;
+    AppState.puzzleState        = null;
     AppState.puzzleData         = null;
     AppState.puzzleSavedHash    = null;
     AppState.selectedWord       = null;

@@ -1015,6 +1015,18 @@ body.editor-open #workspace {
   color: #f0c080;
 }
 
+.state-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 2px 9px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+  background: rgba(232, 230, 240, 0.15);
+  color: var(--c-appbar-text);
+}
+
 /* =========================================================
    Phase 4 — Keyboard hint bar
    ========================================================= */
@@ -1775,8 +1787,6 @@ kbd {
 .progress-bar {
   width: 90px;
   height: 8px;
-  /* center the bar on the title's text line (0.9rem, line-height ~1.2) */
-  margin-top: 4px;
   background: #e0e0e0;
   border-radius: 4px;
   overflow: hidden;

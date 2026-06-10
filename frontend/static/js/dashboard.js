@@ -24,6 +24,7 @@ const DashboardState = {
 };
 
 // Bottom-half table columns. `pubOnly` columns only show on publisher tabs.
+// `fillOnly` columns only show on tabs that include in-progress completion.
 // `val` extracts the sort value; `numeric` columns compare numerically.
 const DASH_COLUMNS = [
     { key: 'state',     label: 'State',     pubOnly: false, val: r => r.state || '' },
@@ -32,6 +33,7 @@ const DASH_COLUMNS = [
     { key: 'title',     label: 'Title',     pubOnly: false, val: r => _dashDisplayTitle(r) || '' },
     { key: 'size',      label: 'Size',      pubOnly: false, val: r => r.size, numeric: true },
     { key: 'words',     label: 'Words',     pubOnly: false, val: r => r.word_count, numeric: true },
+    { key: 'fill_pct',  label: '% Complete', fillOnly: true, val: r => r.fill_pct || 0, numeric: true },
     { key: 'modified',  label: 'Modified',  pubOnly: false, val: r => r.modified || '' },
 ];
 
@@ -169,6 +171,15 @@ function _dashShowsPublisher(tab) {
     return tab === 'submitted' || tab === 'published' || tab === 'all';
 }
 
+function _dashVisibleColumns(tab) {
+    const showPub = _dashShowsPublisher(tab);
+    const showFill = tab === 'draft' || tab === 'all';
+    return DASH_COLUMNS.filter(c =>
+        (!c.pubOnly || showPub) &&
+        (!c.fillOnly || showFill)
+    );
+}
+
 function _dashSortRows(rows) {
     // Sort a copy of `rows` by the active sort column; null key keeps load order.
     const key = DashboardState.sortKey;
@@ -187,13 +198,12 @@ function _dashSortRows(rows) {
 
 function _dashTableBodyHtml() {
     const tab = DashboardState.activeTab;
-    const showPub = _dashShowsPublisher(tab);
     let rows = (tab === 'all')
         ? DashboardState.puzzles
         : DashboardState.puzzles.filter(p => p.state === tab);
     rows = _dashSortRows(rows);
 
-    const cols = DASH_COLUMNS.filter(c => !c.pubOnly || showPub);
+    const cols = _dashVisibleColumns(tab);
     const thead = `<tr>${cols.map(c => {
         let ind = '';
         if (DashboardState.sortKey === c.key) {
@@ -209,6 +219,8 @@ function _dashTableBodyHtml() {
 
     const body = rows.map(row => {
         const name = escapeHtml(row.name);
+        const showPub = _dashShowsPublisher(tab);
+        const showFill = tab === 'draft' || tab === 'all';
         const options = ALL_STATES.map(s =>
             `<option value="${s}"${s === row.state ? ' selected' : ''}>${s}</option>`).join('');
         const cells = [
@@ -219,6 +231,7 @@ function _dashTableBodyHtml() {
         cells.push(`<td><span class="dash-link" data-dash-preview="${name}">${escapeHtml(_dashDisplayTitle(row))}</span></td>`);
         cells.push(`<td>${row.size} x ${row.size}</td>`);
         cells.push(`<td>${row.word_count}</td>`);
+        if (showFill) cells.push(`<td>${row.fill_pct || 0}%</td>`);
         cells.push(`<td>${fmtMonthDay(row.modified)}</td>`);
         return `<tr>${cells.join('')}</tr>`;
     }).join('');
