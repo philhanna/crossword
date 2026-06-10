@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.0.0] - 2026-06-09
+
+### Added
+
+- Dashboard view for browsing puzzles by state
+- `% Complete` column on the dashboard draft/all tabs
+- Puzzle state label in the puzzle editor app bar
+- Delete button on the puzzle editor action bar
+
+### Changed
+
+- Clear clues for incomplete words
+- CSS adjustments
+
 ## [4.16.0] - 2026-06-06
 
 ### Added
