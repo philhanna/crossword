@@ -14,7 +14,7 @@ const DASH_CARDS = [
     { idx: 4, title: 'ARCHIVED',    states: ['archived'] },
 ];
 
-const DASH_TABS = [...ALL_STATES, 'all'];
+const DASH_TABS = ['all', ...ALL_STATES];
 
 const DashboardState = {
     puzzles: [],          // rows from GET /api/dashboard, modified DESC
