@@ -144,20 +144,22 @@ function renderActionBar() {
 </div>
 <div class="ab-divider"></div>
 <div class="ab-group">
-  <button id="puzzle-delete-btn" class="ab-btn" onclick="do_puzzle_delete_current()">
-    <i class="material-icons">delete</i><span>Delete</span>
-  </button>
   <button id="puzzle-editword-btn" class="ab-btn" onclick="do_puzzle_edit_word()">
     <i class="material-icons">edit</i><span>Edit word</span>
   </button>
   <button id="puzzle-fill-order-btn" class="ab-btn${fillOrderDisabled}" onclick="do_puzzle_fill_order()"${fillOrderDisabledAttr}>
     <i class="material-icons">format_list_numbered</i><span>Fill order</span>
   </button>
+  <button class="ab-btn" onclick="do_puzzle_stats()">
+    <i class="material-icons">info</i><span>Stats</span>
+  </button>
+</div>
+<div class="ab-group ab-group-right">
   <button id="puzzle-clear-btn" class="ab-btn" onclick="do_puzzle_clear()">
     <i class="material-icons">clear_all</i><span>Clear</span>
   </button>
-  <button class="ab-btn" onclick="do_puzzle_stats()">
-    <i class="material-icons">info</i><span>Stats</span>
+  <button id="puzzle-delete-btn" class="ab-btn" onclick="do_puzzle_delete_current()">
+    <i class="material-icons">delete</i><span>Delete</span>
   </button>
 </div>`;
 

@@ -65,7 +65,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
     const puzzleCells = puzzleData.puzzle.cells;      // {"idx": {number?, letter?}}
     const totalPx     = n * BOXSIZE + 1;
 
-    // Cells belonging to any locked word get a light-blue background
+    // Cells belonging to any locked word get a pale-yellow background
     const lockedCellSet = new Set();
     for (const word of puzzleData.puzzle.words) {
         if (!word.locked) continue;
@@ -114,7 +114,7 @@ function buildPuzzleSvg(puzzleData, editState = null) {
                     fill = '#b8d4f5'; cellClass = 'puzzle-cell-word';   // selected word
                 }
             } else if (lockedCellSet.has(idx)) {
-                fill = '#eaf3ff'; cellClass = 'puzzle-cell-locked';
+                fill = '#fffbe0'; cellClass = 'puzzle-cell-locked';
             } else {
                 fill = 'white'; cellClass = 'puzzle-cell-plain';
             }
