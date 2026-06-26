@@ -1,10 +1,12 @@
 # Submission Tracking — design (draft, pre-decision)
 
 > **Status:** This document is a first pass at scoping the feature. It is
-> deliberately written *before* any schema or code exists. The major forks
-> (publisher modeling, the `rejected` outcome, storage technology, email
-> sending) are resolved in §4; the remaining open questions in §5 are
-> narrower and should be settled before implementation starts.
+> deliberately written *before* any schema or code exists. All decisions —
+> the major forks (publisher modeling, the `rejected` outcome, storage
+> technology, email sending) and the narrower questions that followed
+> (body format, publisher reference-data shape, UI placement, editor
+> referencing) — are resolved in §4. Implementation may proceed against
+> §3's schema, read together with those decisions.
 
 ## 1. Purpose
 
@@ -65,7 +67,7 @@ with) the latest relevant row here.
 | `resulting_state` | TEXT | the `puzzles.state` value this event produces, if any — may be `NULL` for events that don't change state (e.g. a comment) |
 | `publisher_id` | INTEGER, FK → `publishers.id`, nullable | which publisher this event concerns |
 | `editor_id` | INTEGER, FK → `editors.id`, nullable | which editor, if applicable |
-| `body` | TEXT | the email body, or a free-text comment — see Q3 on representation |
+| `body` | TEXT | Markdown source — outgoing draft, or (user-pasted, then converted) incoming reply text; see decision 5 |
 
 ### 3.2 `publishers` — reference data, one row per publisher
 
@@ -81,8 +83,8 @@ natural fit, once the set of real publishers is known.
 | `id` | TEXT (3-char code) PK | e.g. `NYT`, `LAT`, `WSJ` — matches the example codes already used as free-text `publisher` values today |
 | `name` | TEXT | full publisher name |
 | `email` | TEXT | general/submissions contact address |
-| `submission_limits` | TEXT or structured fields | meaning needs defining — see Q4 |
-| `payment_info` | TEXT or structured fields | meaning needs defining — see Q4 |
+| `submission_limits` | TEXT | free text; no structured schema for now — see decision 6 |
+| `payment_info` | TEXT | free text; no structured schema for now — see decision 6 |
 | `spec_url` | TEXT | link to the publisher's submission specification |
 
 ### 3.3 `editors` — contacts at a publisher
@@ -93,6 +95,7 @@ natural fit, once the set of real publishers is known.
 | `publisher_id` | TEXT, FK → `publishers.id` | |
 | `name` | TEXT | |
 | `email` | TEXT | |
+| `is_primary` | BOOLEAN | at most one per publisher; default editor when an event doesn't name one — see decision 8 |
 
 ## 4. Resolved decisions
 
@@ -112,35 +115,31 @@ natural fit, once the set of real publishers is known.
 4. **The app only drafts the submission email**; it does not send it. No
    SMTP/API integration, credentials, or send infrastructure are in scope.
    `submission_events.body` records the drafted (or, if the user pastes
-   back what they actually sent, the final) text — see Q1.
+   back what they actually sent, the final) text.
 
-## 5. Open questions
+5. **`submission_events.body` is Markdown, in both directions.** Outgoing
+   drafts are composed and stored as Markdown. A client-side "Copy for
+   Gmail" action renders that Markdown to HTML and writes both `text/html`
+   and `text/plain` to the clipboard (via `ClipboardItem`), so pasting into
+   Gmail's compose box reproduces real rich-text formatting rather than
+   literal Markdown syntax. Incoming mail itself is **not** stored here —
+   the email lives in Gmail (e.g. a `Crosswords/<publisher_id>` folder);
+   logging an `email_received` event means the user pastes the relevant
+   text in, and a client-side HTML→Markdown conversion step normalizes it
+   to the same Markdown form before saving. One stored representation;
+   conversion happens at the UI edge in both directions.
 
-These are narrower than §4 but still need answers before implementation.
+6. **`submission_limits` and `payment_info` stay free text.** No structured
+   columns until real publisher data shows a concrete pattern worth
+   defining a schema for.
 
-**Q1 — What does the `body` column actually hold?**
-Given decision 4 (draft-only, no sending), is `body` always plain text the
-user can copy out and paste into their own mail client, or does it need to
-support HTML/rich formatting to match a publisher's required email format?
-And for `email_received` events, is the reply pasted in by the user, or is
-this feature not responsible for logging inbound mail at all?
+7. **The Submission Editor is a separate application**, not a new view
+   within the existing SPA's `home` / `grid-editor` / `puzzle-editor`
+   menu machine. It shares the backend and database (per decision 3) but
+   is its own frontend, launched independently of the puzzle/grid SPA;
+   the Dashboard's existing cards/tabs are unaffected.
 
-**Q2 — What goes in `submission_limits` and `payment_info`?**
-As written these are free-text placeholders. Examples of what you have in
-mind would let this become real columns (e.g. "max N submissions per
-month", "pays $X on acceptance") instead of an opaque text blob.
-
-**Q3 — Is this a new view in the existing SPA, or a separate app?**
-"Next generation Crossword Puzzle app" in §1's source wording is ambiguous.
-The existing frontend already has a 3-state menu machine (`home` /
-`grid-editor` / `puzzle-editor`) plus the Dashboard view added in
-[dashboard_impl.md](dashboard_impl.md). Is the "Submission Editor" a further
-view/tab within that same SPA (most likely, given it reuses the same
-backend and database per §2 of the original note), or a separate
-application?
-
-**Q4 — Does an event reference one editor, or can it reference several?**
-A submission might be emailed to a publisher's general address with no
-specific editor, or to a named editor. Is `editor_id` on the event always
-optional, and is there a notion of a publisher's "primary" editor for
-defaulting purposes?
+8. **`editor_id` on an event stays optional, and `editors` gains an
+   `is_primary` flag** (§3.3) so the UI can default to a publisher's main
+   contact when an event doesn't name a specific editor. An event
+   references at most one editor — no CC/multi-editor list.
