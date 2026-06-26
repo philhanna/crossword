@@ -25,6 +25,7 @@ Routes:
   PUT    /api/puzzles/<name>/words/<seq>/<direction>  → set_word_clue
   POST   /api/puzzles/<name>/undo          → undo_puzzle
   POST   /api/puzzles/<name>/redo          → redo_puzzle
+  POST   /api/puzzles/<name>/clear         → clear_puzzle
   GET    /api/puzzles/<name>/preview       → get_puzzle_preview
   GET    /api/puzzles/<name>/stats         → get_puzzle_stats
   GET    /api/puzzles/<name>/fill-order    → get_fill_order
@@ -63,6 +64,7 @@ def _puzzle_response(puzzle):
             "direction": "across",
             "answer": word.get_text(),
             "clue": word.get_clue() or "",
+            "locked": word.is_locked(),
             "cells": cells_list,
         })
         for idx, (r, c) in enumerate(cells_list):
@@ -82,6 +84,7 @@ def _puzzle_response(puzzle):
             "direction": "down",
             "answer": word.get_text(),
             "clue": word.get_clue() or "",
+            "locked": word.is_locked(),
             "cells": cells_list,
         })
         for idx, (r, c) in enumerate(cells_list):
@@ -645,10 +648,11 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
 
 def handle_set_word_clue(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
-    Set the clue and optionally the text for a word.
+    Set the clue and optionally the text and locked state for a word.
     PUT /api/puzzles/<name>/words/<seq>/<direction>
-    Body: { "clue": "The answer to life", "text": "ANSWER" }
+    Body: { "clue": "The answer to life", "text": "ANSWER", "locked": true }
     If 'text' is provided it is applied with undo tracking.
+    If 'locked' is provided it is applied with undo tracking.
     """
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -658,6 +662,7 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
         direction = path_params[2] if len(path_params) > 2 else None
         clue = body_params.get("clue", "")
         text = body_params.get("text", None)
+        locked = body_params.get("locked", None)
 
         if not name or not seq or not direction:
             logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
@@ -672,7 +677,7 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
             return {"error": "seq must be an integer"}
 
         user_id = current_user["id"]
-        puzzle = app.puzzle_uc.set_word_clue(user_id, name, seq, direction, clue, text)
+        puzzle = app.puzzle_uc.set_word_clue(user_id, name, seq, direction, clue, text, locked)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
 
@@ -746,6 +751,35 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
+
+def handle_clear_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Blank the text and clue of every unlocked word in a puzzle.
+    POST /api/puzzles/<name>/clear
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing puzzle name"}
+
+        user_id = current_user["id"]
+        puzzle = app.puzzle_uc.clear_unlocked(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return _puzzle_response(puzzle)
+
+    except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
+
 
 def handle_copy_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """

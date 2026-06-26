@@ -76,6 +76,8 @@ class Puzzle:
         return self.cells.get((r, c), None)
 
     def set_cell(self, r, c, letter):
+        if (r, c) in self.locked_cells:
+            return  # silently a no-op; callers don't need a special case
         self.cells[(r, c)] = letter
 
     def get_word(self, seq, direction):
@@ -113,6 +115,30 @@ class Puzzle:
         word = self.get_word(seq, direction)
         word.set_clue(clue)
 
+    def set_locked(self, seq, direction, value):
+        """ Sets whether the word at <seq><direction> is locked, with undo tracking """
+        word = self.get_word(seq, direction)
+        old_value = word.is_locked()
+        if old_value != value:
+            self.undo_stack.append(['locked', seq, direction, old_value])
+        word.set_locked(value)
+
+    def clear_unlocked(self):
+        """ Blanks text and clue for every unlocked word; returns True if anything changed """
+        changes = []
+        for word in list(self.across_words.values()) + list(self.down_words.values()):
+            if word.is_locked():
+                continue
+            old_text, old_clue = word.get_text(), word.get_clue()
+            blank = " " * word.length
+            if old_text != blank or old_clue:
+                changes.append((word.seq, word.direction, old_text, old_clue))
+                word.set_text(blank)
+                word.set_clue(None)
+        if changes:
+            self.undo_stack.append(['clear', changes])
+        return bool(changes)
+
     @property
     def undo_stack(self):
         """Compatibility alias for the Puzzle-mode undo stack."""
@@ -135,6 +161,15 @@ class Puzzle:
     def black_cells(self):
         """ Returns black cells from the grid """
         return self.grid.get_black_cells()
+
+    @property
+    def locked_cells(self):
+        """ Returns cells covered by any locked word """
+        cells = set()
+        for word in list(self.across_words.values()) + list(self.down_words.values()):
+            if word.is_locked():
+                cells.update(word.cell_iterator())
+        return cells
 
     @property
     def numbered_cells(self):
@@ -255,7 +290,30 @@ class Puzzle:
             # and set the text to the popped value
             self.set_text(undo_seq, undo_direction, undo_text, undo=False)
 
-        pass
+        elif undo_type == 'locked':
+            # Extract the set locked parameters from the undoable
+            undo_seq = undoable[1]
+            undo_direction = undoable[2]
+            undo_value = undoable[3]
+
+            # Push the current locked state for this word to the redo stack
+            word = self.get_word(undo_seq, undo_direction)
+            old_value = word.is_locked()
+            self.redo_stack.append([undo_type, undo_seq, undo_direction, old_value])
+
+            # and set the locked state to the popped value
+            word.set_locked(undo_value)
+
+        elif undo_type == 'clear':
+            # Restore the text and clue of every word that was cleared
+            changes = undoable[1]
+            redo_changes = []
+            for seq, direction, old_text, old_clue in changes:
+                word = self.get_word(seq, direction)
+                redo_changes.append((seq, direction, word.get_text(), word.get_clue()))
+                word.set_text(old_text)
+                word.set_clue(old_clue)
+            self.redo_stack.append([undo_type, redo_changes])
 
     def redo(self):
         """ Redoes the last change """
@@ -280,7 +338,30 @@ class Puzzle:
             # and set the text to the popped value
             self.set_text(undo_seq, undo_direction, undo_text, undo=False)
 
-        pass
+        elif undo_type == 'locked':
+            # Extract the set locked parameters from the undoable
+            undo_seq = undoable[1]
+            undo_direction = undoable[2]
+            undo_value = undoable[3]
+
+            # Push the current locked state for this word to the undo stack
+            word = self.get_word(undo_seq, undo_direction)
+            old_value = word.is_locked()
+            self.undo_stack.append([undo_type, undo_seq, undo_direction, old_value])
+
+            # and set the locked state to the popped value
+            word.set_locked(undo_value)
+
+        elif undo_type == 'clear':
+            # Restore the text and clue of every word that was cleared
+            changes = undoable[1]
+            undo_changes = []
+            for seq, direction, old_text, old_clue in changes:
+                word = self.get_word(seq, direction)
+                undo_changes.append((seq, direction, word.get_text(), word.get_clue()))
+                word.set_text(old_text)
+                word.set_clue(old_clue)
+            self.undo_stack.append([undo_type, undo_changes])
 
     #   ========================================================
     #   to_json and from_json logic
@@ -301,7 +382,8 @@ class Puzzle:
             awdict = {
                 'seq': seq,
                 'text': across_word.get_text(),
-                'clue': across_word.get_clue()
+                'clue': across_word.get_clue(),
+                'locked': across_word.is_locked()
             }
             awlist.append(awdict)
         image['across_words'] = awlist
@@ -313,7 +395,8 @@ class Puzzle:
             dwdict = {
                 'seq': seq,
                 'text': down_word.get_text(),
-                'clue': down_word.get_clue()
+                'clue': down_word.get_clue(),
+                'locked': down_word.is_locked()
             }
             dwlist.append(dwdict)
         image['down_words'] = dwlist
@@ -357,6 +440,7 @@ class Puzzle:
             word = puzzle.get_across_word(seq)
             word.set_text(text)     # TODO: Can't do this - undo/redo
             word.set_clue(clue)     # TODO: Can't do this - undo/redo
+            word.set_locked(aw.get('locked', False))
 
         # Reload the "DOWN" words
         dwlist = image['down_words']
@@ -367,6 +451,7 @@ class Puzzle:
             word = puzzle.get_down_word(seq)
             word.set_text(text)     # TODO: Can't do this - undo/redo
             word.set_clue(clue)     # TODO: Can't do this - undo/redo
+            word.set_locked(dw.get('locked', False))
 
         puzzle.undo_stack = image.get('puzzle_undo_stack', image.get('undo_stack', []))
         puzzle.redo_stack = image.get('puzzle_redo_stack', image.get('redo_stack', []))

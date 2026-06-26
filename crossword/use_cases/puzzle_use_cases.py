@@ -24,6 +24,7 @@ Public interface:
   set_word_clue(user_id, name, seq, direction, clue) -> Puzzle
   undo_puzzle(user_id, name) -> Puzzle
   redo_puzzle(user_id, name) -> Puzzle
+  clear_unlocked(user_id, name) -> Puzzle
   get_puzzle_preview(user_id, name) -> dict
   get_puzzle_stats(user_id, name) -> dict
   get_fill_order(user_id, name, top_n=10) -> dict
@@ -421,12 +422,15 @@ class PuzzleUseCases:
             raise ValueError(f"Direction must be 'across' or 'down', got {repr(direction)}")
 
     def set_word_clue(self, user_id: int, name: str, seq: int, direction: str,
-                      clue: str, text: str = None) -> Puzzle:
+                      clue: str, text: str = None, locked: bool = None) -> Puzzle:
         """
-        Set the clue (and optionally the text) for a word and save the change.
+        Set the clue (and optionally the text and locked state) for a word
+        and save the change.
 
         If text is provided it is applied via puzzle.set_text(), which pushes
         the previous value onto the undo stack so the change can be undone.
+        If locked is provided it is applied via puzzle.set_locked(), which is
+        also tracked on the undo stack.
 
         Args:
             user_id: The user who owns this puzzle
@@ -435,6 +439,7 @@ class PuzzleUseCases:
             direction: 'across' or 'down'
             clue: The clue text
             text: Optional new word text (A-Z and spaces); tracked by undo
+            locked: Optional new locked state; tracked by undo
 
         Returns:
             Updated Puzzle object
@@ -457,14 +462,48 @@ class PuzzleUseCases:
         else:
             raise ValueError(f"Direction must be 'across' or 'down', got {repr(direction)}")
 
+        word_dir = Word.ACROSS if dir_lower == "across" else Word.DOWN
+        word = puzzle.get_word(seq, word_dir)
+
+        # If the text is actually changing and the word is currently locked,
+        # unlock it first so the cell writes below aren't silently dropped by
+        # Puzzle.set_cell. (The UI never does this - the Answer field is
+        # disabled while a word is locked - but guard against it anyway.)
+        if text is not None and text != word.get_text() and word.is_locked():
+            puzzle.set_locked(seq, word_dir, False)
+
         if text is not None:
-            word_dir = Word.ACROSS if dir_lower == "across" else Word.DOWN
             puzzle.set_text(seq, word_dir, text)
 
-        word = puzzle.across_words[seq] if dir_lower == "across" else puzzle.down_words[seq]
+        if locked is not None:
+            puzzle.set_locked(seq, word_dir, locked)
+
         word.set_clue(clue if word.is_complete() else None)
 
         self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
+    def clear_unlocked(self, user_id: int, name: str) -> Puzzle:
+        """
+        Blank the text and clue of every unlocked word in a puzzle, leaving
+        locked words untouched, and save the change if anything changed.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+
+        Returns:
+            Updated Puzzle object
+
+        Raises:
+            PersistenceError: If load/save fails
+        """
+        self._invalidate_fill_order(user_id, name)
+        puzzle = self.persistence.load_puzzle(user_id, name)
+
+        if puzzle.clear_unlocked():
+            self.persistence.save_puzzle(user_id, name, puzzle)
+
         return puzzle
 
     def undo_puzzle(self, user_id: int, name: str) -> Puzzle:

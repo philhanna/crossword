@@ -293,7 +293,8 @@ h3 { font-size: 1.05rem; }
   font-size: calc(15px * var(--font-scale));
 }
 
-.ab-btn.w3-disabled {
+.ab-btn.w3-disabled,
+.ab-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
   pointer-events: none;
@@ -685,6 +686,16 @@ body.editor-open #workspace {
   outline: none;
   border-color: var(--c-primary);
   box-shadow: 0 0 0 3px rgba(59,110,165,0.15);
+}
+
+.we-word-input:disabled {
+  background: #f0eee8;
+  color: var(--c-text-muted);
+  cursor: not-allowed;
+}
+
+.we-lock-row {
+  font-size: 0.85rem;
 }
 
 .we-clue-input {

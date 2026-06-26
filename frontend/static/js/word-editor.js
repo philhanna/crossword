@@ -71,7 +71,8 @@ function _syncSelectedWordFromInputs() {
 function _selectedWordHasChanges() {
     const sw = AppState.selectedWord;
     if (!sw) return false;
-    return sw.draftText !== sw.originalText || sw.draftClue !== sw.originalClue;
+    return sw.draftText !== sw.originalText || sw.draftClue !== sw.originalClue ||
+        sw.draftLocked !== sw.originalLocked;
 }
 
 function _selectedWordIsComplete() {
@@ -92,6 +93,8 @@ function _hydrateSelectedWord(word, options = {}) {
         draftText: options.draftText !== undefined ? _normalizeWordText(options.draftText, len) : text,
         originalClue: word.clue || '',
         draftClue: options.draftClue !== undefined ? options.draftClue : (word.clue || ''),
+        originalLocked: !!word.locked,
+        draftLocked: options.draftLocked !== undefined ? options.draftLocked : !!word.locked,
         cursorIdx: _getDefaultCursorIdx(word, text, options.clickR, options.clickC),
         editorMode: options.editorMode || 'puzzle',
     };
@@ -142,7 +145,7 @@ async function completeSelectedWordEdit(options = {}) {
         try {
             const data = await apiFetch('PUT',
                 `/api/puzzles/${encodeURIComponent(wn)}/words/${sw.seq}/${sw.direction}`,
-                { text: sw.draftText, clue: sw.draftClue });
+                { text: sw.draftText, clue: sw.draftClue, locked: sw.draftLocked });
             if (data.error) {
                 showMessageLine(`Error saving word: ${data.error}`, 'error', 0);
                 return { saved: false, changedSelection: false, error: true };
@@ -348,6 +351,13 @@ function _peKeydown(e) {
         e.preventDefault(); return;
     }
 
+    const isEditKey = e.key === 'Delete' || e.key === 'Backspace' ||
+        e.key === ' ' || (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key));
+    if (sw.draftLocked && isEditKey) {
+        e.preventDefault();
+        return;
+    }
+
     if (e.key === 'Delete') {
         const idx = _getSelectedWordCursorIdx();
         const t = sw.draftText;
@@ -447,7 +457,9 @@ function renderWordEditorPanel() {
     const dirLabel = sw.direction.charAt(0).toUpperCase() + sw.direction.slice(1);
     const len      = sw.cells.length;
     const text     = (sw.draftText || '').padEnd(len).slice(0, len);
-    const defsDisabled = /^[A-Za-z]+$/.test(text.trim()) && text.trim().length === len ? '' : 'disabled';
+    const locked   = !!sw.draftLocked;
+    const lockDisabled = locked ? 'disabled' : '';
+    const defsDisabled = (!locked && /^[A-Za-z]+$/.test(text.trim()) && text.trim().length === len) ? '' : 'disabled';
 
     return `
 <div id="we-dialog" class="we-panel">
@@ -460,12 +472,22 @@ function renderWordEditorPanel() {
   </div>
 
   <div class="we-body">
+    <!-- Lock -->
+    <div class="we-field we-lock-row">
+      <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="we-locked" ${locked ? 'checked' : ''} onchange="weHandleLockToggle(this.checked)"> Lock word
+      </label>
+    </div>
+
     <!-- Answer -->
     <div class="we-field">
       <label class="we-label">Answer</label>
-      <input class="we-word-input" id="we-text" type="text"
-             maxlength="${len}" value="${escapeHtml(text.replace(/ /g, '.'))}"
-             oninput="weHandleTextInput(this.value)"/>
+      <div style="position:relative">
+        <input class="we-word-input" id="we-text" type="text" ${lockDisabled}
+               maxlength="${len}" value="${escapeHtml(text.replace(/ /g, '.'))}"
+               oninput="weHandleTextInput(this.value)"/>
+        ${locked ? '<i class="material-icons" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--c-text-muted)">lock</i>' : ''}
+      </div>
     </div>
 
     <!-- Clue -->
@@ -486,7 +508,7 @@ function renderWordEditorPanel() {
         <label style="cursor:pointer;font-size:0.78rem;color:var(--c-text-muted);display:flex;align-items:center;gap:4px">
           <input type="checkbox" id="we-constrained" checked> Constrained
         </label>
-        <button class="ab-btn" type="button" onclick="doWordSuggestFetch()" style="height:26px;font-size:0.75rem">
+        <button class="ab-btn" type="button" ${lockDisabled} onclick="doWordSuggestFetch()" style="height:26px;font-size:0.75rem">
           <i class="material-icons" style="font-size:13px">search</i> Suggest
         </button>
       </div>
@@ -501,7 +523,7 @@ function renderWordEditorPanel() {
 
     <!-- Secondary tools -->
     <div class="we-secondary-tools">
-      <button class="ab-btn" id="we-constraints-btn" type="button" onclick="doWordConstraints()" style="font-size:0.78rem">
+      <button class="ab-btn" id="we-constraints-btn" type="button" ${lockDisabled} onclick="doWordConstraints()" style="font-size:0.78rem">
         <i class="material-icons" style="font-size:13px">assignment</i> Constraints
       </button>
       <button class="ab-btn" id="we-definitions-btn" type="button" ${defsDisabled} onclick="doWordDefinitions()" style="font-size:0.78rem">
@@ -558,6 +580,13 @@ function weHandleTextInput(value) {
 
 function weHandleClueInput(value) {
     if (AppState.selectedWord) AppState.selectedWord.draftClue = value;
+}
+
+function weHandleLockToggle(checked) {
+    const sw = AppState.selectedWord;
+    if (!sw) return;
+    sw.draftLocked = checked;
+    renderPuzzleEditorRhs();
 }
 
 function _weSyncTextInputFromAnswer() {
@@ -656,6 +685,13 @@ async function _weKeydown(e) {
         return;
     }
 
+    const isEditKey = e.key === 'Delete' || e.key === 'Backspace' ||
+        e.key === ' ' || (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key));
+    if (sw.draftLocked && isEditKey) {
+        e.preventDefault();
+        return;
+    }
+
     if (e.key === 'Delete') {
         const idx = _getSelectedWordCursorIdx();
         const t = sw.draftText || ''.padEnd(len);
@@ -721,6 +757,7 @@ function closeWordEditor() {
     if (AppState.selectedWord) {
         AppState.selectedWord.draftText = AppState.selectedWord.originalText;
         AppState.selectedWord.draftClue = AppState.selectedWord.originalClue;
+        AppState.selectedWord.draftLocked = AppState.selectedWord.originalLocked;
         AppState.selectedWord.editorMode = 'puzzle';
     }
     AppState.showingStats = false;

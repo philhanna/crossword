@@ -20,6 +20,7 @@ class Word:
         self.length = 0
         self.clue = None
         self.location = None
+        self.locked = False
 
     def lookup(self, seq: int) -> NumberedCell:
         """ Given a sequence number, returns the numbered cell """
@@ -89,6 +90,14 @@ class Word:
     def set_clue(self, clue):
         """ Sets the word's clue """
         self.clue = clue
+
+    def is_locked(self):
+        """ Returns whether the word is locked """
+        return self.locked
+
+    def set_locked(self, locked):
+        """ Sets whether the word is locked """
+        self.locked = locked
 
     def get_text(self):
         """ Gets the word's text from the puzzle """

@@ -116,6 +116,10 @@ function renderActionBar() {
     const fillOrderDisabledAttr = AppState.fillOrderLoading ? ' disabled' : '';
     const closeDisabled = _isWordEditorOpen() ? ' w3-disabled' : '';
     const closeDisabledAttr = _isWordEditorOpen() ? ' disabled' : '';
+    const hasLockedWords = !!(pd && pd.puzzle.words.some(w => w.locked));
+    const gridModeDisabled = hasLockedWords ? ' w3-disabled' : '';
+    const gridModeDisabledAttr = hasLockedWords ? ' disabled' : '';
+    const gridModeTitle = hasLockedWords ? ' title="Unlock all words before switching to Grid Mode"' : '';
 
     const modeSpecific = mode === 'grid' ? `
 <div class="ab-group">
@@ -136,7 +140,7 @@ function renderActionBar() {
 </div>` : `
 <div class="ab-group">
   <button class="ab-btn ab-mode-btn ab-mode-active">Puzzle Mode</button>
-  <button class="ab-btn ab-mode-btn" onclick="do_switch_to_grid_mode()">Grid Mode</button>
+  <button class="ab-btn ab-mode-btn${gridModeDisabled}" onclick="do_switch_to_grid_mode()"${gridModeDisabledAttr}${gridModeTitle}>Grid Mode</button>
 </div>
 <div class="ab-divider"></div>
 <div class="ab-group">
@@ -148,6 +152,9 @@ function renderActionBar() {
   </button>
   <button id="puzzle-fill-order-btn" class="ab-btn${fillOrderDisabled}" onclick="do_puzzle_fill_order()"${fillOrderDisabledAttr}>
     <i class="material-icons">format_list_numbered</i><span>Fill order</span>
+  </button>
+  <button id="puzzle-clear-btn" class="ab-btn" onclick="do_puzzle_clear()">
+    <i class="material-icons">clear_all</i><span>Clear</span>
   </button>
   <button class="ab-btn" onclick="do_puzzle_stats()">
     <i class="material-icons">info</i><span>Stats</span>
@@ -657,11 +664,36 @@ async function _switchToGridModeConfirmed() {
 
 async function do_switch_to_grid_mode() {
     if (!AppState.puzzleWorkingName || _currentEditorMode() === 'grid') return;
+    if (AppState.puzzleData.puzzle.words.some(w => w.locked)) return;
     messageBox(
         'Modify grid',
         'Are you sure you want to modify the grid?',
         null,
         async () => _switchToGridModeConfirmed()
+    );
+}
+
+async function do_puzzle_clear() {
+    if (_isWordEditorOpen()) return;
+    const words = AppState.puzzleData.puzzle.words;
+    const lockedCount    = words.filter(w => w.locked).length;
+    const clearableCount = words.length - lockedCount;
+    const lockedNote = lockedCount > 0
+        ? ` ${lockedCount} locked word${lockedCount === 1 ? '' : 's'} will be skipped.`
+        : '';
+    messageBox(
+        'Clear puzzle',
+        `${clearableCount} word${clearableCount === 1 ? '' : 's'} will be cleared.${lockedNote}`,
+        null,
+        async () => {
+            try {
+                const data = await apiFetch('POST',
+                    `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/clear`);
+                if (data.error) { showMessageLine(`Error clearing puzzle: ${data.error}`, 'error', 0); return; }
+                AppState.puzzleData = data;
+                renderPuzzleEditor();
+            } catch (e) { showMessageLine('Error clearing puzzle', 'error', 0); }
+        }
     );
 }
 

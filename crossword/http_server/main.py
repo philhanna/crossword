@@ -33,6 +33,7 @@ from crossword.http_server.puzzle_handlers import (
     handle_set_word_clue,
     handle_undo_puzzle,
     handle_redo_puzzle,
+    handle_clear_puzzle,
     handle_get_puzzle_preview,
     handle_get_puzzle_stats,
     handle_get_fill_order,
@@ -107,6 +108,7 @@ def register_routes(router):
     router.add_route("PUT",  r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)$", handle_set_word_clue)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/undo$", handle_undo_puzzle)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/redo$", handle_redo_puzzle)
+    router.add_route("POST", r"^/api/puzzles/([^/]+)/clear$", handle_clear_puzzle)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/preview$", handle_get_puzzle_preview)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/stats$", handle_get_puzzle_stats)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/fill-order$", handle_get_fill_order)
