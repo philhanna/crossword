@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(SCRATCH=/tmp/claude-1001/-home-saspeh-dev-python-crossword/ab5afaaa-5f46-4dee-bb8d-95a670b7c509/scratchpad *)",
+      "Bash(set -e)",
+      "Bash(curl -s -X POST http://localhost:5000/api/puzzles -H 'Content-Type: application/json' -d '{\"name\":\"__TRACKED_VAR__\",\"size\":5}')",
+      "Bash(curl -s -X POST http://localhost:5000/api/puzzles/__TRACKED_VAR__/open -H 'Content-Type: application/json' -d '{}')",
+      "Bash(curl -s -X PUT http://localhost:5000/api/puzzles/__TRACKED_VAR__/words/1/across -H 'Content-Type: application/json' -d '{\"text\":\"HELLO\",\"clue\":\"Greeting\"}')",
+      "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\);print\\(json.dumps\\(d['puzzle']['words'], indent=1\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:5000/api/puzzles/locktest1/undo)",
+      "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\);print\\([w for w in d['puzzle']['words'] if w['answer'].strip\\(\\)]\\)\")",
+      "Bash(pkill -9 -f \"crossword.http_server\")",
+      "Bash(echo \"exit:$?\")",
+      "Bash(kill -9 2309864)",
+      "Bash(kill -9 2310337)",
+      "Bash(crontab -l)",
+      "Bash(systemctl --user list-units --all)",
+      "Read(//etc/systemd/system/**)",
+      "Bash(systemctl status *)",
+      "Bash(python3 -c \"import playwright\")"
+    ],
+    "additionalDirectories": [
+      "/home/saspeh/.config/crossword"
+    ]
+  }
+}
