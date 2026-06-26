@@ -26,11 +26,12 @@ SPEC = {
     },
     "servers": [{"url": "http://localhost:5000", "description": "Local dev server"}],
     "tags": [
-        {"name": "config",  "description": "Frontend configuration"},
-        {"name": "puzzles", "description": "Puzzle CRUD and editing"},
-        {"name": "words",   "description": "Word list / dictionary"},
-        {"name": "export",  "description": "Export puzzles"},
-        {"name": "import",  "description": "Import puzzles"},
+        {"name": "config",   "description": "Frontend configuration"},
+        {"name": "settings", "description": "User-editable config.yaml settings"},
+        {"name": "puzzles",  "description": "Puzzle CRUD and editing"},
+        {"name": "words",    "description": "Word list / dictionary"},
+        {"name": "export",   "description": "Export puzzles"},
+        {"name": "import",   "description": "Import puzzles"},
     ],
 
     # ---- reusable schemas -----------------------------------------------
@@ -219,6 +220,61 @@ SPEC = {
                                 "type": "object",
                                 "properties": {
                                     "message_line_timeout_ms": {"type": "integer", "nullable": True},
+                                },
+                            }}}},
+                },
+            },
+        },
+
+        # ================================================================
+        # SETTINGS
+        # ================================================================
+        "/api/settings": {
+            "get": {
+                "tags": ["settings"],
+                "summary": "Get current values for all user-editable settings keys",
+                "description": "Reads from ~/.config/crossword/config.yaml (or bootstrap defaults). "
+                                "Values are always returned as strings; unset keys are ''.",
+                "responses": {
+                    "200": {"description": "Settings values",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "host":                    {"type": "string"},
+                                    "port":                    {"type": "string"},
+                                    "dbfile":                  {"type": "string"},
+                                    "xdfile":                  {"type": "string"},
+                                    "word_file":               {"type": "string"},
+                                    "log_level":               {"type": "string"},
+                                    "message_line_timeout_ms": {"type": "string"},
+                                    "theme_color":             {"type": "string"},
+                                    "author_name":             {"type": "string"},
+                                    "author_address":         {"type": "string"},
+                                    "author_email":            {"type": "string"},
+                                },
+                            }}}},
+                },
+            },
+            "put": {
+                "tags": ["settings"],
+                "summary": "Update one or more settings",
+                "description": "Merges given keys into config.yaml; omitted keys are left unchanged, "
+                                "an empty string clears a key. Changing host/port/log_level/dbfile/"
+                                "xdfile/word_file/theme_color requires a server restart to take effect.",
+                "requestBody": {
+                    "required": True,
+                    "content": {"application/json": {"schema": {
+                        "type": "object",
+                        "description": "Any subset of the settings keys (see GET /api/settings)",
+                        "additionalProperties": {"type": "string"},
+                    }}},
+                },
+                "responses": {
+                    "200": {"description": "Updated",
+                            "content": {"application/json": {"schema": {
+                                "type": "object",
+                                "properties": {
+                                    "restart_required": {"type": "boolean"},
                                 },
                             }}}},
                 },
@@ -775,6 +831,20 @@ SPEC = {
             },
         },
 
+        "/api/puzzles/{name}/clear": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Blank the text and clue of every unlocked word",
+                "responses": {
+                    "200": {"description": "Updated puzzle data",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
         "/api/puzzles/{name}/preview": {
             "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
             "get": {
@@ -936,6 +1006,48 @@ SPEC = {
                 "responses": {
                     "200": {"description": "ZIP archive",
                             "content": {"application/zip": {"schema": {"type": "string", "format": "binary"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/export/puzzles/{name}/puz": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["export"],
+                "summary": "Export puzzle to AcrossLite binary (.puz) format",
+                "responses": {
+                    "200": {"description": ".puz file",
+                            "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/export/puzzles/{name}/xd": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["export"],
+                "summary": "Export puzzle to .xd text format",
+                "responses": {
+                    "200": {"description": ".xd text",
+                            "content": {"text/plain": {"schema": {"type": "string"}}}},
+                    "404": {"description": "Not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/export/puzzles/{name}/ipuz": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["export"],
+                "summary": "Export puzzle to ipuz JSON format",
+                "responses": {
+                    "200": {"description": "ipuz JSON",
+                            "content": {"application/x-ipuz+json": {"schema": {"type": "string"}}}},
                     "404": {"description": "Not found",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },

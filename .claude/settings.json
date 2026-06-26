@@ -17,7 +17,8 @@
       "Bash(systemctl --user list-units --all)",
       "Read(//etc/systemd/system/**)",
       "Bash(systemctl status *)",
-      "Bash(python3 -c \"import playwright\")"
+      "Bash(python3 -c \"import playwright\")",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('tools/dev/swagger.py'\\).read\\(\\)\\)\")"
     ],
     "additionalDirectories": [
       "/home/saspeh/.config/crossword"
