@@ -136,8 +136,16 @@ natural fit, once the set of real publishers is known.
 7. **The Submission Editor is a separate application**, not a new view
    within the existing SPA's `home` / `grid-editor` / `puzzle-editor`
    menu machine. It shares the backend and database (per decision 3) but
-   is its own frontend, launched independently of the puzzle/grid SPA;
-   the Dashboard's existing cards/tabs are unaffected.
+   is its own frontend, launched independently of the puzzle/grid SPA.
+   This describes the scope for 4.7 only: at this stage the Dashboard's
+   existing cards/tabs are unaffected. Eventually the application becomes
+   **three related SPAs sharing a common backend and database** — the
+   puzzle/grid editor, the Submission Editor, and a third — and the
+   Dashboard itself becomes its own SPA that links the other three. That
+   future Dashboard gains new cards beyond today's, e.g. a **"Themes"**
+   card for tracking themes under development (a new feature), and its
+   existing **"Submitted"** card starts tracking data produced by the
+   Submission Editor rather than the free-text fields described in §1.
 
 8. **`editor_id` on an event stays optional, and `editors` gains an
    `is_primary` flag** (§3.3) so the UI can default to a publisher's main
