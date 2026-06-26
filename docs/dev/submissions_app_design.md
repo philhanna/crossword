@@ -5,8 +5,27 @@
 > the major forks (publisher modeling, the `rejected` outcome, storage
 > technology, email sending) and the narrower questions that followed
 > (body format, publisher reference-data shape, UI placement, editor
-> referencing) — are resolved in §4. Implementation may proceed against
-> §3's schema, read together with those decisions.
+> referencing) — are resolved in §5. Two narrower items — the
+> `event_type` enum and the column naming convention — remain open; see
+> §6. Implementation may proceed against §3's schema, read together with
+> §5's decisions.
+
+## Contents
+
+- [1. Purpose](#1-purpose)
+- [2. Relationship to the existing puzzle-state machine](#2-relationship-to-the-existing-puzzle-state-machine)
+- [3. Proposed data model](#3-proposed-data-model-draft--see-5-before-building-any-of-this)
+  - [3.1 `submission_events` — append-only audit log](#31-submission_events--append-only-audit-log)
+  - [3.2 `publishers` — reference data, one row per publisher](#32-publishers--reference-data-one-row-per-publisher)
+  - [3.3 `editors` — contacts at a publisher](#33-editors--contacts-at-a-publisher)
+- [4. Use cases](#4-use-cases)
+  - [4.1 `PublisherUseCases`](#41-publisherusecases)
+  - [4.2 `EditorUseCases`](#42-editorusecases)
+  - [4.3 `SubmissionUseCases`](#43-submissionusecases-the-append-only-event-log-31)
+  - [4.4 Email drafting](#44-email-drafting-decisions-45)
+  - [4.5 Implicit requirements](#45-implicit-requirements)
+- [5. Resolved decisions](#5-resolved-decisions)
+- [6. Open issues](#6-open-issues)
 
 ## 1. Purpose
 
@@ -40,7 +59,7 @@ more detail**:
 The existing `puzzles.state` enum is `draft`, `filled`, `finished`,
 `submitted`, `published`, `archived`
 ([crossword/domain/puzzle_state.py](../../crossword/domain/puzzle_state.py)).
-There is no `rejected` state today, and per §4 there won't be one: a
+There is no `rejected` state today, and per §5 there won't be one: a
 rejection is logged as an **event** in the new event log, whose *effect* is
 to write `puzzles.state` back to `'finished'` (and clear `date_submitted`).
 The Dashboard's existing cards/tabs are unaffected.
@@ -50,7 +69,7 @@ The Dashboard's existing cards/tabs are unaffected.
 All three tables are new. Column names below follow the existing schema's
 mixed convention (`userid`/`puzzlename` with no separator on older columns,
 `date_submitted`/`last_mode` with underscores on newer ones); pick one
-convention before implementing (Q5 in §5).
+convention before implementing (see §6).
 
 ### 3.1 `submission_events` — append-only audit log
 
@@ -63,7 +82,7 @@ with) the latest relevant row here.
 | `id` | INTEGER PK, autoincrement | |
 | `puzzle_id` | INTEGER, FK → `puzzles.id` | which puzzle |
 | `timestamp` | TEXT (ISO 8601) | when the event occurred |
-| `event_type` | TEXT | e.g. `submitted`, `email_sent`, `email_received`, `accepted`, `rejected`, `archived` — needs a closed enum (Q2) |
+| `event_type` | TEXT | e.g. `submitted`, `email_sent`, `email_received`, `accepted`, `rejected`, `archived` — needs a closed enum (see §6) |
 | `resulting_state` | TEXT | the `puzzles.state` value this event produces, if any — may be `NULL` for events that don't change state (e.g. a comment) |
 | `publisher_id` | INTEGER, FK → `publishers.id`, nullable | which publisher this event concerns |
 | `editor_id` | INTEGER, FK → `editors.id`, nullable | which editor, if applicable |
@@ -72,7 +91,7 @@ with) the latest relevant row here.
 ### 3.2 `publishers` — reference data, one row per publisher
 
 `puzzles.publisher` changes from free text to a foreign key referencing
-`publishers.id` (§4, decision 1). Existing free-text values in production
+`publishers.id` (§5, decision 1). Existing free-text values in production
 data need a one-off migration to matching `publishers.id` codes — the same
 "rebuild into a fresh DB" pattern used for the state-column migration in
 [puzzle_state.md §9](puzzle_state.md#9-one-off-migration-tool) is the
@@ -97,7 +116,84 @@ natural fit, once the set of real publishers is known.
 | `email` | TEXT | |
 | `is_primary` | BOOLEAN | at most one per publisher; default editor when an event doesn't name one — see decision 8 |
 
-## 4. Resolved decisions
+## 4. Use cases
+
+Following the existing code's pattern (`PuzzleUseCases`, `WordUseCases`,
+etc. in [crossword/use_cases/](../../crossword/use_cases/)), the feature
+implies three new use-case groups plus a handful of cross-cutting
+requirements that aren't named explicitly above but are needed to make §3
+and §5 work.
+
+### 4.1 `PublisherUseCases`
+
+- Create / update / delete a publisher (`name`, `email`,
+  `submission_limits`, `payment_info`, `spec_url`)
+- List/lookup publishers — used both by the submission picker and by the
+  one-off migration tool
+- One-off migration: scan existing free-text `puzzles.publisher` values,
+  create/match `publishers.id` codes, rewrite the column (§3.2, decision 1)
+
+### 4.2 `EditorUseCases`
+
+- Create / update / delete an editor under a publisher
+- Set/clear `is_primary` — must enforce "at most one per publisher" (§3.3,
+  decision 8)
+- Get the primary editor for a publisher, to default an event's editor
+  when none is named
+
+### 4.3 `SubmissionUseCases` (the append-only event log, §3.1)
+
+Each event type from the enum (see §6) is its own use case, since the
+*effect* on `puzzles.state` differs:
+
+| Use case | Event logged | Effect on `puzzles` |
+|---|---|---|
+| Submit | `submitted` | `state = 'submitted'`, set `date_submitted` |
+| Reject | `rejected` | `state = 'finished'`, clear `date_submitted` (decision 2) |
+| Accept | `accepted` | `state = 'published'`, set `date_published` |
+| Log email sent | `email_sent` | none (`resulting_state` is `NULL`) |
+| Log email received | `email_received` | none (`resulting_state` is `NULL`) |
+| Archive | `archived` | `state = 'archived'` |
+
+Plus:
+
+- Get submission history for a puzzle (renders the audit timeline)
+- Get the current submission snapshot for a puzzle — derives/syncs the
+  data the future Dashboard's "Submitted" card reads (decision 7)
+
+### 4.4 Email drafting (decisions 4–5)
+
+- Draft a submission email body in Markdown, using the target publisher's
+  `submission_limits`/contact info
+- Convert Markdown → `text/html` + `text/plain` and write both to the
+  clipboard via `ClipboardItem` ("Copy for Gmail")
+- Convert pasted HTML (an incoming reply) → Markdown before saving it as
+  an `email_received` event's `body`
+
+### 4.5 Implicit requirements
+
+Not named explicitly in §3/§5, but required for the above to be correct:
+
+- **Enum validation** — `event_type` must be checked against the closed
+  enum once §6 settles it; `resulting_state`, if non-null, must be one of
+  the existing `puzzles.state` values
+- **Referential checks** — an event naming both `publisher_id` and
+  `editor_id` must validate the editor actually belongs to that publisher
+- **Publisher delete guard** — deleting a publisher referenced by
+  `editors`, `submission_events`, or `puzzles.publisher_id` needs an
+  in-use check (or a defined cascade), which §3.2 doesn't specify
+- **Primary-editor reassignment** — deleting/deactivating the editor
+  flagged `is_primary` leaves the publisher with no primary; needs an
+  explicit use case or rule, not just the flag itself
+- **Snapshot sync strategy** — §3.1 says the `puzzles` snapshot is
+  "derived from (or kept in sync with) the latest relevant row"; whether
+  that sync happens on write (push) or on read (pull) is still open and
+  determines whether a recompute use case is needed
+- **Scoping** — `publishers`/`editors` carry no `user_id` (unlike
+  `puzzles`), so confirm they're intended as global reference data rather
+  than per-user before wiring `user_id` checks into their use cases
+
+## 5. Resolved decisions
 
 1. **`puzzles.publisher` becomes a foreign key** into the new `publishers`
    table, replacing the free-text field the Dashboard uses today. Existing
@@ -111,7 +207,8 @@ natural fit, once the set of real publishers is known.
    tables in the same file as `puzzles`/`grids`/`users`, consistent with
    the project's SQLite-only architecture. A `TEXT` column holding a JSON
    string remains available for `submission_limits`/`payment_info` if
-   those turn out to need a flexible/nested shape (open in Q2 below).
+   those turn out to need a flexible/nested shape (resolved by decision 6,
+   below).
 4. **The app only drafts the submission email**; it does not send it. No
    SMTP/API integration, credentials, or send infrastructure are in scope.
    `submission_events.body` records the drafted (or, if the user pastes
@@ -151,3 +248,17 @@ natural fit, once the set of real publishers is known.
    `is_primary` flag** (§3.3) so the UI can default to a publisher's main
    contact when an event doesn't name a specific editor. An event
    references at most one editor — no CC/multi-editor list.
+
+## 6. Open issues
+
+Two narrower questions from §3 are not covered by §5's decisions:
+
+1. **`event_type` enum.** §3.1 lists six example values (`submitted`,
+   `email_sent`, `email_received`, `accepted`, `rejected`, `archived`),
+   but the full closed enum isn't pinned down — e.g. is a non-state-changing
+   "comment" event (alluded to by the `resulting_state` column's "may be
+   `NULL`" note) in scope?
+2. **Column naming convention.** Pick one of the existing schema's two
+   conventions — no separator (`userid`, `puzzlename`) or underscored
+   (`date_submitted`, `last_mode`) — for all new columns in
+   `submission_events`, `publishers`, and `editors`, before implementing.
