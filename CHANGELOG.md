@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.1.0] - 2026-06-26
+
+### Added
+
+- Word locking in the puzzle editor: locked words' letters survive direct
+  edits, crossing-word edits, and undo/redo; locking/unlocking is itself
+  undoable
+- Bulk "Clear" action that blanks every unlocked word's text and clue as a
+  single undo entry
+
+### Changed
+
+- Grid Mode is unreachable while any word is locked
+- Reordered puzzle editor toolbar buttons and adjusted locked-word cell color
+- Moved the "all" button to the beginning of the button row
+
 ## [5.0.0] - 2026-06-09
 
 ### Added
