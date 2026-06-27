@@ -693,6 +693,9 @@ async function do_puzzle_clear() {
                     `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/clear`);
                 if (data.error) { showMessageLine(`Error clearing puzzle: ${data.error}`, 'error', 0); return; }
                 AppState.puzzleData = data;
+                if (AppState.selectedWord) {
+                    _refreshSelectedWordFromPuzzleData();
+                }
                 renderPuzzleEditor();
             } catch (e) { showMessageLine('Error clearing puzzle', 'error', 0); }
         }
