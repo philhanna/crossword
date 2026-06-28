@@ -26,11 +26,26 @@ common database and Python server component, each with its own SPA:
 
 ## 1. Dashboard
 
-Similar to the existing dashboard, with two changes:
+Similar to the existing dashboard, with three changes:
 
 - The "Archived" card is removed.
 - A new "Themes" card is added as the leftmost card, linking to the theme
   editor (§2).
+- Cards driven by submission status (e.g. "Submitted") read the derived
+  status from §4.4.3 instead of `puzzles.state`/`puzzles.publisher`
+  directly, so they reflect submission events as they're logged
+  (Appendix A.8).
+
+### 1.1 Use cases
+
+- **Get dashboard summary** — the existing `PuzzleUseCases.get_dashboard`
+  use case, updated to drop the "Archived" card and to source
+  submission-related rows (e.g. "Submitted") from the submissions
+  editor's "get current submission status" use case (§4.4.3) instead of
+  reading `puzzles.state`/`puzzles.publisher` directly (Appendix A.8)
+- **List themes for the "Themes" card** — delegates to the new
+  `ThemeUseCases.list_themes` (§2.5), used both to populate the card and
+  to link through to the theme editor (§2)
 
 ## 2. Theme editor
 
@@ -49,7 +64,10 @@ theme is first created:
 | `alternate_words` | a small number of additional `candidate_words` that fit `word_lengths` but are not currently selected |
 | `grid` | a valid crossword grid into which `selected_words` can be placed |
 
-Filling in these attributes from empty is the theme editor's job.
+Filling in these attributes from empty is the theme editor's job. There
+is no separate completeness/status field — a theme is "complete" when
+`grid` is set and `len(selected_words) == len(word_lengths)`, computed
+on the fly rather than stored (Appendix A.12).
 
 ### 2.2 Editor functionality
 
@@ -63,28 +81,32 @@ The user can perform the usual CRUD operations on a theme:
 - Validate theme words and alternates against the existing word-list API
 - Save the theme
 - Save the theme under a new name
-- Rename a theme
-- Delete a theme
+- Rename a theme — preserves the theme's `id`, same as puzzle rename
+  (Appendix A.9)
+- Delete a theme — no in-use check needed; puzzles created from a theme
+  keep no reference back to it (Appendix A.13)
 - Select a crossword grid suited to the theme — essentially identical to
-  the "new puzzle" functionality of the existing application (see the
-  Grid selection component item in Appendix A)
+  the "new puzzle" functionality of the existing application, via the
+  shared grid-picker component (Appendix A.1)
 
 ### 2.3 Grid selection and evaluation
 
-While selecting and fitting a grid, the editor should support:
+While selecting and fitting a grid (via the shared component, Appendix
+A.1), the editor should support:
 
 - Finding a grid whose slot structure matches `word_lengths`
 - Checking the grid and the proposed word placement for initial
   fillability, similar to the "Fill Order" function in the existing
-  puzzle editor (§3.2) — it's important to detect early whether placing
+  puzzle editor (§3.3) — it's important to detect early whether placing
   the theme words in the selected grid will make the rest of the fill
   difficult
-- If the initial placement isn't satisfactory:
-  - Reordering the theme words across the grid's symmetric slots, trying
+- If the initial placement isn't satisfactory, the user can perform any
+of the following actions:
+  - Reorder the theme words across the grid's symmetric slots, trying
     every permutation whose lengths still fit
-  - Substituting `alternate_words` into `selected_words` and re-checking
+  - Substitute `alternate_words` into `selected_words` and re-checking
     fillability
-  - Selecting a different grid
+  - Select a different grid
 
 ### 2.4 Project phases
 
@@ -94,17 +116,67 @@ While selecting and fitting a grid, the editor should support:
   and the [Cruciverb theme types](https://www.cruciverb.com/index.php?action=ezportal;sa=page;p=70)
   reference.
 
+### 2.5 Use cases
+
+New `ThemeUseCases` group, following the existing pattern
+(`PuzzleUseCases`, `WordUseCases`, etc. in
+[crossword/use_cases/](../../crossword/use_cases/)):
+
+- Create / open / delete a theme — delete needs no in-use check, since
+  puzzles created from a theme keep no reference back to it (Appendix
+  A.13)
+- Save / save-as / rename a theme — rename preserves the theme's `id`
+  (Appendix A.9)
+- Edit attributes: set `word_lengths`; add, delete, and edit words in
+  `candidate_words`/`alternate_words`; move words between the two
+- Validate theme words and alternates — delegates to the existing
+  word-list API (`WordUseCases`)
+- Check whether a theme is "complete" — computed from `grid` and
+  `selected_words` (Appendix A.12), not a stored field
+- Select and evaluate a grid for a theme (§2.3), via the shared
+  grid-picker component (Appendix A.1):
+  - Find grids whose slot structure matches `word_lengths`
+  - Check initial fillability of the proposed placement
+  - Reorder theme words across the grid's symmetric slots
+  - Substitute `alternate_words` into `selected_words` and recheck
+    fillability
+  - Select a different grid
+- List/preview themes — used by this editor's own chooser and by §3.1's
+  theme picker, which filters to "complete" themes only
+
 ## 3. Composing editor
 
 Essentially the existing puzzle and word editors, with the enhancements
-below. Unlike §2, these are not yet split into phases — see Appendix A.
+below. Unlike §2, these are not split into phases — each item ships
+independently, including the **ML project**-tagged items, with no
+global phase plan tying it to the theme editor's phasing (Appendix
+A.11). Its existing "new puzzle" grid selection moves onto the shared
+grid-picker component (Appendix A.1), the same one the theme editor's
+§2.3 uses.
 
-### 3.1 Word editor
+### 3.1 New puzzle
+The existing functionality needs to be preserved, with the sole exception
+of the prompt shown when creating a new puzzle.
+- For themed puzzles, the "new puzzle" action needs to select
+from a theme picker
+  - Show a richly formatted list of completed themes built by the
+  theme editor — "completed" per Appendix A.12 (`grid` set,
+  `len(selected_words) == len(word_lengths)`), computed on the fly
+  rather than a stored status.
+  - Selecting a theme will necessarily provide the grid size, the
+  grid attributes, and the slot locations of the theme words.  The composing editor will create a new puzzle in puzzle mode and invoke the puzzle editor as usual.  The theme words will start in the locked state.
+  - The theme's data is copied into the new puzzle; the puzzle keeps no
+  reference back to the source theme (Appendix A.13).
+  - At this point, the puzzle will be tracked as part of the composing editor in draft mode.  The dashboard will show it as such.
+
+### 3.2 Word editor
 
 - Allow a wider range of regular expressions, not just `.`
-- Provide some way to see how constraints affect word selection
+    - For example, `MA[^AEIOU]` for "MA" followed by a consonant
+    - All regular expressions should be permitted, although the
+    suggest button functionality will only search for words of the correct length.
 
-### 3.2 Improvements to the Fill Order function
+### 3.3 Improvements to the Fill Order function
 
 - Make it genuinely correct and fast.
 - Refine the ranking criteria — candidates so far:
@@ -133,7 +205,7 @@ below. Unlike §2, these are not yet split into phases — see Appendix A.
   - Possibly characterize publishers' preferred clue style by analyzing
     their published clues (**ML project**)
 
-### 3.3 Improvements to the word list
+### 3.4 Improvements to the word list
 
 - Score words by suitability (**ML project**):
   - Switch from a plain text file to CSV with multiple attributes
@@ -157,6 +229,30 @@ below. Unlike §2, these are not yet split into phases — see Appendix A.
 - Classify words by part of speech (**ML project**); a word may have more
   than one (e.g. "iron" as noun, verb, possibly adjective)
 
+### 3.5 Use cases
+
+Extends the existing `PuzzleUseCases`/`WordUseCases`, plus one new use
+case for the theme-driven flow:
+
+- **Create puzzle from theme** (new, §3.1) — given a theme, copies its
+  grid and words into a new puzzle in puzzle mode, locks the theme
+  words, and tracks the puzzle in draft mode on the dashboard. Stores no
+  reference back to the source theme (Appendix A.13)
+- List completed themes — for §3.1's theme picker; delegates to
+  `ThemeUseCases` (§2.5), filtered to "complete" themes (Appendix A.12)
+- Existing grid/puzzle use cases (`create_puzzle`,
+  `switch_to_grid_mode`/`switch_to_puzzle_mode`, etc.) are unchanged for
+  the non-themed "new puzzle" path, including the shared grid-picker
+  (Appendix A.1)
+- `WordUseCases.get_word_constraints`/`get_ranked_suggestions` extended
+  to support the wider regex syntax in §3.2 (e.g. `MA[^AEIOU]`), while
+  "Suggest" still only searches words of the correct length
+- `PuzzleUseCases.get_fill_order`, reworked per §3.3: corrected/faster
+  computation, refined ranking, caching with an invalidation rule, and
+  auto-fill over a user-selected area
+- Word-list use cases extended per §3.4 for suitability scoring and the
+  other **ML project** items
+
 ## 4. Submissions editor
 
 ### 4.1 Purpose
@@ -171,19 +267,25 @@ move a puzzle between these states and enter the publisher as free text at
 that point.
 
 The submissions editor extends that mechanism to support the submission
-workflow in more detail:
+workflow in more detail, and normalizes away the duplication between that
+snapshot and the new event log:
 
 1. **Audit history, not just a current snapshot** — every state transition,
    and every email sent or received about a given puzzle's submission, is
    recorded as a discrete, timestamped event, not overwritten in place.
-2. **Structured publisher data** — publisher name, contact email,
+2. **No redundant snapshot columns** — `publisher`, `date_submitted`, and
+   `date_published` are removed from `puzzles` entirely. The submission
+   status, publisher, and dates are always derived by querying
+   `submission_events` directly, rather than kept as a second copy that
+   has to stay in sync with it (Appendix A.6).
+3. **Structured publisher data** — publisher name, contact email,
    submission requirements, and (possibly) payment terms, looked up rather
    than typed freehand each time.
-3. **Per-publisher editor contacts**, since a publisher may have more than
+4. **Per-publisher editor contacts**, since a publisher may have more than
    one editor and submissions may be addressed to a specific person.
-4. **Submission email drafting** — composing the email to a publisher
+5. **Submission email drafting** — composing the email to a publisher
    according to that publisher's stated requirements.
-5. **A rejected outcome** — a publisher can decline a puzzle, after which
+6. **A rejected outcome** — a publisher can decline a puzzle, after which
    it returns to a pre-submission state rather than continuing toward
    publication.
 
@@ -192,31 +294,48 @@ workflow in more detail:
 The existing `puzzles.state` enum is `draft`, `filled`, `finished`,
 `submitted`, `published`, `archived`
 ([crossword/domain/puzzle_state.py](../../crossword/domain/puzzle_state.py)).
+`draft`/`filled`/`finished` are auto-detected from puzzle content
+(`detect_completion_state`) and stay a stored column on `puzzles`,
+unaffected by this feature.
+
+`submitted`/`published`/`archived` are no longer written to
+`puzzles.state` directly — that's a change to today's "set from the
+dashboard" behavior noted in `puzzle_state.py`. Once a puzzle has at
+least one row in `submission_events`, its effective status is the
+`resulting_state` of that puzzle's most recent event that has a
+non-`NULL` `resulting_state` (events like `email_sent`/`email_received`/
+`comment` don't change status, so the lookup skips past them to the
+last one that did). A puzzle with no submission events yet is still
+read straight from the `draft`/`filled`/`finished` column.
+
 There is no `rejected` state, and per decision 2 (§4.5) there won't be
-one: a rejection is logged as an *event*, whose effect is to write
-`puzzles.state` back to `finished`. The state enum, the completion ladder,
-and the Dashboard's existing cards/tabs are unchanged by this feature.
+one: a rejection is logged as an *event* whose `resulting_state` is
+`finished` — the same derivation that surfaces `submitted`/`published`/
+`archived` falls back to `finished` after a rejection, without writing
+anything back to `puzzles`. The completion ladder and the Dashboard's
+existing cards/tabs are unchanged by this feature.
 
 ### 4.3 Proposed data model
 
-All three tables are new. Column names below follow the existing schema's
-mixed convention (`userid`/`puzzlename` with no separator on older
-columns, `date_submitted`/`last_mode` with underscores on newer ones).
-Decision §4.5 still leaves *which* convention to use for these new tables
-open — see Appendix A.
+All three tables are new. The existing schema mixes two conventions
+(`userid`/`puzzlename` with no separator on older columns,
+`date_submitted`/`last_mode` with underscores on newer ones); the column
+names below use the underscored convention throughout (resolved, Appendix
+A.3).
 
 #### 4.3.1 `submission_events` — append-only audit log
 
 One row per event in a puzzle's submission history. Never updated or
-deleted; the current snapshot on `puzzles` is derived from (or kept in
-sync with) the latest relevant row here.
+deleted. There is no snapshot stored on `puzzles` — submission status,
+publisher, and submission/publication dates are always derived by
+querying this table directly (resolved, Appendix A.6).
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | INTEGER PK, autoincrement | |
 | `puzzle_id` | INTEGER, FK → `puzzles.id` | which puzzle |
 | `timestamp` | TEXT (ISO 8601) | when the event occurred |
-| `event_type` | TEXT | e.g. `submitted`, `email_sent`, `email_received`, `accepted`, `rejected`, `archived` — needs a closed enum (Appendix A) |
+| `event_type` | TEXT | closed enum (Appendix A): `submitted`, `email_sent`, `email_received`, `accepted`, `rejected`, `archived`, `comment` |
 | `resulting_state` | TEXT | the `puzzles.state` value this event produces, if any — `NULL` for events that don't change state (e.g. a comment) |
 | `publisher_id` | INTEGER, FK → `publishers.id`, nullable | which publisher this event concerns |
 | `editor_id` | INTEGER, FK → `editors.id`, nullable | which editor, if applicable |
@@ -224,11 +343,14 @@ sync with) the latest relevant row here.
 
 #### 4.3.2 `publishers` — reference data, one row per publisher
 
-`puzzles.publisher` changes from free text to a foreign key referencing
-`publishers.id` (decision 1, §4.5). Existing free-text values in
-production data need a one-off migration to matching `publishers.id`
-codes — the same "rebuild into a fresh DB" pattern used for the
-state-column migration in
+`puzzles.publisher` (today's free-text column) is dropped; the current
+publisher for a puzzle, if any, is the `publisher_id` of its most recent
+`submission_events` row that has one (decision 1, §4.5). Existing
+free-text `puzzles.publisher` values in production data need a one-off
+migration: match each to a `publishers.id` code and synthesize a
+`submitted` event carrying that `publisher_id`, so derivation has
+something to find — the same "rebuild into a fresh DB" pattern used for
+the state-column migration in
 [puzzle_state.md §9](puzzle_state.md#9-one-off-migration-tool) is the
 natural fit, once the set of real publishers is known.
 
@@ -249,7 +371,6 @@ natural fit, once the set of real publishers is known.
 | `publisher_id` | TEXT, FK → `publishers.id` | |
 | `name` | TEXT | |
 | `email` | TEXT | |
-| `is_primary` | BOOLEAN | at most one per publisher; default editor when an event doesn't name one (decision 8, §4.5) |
 
 ### 4.4 Use cases
 
@@ -261,41 +382,43 @@ requirements not named explicitly above.
 #### 4.4.1 `PublisherUseCases`
 
 - Create / update / delete a publisher (`name`, `email`,
-  `submission_limits`, `payment_info`, `spec_url`)
+  `submission_limits`, `payment_info`, `spec_url`) — delete is rejected
+  if the publisher is still referenced by `editors` or
+  `submission_events` (Appendix A.4)
 - List/lookup publishers — used both by the submission picker and by the
   one-off migration tool
 - One-off migration: scan existing free-text `puzzles.publisher` values,
-  create/match `publishers.id` codes, rewrite the column (§4.3.2,
+  create/match `publishers.id` codes, synthesize a `submitted` event per
+  puzzle carrying that `publisher_id`, then drop the column (§4.3.2,
   decision 1)
 
 #### 4.4.2 `EditorUseCases`
 
 - Create / update / delete an editor under a publisher
-- Set/clear `is_primary` — must enforce "at most one per publisher"
-  (§4.3.3, decision 8)
-- Get the primary editor for a publisher, to default an event's editor
-  when none is named
 
 #### 4.4.3 `SubmissionUseCases` (the append-only event log, §4.3.1)
 
-Each event type is its own use case, since its effect on `puzzles.state`
-differs:
+Each event type is its own use case, since the `resulting_state` it
+records differs (nothing is ever written back to `puzzles`; this is just
+what later derivation reads, §4.2):
 
-| Use case | Event logged | Effect on `puzzles` |
+| Use case | Event logged | `resulting_state` recorded |
 |---|---|---|
-| Submit | `submitted` | `state = 'submitted'`, set `date_submitted` |
-| Reject | `rejected` | `state = 'finished'`, clear `date_submitted` (decision 2) |
-| Accept | `accepted` | `state = 'published'`, set `date_published` |
-| Log email sent | `email_sent` | none (`resulting_state` is `NULL`) |
-| Log email received | `email_received` | none (`resulting_state` is `NULL`) |
-| Archive | `archived` | `state = 'archived'` |
+| Submit | `submitted` | `submitted` |
+| Reject | `rejected` | `finished` (decision 2) |
+| Accept | `accepted` | `published` |
+| Log email sent | `email_sent` | `NULL` |
+| Log email received | `email_received` | `NULL` |
+| Archive | `archived` | `archived` |
+| Comment | `comment` | `NULL` |
 
 Plus:
 
 - Get submission history for a puzzle (renders the audit timeline)
-- Get the current submission snapshot for a puzzle — derives/syncs the
-  data the dashboard's "Submitted" card reads (decision 7; see also
-  Appendix A on whether this is in scope for §1's dashboard)
+- Get the current submission status for a puzzle — a pure query over
+  `submission_events` (§4.2), with no stored snapshot to keep in sync
+  (decision 7; see also Appendix A.8 on whether this is in scope for
+  §1's dashboard)
 
 #### 4.4.4 Email drafting (decisions 4–5, §4.5)
 
@@ -318,20 +441,19 @@ Not named explicitly above, but required for §4.3/§4.4 to be correct:
   `editor_id` must validate that the editor actually belongs to that
   publisher.
 
-The following gaps are unresolved design questions, not yet decisions —
-they're carried to Appendix A rather than answered here: the publisher
-delete guard, primary-editor reassignment, the snapshot sync strategy, and
-whether `publishers`/`editors` are global or per-user.
-
 ### 4.5 Resolved decisions
 
-1. **`puzzles.publisher` becomes a foreign key** into the new `publishers`
-   table, replacing today's free-text field. Existing free-text values
-   must be migrated to `publishers.id` codes (§4.3.2).
+1. **`puzzles.publisher` is dropped, not converted to a foreign key.**
+   Today's free-text field is removed entirely; the current publisher
+   for a puzzle is derived from its most recent `submission_events` row
+   with a `publisher_id` set, referencing the new `publishers` table.
+   Existing free-text values must be migrated to `publishers.id` codes
+   and a corresponding event, not just rewritten in place (§4.3.2).
 2. **`rejected` is an event type, not a new `puzzles.state` value.**
-   Logging a `rejected` event writes `puzzles.state` back to `'finished'`;
-   the state enum, the completion ladder, and the Dashboard's cards/tabs
-   are unchanged (§4.2).
+   Logging a `rejected` event records a `resulting_state` of `'finished'`
+   on the event row; nothing is written back to `puzzles.state` itself —
+   that value is derived when read (§4.2). The state enum, the completion
+   ladder, and the Dashboard's cards/tabs are unchanged.
 3. **Storage stays in the existing SQLite database** — no separate
    NoSQL/JSON store. The event log and reference tables are ordinary
    tables alongside `puzzles`/`grids`/`users`. A `TEXT` column holding a
@@ -364,88 +486,125 @@ whether `publishers`/`editors` are global or per-user.
    database — the dashboard, the theme editor, the composing editor, and
    the submissions editor — with the dashboard linking the other three
    rather than embedding them.
-8. **`editor_id` on an event stays optional, and `editors` gains an
-   `is_primary` flag** (§4.3.3) so the UI can default to a publisher's
-   main contact when an event doesn't name a specific editor. An event
+8. **`editor_id` on an event stays optional, with no "primary editor"
+   concept.** There's no functionality that depends on designating one
+   editor per publisher as primary, so `editors` has no `is_primary`
+   flag and there's no default-editor lookup (Appendix A.5). An event
    references at most one editor — no CC/multi-editor list.
 
 ## Appendix A — Open issues
 
 ### A.1 Grid selection component
 
-The grid selection in the theme editor (§2.3) and in the main puzzle
-editor (§3) is essentially identical. Which editor should own this
-component? Or should it be its own SPA, shared by both?
+Resolved: a shared frontend component, not its own SPA, and not owned
+by either editor. The existing preview-chooser code (currently in
+`frontend/static/js/app.js`) moves into a standalone, framework-free
+module (e.g. `frontend/shared/grid_picker.js`) served as a static asset,
+which both the theme editor SPA and the composing editor SPA include
+directly. This extends decision 7's (§4.5) shared backend/database to
+one shared frontend asset as well, while keeping the two SPAs otherwise
+independent — a separate SPA would add cross-frame signaling and a
+second navigation/modal stack for no benefit, since the component has no
+routes or independent state of its own. Backend endpoints
+(`/api/grids/{name}/preview` and friends) need no change; they're
+already generic. Domain-specific behavior — §2.3's filtering by
+`word_lengths` and fillability pre-check — stays in the theme editor,
+layered on top via a filter passed into the shared picker, not inside
+the shared component itself.
 
 ### A.2 `event_type` closed enum
 
-§4.3.1 lists six example values (`submitted`, `email_sent`,
-`email_received`, `accepted`, `rejected`, `archived`), but the full closed
-enum isn't pinned down — e.g. is a non-state-changing "comment" event
-(implied by `resulting_state` allowing `NULL`) in scope?
+Resolved: `event_type` is a closed enum with seven values — `submitted`,
+`email_sent`, `email_received`, `accepted`, `rejected`, `archived`, and
+`comment` (a non-state-changing event, `resulting_state` is `NULL`).
 
 ### A.3 Column naming convention for the new submissions tables
 
-Pick one of the existing schema's two conventions — no separator
-(`userid`, `puzzlename`) or underscored (`date_submitted`, `last_mode`) —
-for all new columns in `submission_events`, `publishers`, and `editors`,
-before implementing.
+Resolved: all new columns in `submission_events`, `publishers`, and
+`editors` use the underscored convention (`date_submitted`, `last_mode`),
+not the no-separator convention (`userid`, `puzzlename`). The column
+lists in §4.3.1–§4.3.3 already follow this.
 
 ### A.4 Publisher delete guard
 
-Deleting a publisher referenced by `editors`, `submission_events`, or
-`puzzles.publisher_id` needs an in-use check or a defined cascade; §4.3.2
-doesn't specify which.
+Resolved: deleting a publisher requires an in-use check, not a cascade.
+If the publisher is referenced by `editors` or `submission_events`
+(`puzzles` no longer has a `publisher_id` column to check — §4.5
+decision 1), the delete is rejected and the user must resolve the
+references manually (e.g. reassign or delete the dependent
+editors/events) before the publisher can be deleted.
 
 ### A.5 Primary-editor reassignment
 
-Deleting or deactivating the editor flagged `is_primary` leaves the
-publisher with no primary contact. Is there an explicit rule (e.g.
-promote another editor automatically) or a use case the UI must call?
+Resolved: there's no "primary editor" concept. No functionality depends
+on designating one editor per publisher as primary, so `editors` has no
+`is_primary` flag, and there's no default-editor lookup or reassignment
+rule to define (§4.5 decision 8).
 
 ### A.6 Snapshot sync strategy
 
-§4.3.1 says the `puzzles` snapshot is "derived from (or kept in sync
-with) the latest relevant row" in `submission_events`. Does that sync
-happen on write (push, at event-logging time) or on read (pull, computed
-when the snapshot is requested)? This determines whether a separate
-recompute use case is needed.
+Resolved: pull, not push. There is no stored snapshot on `puzzles` to
+keep in sync — `state` (for `submitted`/`published`/`archived`),
+publisher, and submission/publication dates are computed on read,
+straight from `submission_events`, every time they're requested (§4.2,
+§4.3.1, §4.5 decisions 1–2). No recompute-on-write use case is needed;
+the only query needed is "the most recent event for this puzzle with a
+non-`NULL` `resulting_state`" (and, for publisher, the most recent event
+with a non-`NULL` `publisher_id`).
 
 ### A.7 Scoping of `publishers`/`editors`
 
-Unlike `puzzles`, the proposed `publishers` and `editors` tables carry no
-`user_id`. Confirm they're intended as global reference data shared
-across all users, rather than per-user, before wiring `user_id` checks
-into `PublisherUseCases`/`EditorUseCases`.
+Resolved: global, not per-user. `publishers` and `editors` are shared
+reference data across all users, so they carry no `user_id` (unlike
+`puzzles`), and `PublisherUseCases`/`EditorUseCases` need no `user_id`
+checks.
 
 ### A.8 Dashboard scope vs. the submissions snapshot
 
-§4.4.3 says the submission snapshot use case feeds the dashboard's
-"Submitted" card, but §1 (Dashboard) doesn't mention any change to that
-card. Is consuming the new snapshot in scope for the dashboard described
-in §1, or is it deferred to a later phase once the submissions editor
-ships?
+Resolved: in scope, not deferred. The dashboard's cards (e.g.
+"Submitted") must reflect submission status changes as they happen —
+consuming the derived status from §4.4.3's "get current submission
+status" use case is part of this feature, not a later phase.
 
 ### A.9 Theme rename and identity
 
-§2.2 lists "Rename a theme" as a CRUD operation. Puzzles have an explicit
-rule that rename preserves the puzzle's `id` (see
-[puzzle_state.md §11](puzzle_state.md#11-resolved-decisions)) — should
-theme rename follow the same rule?
+Resolved: yes, theme rename follows the same rule as puzzles. §2.2 lists
+"Rename a theme" as a CRUD operation; like puzzles' rename rule (see
+[puzzle_state.md §11](puzzle_state.md#11-resolved-decisions)), renaming a
+theme preserves its `id`.
 
 ### A.10 Theme save semantics during editing
 
-§2.1 requires 3–6 `selected_words` matching `len(word_lengths)`, and a
-valid `grid`. Can a theme be saved while incomplete — e.g. before any
-words are selected, or while the grid isn't yet chosen — consistent with
-the existing app's auto-persist-on-edit pattern, or must "Save" enforce
-that the theme is in a complete, internally consistent state?
+Resolved: yes, a theme can be saved while incomplete. §2.1's constraints
+(3–6 `selected_words` matching `len(word_lengths)`, a valid `grid`)
+describe a *finished* theme, not a precondition for "Save" — consistent
+with the existing app's auto-persist-on-edit pattern (e.g. before any
+words are selected, or while the grid isn't yet chosen). "Save" does not
+enforce completeness.
 
 ### A.11 Phasing for the composing editor
 
-§2.4 splits the theme editor into a base phase and a later automation
-phase. §3 has no equivalent split, even though several of its items are
-tagged **ML project** and are clearly longer-term research rather than
-base functionality. Should §3 be explicitly phased the same way, and if
-so, which items belong in the first version of the restructured
-composing editor?
+Resolved: there is no global phasing scheme across editors. §2.4's
+base/automation phase split is local to the theme editor and isn't
+mirrored onto §3 — each editor (theme, composing, submissions) can be
+upgraded independently, on its own schedule, including the
+**ML project**-tagged items in §3. The only requirement is that the
+dashboard stay in sync with whichever capabilities are actually shipped
+at a given point (Appendix A.8).
+
+### A.12 Theme completeness for the new-puzzle theme picker
+
+Resolved: computed, not stored. §2.1 gets no new status field. A theme
+counts as "completed," and is eligible to appear in §3.1's theme picker,
+if `grid` is set and `len(selected_words) == len(word_lengths)` — the
+same fields already in the object model, checked on the fly rather than
+tracked separately.
+
+### A.13 Theme-puzzle link after puzzle creation
+
+Resolved: a one-time copy, no ongoing link. When §3.1 creates a puzzle
+from a theme, the theme's grid and words are copied into the new puzzle;
+the puzzle keeps no `theme_id` reference back to its source theme.
+Deleting the theme later has no effect on puzzles already created from
+it, and (unlike A.4's publisher delete guard) no in-use check is needed
+on theme deletion.
