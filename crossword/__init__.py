@@ -52,6 +52,7 @@ def get_bootstrap_config():
         'author_name': "Your Name",
         'author_address': "123 Main St, City, ST 12345",
         'author_email': "you@example.com",
+        'definition_provider': "wiktionary",
     }
 
     sample_dbfile = os.path.join(samples_dir, "crossword.db")

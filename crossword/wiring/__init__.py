@@ -22,6 +22,7 @@ from crossword.adapters.solved_pdf_export_adapter import SolvedPdfExportAdapter
 from crossword.adapters.puz_export_adapter import PuzExportAdapter
 from crossword.adapters.xd_export_adapter import XdExportAdapter
 from crossword.adapters.ipuz_export_adapter import IpuzExportAdapter
+from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDefinition
 from crossword.adapters.wiktionary_api_definition_adapter import WiktionaryAPIDefinition
 from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
@@ -30,6 +31,13 @@ from crossword.use_cases.word_use_cases import WordUseCases
 from crossword.use_cases.export_use_cases import ExportUseCases
 from crossword.use_cases.import_use_cases import ImportUseCases
 from crossword.use_cases.definition_use_cases import DefinitionUseCases
+
+# Registry of selectable DefinitionProviderPort implementations, keyed by the
+# 'definition_provider' config value.
+DEFINITION_PROVIDERS = {
+    "dictionaryapi": DictionaryAPIDefinition,
+    "wiktionary": WiktionaryAPIDefinition,
+}
 
 
 class AppContainer:
@@ -139,7 +147,14 @@ def make_app(config=None):
     if not config.get("port"):
         raise ValueError("config['port'] is required")
 
-    definition_uc = DefinitionUseCases(WiktionaryAPIDefinition())
+    definition_provider = config.get("definition_provider", "wiktionary")
+    definition_provider_cls = DEFINITION_PROVIDERS.get(definition_provider)
+    if definition_provider_cls is None:
+        raise ValueError(
+            f"Unknown config['definition_provider'] {definition_provider!r}; "
+            f"must be one of {sorted(DEFINITION_PROVIDERS)}"
+        )
+    definition_uc = DefinitionUseCases(definition_provider_cls())
 
     # ========================================================================
     # Assemble Container

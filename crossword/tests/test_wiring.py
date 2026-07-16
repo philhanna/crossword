@@ -102,6 +102,32 @@ class TestWordListWiring:
         assert app.word_uc.get_all_words() == []
 
 
+class TestDefinitionProviderWiring:
+    """Tests for selectable DefinitionProviderPort wiring in make_app()"""
+
+    def test_defaults_to_wiktionary(self, base_config):
+        from crossword.adapters.wiktionary_api_definition_adapter import WiktionaryAPIDefinition
+
+        app = make_app(base_config)
+        assert isinstance(app.definition_uc.definition_port, WiktionaryAPIDefinition)
+
+    def test_selects_dictionaryapi(self, base_config):
+        from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDefinition
+
+        app = make_app({**base_config, "definition_provider": "dictionaryapi"})
+        assert isinstance(app.definition_uc.definition_port, DictionaryAPIDefinition)
+
+    def test_selects_wiktionary_explicitly(self, base_config):
+        from crossword.adapters.wiktionary_api_definition_adapter import WiktionaryAPIDefinition
+
+        app = make_app({**base_config, "definition_provider": "wiktionary"})
+        assert isinstance(app.definition_uc.definition_port, WiktionaryAPIDefinition)
+
+    def test_rejects_unknown_provider(self, base_config):
+        with pytest.raises(ValueError, match="definition_provider"):
+            make_app({**base_config, "definition_provider": "bogus"})
+
+
 class TestEndToEndWiring:
     """End-to-end tests with wired app"""
 

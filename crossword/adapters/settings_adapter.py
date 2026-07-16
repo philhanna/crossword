@@ -13,9 +13,13 @@ SETTINGS_KEYS = [
     'author_name',
     'author_address',
     'author_email',
+    'definition_provider',
 ]
 
-_RESTART_REQUIRED_KEYS = {'host', 'port', 'log_level', 'dbfile', 'xdfile', 'word_file', 'theme_color'}
+_RESTART_REQUIRED_KEYS = {
+    'host', 'port', 'log_level', 'dbfile', 'xdfile', 'word_file', 'theme_color',
+    'definition_provider',
+}
 
 
 def _config_path():

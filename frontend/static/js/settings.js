@@ -89,6 +89,19 @@ const SETTINGS_SCHEMA = [
     ],
   },
   {
+    key: 'definition_provider',
+    title: 'definition_provider',
+    desc: 'Dictionary/thesaurus lookup source used for word definitions',
+    fields: [
+      {
+        key: 'definition_provider',
+        label: 'Value',
+        type: 'select',
+        choices: ['wiktionary', 'dictionaryapi'],
+      },
+    ],
+  },
+  {
     key: 'author',
     title: 'Author',
     desc: 'NYTimes submission: author info printed on the grid page',
