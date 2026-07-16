@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.2.0] - 2026-07-15
+
+### Added
+
+- WiktionaryAPIDefinition adapter for word definitions, using Wikimedia's
+  Wiktionary REST API
+- `definition_provider` setting to choose between the Wiktionary and
+  dictionaryapi.dev definition providers
+
+### Changed
+
+- Puzzle export downloads now use the server-provided filename
+- "Clear" action includes the currently selected word
+
 ## [5.1.0] - 2026-06-26
 
 ### Added
