@@ -22,7 +22,7 @@ from crossword.adapters.solved_pdf_export_adapter import SolvedPdfExportAdapter
 from crossword.adapters.puz_export_adapter import PuzExportAdapter
 from crossword.adapters.xd_export_adapter import XdExportAdapter
 from crossword.adapters.ipuz_export_adapter import IpuzExportAdapter
-from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDefinition
+from crossword.adapters.wiktionary_api_definition_adapter import WiktionaryAPIDefinition
 from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
@@ -139,7 +139,7 @@ def make_app(config=None):
     if not config.get("port"):
         raise ValueError("config['port'] is required")
 
-    definition_uc = DefinitionUseCases(DictionaryAPIDefinition())
+    definition_uc = DefinitionUseCases(WiktionaryAPIDefinition())
 
     # ========================================================================
     # Assemble Container
