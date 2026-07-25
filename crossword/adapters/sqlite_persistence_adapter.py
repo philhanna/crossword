@@ -9,6 +9,14 @@ from datetime import datetime
 from crossword import Puzzle
 from crossword.ports.persistence_port import PersistencePort, PersistenceError
 
+# The latest puzzle_state_history row per puzzle_id, used wherever "current
+# state" needs to be derived rather than read from a column.
+LATEST_STATE_SQL = """
+    SELECT puzzle_id, state, publisher, date_submitted, date_published
+    FROM puzzle_state_history
+    WHERE id IN (SELECT MAX(id) FROM puzzle_state_history GROUP BY puzzle_id)
+"""
+
 
 class SQLitePersistenceAdapter(PersistencePort):
     """
@@ -32,6 +40,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         try:
             self.conn = sqlite3.connect(db_path)
             self.conn.row_factory = sqlite3.Row  # Enable column access by name
+            self.conn.execute("PRAGMA foreign_keys = ON")
             self._ensure_schema_compatibility()
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to connect to database {db_path}: {e}")
@@ -60,27 +69,39 @@ class SQLitePersistenceAdapter(PersistencePort):
 
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS puzzles (
-                    id              INTEGER PRIMARY KEY,
-                    userid          INTEGER NOT NULL,
-                    puzzlename      TEXT NOT NULL,
-                    created         TEXT NOT NULL,
-                    modified        TEXT NOT NULL,
-                    last_mode       TEXT NOT NULL DEFAULT 'puzzle'
-                                        CHECK (last_mode IN ('grid', 'puzzle')),
-                    state           TEXT NOT NULL DEFAULT 'draft'
-                                        CHECK (state IN (
-                                            'draft','filled','finished',
-                                            'submitted','published','archived')),
-                    jsonstr         TEXT NOT NULL,
-                    publisher       TEXT,
-                    date_submitted  TEXT,
-                    date_published  TEXT
+                    id          INTEGER PRIMARY KEY,
+                    userid      INTEGER NOT NULL,
+                    puzzlename  TEXT NOT NULL,
+                    created     TEXT NOT NULL,
+                    modified    TEXT NOT NULL,
+                    last_mode   TEXT NOT NULL DEFAULT 'puzzle'
+                                    CHECK (last_mode IN ('grid', 'puzzle')),
+                    jsonstr     TEXT NOT NULL
                 )
             """)
 
             cursor.execute("""
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_userid_puzzlename
                 ON puzzles(userid, puzzlename)
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS puzzle_state_history (
+                    id              INTEGER PRIMARY KEY,
+                    puzzle_id       INTEGER NOT NULL REFERENCES puzzles(id) ON DELETE CASCADE,
+                    state           TEXT NOT NULL CHECK (state IN (
+                                        'draft','filled','finished',
+                                        'submitted','published','archived')),
+                    publisher       TEXT,
+                    date_submitted  TEXT,
+                    date_published  TEXT,
+                    changed_at      TEXT NOT NULL
+                )
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_puzzle_state_history_puzzle
+                ON puzzle_state_history(puzzle_id, id DESC)
             """)
 
             self.conn.commit()
@@ -189,20 +210,24 @@ class SQLitePersistenceAdapter(PersistencePort):
                          publisher: str | None = None,
                          date_submitted: str | None = None,
                          date_published: str | None = None) -> None:
-        """Overwrite the puzzle's state columns in place."""
+        """Append a new state-history row."""
         try:
             now = datetime.now().isoformat()
             cursor = self.conn.cursor()
             cursor.execute(
-                """UPDATE puzzles
-                   SET state = ?, publisher = ?, date_submitted = ?,
-                       date_published = ?, modified = ?
-                   WHERE userid = ? AND puzzlename = ?""",
+                """INSERT INTO puzzle_state_history
+                        (puzzle_id, state, publisher, date_submitted, date_published, changed_at)
+                    SELECT id, ?, ?, ?, ?, ? FROM puzzles WHERE userid = ? AND puzzlename = ?""",
                 (state, publisher, date_submitted, date_published, now, user_id, name),
             )
 
             if cursor.rowcount == 0:
                 raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+
+            cursor.execute(
+                "UPDATE puzzles SET modified = ? WHERE userid = ? AND puzzlename = ?",
+                (now, user_id, name),
+            )
 
             self.conn.commit()
         except PersistenceError:
@@ -211,12 +236,15 @@ class SQLitePersistenceAdapter(PersistencePort):
             raise PersistenceError(f"Failed to set puzzle state: {e}")
 
     def get_puzzle_state(self, user_id: int, name: str) -> dict | None:
-        """Return the puzzle's current state columns as a dict, or None if absent."""
+        """Return the most recent state-history row for this puzzle, or None if absent."""
         try:
             cursor = self.conn.cursor()
             cursor.execute(
-                """SELECT state, publisher, date_submitted, date_published
-                   FROM puzzles WHERE userid = ? AND puzzlename = ?""",
+                """SELECT h.state, h.publisher, h.date_submitted, h.date_published
+                   FROM puzzles p
+                   JOIN puzzle_state_history h ON h.puzzle_id = p.id
+                   WHERE p.userid = ? AND p.puzzlename = ?
+                   ORDER BY h.id DESC LIMIT 1""",
                 (user_id, name),
             )
             row = cursor.fetchone()
@@ -232,7 +260,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             raise PersistenceError(f"Failed to get puzzle state: {e}")
 
     def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
-        """Rename in place, preserving id and all columns (state included)."""
+        """Rename in place, preserving id — state history (keyed by puzzle_id) follows."""
         try:
             now = datetime.now().isoformat()
             cursor = self.conn.cursor()
@@ -266,9 +294,10 @@ class SQLitePersistenceAdapter(PersistencePort):
                 )
             else:
                 cursor.execute(
-                    """SELECT puzzlename FROM puzzles
-                       WHERE userid = ? AND state = ?
-                       ORDER BY modified DESC""",
+                    f"""SELECT p.puzzlename FROM puzzles p
+                        JOIN ({LATEST_STATE_SQL}) h ON h.puzzle_id = p.id
+                        WHERE p.userid = ? AND h.state = ?
+                        ORDER BY p.modified DESC""",
                     (user_id, state),
                 )
             rows = cursor.fetchall()
@@ -281,14 +310,15 @@ class SQLitePersistenceAdapter(PersistencePort):
         try:
             cursor = self.conn.cursor()
             cursor.execute(
-                """SELECT puzzlename, modified, state, publisher,
-                          date_submitted, date_published
-                   FROM puzzles
-                   WHERE userid = ?
-                     AND puzzlename IS NOT NULL
-                     AND puzzlename NOT LIKE '@_@_wc@_@_%' ESCAPE '@'
-                     AND puzzlename NOT LIKE '@_@_new@_@_%' ESCAPE '@'
-                   ORDER BY modified DESC""",
+                f"""SELECT p.puzzlename, p.modified, h.state, h.publisher,
+                           h.date_submitted, h.date_published
+                    FROM puzzles p
+                    LEFT JOIN ({LATEST_STATE_SQL}) h ON h.puzzle_id = p.id
+                    WHERE p.userid = ?
+                      AND p.puzzlename IS NOT NULL
+                      AND p.puzzlename NOT LIKE '@_@_wc@_@_%' ESCAPE '@'
+                      AND p.puzzlename NOT LIKE '@_@_new@_@_%' ESCAPE '@'
+                    ORDER BY p.modified DESC""",
                 (user_id,),
             )
             rows = cursor.fetchall()

@@ -55,6 +55,11 @@ class TestPuzzleUseCasesCreate:
         assert args[2].n == 15
         assert args[2].last_mode == "grid"
 
+    def test_create_puzzle_sets_draft_state(self, puzzle_uc, mock_persistence):
+        puzzle_uc.create_puzzle(1, "test_puzzle", size=15)
+
+        mock_persistence.set_puzzle_state.assert_called_once_with(1, "test_puzzle", ps.DRAFT)
+
     def test_create_puzzle_rejects_invalid_size(self, puzzle_uc):
         with pytest.raises(ValueError, match="Grid size must be at least 1"):
             puzzle_uc.create_puzzle(1, "test_puzzle", size=0)
@@ -826,6 +831,13 @@ class TestPuzzleUseCasesAutoState:
         mock_persistence.get_puzzle_state.return_value = {"state": ps.SUBMITTED}
         puzzle_uc.copy_puzzle(1, "src", "dest")
         mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FINISHED)
+
+    def test_copy_skips_write_when_state_unchanged(self, puzzle_uc, mock_persistence):
+        """Repeated saves at the same ladder state (autosave) must not grow history."""
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
+        mock_persistence.get_puzzle_state.return_value = {"state": ps.FINISHED}
+        puzzle_uc.copy_puzzle(1, "src", "dest")
+        mock_persistence.set_puzzle_state.assert_not_called()
 
 
 class TestPuzzleUseCasesOpen:

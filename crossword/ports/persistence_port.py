@@ -84,7 +84,7 @@ class PersistencePort(ABC):
                          date_submitted: str | None = None,
                          date_published: str | None = None) -> None:
         """
-        Overwrite the puzzle's state columns in place.
+        Append a new state-history row for this puzzle.
 
         Args:
             user_id: The user who owns this puzzle
@@ -102,8 +102,8 @@ class PersistencePort(ABC):
     @abstractmethod
     def get_puzzle_state(self, user_id: int, name: str) -> dict | None:
         """
-        Return the puzzle's current state columns as a dict, or None if the
-        puzzle doesn't exist.
+        Return the most recent state-history row for this puzzle as a dict,
+        or None if the puzzle doesn't exist (or has no history row yet).
 
         Keys: state, publisher, date_submitted, date_published.
 
@@ -141,7 +141,8 @@ class PersistencePort(ABC):
 
         Args:
             user_id: The user who owns these puzzles
-            state: Optional lifecycle-state filter to apply at storage time
+            state: Optional lifecycle-state filter, matched against each
+                puzzle's latest state-history row
 
         Returns:
             List of puzzle name strings, sorted most recent first
@@ -157,7 +158,8 @@ class PersistencePort(ABC):
         Return summary rows for the user's real puzzles, most recent first.
 
         Each row is a dict with keys: name, modified, state, publisher,
-        date_submitted, date_published. Excludes working copies
+        date_submitted, date_published, sourced from each puzzle's latest
+        state-history row. Excludes working copies
         (puzzlename LIKE '__wc__%' / '__new__%') and legacy NULL names.
 
         Args:

@@ -171,24 +171,30 @@ class TestSQLitePersistenceAdapter:
     # Puzzle state columns
     # ======================================================================
 
-    def test_schema_has_state_columns(self, adapter):
+    def test_schema_has_no_state_columns_on_puzzles(self, adapter):
         cur = adapter.conn.cursor()
         cur.execute("PRAGMA table_info(puzzles)")
         columns = {row["name"] for row in cur.fetchall()}
-        assert {"state", "publisher", "date_submitted", "date_published"} <= columns
+        assert not ({"state", "publisher", "date_submitted", "date_published"} & columns)
 
-    def test_new_puzzle_defaults_to_draft(self, adapter, sample_puzzle):
+    def test_schema_has_puzzle_state_history_table_and_index(self, adapter):
+        cur = adapter.conn.cursor()
+        cur.execute("PRAGMA table_info(puzzle_state_history)")
+        columns = {row["name"] for row in cur.fetchall()}
+        assert {"id", "puzzle_id", "state", "publisher",
+                "date_submitted", "date_published", "changed_at"} <= columns
+
+        cur.execute("PRAGMA index_list(puzzle_state_history)")
+        assert any(row["name"] == "idx_puzzle_state_history_puzzle" for row in cur.fetchall())
+
+    def test_new_puzzle_has_no_state_until_set(self, adapter, sample_puzzle):
         adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
-        state = adapter.get_puzzle_state(user_id=1, name="p")
-        assert state["state"] == "draft"
-        assert state["publisher"] is None
-        assert state["date_submitted"] is None
-        assert state["date_published"] is None
+        assert adapter.get_puzzle_state(user_id=1, name="p") is None
 
     def test_get_puzzle_state_none_when_absent(self, adapter):
         assert adapter.get_puzzle_state(user_id=1, name="nope") is None
 
-    def test_set_puzzle_state_overwrites_columns(self, adapter, sample_puzzle):
+    def test_set_puzzle_state_appends_history_row(self, adapter, sample_puzzle):
         adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
         adapter.set_puzzle_state(
             user_id=1, name="p", state="submitted",
@@ -201,6 +207,26 @@ class TestSQLitePersistenceAdapter:
             "date_submitted": "2026-06-06",
             "date_published": None,
         }
+
+    def test_set_puzzle_state_grows_history_row_count(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+        adapter.set_puzzle_state(user_id=1, name="p", state="filled")
+        adapter.set_puzzle_state(user_id=1, name="p", state="finished")
+
+        cur = adapter.conn.cursor()
+        cur.execute("SELECT COUNT(*) AS n FROM puzzle_state_history")
+        assert cur.fetchone()["n"] == 3
+
+    def test_get_puzzle_state_returns_latest_of_several_rows(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+        adapter.set_puzzle_state(user_id=1, name="p", state="filled")
+        adapter.set_puzzle_state(user_id=1, name="p", state="finished")
+
+        state = adapter.get_puzzle_state(user_id=1, name="p")
+
+        assert state["state"] == "finished"
 
     def test_set_puzzle_state_not_found_raises(self, adapter):
         with pytest.raises(PersistenceError, match="not found"):
@@ -215,10 +241,10 @@ class TestSQLitePersistenceAdapter:
 
         adapter.rename_puzzle(user_id=1, old_name="old", new_name="new")
 
-        cur.execute("SELECT id, state FROM puzzles WHERE userid = 1 AND puzzlename = 'new'")
+        cur.execute("SELECT id FROM puzzles WHERE userid = 1 AND puzzlename = 'new'")
         row = cur.fetchone()
         assert row["id"] == old_id
-        assert row["state"] == "archived"
+        assert adapter.get_puzzle_state(user_id=1, name="new")["state"] == "archived"
         assert adapter.get_puzzle_state(user_id=1, name="old") is None
 
     def test_rename_puzzle_not_found_raises(self, adapter):
@@ -237,6 +263,20 @@ class TestSQLitePersistenceAdapter:
                                  date_published="2026-06-06")
         adapter.delete_puzzle(user_id=1, name="p")
         assert adapter.get_puzzle_state(user_id=1, name="p") is None
+
+    def test_delete_cascades_to_history_table(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="published",
+                                 date_published="2026-06-06")
+
+        cur = adapter.conn.cursor()
+        cur.execute("SELECT COUNT(*) AS n FROM puzzle_state_history")
+        assert cur.fetchone()["n"] == 1
+
+        adapter.delete_puzzle(user_id=1, name="p")
+
+        cur.execute("SELECT COUNT(*) AS n FROM puzzle_state_history")
+        assert cur.fetchone()["n"] == 0
 
     # ======================================================================
     # Error paths
