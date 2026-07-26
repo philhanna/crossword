@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.3.0] - 2026-07-26
+
+### Added
+
+- `puzzle_state_history` table replacing the old state/publisher/
+  date_submitted/date_published columns on the puzzles table; current
+  state is derived from the latest history row
+- Migration tool to rebuild an existing column-schema database into
+  the new puzzle_state_history shape
+- Context menu to show puzzle history in the puzzle editor
+
+### Fixed
+
+- Fix for issue #246
+
 ## [5.2.0] - 2026-07-15
 
 ### Added
