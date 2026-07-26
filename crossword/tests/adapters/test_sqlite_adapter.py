@@ -278,6 +278,27 @@ class TestSQLitePersistenceAdapter:
         cur.execute("SELECT COUNT(*) AS n FROM puzzle_state_history")
         assert cur.fetchone()["n"] == 0
 
+    def test_get_puzzle_state_history_none_when_absent(self, adapter):
+        assert adapter.get_puzzle_state_history(user_id=1, name="nope") is None
+
+    def test_get_puzzle_state_history_empty_list_when_no_history(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        assert adapter.get_puzzle_state_history(user_id=1, name="p") == []
+
+    def test_get_puzzle_state_history_returns_all_rows_oldest_first(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+        adapter.set_puzzle_state(user_id=1, name="p", state="filled")
+        adapter.set_puzzle_state(user_id=1, name="p", state="submitted",
+                                 publisher="NYT", date_submitted="2026-06-06")
+
+        history = adapter.get_puzzle_state_history(user_id=1, name="p")
+
+        assert [row["state"] for row in history] == ["draft", "filled", "submitted"]
+        assert history[-1]["publisher"] == "NYT"
+        assert history[-1]["date_submitted"] == "2026-06-06"
+        assert all(row["changed_at"] for row in history)
+
     # ======================================================================
     # Error paths
     # ======================================================================

@@ -118,6 +118,27 @@ SPEC = {
                     "date_published": {"type": "string", "nullable": True, "description": "ISO date (published)"},
                 },
             },
+            "PuzzleStateHistory": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "history": {
+                        "type": "array",
+                        "description": "Every recorded state transition, oldest first",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "state":          {"type": "string",
+                                                   "enum": ["draft", "filled", "finished", "submitted", "published", "archived"]},
+                                "publisher":      {"type": "string", "nullable": True},
+                                "date_submitted": {"type": "string", "nullable": True},
+                                "date_published": {"type": "string", "nullable": True},
+                                "changed_at":     {"type": "string", "description": "ISO timestamp this row was recorded"},
+                            },
+                        },
+                    },
+                },
+            },
             "PreviewData": {
                 "type": "object",
                 "properties": {
@@ -467,6 +488,21 @@ SPEC = {
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleState"}}}},
                     "400": {"description": "Invalid state or missing required field",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                    "404": {"description": "Puzzle not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/state/history": {
+            "parameters": [{"name": "name", "in": "path", "required": True, "schema": {"type": "string"}}],
+            "get": {
+                "tags": ["puzzles"],
+                "summary": "Get every recorded state transition for a puzzle",
+                "description": "Returns all state-history rows for the puzzle, oldest first — a full audit trail since creation, not just the current state.",
+                "responses": {
+                    "200": {"description": "State-change history",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleStateHistory"}}}},
                     "404": {"description": "Puzzle not found",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },

@@ -10,6 +10,7 @@ Public interface:
   rename_puzzle(user_id, old_name, new_name) -> None
   get_puzzle_state(user_id, name) -> dict
   set_puzzle_state(user_id, name, state, **fields) -> dict
+  get_puzzle_state_history(user_id, name) -> list[dict]
   open_puzzle_for_editing(user_id, name) -> str
   switch_to_grid_mode(user_id, name) -> Puzzle
   switch_to_puzzle_mode(user_id, name) -> Puzzle
@@ -258,6 +259,26 @@ class PuzzleUseCases:
             date_published=date_published,
         )
         return self.get_puzzle_state(user_id, name)
+
+    def get_puzzle_state_history(self, user_id: int, name: str) -> list[dict]:
+        """
+        Return every state-history row for this puzzle, oldest first.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+
+        Returns:
+            List of dicts with keys: state, publisher, date_submitted,
+            date_published, changed_at
+
+        Raises:
+            PersistenceError: If the puzzle is not found
+        """
+        history = self.persistence.get_puzzle_state_history(user_id, name)
+        if history is None:
+            raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+        return history
 
     def open_puzzle_for_editing(self, user_id: int, name: str) -> str:
         """

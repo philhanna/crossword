@@ -259,6 +259,38 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to get puzzle state: {e}")
 
+    def get_puzzle_state_history(self, user_id: int, name: str) -> list[dict] | None:
+        """Return every state-history row for this puzzle, oldest first, or None if absent."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT id FROM puzzles WHERE userid = ? AND puzzlename = ?",
+                (user_id, name),
+            )
+            if cursor.fetchone() is None:
+                return None
+
+            cursor.execute(
+                """SELECT h.state, h.publisher, h.date_submitted, h.date_published, h.changed_at
+                   FROM puzzles p
+                   JOIN puzzle_state_history h ON h.puzzle_id = p.id
+                   WHERE p.userid = ? AND p.puzzlename = ?
+                   ORDER BY h.id ASC""",
+                (user_id, name),
+            )
+            return [
+                {
+                    "state": row["state"],
+                    "publisher": row["publisher"],
+                    "date_submitted": row["date_submitted"],
+                    "date_published": row["date_published"],
+                    "changed_at": row["changed_at"],
+                }
+                for row in cursor.fetchall()
+            ]
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Failed to get puzzle state history: {e}")
+
     def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
         """Rename in place, preserving id — state history (keyed by puzzle_id) follows."""
         try:

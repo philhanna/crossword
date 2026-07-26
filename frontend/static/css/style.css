@@ -1193,6 +1193,29 @@ kbd {
   z-index: 1300 !important;
 }
 
+/* ---- Right-click context menu ---- */
+.context-menu {
+  position: fixed;
+  z-index: 1400;
+  min-width: 160px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  padding: 4px 0;
+  font-size: 0.85rem;
+}
+.context-menu-item {
+  padding: 6px 14px;
+  cursor: pointer;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+.context-menu-item:hover {
+  background: var(--c-primary);
+  color: #fff;
+}
+
 .dialog-card {
   border-radius: 8px !important;
   overflow: hidden;

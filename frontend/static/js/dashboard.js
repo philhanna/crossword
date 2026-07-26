@@ -52,6 +52,16 @@ function fmtMonthDay(iso) {
     return `${mm}/${dd}/${yy}`;
 }
 
+function fmtDateTime(iso) {
+    // Parse an ISO-ish timestamp and format as MM/dd/yy HH:mm. Guards against blanks.
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${fmtMonthDay(iso)} ${hh}:${min}`;
+}
+
 function _dashRowLengths(row) {
     // "7-letter: 12, 6-letter: 18" from top_lengths
     return (row.top_lengths || [])
@@ -141,7 +151,7 @@ function _dashCardRowHtml(card, row) {
     }
 
     return `
-      <div class="dash-row">
+      <div class="dash-row" data-dash-name="${name}">
         <div class="dash-row-head">
           <span class="dash-row-title dash-link" data-dash-preview="${name}">${title}</span>
           ${extra}
@@ -233,7 +243,7 @@ function _dashTableBodyHtml() {
         cells.push(`<td>${row.word_count}</td>`);
         if (showFill) cells.push(`<td>${row.fill_pct || 0}%</td>`);
         cells.push(`<td>${fmtMonthDay(row.modified)}</td>`);
-        return `<tr>${cells.join('')}</tr>`;
+        return `<tr data-dash-name="${name}">${cells.join('')}</tr>`;
     }).join('');
 
     return `<table class="dash-table"><thead>${thead}</thead><tbody>${body}</tbody></table>`;
@@ -268,6 +278,11 @@ function bindDashboardEvents() {
         el.onclick = () => _dashOpenPuzzle(el.getAttribute('data-dash-preview'));
     });
 
+    // Right-click a card row → context menu (currently just "Show history").
+    root.querySelectorAll('.dash-row[data-dash-name]').forEach(el => {
+        el.oncontextmenu = (e) => _dashOpenContextMenu(e, el.getAttribute('data-dash-name'));
+    });
+
     _bindDashTableBody(root);
 }
 
@@ -282,6 +297,11 @@ function _bindDashTableBody(root) {
     });
     root.querySelectorAll('.dash-table [data-dash-preview]').forEach(el => {
         el.onclick = () => _dashOpenPuzzle(el.getAttribute('data-dash-preview'));
+    });
+
+    // Right-click a table row → context menu (currently just "Show history").
+    root.querySelectorAll('.dash-table tbody tr[data-dash-name]').forEach(tr => {
+        tr.oncontextmenu = (e) => _dashOpenContextMenu(e, tr.getAttribute('data-dash-name'));
     });
 
     // Column-heading clicks → sort; clicking the active column flips direction.
@@ -404,4 +424,58 @@ function _dashCloseStateDialog(revert) {
         if (row) _dashStateRevertSelect.value = row.state;
     }
     _dashStateRevertSelect = null;
+}
+
+// ---------------------------------------------------------------------------
+// Right-click context menu — "Show history" (more items may follow)
+// ---------------------------------------------------------------------------
+
+function _dashOpenContextMenu(e, name) {
+    if (!name) return;
+    e.preventDefault();
+    showContextMenu(e.clientX, e.clientY, [
+        { label: 'Show history', onClick: () => _dashShowHistory(name) },
+    ]);
+}
+
+async function _dashShowHistory(name) {
+    document.getElementById('history-popup-title').textContent = `History — ${name}`;
+    const body = document.getElementById('history-popup-body');
+    body.innerHTML = '<div class="w3-container w3-padding">Loading...</div>';
+    showElement('history-popup');
+
+    try {
+        const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(name)}/state/history`);
+        if (data.error) {
+            body.innerHTML = `<p>Error loading history: ${escapeHtml(data.error)}</p>`;
+            return;
+        }
+        body.innerHTML = _historyTableHtml(data.history || []);
+    } catch (e) {
+        body.innerHTML = `<p>Error loading history: ${escapeHtml(e.message)}</p>`;
+    }
+}
+
+function _historyTableHtml(history) {
+    if (history.length === 0) {
+        return '<p class="dash-empty">No state history recorded.</p>';
+    }
+    const rows = history.map(h => {
+        let detail = '';
+        if (h.state === 'submitted' && h.publisher) {
+            detail = `submitted to ${escapeHtml(h.publisher)}`;
+        } else if (h.state === 'published' && h.publisher) {
+            detail = `published by ${escapeHtml(h.publisher)}`;
+        }
+        return `<tr>
+            <td>${fmtDateTime(h.changed_at)}</td>
+            <td>${escapeHtml(h.state)}</td>
+            <td>${detail}</td>
+          </tr>`;
+    }).join('');
+    return `
+      <table class="dash-table">
+        <thead><tr><th>Changed</th><th>State</th><th>Details</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
 }

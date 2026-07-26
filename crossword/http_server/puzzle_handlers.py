@@ -11,6 +11,7 @@ Routes:
   POST   /api/puzzles/<name>/rename        → rename_puzzle
   GET    /api/puzzles/<name>/state         → get_puzzle_state
   PUT    /api/puzzles/<name>/state         → set_puzzle_state
+  GET    /api/puzzles/<name>/state/history → get_puzzle_state_history
   POST   /api/puzzles/<name>/open          → open_puzzle_for_editing
   POST   /api/puzzles/<name>/mode/grid     → switch_to_grid_mode
   POST   /api/puzzles/<name>/mode/puzzle   → switch_to_puzzle_mode
@@ -347,6 +348,37 @@ def handle_set_puzzle_state(path_params, query_params, body_params, session_toke
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         request_handler._send_json({"error": str(e)}, status=400)
         return None
+
+
+def handle_get_puzzle_state_history(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Return every recorded state transition for a puzzle, oldest first.
+    GET /api/puzzles/<name>/state/history
+    Returns: { "name": "...", "history": [{ "state": ..., "publisher": ...,
+               "date_submitted": ..., "date_published": ..., "changed_at": ... }, ...] }
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if path_params else None
+        if not name:
+            logger.debug("  returning: %s", {"error": "Missing puzzle name"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing puzzle name"}
+
+        user_id = current_user["id"]
+        history = app.puzzle_uc.get_puzzle_state_history(user_id, name)
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"name": name, "history": history}
+
+    except PersistenceError:
+        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": f"Puzzle not found: {name}"}
+    except Exception as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)

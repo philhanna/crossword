@@ -19,6 +19,7 @@ from crossword.http_server.puzzle_handlers import (
     handle_toggle_puzzle_black_cell,
     handle_get_puzzle_state,
     handle_set_puzzle_state,
+    handle_get_puzzle_state_history,
     handle_open_puzzle_for_editing,
 )
 from crossword.tests import TestPuzzle
@@ -531,3 +532,27 @@ class TestPuzzleStateHandlers:
         assert response is None
         request_handler._send_json.assert_called_once()
         assert request_handler._send_json.call_args.kwargs["status"] == 400
+
+    def test_get_puzzle_state_history(self, request_handler, app):
+        app.puzzle_uc.get_puzzle_state_history.return_value = [
+            {"state": "draft", "publisher": None, "date_submitted": None,
+             "date_published": None, "changed_at": "2026-01-01T00:00:00"},
+            {"state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06",
+             "date_published": None, "changed_at": "2026-06-06T00:00:00"},
+        ]
+        response = handle_get_puzzle_state_history(
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        app.puzzle_uc.get_puzzle_state_history.assert_called_once_with(1, "demo")
+        assert response["name"] == "demo"
+        assert [row["state"] for row in response["history"]] == ["draft", "submitted"]
+
+    def test_get_puzzle_state_history_not_found(self, request_handler, app):
+        from crossword.ports.persistence_port import PersistenceError
+        app.puzzle_uc.get_puzzle_state_history.side_effect = PersistenceError("not found")
+        response = handle_get_puzzle_state_history(
+            ("nope",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        assert "error" in response

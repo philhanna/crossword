@@ -920,3 +920,23 @@ class TestPuzzleUseCasesSetState:
             1, "p", ps.DRAFT, publisher=None,
             date_submitted=None, date_published=None)
         assert result["state"] == ps.DRAFT
+
+
+class TestPuzzleUseCasesGetStateHistory:
+    """get_puzzle_state_history passes through to persistence, raising on a missing puzzle."""
+
+    def test_returns_history_list(self, puzzle_uc, mock_persistence):
+        mock_persistence.get_puzzle_state_history.return_value = [
+            {"state": ps.DRAFT, "publisher": None, "date_submitted": None,
+             "date_published": None, "changed_at": "2026-01-01T00:00:00"},
+            {"state": ps.FINISHED, "publisher": None, "date_submitted": None,
+             "date_published": None, "changed_at": "2026-02-01T00:00:00"},
+        ]
+        history = puzzle_uc.get_puzzle_state_history(1, "p")
+        mock_persistence.get_puzzle_state_history.assert_called_once_with(1, "p")
+        assert [row["state"] for row in history] == [ps.DRAFT, ps.FINISHED]
+
+    def test_missing_puzzle_raises(self, puzzle_uc, mock_persistence):
+        mock_persistence.get_puzzle_state_history.return_value = None
+        with pytest.raises(PersistenceError, match="not found"):
+            puzzle_uc.get_puzzle_state_history(1, "nope")

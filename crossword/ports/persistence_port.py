@@ -117,6 +117,24 @@ class PersistencePort(ABC):
         pass
 
     @abstractmethod
+    def get_puzzle_state_history(self, user_id: int, name: str) -> list[dict] | None:
+        """
+        Return every state-history row for this puzzle, oldest first, or
+        None if the puzzle doesn't exist.
+
+        Each dict has keys: state, publisher, date_submitted, date_published,
+        changed_at.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+
+        Raises:
+            PersistenceError: If the read fails
+        """
+        pass
+
+    @abstractmethod
     def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
         """
         Rename a puzzle in place, preserving its id and all columns (state
