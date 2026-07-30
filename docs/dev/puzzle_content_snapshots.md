@@ -15,22 +15,26 @@ plus who it was submitted to and when. It does not keep a copy of the puzzle
 itself — the grid, the fill, the clues — as they were at that moment. So even
 with that table in place, there was never anything to go back to.
 
-This doc adds that missing piece: each row in `puzzle_state_history` gets a
-copy of the full puzzle content as it stood at that moment. Later, the user
-can look at the history, see what the puzzle looked like at each past state,
-and — if they want — bring an old version back into the editor to work from.
+This doc adds that missing piece: **every time the puzzle is saved** — not
+just when its state changes — the current row in `puzzle_state_history`
+gets a copy of the full puzzle content as it stood at that moment. Later,
+the user can look at the history, see what the puzzle looked like at any
+past save, and — if they want — bring an old version back into the editor
+to work from. Because every save is captured, there's no gap where an
+in-between version can quietly vanish: whatever you last saved, before you
+went and restored something older, is already sitting safely in history.
 
 ## Why this is a small change
 
 The puzzle's full content is already stored as one JSON blob:
 `puzzles.jsonstr` ([sqlite_persistence_adapter.py:71-79](../../crossword/adapters/sqlite_persistence_adapter.py#L71-L79)).
-Every code path that changes a puzzle's state also happens to run right
-after that JSON blob is already up to date:
+Every code path that writes a `puzzle_state_history` row also happens to
+run right after that JSON blob is already up to date:
 
 - `create_puzzle` saves the new puzzle, then sets state to `draft`
   ([puzzle_use_cases.py:84-85](../../crossword/use_cases/puzzle_use_cases.py#L84-L85)).
 - `copy_puzzle` (used for both "Save" and "Save As") saves the new content,
-  then recomputes and sets state
+  then records a fresh history row
   ([puzzle_use_cases.py:162-163](../../crossword/use_cases/puzzle_use_cases.py#L162-L163)).
 - The state-change dialog ("Mark as submitted", "Mark as published", etc.)
   calls `set_puzzle_state` directly. It doesn't touch content, so whatever is
@@ -46,13 +50,77 @@ row being joined against.
 
 An earlier draft of this doc flagged a bug where saving a puzzle after it
 had been submitted would silently reset its state. That's now fixed
-(`df49739`): a plain "Save" no longer touches state once a puzzle is
-`submitted`, `published`, or `archived`. This matters here because it means
-routine saves after submission won't mint unwanted history rows — so once
-content snapshots are added below, the original `submitted` snapshot won't
-get buried under snapshots from routine post-submission edits. If the user
-submits again later, that's a deliberate action through the state dialog,
-and it gets its own fresh snapshot (see below).
+(`df49739`): a plain "Save" no longer touches *state* once a puzzle is
+`submitted`, `published`, or `archived` — those fields stay exactly as the
+state dialog last set them. That guarantee still matters here: it's what
+keeps "who it was submitted to, and when" correct on the dashboard no
+matter how many more times the puzzle is saved afterward.
+
+## One more change needed: snapshot on every save, not just state changes
+
+The version originally in this doc only wrote a `puzzle_state_history` row
+when the puzzle's state actually changed — same as the shipped fix above,
+which (correctly, for *state*) skips the write entirely once a puzzle is
+past the ladder. But that means content snapshots would inherit the same
+gap the fix above was created to avoid: any save that doesn't change state
+— which, once a puzzle is `finished` or `submitted`, is *every* ordinary
+save from then on — would leave nothing behind. That's exactly the
+scenario that prompted this doc: a puzzle gets edited after submission, and
+whatever it looked like a moment ago is gone the instant the new content is
+saved.
+
+So `_auto_set_state_on_save`
+([puzzle_use_cases.py:166-184](../../crossword/use_cases/puzzle_use_cases.py#L166-L184))
+needs to always write a row on every save, whether or not state itself is
+changing:
+
+- **Still on the ladder** (`draft`/`filled`/`finished`, or a brand-new
+  puzzle with no history yet): behave as today — recompute state with
+  `detect_completion_state` and write it, along with the fresh content.
+  `publisher`/`date_submitted`/`date_published` stay `None`, as they always
+  have for ladder states.
+- **Past the ladder** (`submitted`/`published`/`archived`): still write a
+  row every save, but *carry forward* the current `state`, `publisher`,
+  `date_submitted`, and `date_published` unchanged from the latest row,
+  rather than recomputing or clearing them. Only the `content` and
+  `changed_at` are new. This is what keeps the dashboard's "submitted to
+  NYT on 2026-06-06" display correct after the puzzle is saved again — if
+  this row instead left those fields blank, that information would
+  disappear the moment the user made one more edit.
+
+```python
+def _auto_set_state_on_save(self, user_id: int, name: str, puzzle: Puzzle) -> None:
+    """Record a fresh content snapshot on every save.
+
+    While the puzzle is still on the completion ladder, state is
+    recomputed as usual. Once it's past the ladder, state/publisher/dates
+    are user-owned (set only via the state dialog) and are carried
+    forward unchanged — only the content snapshot is new.
+    """
+    current = self.persistence.get_puzzle_state(user_id, name)
+    if current is None or current["state"] in ps.COMPLETION_LADDER:
+        state = ps.detect_completion_state(puzzle)
+        publisher = date_submitted = date_published = None
+    else:
+        state = current["state"]
+        publisher = current["publisher"]
+        date_submitted = current["date_submitted"]
+        date_published = current["date_published"]
+    self.persistence.set_puzzle_state(
+        user_id, name, state,
+        publisher=publisher, date_submitted=date_submitted, date_published=date_published,
+    )
+```
+
+**This removes the de-duplication that shipped with the original
+`puzzle_state_history` design** — the rule that skipped writing a row when
+the computed state matched the latest one, specifically to avoid a row on
+every save at an unchanged ladder state
+([puzzle_state_history.md](puzzle_state_history.md), "De-duplication
+(decided)"). That rule was the right call when a row only meant "state
+changed." Now that a row also means "here's a recoverable copy of the
+puzzle," always writing is the point, not a regression — see storage
+tradeoff below.
 
 ## Schema change
 
@@ -81,10 +149,14 @@ there's no way to reconstruct what a puzzle looked like before this ships.
 
 Every snapshot is stored in full, not as a diff against the previous one.
 Puzzle JSON is small (a grid plus a handful of clue strings — a few
-kilobytes at most), and history rows are already rare, thanks to the
-de-duplication in `_auto_set_state_on_save`. Diffing would
-save a little disk space at the cost of real complexity (reconstructing any
-given version means replaying every diff before it). Not worth it here.
+kilobytes at most), so even with a row per save, a puzzle worked on over
+dozens of sessions is still at most a few hundred kilobytes of history.
+Diffing would save some of that at the cost of real complexity
+(reconstructing any given version means replaying every diff before it) —
+not worth it at this size. Since every save now writes a row instead of
+only state changes, the table will grow noticeably faster than the original
+`puzzle_state_history` design intended; see "How far back should snapshots
+be kept?" below.
 
 ## Adapter change
 
@@ -166,9 +238,15 @@ This means "Restore" needs no new state-machine concept, no new undo
 behavior, and no special-cased save path — it's just "open a puzzle for
 editing," pointed at a different source. Once it's open, all the existing
 Save / Save As / Close logic applies unchanged. If the user hits Save, that
-goes through `copy_puzzle` as usual, which will only touch state — and thus
-only take a new snapshot — if the puzzle is still on the completion ladder
-or if the user explicitly changes state via the dialog afterward.
+goes through `copy_puzzle` as usual, which — per the every-save change
+above — always records a fresh snapshot of the restored-and-edited content.
+
+Restoring doesn't need to snapshot the puzzle's *current* content before
+swapping the old version in, either. That content was already captured the
+moment it was last saved, since every save writes a row now. Restore just
+reads an existing row; it never deletes or modifies one, so nothing is at
+risk of being overwritten without a copy of it already sitting safely in
+history.
 
 ## HTTP layer
 
@@ -200,8 +278,20 @@ it should:
 3. Open the puzzle editor on the returned `working_name`, exactly the way
    opening a puzzle from the dashboard already does.
 
-No changes needed anywhere else in the frontend — the editor, Save, Save As,
-and Close flows are all reused as-is.
+No other changes are needed for Restore to work — the editor, Save, Save
+As, and Close flows are all reused as-is.
+
+One thing worth calling out, though not required for a first version: since
+every save now adds a row, `_historyTableHtml` will render a much longer
+list than it does today — a puzzle worked on across many sessions could
+easily have dozens of rows, most with an unchanged `state`. The table as
+written handles that fine (it's just more rows), but it may be worth
+grouping consecutive same-state rows in the display (e.g. "6 saves while
+`finished`, latest 2026-07-28" with the individual saves reachable by
+expanding), so the popup still reads as a short, meaningful timeline rather
+than a long list of near-duplicates. Leaving this as a follow-up rather
+than speccing it here — the current one-row-per-entry layout is a correct
+starting point either way.
 
 ## Migration
 
@@ -232,10 +322,25 @@ New tool, `tools/dev/migrate_puzzle_content_snapshots.py`:
   `jsonstr` into `content`; `get_puzzle_state_history_content` returns the
   right snapshot for a given history id, and `None` for a row that isn't
   found, doesn't belong to the user, or has no content.
-- `crossword/tests/test_puzzle_use_cases.py` — `restore_puzzle_from_history`
-  creates a working copy whose content matches the historical snapshot, and
-  raises when the history row has no content or doesn't belong to the
-  puzzle/user.
+- `crossword/tests/test_puzzle_use_cases.py`:
+  - **`test_copy_skips_write_when_state_unchanged`
+    ([test_puzzle_use_cases.py:835-840](../../crossword/tests/test_puzzle_use_cases.py#L835-L840))
+    needs to be replaced, not just tweaked.** It currently asserts that
+    saving a `finished` puzzle again does *not* call `set_puzzle_state` —
+    that was the de-duplication behavior this doc removes. The new test
+    should assert the opposite: a repeat save at the same ladder state
+    still calls `set_puzzle_state` (so a fresh content snapshot is taken),
+    with the same `state` value as before.
+  - New test: after a puzzle is `submitted`, saving it again calls
+    `set_puzzle_state` with `state`, `publisher`, `date_submitted`, and
+    `date_published` all carried forward unchanged from the current row —
+    i.e. the three `test_copy_does_not_touch_state_once_*` tests added in
+    `df49739` need updating too, since "does not touch state" no longer
+    means "does not call `set_puzzle_state` at all" — it now means "calls
+    it with the same state/publisher/dates as before."
+  - `restore_puzzle_from_history` creates a working copy whose content
+    matches the historical snapshot, and raises when the history row has no
+    content or doesn't belong to the puzzle/user.
 - `crossword/tests/test_http_server.py` — new restore route: success case,
   and 404-style error when the history id is missing or has no content.
 - New sibling test file for the migration tool, mirroring
@@ -250,6 +355,18 @@ New tool, `tools/dev/migrate_puzzle_content_snapshots.py`:
    leave it this way. A "restored" audit entry could be added later if
    there's a real need to track who restored what and when, but nothing
    today needs it.
-2. **How far back should snapshots be kept?** No pruning is proposed here.
-   Puzzle JSON is small and history rows are already infrequent, so unbounded
-   retention seems fine unless it turns out to matter in practice.
+2. **How far back should snapshots be kept?** Unlike the original
+   state-only design, this one writes a row on every save, so the table
+   will grow roughly in step with how often a puzzle is worked on and
+   saved — not just how many times it changed lifecycle state. No pruning
+   is proposed in this doc: puzzle JSON is small enough that even a puzzle
+   saved a few hundred times is a modest amount of data, and deleting old
+   snapshots is the one thing that can't be undone. Recommended: ship
+   without pruning, watch actual database growth in practice, and revisit
+   with a real retention policy (e.g. "keep every row for 90 days, then
+   only one per day") only if it turns out to matter.
+3. **Should the history popup show every save, or just state changes?**
+   Flagged above under Frontend — a first version can simply list every
+   row and let it be long; collapsing consecutive same-state rows is a
+   presentation improvement that can follow once this is in use and it's
+   clear whether the length is actually a problem.
