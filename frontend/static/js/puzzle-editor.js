@@ -759,12 +759,7 @@ async function do_puzzle_generate_grid() {
 // Menu actions — Puzzle CRUD
 // ---------------------------------------------------------------------------
 
-async function _openPuzzleInEditor(name) {
-    const openData = await apiFetch('POST', `/api/puzzles/${encodeURIComponent(name)}/open`);
-    if (openData.error) {
-        throw new Error(openData.error);
-    }
-    const wn = openData.working_name;
+async function _openWorkingCopyInEditor(name, wn) {
     const puzzleData = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}`);
     if (puzzleData.error) {
         throw new Error(puzzleData.error);
@@ -787,6 +782,14 @@ async function _openPuzzleInEditor(name) {
     AppState._fillOrderCache    = new Map();
     AppState.gridStructureChanged = false;
     showView('editor');
+}
+
+async function _openPuzzleInEditor(name) {
+    const openData = await apiFetch('POST', `/api/puzzles/${encodeURIComponent(name)}/open`);
+    if (openData.error) {
+        throw new Error(openData.error);
+    }
+    await _openWorkingCopyInEditor(name, openData.working_name);
 }
 
 async function do_puzzle_open() {

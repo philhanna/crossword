@@ -300,6 +300,90 @@ class TestSQLitePersistenceAdapter:
         assert all(row["changed_at"] for row in history)
 
     # ======================================================================
+    # Content snapshots
+    # ======================================================================
+
+    def test_schema_has_content_column_on_history(self, adapter):
+        cur = adapter.conn.cursor()
+        cur.execute("PRAGMA table_info(puzzle_state_history)")
+        columns = {row["name"] for row in cur.fetchall()}
+        assert "content" in columns
+
+    def test_set_puzzle_state_stores_current_content_snapshot(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+
+        cur = adapter.conn.cursor()
+        cur.execute("SELECT content FROM puzzle_state_history")
+        row = cur.fetchone()
+        assert row["content"] == sample_puzzle.to_json()
+
+    def test_set_puzzle_state_snapshots_content_as_of_each_call(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+        first_json = sample_puzzle.to_json()
+
+        sample_puzzle.title = "Changed title"
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="filled")
+        second_json = sample_puzzle.to_json()
+
+        cur = adapter.conn.cursor()
+        cur.execute("SELECT content FROM puzzle_state_history ORDER BY id ASC")
+        rows = cur.fetchall()
+        assert [row["content"] for row in rows] == [first_json, second_json]
+        assert first_json != second_json
+
+    def test_get_puzzle_state_history_includes_id_and_has_content(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+
+        history = adapter.get_puzzle_state_history(user_id=1, name="p")
+
+        assert isinstance(history[0]["id"], int)
+        assert history[0]["has_content"] is True
+
+    def test_get_puzzle_state_history_content_returns_snapshot(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+        history_id = adapter.get_puzzle_state_history(user_id=1, name="p")[0]["id"]
+
+        content = adapter.get_puzzle_state_history_content(user_id=1, name="p", history_id=history_id)
+
+        assert content == sample_puzzle.to_json()
+
+    def test_get_puzzle_state_history_content_none_when_row_missing(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+
+        content = adapter.get_puzzle_state_history_content(user_id=1, name="p", history_id=999)
+
+        assert content is None
+
+    def test_get_puzzle_state_history_content_none_for_wrong_owner(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+        history_id = adapter.get_puzzle_state_history(user_id=1, name="p")[0]["id"]
+
+        content = adapter.get_puzzle_state_history_content(user_id=2, name="p", history_id=history_id)
+
+        assert content is None
+
+    def test_get_puzzle_state_history_content_none_when_no_content_saved(self, adapter, sample_puzzle):
+        """Rows written before content snapshots existed have content = NULL."""
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+        history_id = adapter.get_puzzle_state_history(user_id=1, name="p")[0]["id"]
+
+        cur = adapter.conn.cursor()
+        cur.execute("UPDATE puzzle_state_history SET content = NULL WHERE id = ?", (history_id,))
+        adapter.conn.commit()
+
+        content = adapter.get_puzzle_state_history_content(user_id=1, name="p", history_id=history_id)
+
+        assert content is None
+
+    # ======================================================================
     # Error paths
     # ======================================================================
 

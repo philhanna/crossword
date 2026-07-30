@@ -20,6 +20,7 @@ from crossword.http_server.puzzle_handlers import (
     handle_get_puzzle_state,
     handle_set_puzzle_state,
     handle_get_puzzle_state_history,
+    handle_restore_puzzle_from_history,
     handle_open_puzzle_for_editing,
 )
 from crossword.tests import TestPuzzle
@@ -556,3 +557,39 @@ class TestPuzzleStateHandlers:
             app=app, current_user={"id": 1, "username": "test"},
         )
         assert "error" in response
+
+    def test_restore_puzzle_from_history_happy_path(self, request_handler, app):
+        app.puzzle_uc.restore_puzzle_from_history.return_value = "__wc__demo__a1b2c3d4"
+        response = handle_restore_puzzle_from_history(
+            ("demo", "31"), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        app.puzzle_uc.restore_puzzle_from_history.assert_called_once_with(1, "demo", 31)
+        assert response == {"original_name": "demo", "working_name": "__wc__demo__a1b2c3d4"}
+
+    def test_restore_puzzle_from_history_missing_history_id(self, request_handler, app):
+        response = handle_restore_puzzle_from_history(
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        assert "error" in response
+        app.puzzle_uc.restore_puzzle_from_history.assert_not_called()
+
+    def test_restore_puzzle_from_history_non_integer_id(self, request_handler, app):
+        response = handle_restore_puzzle_from_history(
+            ("demo", "not-a-number"), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        assert "error" in response
+        app.puzzle_uc.restore_puzzle_from_history.assert_not_called()
+
+    def test_restore_puzzle_from_history_no_content_returns_error(self, request_handler, app):
+        from crossword.ports.persistence_port import PersistenceError
+        app.puzzle_uc.restore_puzzle_from_history.side_effect = PersistenceError(
+            "No restorable content for history row 31 of puzzle 'demo'"
+        )
+        response = handle_restore_puzzle_from_history(
+            ("demo", "31"), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"},
+        )
+        assert "No restorable content" in response["error"]

@@ -84,7 +84,8 @@ class PersistencePort(ABC):
                          date_submitted: str | None = None,
                          date_published: str | None = None) -> None:
         """
-        Append a new state-history row for this puzzle.
+        Append a new state-history row for this puzzle, snapshotting its
+        current saved content (`jsonstr`) into that row.
 
         Args:
             user_id: The user who owns this puzzle
@@ -122,12 +123,31 @@ class PersistencePort(ABC):
         Return every state-history row for this puzzle, oldest first, or
         None if the puzzle doesn't exist.
 
-        Each dict has keys: state, publisher, date_submitted, date_published,
-        changed_at.
+        Each dict has keys: id, state, publisher, date_submitted,
+        date_published, has_content, changed_at. `has_content` is True when
+        this row has a saved puzzle-content snapshot that can be restored.
 
         Args:
             user_id: The user who owns this puzzle
             name: Name/identifier for the puzzle
+
+        Raises:
+            PersistenceError: If the read fails
+        """
+        pass
+
+    @abstractmethod
+    def get_puzzle_state_history_content(self, user_id: int, name: str, history_id: int) -> str | None:
+        """
+        Return the saved puzzle-content JSON for one history row.
+
+        Returns None if the row doesn't exist, doesn't belong to this
+        puzzle/user, or predates content snapshots (no content saved).
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            history_id: The `id` of the history row to read
 
         Raises:
             PersistenceError: If the read fails

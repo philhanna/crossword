@@ -12,6 +12,7 @@ Public interface:
   set_puzzle_state(user_id, name, state, **fields) -> dict
   get_puzzle_state_history(user_id, name) -> list[dict]
   open_puzzle_for_editing(user_id, name) -> str
+  restore_puzzle_from_history(user_id, name, history_id) -> str
   switch_to_grid_mode(user_id, name) -> Puzzle
   switch_to_puzzle_mode(user_id, name) -> Puzzle
   toggle_black_cell(user_id, name, r, c) -> Puzzle
@@ -164,26 +165,35 @@ class PuzzleUseCases:
         return puzzle
 
     def _auto_set_state_on_save(self, user_id: int, name: str, puzzle: Puzzle) -> None:
-        """Advance a puzzle's state along the completion ladder after a save.
+        """Record a fresh content snapshot on every save.
 
-        Once a puzzle has moved past the ladder (submitted/published/
-        archived), those states are user-owned — set only via the state
-        dialog — so a plain save must leave them alone. Without this guard,
-        `detect_completion_state` (which only ever returns draft/filled/
-        finished) would never match a post-ladder state, and every save
-        would silently knock the puzzle back down to a ladder state.
+        While the puzzle is still on the completion ladder (draft/filled/
+        finished), state is recomputed as usual from the puzzle's contents.
+        Once it's past the ladder (submitted/published/archived), those
+        fields are user-owned — set only via the state dialog — so they're
+        carried forward unchanged from the latest row rather than
+        recomputed or cleared; only the content snapshot is new. Without
+        that carry-forward, `detect_completion_state` (which only ever
+        returns draft/filled/finished) would never match a post-ladder
+        state, and every save would either knock the puzzle back down to a
+        ladder state or blank out its publisher/submission dates.
 
-        Also skips the write if it would just repeat the latest history
-        row — otherwise every autosave of an unchanged ladder state (the
-        common case) would add a row.
+        A row is always written, even if state hasn't changed, so that a
+        save is never lost from history — see docs/dev/puzzle_content_snapshots.md.
         """
         current = self.persistence.get_puzzle_state(user_id, name)
-        if current is not None and current["state"] not in ps.COMPLETION_LADDER:
-            return
-        computed = ps.detect_completion_state(puzzle)
-        if current is not None and current["state"] == computed:
-            return
-        self.persistence.set_puzzle_state(user_id, name, computed)
+        if current is None or current["state"] in ps.COMPLETION_LADDER:
+            state = ps.detect_completion_state(puzzle)
+            publisher = date_submitted = date_published = None
+        else:
+            state = current["state"]
+            publisher = current["publisher"]
+            date_submitted = current["date_submitted"]
+            date_published = current["date_published"]
+        self.persistence.set_puzzle_state(
+            user_id, name, state,
+            publisher=publisher, date_submitted=date_submitted, date_published=date_published,
+        )
 
     def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
         """
@@ -278,8 +288,8 @@ class PuzzleUseCases:
             name: Name/identifier for the puzzle
 
         Returns:
-            List of dicts with keys: state, publisher, date_submitted,
-            date_published, changed_at
+            List of dicts with keys: id, state, publisher, date_submitted,
+            date_published, has_content, changed_at
 
         Raises:
             PersistenceError: If the puzzle is not found
@@ -309,6 +319,41 @@ class PuzzleUseCases:
         """
         working_name = f"__wc__{name}__{uuid.uuid4().hex[:8]}"
         puzzle = self.persistence.load_puzzle(user_id, name)
+        puzzle.grid_undo_stack = []
+        puzzle.grid_redo_stack = []
+        puzzle.undo_stack = []
+        puzzle.redo_stack = []
+        self.persistence.save_puzzle(user_id, working_name, puzzle)
+        return working_name
+
+    def restore_puzzle_from_history(self, user_id: int, name: str, history_id: int) -> str:
+        """
+        Open an old snapshot of a puzzle for editing, as a new working copy.
+
+        Does not touch the live puzzle or its state. The user reviews the
+        old version in the editor and decides whether to keep it
+        (Save / Save As) or discard it (Close), exactly as with any other
+        working copy.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name of the puzzle whose history is being restored from
+            history_id: The `id` of the history row to restore
+
+        Returns:
+            working_name: The name of the new working copy
+
+        Raises:
+            PersistenceError: If the puzzle or history row isn't found, or
+                that row has no saved content (predates content snapshots)
+        """
+        content = self.persistence.get_puzzle_state_history_content(user_id, name, history_id)
+        if content is None:
+            raise PersistenceError(
+                f"No restorable content for history row {history_id} of puzzle '{name}'"
+            )
+        working_name = f"__wc__{name}__{uuid.uuid4().hex[:8]}"
+        puzzle = Puzzle.from_json(content)
         puzzle.grid_undo_stack = []
         puzzle.grid_redo_stack = []
         puzzle.undo_stack = []

@@ -20,6 +20,7 @@ from crossword.http_server.puzzle_handlers import (
     handle_get_puzzle_state,
     handle_set_puzzle_state,
     handle_get_puzzle_state_history,
+    handle_restore_puzzle_from_history,
     handle_open_puzzle_for_editing,
     handle_switch_to_grid_mode,
     handle_switch_to_puzzle_mode,
@@ -96,6 +97,7 @@ def register_routes(router):
     router.add_route("GET", r"^/api/puzzles/([^/]+)/state$", handle_get_puzzle_state)
     router.add_route("PUT", r"^/api/puzzles/([^/]+)/state$", handle_set_puzzle_state)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/state/history$", handle_get_puzzle_state_history)
+    router.add_route("POST", r"^/api/puzzles/([^/]+)/state/history/(\d+)/restore$", handle_restore_puzzle_from_history)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/open$", handle_open_puzzle_for_editing)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/mode/grid$", handle_switch_to_grid_mode)
     router.add_route("POST", r"^/api/puzzles/([^/]+)/mode/puzzle$", handle_switch_to_puzzle_mode)

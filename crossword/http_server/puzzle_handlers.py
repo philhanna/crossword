@@ -12,6 +12,7 @@ Routes:
   GET    /api/puzzles/<name>/state         → get_puzzle_state
   PUT    /api/puzzles/<name>/state         → set_puzzle_state
   GET    /api/puzzles/<name>/state/history → get_puzzle_state_history
+  POST   /api/puzzles/<name>/state/history/<id>/restore → restore_puzzle_from_history
   POST   /api/puzzles/<name>/open          → open_puzzle_for_editing
   POST   /api/puzzles/<name>/mode/grid     → switch_to_grid_mode
   POST   /api/puzzles/<name>/mode/puzzle   → switch_to_puzzle_mode
@@ -354,8 +355,9 @@ def handle_get_puzzle_state_history(path_params, query_params, body_params, sess
     """
     Return every recorded state transition for a puzzle, oldest first.
     GET /api/puzzles/<name>/state/history
-    Returns: { "name": "...", "history": [{ "state": ..., "publisher": ...,
-               "date_submitted": ..., "date_published": ..., "changed_at": ... }, ...] }
+    Returns: { "name": "...", "history": [{ "id": ..., "state": ...,
+               "publisher": ..., "date_submitted": ..., "date_published": ...,
+               "has_content": ..., "changed_at": ... }, ...] }
     """
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -379,10 +381,40 @@ def handle_get_puzzle_state_history(path_params, query_params, body_params, sess
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"error": str(e)}
-    except PersistenceError:
-        logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
+
+
+def handle_restore_puzzle_from_history(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
+    """
+    Open an old state-history snapshot of a puzzle for editing, as a new
+    working copy. Does not touch the live puzzle or its state.
+    POST /api/puzzles/<name>/state/history/<id>/restore
+    Returns: { "original_name": "mypuzzle", "working_name": "__wc__mypuzzle__a1b2c3d4" }
+    """
+    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
+    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
+    try:
+        name = path_params[0] if len(path_params) > 0 else None
+        history_id = path_params[1] if len(path_params) > 1 else None
+        if not name or history_id is None:
+            logger.debug("  returning: %s", {"error": "Missing name or history id"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing name or history id"}
+        try:
+            history_id = int(history_id)
+        except ValueError:
+            logger.debug("  returning: %s", {"error": "history id must be an integer"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "history id must be an integer"}
+
+        user_id = current_user["id"]
+        working_name = app.puzzle_uc.restore_puzzle_from_history(user_id, name, history_id)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        return {"original_name": name, "working_name": working_name}
+
+    except PersistenceError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        return {"error": str(e)}
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)

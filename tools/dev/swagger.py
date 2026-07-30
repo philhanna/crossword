@@ -124,15 +124,17 @@ SPEC = {
                     "name": {"type": "string"},
                     "history": {
                         "type": "array",
-                        "description": "Every recorded state transition, oldest first",
+                        "description": "Every save, oldest first — not just state changes",
                         "items": {
                             "type": "object",
                             "properties": {
+                                "id":             {"type": "integer", "description": "History row id, used to restore this snapshot"},
                                 "state":          {"type": "string",
                                                    "enum": ["draft", "filled", "finished", "submitted", "published", "archived"]},
                                 "publisher":      {"type": "string", "nullable": True},
                                 "date_submitted": {"type": "string", "nullable": True},
                                 "date_published": {"type": "string", "nullable": True},
+                                "has_content":    {"type": "boolean", "description": "Whether this row has a puzzle-content snapshot that can be restored"},
                                 "changed_at":     {"type": "string", "description": "ISO timestamp this row was recorded"},
                             },
                         },
@@ -504,6 +506,25 @@ SPEC = {
                     "200": {"description": "State-change history",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleStateHistory"}}}},
                     "404": {"description": "Puzzle not found",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+                },
+            },
+        },
+
+        "/api/puzzles/{name}/state/history/{id}/restore": {
+            "parameters": [
+                {"name": "name", "in": "path", "required": True, "schema": {"type": "string"}},
+                {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"},
+                 "description": "The history row id to restore (from GET .../state/history)"},
+            ],
+            "post": {
+                "tags": ["puzzles"],
+                "summary": "Open an old state-history snapshot for editing, as a new working copy",
+                "description": "Does not touch the live puzzle or its state. The user reviews the old version in the editor and decides whether to keep it (Save/Save As) or discard it (Close), exactly as with any other working copy.",
+                "responses": {
+                    "200": {"description": "Working copy session info",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WorkingCopySession"}}}},
+                    "404": {"description": "Puzzle or history row not found, or that row has no saved content",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
             },

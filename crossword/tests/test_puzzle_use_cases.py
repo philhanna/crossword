@@ -796,12 +796,13 @@ class TestPuzzleUseCasesGetFillOrder:
 
 
 class TestPuzzleUseCasesAutoState:
-    """copy_puzzle auto-advances state along the completion ladder."""
+    """copy_puzzle records a fresh history/content snapshot on every save."""
 
     def test_copy_empty_puzzle_sets_draft(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_atlantic_puzzle()
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.DRAFT)
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.DRAFT, publisher=None, date_submitted=None, date_published=None)
 
     def test_copy_filled_no_clues_sets_filled(self, puzzle_uc, mock_persistence):
         puzzle = TestPuzzle.create_solved_atlantic_puzzle()
@@ -809,12 +810,14 @@ class TestPuzzleUseCasesAutoState:
             word.set_clue(None)
         mock_persistence.load_puzzle.return_value = puzzle
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FILLED)
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.FILLED, publisher=None, date_submitted=None, date_published=None)
 
     def test_copy_solved_puzzle_sets_finished(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FINISHED)
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.FINISHED, publisher=None, date_submitted=None, date_published=None)
 
     def test_copy_allows_backward_move(self, puzzle_uc, mock_persistence):
         """A previously finished puzzle whose clues were cleared moves back to filled."""
@@ -822,35 +825,58 @@ class TestPuzzleUseCasesAutoState:
         for word in list(puzzle.across_words.values()) + list(puzzle.down_words.values()):
             word.set_clue(None)
         mock_persistence.load_puzzle.return_value = puzzle
-        mock_persistence.get_puzzle_state.return_value = {"state": ps.FINISHED}
+        mock_persistence.get_puzzle_state.return_value = {
+            "state": ps.FINISHED, "publisher": None,
+            "date_submitted": None, "date_published": None,
+        }
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FILLED)
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.FILLED, publisher=None, date_submitted=None, date_published=None)
 
-    def test_copy_does_not_touch_state_once_submitted(self, puzzle_uc, mock_persistence):
-        """A save after submission must not knock the puzzle back down the ladder."""
+    def test_copy_still_snapshots_when_ladder_state_unchanged(self, puzzle_uc, mock_persistence):
+        """Repeated saves at the same ladder state still record a fresh content snapshot."""
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
-        mock_persistence.get_puzzle_state.return_value = {"state": ps.SUBMITTED}
+        mock_persistence.get_puzzle_state.return_value = {
+            "state": ps.FINISHED, "publisher": None,
+            "date_submitted": None, "date_published": None,
+        }
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_not_called()
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.FINISHED, publisher=None, date_submitted=None, date_published=None)
 
-    def test_copy_does_not_touch_state_once_published(self, puzzle_uc, mock_persistence):
+    def test_copy_carries_forward_state_once_submitted(self, puzzle_uc, mock_persistence):
+        """A save after submission must not knock the puzzle back down the ladder, but
+        still records a fresh content snapshot with the same state/publisher/dates."""
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
-        mock_persistence.get_puzzle_state.return_value = {"state": ps.PUBLISHED}
+        mock_persistence.get_puzzle_state.return_value = {
+            "state": ps.SUBMITTED, "publisher": "NYT",
+            "date_submitted": "2026-06-06", "date_published": None,
+        }
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_not_called()
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.SUBMITTED,
+            publisher="NYT", date_submitted="2026-06-06", date_published=None)
 
-    def test_copy_does_not_touch_state_once_archived(self, puzzle_uc, mock_persistence):
+    def test_copy_carries_forward_state_once_published(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
-        mock_persistence.get_puzzle_state.return_value = {"state": ps.ARCHIVED}
+        mock_persistence.get_puzzle_state.return_value = {
+            "state": ps.PUBLISHED, "publisher": "NYT",
+            "date_submitted": "2026-06-06", "date_published": "2026-07-01",
+        }
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_not_called()
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.PUBLISHED,
+            publisher="NYT", date_submitted="2026-06-06", date_published="2026-07-01")
 
-    def test_copy_skips_write_when_state_unchanged(self, puzzle_uc, mock_persistence):
-        """Repeated saves at the same ladder state (autosave) must not grow history."""
+    def test_copy_carries_forward_state_once_archived(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
-        mock_persistence.get_puzzle_state.return_value = {"state": ps.FINISHED}
+        mock_persistence.get_puzzle_state.return_value = {
+            "state": ps.ARCHIVED, "publisher": None,
+            "date_submitted": None, "date_published": None,
+        }
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_not_called()
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.ARCHIVED, publisher=None, date_submitted=None, date_published=None)
 
 
 class TestPuzzleUseCasesOpen:
@@ -875,6 +901,55 @@ class TestPuzzleUseCasesOpen:
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_atlantic_puzzle()
         working_name = puzzle_uc.open_puzzle_for_editing(1, "p")
         assert working_name.startswith("__wc__p__")
+
+
+class TestPuzzleUseCasesRestore:
+    """restore_puzzle_from_history opens an old snapshot as a new working copy."""
+
+    def test_restore_creates_working_copy_with_snapshot_content(self, puzzle_uc, mock_persistence):
+        snapshot = TestPuzzle.create_solved_atlantic_puzzle()
+        mock_persistence.get_puzzle_state_history_content.return_value = snapshot.to_json()
+
+        working_name = puzzle_uc.restore_puzzle_from_history(1, "p", 31)
+
+        mock_persistence.get_puzzle_state_history_content.assert_called_once_with(1, "p", 31)
+        assert working_name.startswith("__wc__p__")
+        saved_args = mock_persistence.save_puzzle.call_args[0]
+        assert saved_args[0] == 1
+        assert saved_args[1] == working_name
+        assert saved_args[2].to_json() == snapshot.to_json()
+
+    def test_restore_clears_undo_redo_stacks(self, puzzle_uc, mock_persistence):
+        snapshot = TestPuzzle.create_atlantic_puzzle()
+        mock_persistence.get_puzzle_state_history_content.return_value = snapshot.to_json()
+
+        puzzle_uc.restore_puzzle_from_history(1, "p", 31)
+
+        saved_puzzle = mock_persistence.save_puzzle.call_args[0][2]
+        assert saved_puzzle.grid_undo_stack == []
+        assert saved_puzzle.grid_redo_stack == []
+        assert saved_puzzle.undo_stack == []
+        assert saved_puzzle.redo_stack == []
+
+    def test_restore_does_not_touch_live_puzzle_or_state(self, puzzle_uc, mock_persistence):
+        snapshot = TestPuzzle.create_atlantic_puzzle()
+        mock_persistence.get_puzzle_state_history_content.return_value = snapshot.to_json()
+
+        puzzle_uc.restore_puzzle_from_history(1, "p", 31)
+
+        mock_persistence.save_puzzle.assert_called_once()  # only the new working copy
+        mock_persistence.set_puzzle_state.assert_not_called()
+
+    def test_restore_raises_when_history_row_has_no_content(self, puzzle_uc, mock_persistence):
+        mock_persistence.get_puzzle_state_history_content.return_value = None
+        with pytest.raises(PersistenceError, match="No restorable content"):
+            puzzle_uc.restore_puzzle_from_history(1, "p", 31)
+        mock_persistence.save_puzzle.assert_not_called()
+
+    def test_restore_raises_when_row_not_found_or_not_owned(self, puzzle_uc, mock_persistence):
+        mock_persistence.get_puzzle_state_history_content.return_value = None
+        with pytest.raises(PersistenceError):
+            puzzle_uc.restore_puzzle_from_history(1, "nope", 999)
 
 
 class TestPuzzleUseCasesRename:

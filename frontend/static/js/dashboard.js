@@ -451,6 +451,9 @@ async function _dashShowHistory(name) {
             return;
         }
         body.innerHTML = _historyTableHtml(data.history || []);
+        body.querySelectorAll('[data-history-restore]').forEach(btn => {
+            btn.onclick = () => _dashConfirmRestore(name, parseInt(btn.getAttribute('data-history-restore'), 10));
+        });
     } catch (e) {
         body.innerHTML = `<p>Error loading history: ${escapeHtml(e.message)}</p>`;
     }
@@ -467,15 +470,44 @@ function _historyTableHtml(history) {
         } else if (h.state === 'published' && h.publisher) {
             detail = `published by ${escapeHtml(h.publisher)}`;
         }
+        const restoreCell = h.has_content
+            ? `<button class="dash-history-restore" data-history-restore="${h.id}">Restore</button>`
+            : '';
         return `<tr>
             <td>${fmtDateTime(h.changed_at)}</td>
             <td>${escapeHtml(h.state)}</td>
             <td>${detail}</td>
+            <td>${restoreCell}</td>
           </tr>`;
     }).join('');
     return `
       <table class="dash-table">
-        <thead><tr><th>Changed</th><th>State</th><th>Details</th></tr></thead>
+        <thead><tr><th>Changed</th><th>State</th><th>Details</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
+}
+
+function _dashConfirmRestore(name, historyId) {
+    messageBox(
+        'Restore puzzle',
+        `Open this earlier saved version of <b>'${escapeHtml(name)}'</b> for editing? ` +
+        `This leaves the dashboard. The current version stays untouched until you ` +
+        `explicitly Save.`,
+        null,
+        () => _dashRestorePuzzle(name, historyId),
+        'Restore',
+    );
+}
+
+async function _dashRestorePuzzle(name, historyId) {
+    try {
+        const data = await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(name)}/state/history/${historyId}/restore`);
+        if (data.error) {
+            showMessageLine(`Restore failed: ${data.error}`, 'error', 0);
+            return;
+        }
+        hideElement('history-popup');
+        await _openWorkingCopyInEditor(name, data.working_name);
+    } catch (e) { showMessageLine('Error restoring puzzle', 'error', 0); }
 }

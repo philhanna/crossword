@@ -95,6 +95,7 @@ class SQLitePersistenceAdapter(PersistencePort):
                     publisher       TEXT,
                     date_submitted  TEXT,
                     date_published  TEXT,
+                    content         TEXT,
                     changed_at      TEXT NOT NULL
                 )
             """)
@@ -210,14 +211,14 @@ class SQLitePersistenceAdapter(PersistencePort):
                          publisher: str | None = None,
                          date_submitted: str | None = None,
                          date_published: str | None = None) -> None:
-        """Append a new state-history row."""
+        """Append a new state-history row, snapshotting the puzzle's current content."""
         try:
             now = datetime.now().isoformat()
             cursor = self.conn.cursor()
             cursor.execute(
                 """INSERT INTO puzzle_state_history
-                        (puzzle_id, state, publisher, date_submitted, date_published, changed_at)
-                    SELECT id, ?, ?, ?, ?, ? FROM puzzles WHERE userid = ? AND puzzlename = ?""",
+                        (puzzle_id, state, publisher, date_submitted, date_published, content, changed_at)
+                    SELECT id, ?, ?, ?, ?, jsonstr, ? FROM puzzles WHERE userid = ? AND puzzlename = ?""",
                 (state, publisher, date_submitted, date_published, now, user_id, name),
             )
 
@@ -271,7 +272,8 @@ class SQLitePersistenceAdapter(PersistencePort):
                 return None
 
             cursor.execute(
-                """SELECT h.state, h.publisher, h.date_submitted, h.date_published, h.changed_at
+                """SELECT h.id, h.state, h.publisher, h.date_submitted, h.date_published,
+                          h.content IS NOT NULL AS has_content, h.changed_at
                    FROM puzzles p
                    JOIN puzzle_state_history h ON h.puzzle_id = p.id
                    WHERE p.userid = ? AND p.puzzlename = ?
@@ -280,16 +282,38 @@ class SQLitePersistenceAdapter(PersistencePort):
             )
             return [
                 {
+                    "id": row["id"],
                     "state": row["state"],
                     "publisher": row["publisher"],
                     "date_submitted": row["date_submitted"],
                     "date_published": row["date_published"],
+                    "has_content": bool(row["has_content"]),
                     "changed_at": row["changed_at"],
                 }
                 for row in cursor.fetchall()
             ]
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to get puzzle state history: {e}")
+
+    def get_puzzle_state_history_content(self, user_id: int, name: str, history_id: int) -> str | None:
+        """Return the saved puzzle-content JSON for one history row, or None if
+        that row doesn't exist, doesn't belong to this puzzle/user, or predates
+        this feature (no content saved)."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """SELECT h.content
+                   FROM puzzles p
+                   JOIN puzzle_state_history h ON h.puzzle_id = p.id
+                   WHERE p.userid = ? AND p.puzzlename = ? AND h.id = ?""",
+                (user_id, name, history_id),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return row["content"]
+        except sqlite3.Error as e:
+            raise PersistenceError(f"Failed to get puzzle state history content: {e}")
 
     def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
         """Rename in place, preserving id — state history (keyed by puzzle_id) follows."""
