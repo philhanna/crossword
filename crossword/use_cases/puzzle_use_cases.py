@@ -166,12 +166,21 @@ class PuzzleUseCases:
     def _auto_set_state_on_save(self, user_id: int, name: str, puzzle: Puzzle) -> None:
         """Advance a puzzle's state along the completion ladder after a save.
 
-        Skips the write if it would just repeat the latest history row —
-        otherwise every autosave of an unchanged ladder state (the common
-        case) would add a row.
+        Once a puzzle has moved past the ladder (submitted/published/
+        archived), those states are user-owned — set only via the state
+        dialog — so a plain save must leave them alone. Without this guard,
+        `detect_completion_state` (which only ever returns draft/filled/
+        finished) would never match a post-ladder state, and every save
+        would silently knock the puzzle back down to a ladder state.
+
+        Also skips the write if it would just repeat the latest history
+        row — otherwise every autosave of an unchanged ladder state (the
+        common case) would add a row.
         """
-        computed = ps.detect_completion_state(puzzle)
         current = self.persistence.get_puzzle_state(user_id, name)
+        if current is not None and current["state"] not in ps.COMPLETION_LADDER:
+            return
+        computed = ps.detect_completion_state(puzzle)
         if current is not None and current["state"] == computed:
             return
         self.persistence.set_puzzle_state(user_id, name, computed)

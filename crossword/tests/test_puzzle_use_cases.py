@@ -826,11 +826,24 @@ class TestPuzzleUseCasesAutoState:
         puzzle_uc.copy_puzzle(1, "src", "dest")
         mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FILLED)
 
-    def test_copy_recomputes_state_regardless_of_source(self, puzzle_uc, mock_persistence):
+    def test_copy_does_not_touch_state_once_submitted(self, puzzle_uc, mock_persistence):
+        """A save after submission must not knock the puzzle back down the ladder."""
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
         mock_persistence.get_puzzle_state.return_value = {"state": ps.SUBMITTED}
         puzzle_uc.copy_puzzle(1, "src", "dest")
-        mock_persistence.set_puzzle_state.assert_called_once_with(1, "dest", ps.FINISHED)
+        mock_persistence.set_puzzle_state.assert_not_called()
+
+    def test_copy_does_not_touch_state_once_published(self, puzzle_uc, mock_persistence):
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
+        mock_persistence.get_puzzle_state.return_value = {"state": ps.PUBLISHED}
+        puzzle_uc.copy_puzzle(1, "src", "dest")
+        mock_persistence.set_puzzle_state.assert_not_called()
+
+    def test_copy_does_not_touch_state_once_archived(self, puzzle_uc, mock_persistence):
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
+        mock_persistence.get_puzzle_state.return_value = {"state": ps.ARCHIVED}
+        puzzle_uc.copy_puzzle(1, "src", "dest")
+        mock_persistence.set_puzzle_state.assert_not_called()
 
     def test_copy_skips_write_when_state_unchanged(self, puzzle_uc, mock_persistence):
         """Repeated saves at the same ladder state (autosave) must not grow history."""
