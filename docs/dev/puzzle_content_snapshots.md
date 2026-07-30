@@ -248,6 +248,33 @@ reads an existing row; it never deletes or modifies one, so nothing is at
 risk of being overwritten without a copy of it already sitting safely in
 history.
 
+### Worked example: restoring is "branch forward," not "rewind"
+
+Say a puzzle has been saved 35 times, so its history has rows 1 through 35,
+and row 35 is what's currently live (what `load_puzzle` returns, what the
+dashboard shows). The user opens the history popup and restores row 31.
+
+- Restoring row 31 only reads it — rows 32, 33, 34, and 35 are untouched
+  and still sitting in history exactly as they were. Nothing about the live
+  puzzle changes yet either; the user is now editing a working copy that
+  started as a copy of row 31's content.
+- If the user closes that working copy without saving, that's the end of
+  it — no new row, no change to what's live. Row 35 is still current.
+- If the user edits it and hits Save, that Save writes a **new** row —
+  row 36 — containing the edited content, and row 36 becomes the live
+  puzzle. Row 31 is unchanged. Rows 32–35 are unchanged. Nothing was
+  deleted, renumbered, or overwritten; a new row was appended, same as any
+  other save.
+
+So restoring never "rewinds" the puzzle to an earlier point the way an undo
+stack would — the row count only ever goes up, and every version that ever
+existed keeps its own row, reachable for as long as it isn't pruned (see
+"How far back should snapshots be kept?" below). Restoring row 34 instead
+of 31 works exactly the same way, and so does restoring row 35 again later
+if row 36 turns out to be a mistake — Restore doesn't care whether the
+target row is the latest one, an old one, or one the user has already
+restored before.
+
 ## HTTP layer
 
 One new route, following the existing pattern in `puzzle_handlers.py`:
