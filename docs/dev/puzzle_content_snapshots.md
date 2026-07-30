@@ -42,60 +42,17 @@ with no new plumbing through the use-case layer. No caller needs to pass
 puzzle content around — it's already sitting right there in the `puzzles`
 row being joined against.
 
-## A bug that has to be fixed first
+## Prerequisite (already done)
 
-While tracing this, a related problem turned up in
-`_auto_set_state_on_save` ([puzzle_use_cases.py:166-177](../../crossword/use_cases/puzzle_use_cases.py#L166-L177)),
-which runs on every "Save":
-
-```python
-def _auto_set_state_on_save(self, user_id, name, puzzle):
-    computed = ps.detect_completion_state(puzzle)   # only ever draft/filled/finished
-    current = self.persistence.get_puzzle_state(user_id, name)
-    if current is not None and current["state"] == computed:
-        return
-    self.persistence.set_puzzle_state(user_id, name, computed)
-```
-
-`detect_completion_state` can only return `draft`, `filled`, or `finished`
-— it has no idea about `submitted`, `published`, or `archived`
-([puzzle_state.py:19-27](../../crossword/domain/puzzle_state.py#L19-L27)).
-So once a puzzle has been marked `submitted`, every later "Save" compares
-`"submitted"` against something like `"finished"`, sees they don't match,
-and silently writes a new history row that knocks the puzzle's displayed
-state back down to `finished`. This already happens today, independent of
-this doc — it's the reason the user's puzzle history doesn't cleanly show
-"submitted" as the last thing that happened.
-
-For this doc, it also matters directly: without a fix, every ordinary save
-after submission would keep minting new history rows (and, once this doc
-ships, a fresh content snapshot with each one) for a state change nobody
-asked for. That defeats the point — the submitted snapshot would immediately
-get buried under snapshots from routine post-submission edits.
-
-**Fix:** `_auto_set_state_on_save` should only touch state while a puzzle is
-still on the completion ladder. Once the current state is `submitted`,
-`published`, or `archived`, plain saves should leave state alone entirely —
-those states are user-owned (set only through the state dialog), not
-something autosave should ever move.
-
-```python
-def _auto_set_state_on_save(self, user_id, name, puzzle):
-    current = self.persistence.get_puzzle_state(user_id, name)
-    if current is not None and current["state"] not in ps.COMPLETION_LADDER:
-        return
-    computed = ps.detect_completion_state(puzzle)
-    if current is not None and current["state"] == computed:
-        return
-    self.persistence.set_puzzle_state(user_id, name, computed)
-```
-
-With this fix, saving a submitted puzzle after making the publisher's
-requested changes no longer touches history at all — which is correct. The
-snapshot from the original `submitted` row stays exactly as it was, untouched,
-ready to be looked at or restored. If the user submits again later, that's a
-deliberate action through the state dialog, and it gets its own fresh
-snapshot (see below).
+An earlier draft of this doc flagged a bug where saving a puzzle after it
+had been submitted would silently reset its state. That's now fixed
+(`df49739`): a plain "Save" no longer touches state once a puzzle is
+`submitted`, `published`, or `archived`. This matters here because it means
+routine saves after submission won't mint unwanted history rows — so once
+content snapshots are added below, the original `submitted` snapshot won't
+get buried under snapshots from routine post-submission edits. If the user
+submits again later, that's a deliberate action through the state dialog,
+and it gets its own fresh snapshot (see below).
 
 ## Schema change
 
@@ -125,7 +82,7 @@ there's no way to reconstruct what a puzzle looked like before this ships.
 Every snapshot is stored in full, not as a diff against the previous one.
 Puzzle JSON is small (a grid plus a handful of clue strings — a few
 kilobytes at most), and history rows are already rare, thanks to the
-de-duplication in `_auto_set_state_on_save` and the fix above. Diffing would
+de-duplication in `_auto_set_state_on_save`. Diffing would
 save a little disk space at the cost of real complexity (reconstructing any
 given version means replaying every diff before it). Not worth it here.
 
@@ -209,10 +166,9 @@ This means "Restore" needs no new state-machine concept, no new undo
 behavior, and no special-cased save path — it's just "open a puzzle for
 editing," pointed at a different source. Once it's open, all the existing
 Save / Save As / Close logic applies unchanged. If the user hits Save, that
-goes through `copy_puzzle` as usual, which (per the fix above) will only
-touch state — and thus only take a new snapshot — if the puzzle is still on
-the completion ladder or if the user explicitly changes state via the
-dialog afterward.
+goes through `copy_puzzle` as usual, which will only touch state — and thus
+only take a new snapshot — if the puzzle is still on the completion ladder
+or if the user explicitly changes state via the dialog afterward.
 
 ## HTTP layer
 
@@ -276,12 +232,10 @@ New tool, `tools/dev/migrate_puzzle_content_snapshots.py`:
   `jsonstr` into `content`; `get_puzzle_state_history_content` returns the
   right snapshot for a given history id, and `None` for a row that isn't
   found, doesn't belong to the user, or has no content.
-- `crossword/tests/test_puzzle_use_cases.py` —
-  - `_auto_set_state_on_save` no longer touches state once a puzzle is
-    `submitted`/`published`/`archived` (the bug fix above).
-  - `restore_puzzle_from_history` creates a working copy whose content
-    matches the historical snapshot, and raises when the history row has no
-    content or doesn't belong to the puzzle/user.
+- `crossword/tests/test_puzzle_use_cases.py` — `restore_puzzle_from_history`
+  creates a working copy whose content matches the historical snapshot, and
+  raises when the history row has no content or doesn't belong to the
+  puzzle/user.
 - `crossword/tests/test_http_server.py` — new restore route: success case,
   and 404-style error when the history id is missing or has no content.
 - New sibling test file for the migration tool, mirroring
