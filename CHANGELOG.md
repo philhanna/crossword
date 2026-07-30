@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.3.2] - 2026-07-30
+
+### Fixed
+
+- `_auto_set_state_on_save` no longer silently demotes a puzzle's state
+  after it has been submitted/published/archived; those states are
+  user-owned and only autosave's ladder detection (draft/filled/finished)
+  should stay hands-off once past them
+
 ## [5.3.0] - 2026-07-26
 
 ### Added
