@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.5.0] - 2026-07-31
+
+### Added
+
+- Required save comment: Save and Save As now prompt for a non-empty
+  comment describing what changed; it's stored on the puzzle's history row
+  and shown as a new column in the dashboard's "Show history" popup (see
+  `docs/dev/puzzle_save_comments.md`)
+
 ## [5.4.0] - 2026-07-31
 
 ### Added
