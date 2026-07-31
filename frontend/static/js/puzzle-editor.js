@@ -1115,15 +1115,17 @@ async function do_puzzle_save() {
     const wn   = AppState.puzzleWorkingName;
     const name = AppState.puzzleName;
     if (!name) { do_puzzle_save_as(); return; }
-    try {
-        await _settlePuzzleEditingBeforeSave();
-        const data = await apiFetch('POST',
-            `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name });
-        if (data.error) { showMessageLine(`Save failed: ${data.error}`, 'error', 0); return; }
-        AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
-        renderPuzzleEditor();
-        showMessageLine(`Puzzle ${name} saved.`, 'notice');
-    } catch (e) { showMessageLine('Error saving puzzle', 'error', 0); }
+    inputBox('Save puzzle', 'What changed?', '', async (comment) => {
+        try {
+            await _settlePuzzleEditingBeforeSave();
+            const data = await apiFetch('POST',
+                `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name, comment });
+            if (data.error) { showMessageLine(`Save failed: ${data.error}`, 'error', 0); return; }
+            AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
+            renderPuzzleEditor();
+            showMessageLine(`Puzzle ${name} saved.`, 'notice');
+        } catch (e) { showMessageLine('Error saving puzzle', 'error', 0); }
+    });
 }
 
 async function _listSavedPuzzleNames() {
@@ -1134,10 +1136,10 @@ async function _listSavedPuzzleNames() {
     return (listData.puzzles || []).filter(p => p && !p.startsWith('__'));
 }
 
-async function _savePuzzleAsName(newName) {
+async function _savePuzzleAsName(newName, comment) {
     const wn = AppState.puzzleWorkingName;
     const data = await apiFetch('POST',
-        `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: newName });
+        `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: newName, comment });
     if (data.error) {
         throw new Error(data.error);
     }
@@ -1158,7 +1160,10 @@ async function _savePuzzleAsName(newName) {
 }
 
 async function do_puzzle_save_as() {
-    inputBox('Save puzzle as', 'Puzzle name:', AppState.puzzleName || '', async (newName) => {
+    multiInputBox('Save puzzle as', [
+        { name: 'newName', label: 'Puzzle name:', value: AppState.puzzleName || '' },
+        { name: 'comment', label: 'What changed?', value: '' },
+    ], async ({ newName, comment }) => {
         if (!newName) return;
         if (!validateUserFacingName('puzzle', newName)) return;
         try {
@@ -1167,7 +1172,7 @@ async function do_puzzle_save_as() {
                 'puzzle',
                 newName,
                 _listSavedPuzzleNames,
-                () => _savePuzzleAsName(newName)
+                () => _savePuzzleAsName(newName, comment)
             );
         } catch (e) { showMessageLine('Error saving puzzle', 'error', 0); }
     });

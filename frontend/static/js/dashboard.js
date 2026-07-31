@@ -477,12 +477,13 @@ function _historyTableHtml(history) {
             <td>${fmtDateTime(h.changed_at)}</td>
             <td>${escapeHtml(h.state)}</td>
             <td>${detail}</td>
+            <td>${escapeHtml(h.comment || '')}</td>
             <td>${restoreCell}</td>
           </tr>`;
     }).join('');
     return `
       <table class="dash-table">
-        <thead><tr><th>Changed</th><th>State</th><th>Details</th><th></th></tr></thead>
+        <thead><tr><th>Changed</th><th>State</th><th>Details</th><th>Comment</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
 }

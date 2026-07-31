@@ -23,6 +23,7 @@ from crossword.http_server.puzzle_handlers import (
     handle_restore_puzzle_from_history,
     handle_open_puzzle_for_editing,
     handle_set_word_clue,
+    handle_copy_puzzle,
 )
 from crossword.http_server.word_handlers import handle_get_suggestions
 from crossword.tests import TestPuzzle
@@ -529,6 +530,66 @@ class TestWordHandlers:
         app.puzzle_uc.get_word_at.assert_not_called()
         app.word_uc.get_suggestions.assert_called_once_with("???", None)
         assert response == {"pattern": "???", "suggestions": ["cat", "cats"], "count": 2}
+
+
+class TestCopyPuzzleHandler:
+    """Direct handler tests for handle_copy_puzzle (Save/Save As)."""
+
+    @pytest.fixture
+    def request_handler(self):
+        handler = Mock()
+        handler.command = "POST"
+        handler.path = "/api/test"
+        return handler
+
+    @pytest.fixture
+    def app(self):
+        app = Mock()
+        app.puzzle_uc = Mock()
+        return app
+
+    def test_missing_comment_is_rejected(self, request_handler, app):
+        response = handle_copy_puzzle(
+            ("demo",), {}, {"new_name": "demo-copy"}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        assert response == {"error": "Missing or invalid 'comment'"}
+        app.puzzle_uc.copy_puzzle.assert_not_called()
+
+    def test_blank_comment_is_rejected(self, request_handler, app):
+        response = handle_copy_puzzle(
+            ("demo",), {}, {"new_name": "demo-copy", "comment": "   "}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        assert response == {"error": "Missing or invalid 'comment'"}
+        app.puzzle_uc.copy_puzzle.assert_not_called()
+
+    def test_valid_comment_is_passed_through(self, request_handler, app):
+        puzzle = TestPuzzle.create_puzzle()
+        app.puzzle_uc.copy_puzzle.return_value = puzzle
+
+        response = handle_copy_puzzle(
+            ("demo",), {}, {"new_name": "demo-copy", "comment": "Fixed the theme entries"},
+            None, request_handler, app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        app.puzzle_uc.copy_puzzle.assert_called_once_with(
+            1, "demo", "demo-copy", "Fixed the theme entries")
+        assert response["name"] == "demo-copy"
+
+    def test_value_error_from_use_case_surfaces(self, request_handler, app):
+        """Any ValueError from the use case (empty comment, bad name, etc.)
+        comes back as {"error": ...}, not a 500."""
+        app.puzzle_uc.copy_puzzle.side_effect = ValueError("comment must not be empty")
+
+        response = handle_copy_puzzle(
+            ("demo",), {}, {"new_name": "demo-copy", "comment": "x"}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        assert response == {"error": "comment must not be empty"}
 
 
 class TestPuzzleStateHandlers:

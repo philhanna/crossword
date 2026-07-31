@@ -208,7 +208,7 @@ class TestEndToEndWiring:
         final_working = app.puzzle_uc.switch_to_puzzle_mode(1, working_name)
         assert final_working.last_mode == "puzzle"
 
-        app.puzzle_uc.copy_puzzle(1, working_name, "merged")
+        app.puzzle_uc.copy_puzzle(1, working_name, "merged", "Save")
         reopened = app.puzzle_uc.load_puzzle(1, "merged")
         assert reopened.last_mode == "puzzle"
         assert reopened.get_across_word(1).get_text() == "ALGORITHM"
@@ -236,7 +236,7 @@ class TestEndToEndWiring:
         assert puzzle_mode.get_across_word(13).get_clue() is None
         assert puzzle_mode.last_mode == "puzzle"
 
-        app.puzzle_uc.copy_puzzle(1, working_name, "atlantic")
+        app.puzzle_uc.copy_puzzle(1, working_name, "atlantic", "Save")
         reloaded = app.puzzle_uc.load_puzzle(1, "atlantic")
         assert reloaded.last_mode == "puzzle"
         assert reloaded.get_across_word(13).get_text() == "REUNITED "

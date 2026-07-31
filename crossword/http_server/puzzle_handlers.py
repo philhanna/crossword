@@ -849,7 +849,7 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
     """
     Copy a puzzle to a new name.
     POST /api/puzzles/<name>/copy
-    Body: { "new_name": "..." }
+    Body: { "new_name": "...", "comment": "..." }
     """
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -866,8 +866,14 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
             return {"error": "Missing or invalid 'new_name'"}
 
+        comment = body_params.get("comment")
+        if not comment or not isinstance(comment, str) or not comment.strip():
+            logger.debug("  returning: %s", {"error": "Missing or invalid 'comment'"})
+            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+            return {"error": "Missing or invalid 'comment'"}
+
         user_id = current_user["id"]
-        puzzle = app.puzzle_uc.copy_puzzle(user_id, name, new_name)
+        puzzle = app.puzzle_uc.copy_puzzle(user_id, name, new_name, comment)
         response = _puzzle_response(puzzle)
         response["name"] = new_name
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)

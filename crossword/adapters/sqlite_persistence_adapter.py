@@ -96,6 +96,7 @@ class SQLitePersistenceAdapter(PersistencePort):
                     date_submitted  TEXT,
                     date_published  TEXT,
                     content         TEXT,
+                    comment         TEXT,
                     changed_at      TEXT NOT NULL
                 )
             """)
@@ -210,16 +211,18 @@ class SQLitePersistenceAdapter(PersistencePort):
     def set_puzzle_state(self, user_id: int, name: str, state: str, *,
                          publisher: str | None = None,
                          date_submitted: str | None = None,
-                         date_published: str | None = None) -> None:
+                         date_published: str | None = None,
+                         comment: str | None = None) -> None:
         """Append a new state-history row, snapshotting the puzzle's current content."""
         try:
             now = datetime.now().isoformat()
             cursor = self.conn.cursor()
             cursor.execute(
                 """INSERT INTO puzzle_state_history
-                        (puzzle_id, state, publisher, date_submitted, date_published, content, changed_at)
-                    SELECT id, ?, ?, ?, ?, jsonstr, ? FROM puzzles WHERE userid = ? AND puzzlename = ?""",
-                (state, publisher, date_submitted, date_published, now, user_id, name),
+                        (puzzle_id, state, publisher, date_submitted, date_published,
+                         content, comment, changed_at)
+                    SELECT id, ?, ?, ?, ?, jsonstr, ?, ? FROM puzzles WHERE userid = ? AND puzzlename = ?""",
+                (state, publisher, date_submitted, date_published, comment, now, user_id, name),
             )
 
             if cursor.rowcount == 0:
@@ -273,7 +276,7 @@ class SQLitePersistenceAdapter(PersistencePort):
 
             cursor.execute(
                 """SELECT h.id, h.state, h.publisher, h.date_submitted, h.date_published,
-                          h.content IS NOT NULL AS has_content, h.changed_at
+                          h.content IS NOT NULL AS has_content, h.comment, h.changed_at
                    FROM puzzles p
                    JOIN puzzle_state_history h ON h.puzzle_id = p.id
                    WHERE p.userid = ? AND p.puzzlename = ?
@@ -288,6 +291,7 @@ class SQLitePersistenceAdapter(PersistencePort):
                     "date_submitted": row["date_submitted"],
                     "date_published": row["date_published"],
                     "has_content": bool(row["has_content"]),
+                    "comment": row["comment"],
                     "changed_at": row["changed_at"],
                 }
                 for row in cursor.fetchall()

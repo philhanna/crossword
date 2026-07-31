@@ -88,7 +88,7 @@ class TestPuzzleUseCasesCopy:
         """Copy a puzzle to a new name"""
         mock_persistence.load_puzzle.return_value = test_puzzle
 
-        result = puzzle_uc.copy_puzzle(1, "original", "copy")
+        result = puzzle_uc.copy_puzzle(1, "original", "copy", "Initial save")
 
         mock_persistence.load_puzzle.assert_called_once_with(1, "original")
         mock_persistence.save_puzzle.assert_called_once_with(1, "copy", test_puzzle)
@@ -99,22 +99,32 @@ class TestPuzzleUseCasesCopy:
         mock_persistence.load_puzzle.side_effect = PersistenceError("Puzzle not found")
 
         with pytest.raises(PersistenceError, match="Puzzle not found"):
-            puzzle_uc.copy_puzzle(1, "nonexistent", "copy")
+            puzzle_uc.copy_puzzle(1, "nonexistent", "copy", "Initial save")
 
     def test_copy_puzzle_empty_new_name(self, puzzle_uc):
         """Reject an empty new_name"""
         with pytest.raises(ValueError, match="new_name must not be empty"):
-            puzzle_uc.copy_puzzle(1, "original", "")
+            puzzle_uc.copy_puzzle(1, "original", "", "Initial save")
 
     def test_copy_puzzle_whitespace_new_name(self, puzzle_uc):
         """Reject a whitespace-only new_name"""
         with pytest.raises(ValueError, match="new_name must not be empty"):
-            puzzle_uc.copy_puzzle(1, "original", "   ")
+            puzzle_uc.copy_puzzle(1, "original", "   ", "Initial save")
+
+    def test_copy_puzzle_empty_comment(self, puzzle_uc):
+        """Reject an empty comment"""
+        with pytest.raises(ValueError, match="comment must not be empty"):
+            puzzle_uc.copy_puzzle(1, "original", "copy", "")
+
+    def test_copy_puzzle_whitespace_comment(self, puzzle_uc):
+        """Reject a whitespace-only comment"""
+        with pytest.raises(ValueError, match="comment must not be empty"):
+            puzzle_uc.copy_puzzle(1, "original", "copy", "   ")
 
     def test_copy_puzzle_rejects_working_copy_prefix(self, puzzle_uc, mock_persistence):
         """Reject copy targets reserved for working copies"""
         with pytest.raises(ValueError, match="reserved for internal working copies"):
-            puzzle_uc.copy_puzzle(1, "original", "__wc__copy")
+            puzzle_uc.copy_puzzle(1, "original", "__wc__copy", "Initial save")
 
         mock_persistence.load_puzzle.assert_not_called()
         mock_persistence.save_puzzle.assert_not_called()
@@ -127,11 +137,23 @@ class TestPuzzleUseCasesCopy:
             test_puzzle.across_words[seq].set_clue("Test clue")
         mock_persistence.load_puzzle.return_value = test_puzzle
 
-        result = puzzle_uc.copy_puzzle(1, "original", "copy")
+        result = puzzle_uc.copy_puzzle(1, "original", "copy", "Initial save")
 
         if result.across_words:
             seq = next(iter(result.across_words))
             assert result.across_words[seq].get_clue() == "Test clue"
+
+    def test_copy_puzzle_stores_comment_in_history(self, puzzle_uc, mock_persistence, test_puzzle):
+        """The comment is recorded on the puzzle_state_history row for this save"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        puzzle_uc.copy_puzzle(1, "original", "copy", "Fixed the theme entries")
+
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "copy", ps.DRAFT,
+            publisher=None, date_submitted=None, date_published=None,
+            comment="Fixed the theme entries",
+        )
 
 
 class TestPuzzleUseCasesLoad:
@@ -829,24 +851,27 @@ class TestPuzzleUseCasesAutoState:
 
     def test_copy_empty_puzzle_sets_draft(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_atlantic_puzzle()
-        puzzle_uc.copy_puzzle(1, "src", "dest")
+        puzzle_uc.copy_puzzle(1, "src", "dest", "Save")
         mock_persistence.set_puzzle_state.assert_called_once_with(
-            1, "dest", ps.DRAFT, publisher=None, date_submitted=None, date_published=None)
+            1, "dest", ps.DRAFT, publisher=None, date_submitted=None, date_published=None,
+            comment="Save")
 
     def test_copy_filled_no_clues_sets_filled(self, puzzle_uc, mock_persistence):
         puzzle = TestPuzzle.create_solved_atlantic_puzzle()
         for word in list(puzzle.across_words.values()) + list(puzzle.down_words.values()):
             word.set_clue(None)
         mock_persistence.load_puzzle.return_value = puzzle
-        puzzle_uc.copy_puzzle(1, "src", "dest")
+        puzzle_uc.copy_puzzle(1, "src", "dest", "Save")
         mock_persistence.set_puzzle_state.assert_called_once_with(
-            1, "dest", ps.FILLED, publisher=None, date_submitted=None, date_published=None)
+            1, "dest", ps.FILLED, publisher=None, date_submitted=None, date_published=None,
+            comment="Save")
 
     def test_copy_solved_puzzle_sets_finished(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
-        puzzle_uc.copy_puzzle(1, "src", "dest")
+        puzzle_uc.copy_puzzle(1, "src", "dest", "Save")
         mock_persistence.set_puzzle_state.assert_called_once_with(
-            1, "dest", ps.FINISHED, publisher=None, date_submitted=None, date_published=None)
+            1, "dest", ps.FINISHED, publisher=None, date_submitted=None, date_published=None,
+            comment="Save")
 
     def test_copy_allows_backward_move(self, puzzle_uc, mock_persistence):
         """A previously finished puzzle whose clues were cleared moves back to filled."""
@@ -858,9 +883,10 @@ class TestPuzzleUseCasesAutoState:
             "state": ps.FINISHED, "publisher": None,
             "date_submitted": None, "date_published": None,
         }
-        puzzle_uc.copy_puzzle(1, "src", "dest")
+        puzzle_uc.copy_puzzle(1, "src", "dest", "Save")
         mock_persistence.set_puzzle_state.assert_called_once_with(
-            1, "dest", ps.FILLED, publisher=None, date_submitted=None, date_published=None)
+            1, "dest", ps.FILLED, publisher=None, date_submitted=None, date_published=None,
+            comment="Save")
 
     def test_copy_still_snapshots_when_ladder_state_unchanged(self, puzzle_uc, mock_persistence):
         """Repeated saves at the same ladder state still record a fresh content snapshot."""
@@ -869,9 +895,10 @@ class TestPuzzleUseCasesAutoState:
             "state": ps.FINISHED, "publisher": None,
             "date_submitted": None, "date_published": None,
         }
-        puzzle_uc.copy_puzzle(1, "src", "dest")
+        puzzle_uc.copy_puzzle(1, "src", "dest", "Save")
         mock_persistence.set_puzzle_state.assert_called_once_with(
-            1, "dest", ps.FINISHED, publisher=None, date_submitted=None, date_published=None)
+            1, "dest", ps.FINISHED, publisher=None, date_submitted=None, date_published=None,
+            comment="Save")
 
     def test_copy_carries_forward_state_once_submitted(self, puzzle_uc, mock_persistence):
         """A save after submission must not knock the puzzle back down the ladder, but
@@ -881,10 +908,11 @@ class TestPuzzleUseCasesAutoState:
             "state": ps.SUBMITTED, "publisher": "NYT",
             "date_submitted": "2026-06-06", "date_published": None,
         }
-        puzzle_uc.copy_puzzle(1, "src", "dest")
+        puzzle_uc.copy_puzzle(1, "src", "dest", "Save")
         mock_persistence.set_puzzle_state.assert_called_once_with(
             1, "dest", ps.SUBMITTED,
-            publisher="NYT", date_submitted="2026-06-06", date_published=None)
+            publisher="NYT", date_submitted="2026-06-06", date_published=None,
+            comment="Save")
 
     def test_copy_carries_forward_state_once_published(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
@@ -892,10 +920,11 @@ class TestPuzzleUseCasesAutoState:
             "state": ps.PUBLISHED, "publisher": "NYT",
             "date_submitted": "2026-06-06", "date_published": "2026-07-01",
         }
-        puzzle_uc.copy_puzzle(1, "src", "dest")
+        puzzle_uc.copy_puzzle(1, "src", "dest", "Save")
         mock_persistence.set_puzzle_state.assert_called_once_with(
             1, "dest", ps.PUBLISHED,
-            publisher="NYT", date_submitted="2026-06-06", date_published="2026-07-01")
+            publisher="NYT", date_submitted="2026-06-06", date_published="2026-07-01",
+            comment="Save")
 
     def test_copy_carries_forward_state_once_archived(self, puzzle_uc, mock_persistence):
         mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
@@ -903,9 +932,24 @@ class TestPuzzleUseCasesAutoState:
             "state": ps.ARCHIVED, "publisher": None,
             "date_submitted": None, "date_published": None,
         }
-        puzzle_uc.copy_puzzle(1, "src", "dest")
+        puzzle_uc.copy_puzzle(1, "src", "dest", "Save")
         mock_persistence.set_puzzle_state.assert_called_once_with(
-            1, "dest", ps.ARCHIVED, publisher=None, date_submitted=None, date_published=None)
+            1, "dest", ps.ARCHIVED, publisher=None, date_submitted=None, date_published=None,
+            comment="Save")
+
+    def test_copy_new_comment_not_carried_forward(self, puzzle_uc, mock_persistence):
+        """Unlike publisher/dates, the comment is always this save's own text,
+        even once a puzzle is past the completion ladder."""
+        mock_persistence.load_puzzle.return_value = TestPuzzle.create_solved_atlantic_puzzle()
+        mock_persistence.get_puzzle_state.return_value = {
+            "state": ps.SUBMITTED, "publisher": "NYT",
+            "date_submitted": "2026-06-06", "date_published": None,
+        }
+        puzzle_uc.copy_puzzle(1, "src", "dest", "A brand new comment")
+        mock_persistence.set_puzzle_state.assert_called_once_with(
+            1, "dest", ps.SUBMITTED,
+            publisher="NYT", date_submitted="2026-06-06", date_published=None,
+            comment="A brand new comment")
 
 
 class TestPuzzleUseCasesOpen:

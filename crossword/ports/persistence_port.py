@@ -82,7 +82,8 @@ class PersistencePort(ABC):
     def set_puzzle_state(self, user_id: int, name: str, state: str, *,
                          publisher: str | None = None,
                          date_submitted: str | None = None,
-                         date_published: str | None = None) -> None:
+                         date_published: str | None = None,
+                         comment: str | None = None) -> None:
         """
         Append a new state-history row for this puzzle, snapshotting its
         current saved content (`jsonstr`) into that row.
@@ -94,6 +95,8 @@ class PersistencePort(ABC):
             publisher: Free-form publisher text (for 'submitted')
             date_submitted: ISO date (for 'submitted')
             date_published: ISO date (for 'published')
+            comment: Free-form note describing this save (e.g. from Save/
+                Save As); None for rows not written by an explicit save
 
         Raises:
             PersistenceError: If the puzzle is not found or the write fails
@@ -124,8 +127,10 @@ class PersistencePort(ABC):
         None if the puzzle doesn't exist.
 
         Each dict has keys: id, state, publisher, date_submitted,
-        date_published, has_content, changed_at. `has_content` is True when
-        this row has a saved puzzle-content snapshot that can be restored.
+        date_published, has_content, comment, changed_at. `has_content` is
+        True when this row has a saved puzzle-content snapshot that can be
+        restored. `comment` is the free-form note the user entered when
+        saving, or None for rows not written by an explicit save.
 
         Args:
             user_id: The user who owns this puzzle

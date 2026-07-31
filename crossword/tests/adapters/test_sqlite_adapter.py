@@ -384,6 +384,41 @@ class TestSQLitePersistenceAdapter:
         assert content is None
 
     # ======================================================================
+    # Save comments
+    # ======================================================================
+
+    def test_schema_has_comment_column_on_history(self, adapter):
+        cur = adapter.conn.cursor()
+        cur.execute("PRAGMA table_info(puzzle_state_history)")
+        columns = {row["name"] for row in cur.fetchall()}
+        assert "comment" in columns
+
+    def test_set_puzzle_state_stores_comment(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft", comment="Fixed the theme entries")
+
+        history = adapter.get_puzzle_state_history(user_id=1, name="p")
+
+        assert history[0]["comment"] == "Fixed the theme entries"
+
+    def test_set_puzzle_state_comment_defaults_to_none(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft")
+
+        history = adapter.get_puzzle_state_history(user_id=1, name="p")
+
+        assert history[0]["comment"] is None
+
+    def test_get_puzzle_state_history_comment_per_row(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p", state="draft", comment="First save")
+        adapter.set_puzzle_state(user_id=1, name="p", state="filled", comment="Second save")
+
+        history = adapter.get_puzzle_state_history(user_id=1, name="p")
+
+        assert [row["comment"] for row in history] == ["First save", "Second save"]
+
+    # ======================================================================
     # Error paths
     # ======================================================================
 

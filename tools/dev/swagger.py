@@ -135,6 +135,8 @@ SPEC = {
                                 "date_submitted": {"type": "string", "nullable": True},
                                 "date_published": {"type": "string", "nullable": True},
                                 "has_content":    {"type": "boolean", "description": "Whether this row has a puzzle-content snapshot that can be restored"},
+                                "comment":        {"type": "string", "nullable": True,
+                                                   "description": "Note the user entered when saving; null for rows not written by an explicit Save/Save As"},
                                 "changed_at":     {"type": "string", "description": "ISO timestamp this row was recorded"},
                             },
                         },
@@ -424,9 +426,13 @@ SPEC = {
                     "required": True,
                     "content": {"application/json": {"schema": {
                         "type": "object",
-                        "required": ["new_name"],
+                        "required": ["new_name", "comment"],
                         "properties": {
                             "new_name": {"type": "string", "example": "mypuzzle-copy"},
+                            "comment": {"type": "string", "example": "Fixed the theme entries",
+                                        "description": "Required note describing what changed in this save; "
+                                                        "stored on the puzzle_state_history row and shown in "
+                                                        "the dashboard's history popup"},
                         },
                     }}},
                 },

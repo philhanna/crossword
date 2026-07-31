@@ -6,7 +6,7 @@ Public interface:
   load_puzzle(user_id, name) -> Puzzle
   delete_puzzle(user_id, name) -> None
   list_puzzles(user_id, state=None) -> list[str]
-  copy_puzzle(user_id, source_name, new_name) -> Puzzle
+  copy_puzzle(user_id, source_name, new_name, comment) -> Puzzle
   rename_puzzle(user_id, old_name, new_name) -> None
   get_puzzle_state(user_id, name) -> dict
   set_puzzle_state(user_id, name, state, **fields) -> dict
@@ -136,24 +136,32 @@ class PuzzleUseCases:
             raise ValueError(f"Invalid state: {state!r}")
         return self.persistence.list_puzzles(user_id, state=state)
 
-    def copy_puzzle(self, user_id: int, source_name: str, new_name: str) -> Puzzle:
+    def copy_puzzle(self, user_id: int, source_name: str, new_name: str, comment: str) -> Puzzle:
         """
         Copy a puzzle to a new name.
+
+        Used for both Save (source_name is the working copy, new_name is
+        the puzzle's saved name) and Save As (new_name is a different
+        name). Every call is a real, user-initiated save, so a comment
+        describing what changed is required.
 
         Args:
             user_id: The user who owns the puzzle
             source_name: Name of the puzzle to copy
             new_name: Name for the copy
+            comment: Free-form note describing this save; must not be empty
 
         Returns:
             The copied Puzzle object
 
         Raises:
             PersistenceError: If source not found or save fails
-            ValueError: If new_name is empty
+            ValueError: If new_name or comment is empty
         """
         if not new_name or not new_name.strip():
             raise ValueError("new_name must not be empty")
+        if not comment or not comment.strip():
+            raise ValueError("comment must not be empty")
         validate_public_name("puzzle", new_name)
         puzzle = self.persistence.load_puzzle(user_id, source_name)
         puzzle.grid_undo_stack = []
@@ -161,10 +169,11 @@ class PuzzleUseCases:
         puzzle.undo_stack = []
         puzzle.redo_stack = []
         self.persistence.save_puzzle(user_id, new_name, puzzle)
-        self._auto_set_state_on_save(user_id, new_name, puzzle)
+        self._auto_set_state_on_save(user_id, new_name, puzzle, comment=comment)
         return puzzle
 
-    def _auto_set_state_on_save(self, user_id: int, name: str, puzzle: Puzzle) -> None:
+    def _auto_set_state_on_save(self, user_id: int, name: str, puzzle: Puzzle,
+                                comment: str | None = None) -> None:
         """Record a fresh content snapshot on every save.
 
         While the puzzle is still on the completion ladder (draft/filled/
@@ -180,6 +189,10 @@ class PuzzleUseCases:
 
         A row is always written, even if state hasn't changed, so that a
         save is never lost from history — see docs/dev/puzzle_content_snapshots.md.
+
+        `comment` is new content for this row either way — unlike
+        publisher/dates, it's never carried forward from the previous row;
+        each save gets its own — see docs/dev/puzzle_save_comments.md.
         """
         current = self.persistence.get_puzzle_state(user_id, name)
         if current is None or current["state"] in ps.COMPLETION_LADDER:
@@ -193,6 +206,7 @@ class PuzzleUseCases:
         self.persistence.set_puzzle_state(
             user_id, name, state,
             publisher=publisher, date_submitted=date_submitted, date_published=date_published,
+            comment=comment,
         )
 
     def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
@@ -289,7 +303,7 @@ class PuzzleUseCases:
 
         Returns:
             List of dicts with keys: id, state, publisher, date_submitted,
-            date_published, has_content, changed_at
+            date_published, has_content, comment, changed_at
 
         Raises:
             PersistenceError: If the puzzle is not found
