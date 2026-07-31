@@ -135,14 +135,15 @@ via `self.across_words` and `self.down_words`
 plumbing is needed to see what else is on the grid:
 
 ```python
-def set_text(self, seq, direction, text, undo=True):
+def set_text(self, seq, direction, text, undo=True, check_duplicates=True):
     """ Sets the text of the word at <seq><direction> """
     word = self.get_word(seq, direction)
     if undo:
         new_value = text
         old_value = word.get_text()
         if old_value != new_value:
-            self._check_for_duplicate(seq, direction, new_value)
+            if check_duplicates:
+                self._check_for_duplicate(seq, direction, new_value)
             undoable = ['text', seq, direction, old_value]
             self.undo_stack.append(undoable)
     word.set_text(text)
@@ -186,6 +187,25 @@ Three things about where this hooks in are worth calling out:
   `(seq, direction)`, saving a word would always "conflict" with its own
   old value before the new text replaces it. The list comprehension above
   filters that word out before comparing.
+- **A locked word being edited is exempt.** `set_word_clue()` already has
+  a guarded fallback for the case where a locked word's text is changed
+  anyway: it unlocks the word first, so the write isn't silently dropped by
+  `Puzzle.set_cell()`
+  ([puzzle_use_cases.py:552-557](../../crossword/use_cases/puzzle_use_cases.py#L552-L557)).
+  The UI never triggers this today — the Answer field is disabled while a
+  word is locked — so this only matters if some future path forces an edit
+  through anyway. Since that's already treated as a deliberate override,
+  the duplicate check shouldn't second-guess it too. `set_word_clue` checks
+  `word.is_locked()` *before* unlocking and passes the result down:
+
+  ```python
+  was_locked = text is not None and text != word.get_text() and word.is_locked()
+  if was_locked:
+      puzzle.set_locked(seq, word_dir, False)
+
+  if text is not None:
+      puzzle.set_text(seq, word_dir, text, check_duplicates=not was_locked)
+  ```
 
 This raises a plain `ValueError`, which is the pattern already used
 elsewhere for rejecting bad input — for example
@@ -290,7 +310,8 @@ endpoint backward compatible for any use outside the word editor.
   since replay uses `undo=False` and skips the check.
 - `crossword/tests/test_puzzle_use_cases.py` — `set_word_clue` surfaces the
   `ValueError` with the conflicting word's text and location in the
-  message.
+  message; forcing an edit through on a locked word bypasses the check
+  (`check_duplicates=False` reaches `Puzzle.set_text`).
 - `crossword/tests/test_word_use_cases.py` — `get_ranked_suggestions`
   excludes words already used elsewhere in the puzzle (and their plurals);
   `get_suggestions` does the same when given puzzle/seq/direction context,
@@ -300,21 +321,19 @@ endpoint backward compatible for any use outside the word editor.
   word; `GET /api/words/suggestions` accepts the new optional query
   parameters and filters accordingly.
 
-## Open questions
+## Decisions
 
-1. **Should a locked word be exempt from the check?** A locked word's text
-   can't be changed through the normal edit path anyway (the Answer field
-   is disabled while locked —
-   [puzzle_use_cases.py:552-557](../../crossword/use_cases/puzzle_use_cases.py#L552-L557)),
-   so in practice this question only matters if some future code path
-   tries to set text on a locked word directly. Recommended: no special
-   case needed now: the check is purely about the *text being written*, not
-   the lock state, so it naturally does the right thing if that ever
-   changes.
-2. **Should this be a hard block, or a warning the user can override?**
-   This doc treats it as a hard block, consistent with how the app already
-   handles other invalid input (bad cell letters, duplicate names) — reject
-   with a clear message, no silent acceptance. If real usage turns up a
+1. **Should a locked word be exempt from the check? Yes.** Forcing an edit
+   through on a locked word is already an explicit override of the normal
+   flow (see the "locked word being edited is exempt" bullet above), so the
+   duplicate check steps aside for that same edit rather than adding a
+   second obstacle on top of it. This is implemented by threading
+   `check_duplicates=not was_locked` from `set_word_clue()` into
+   `Puzzle.set_text()`, as shown above.
+2. **Should this be a hard block, or a warning the user can override? Hard
+   block.** Consistent with how the app already handles other invalid
+   input (bad cell letters, duplicate names) — reject with a clear message,
+   no silent acceptance and no override. If real usage turns up a
    legitimate reason to allow a repeat on purpose (e.g. a themed puzzle
    that intentionally reuses a word), that would need a deliberate opt-in
-   design, not a default in this feature.
+   design added later, not a default in this feature.
