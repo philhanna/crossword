@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.4.0] - 2026-07-31
+
+### Added
+
+- Duplicate-word check: the word editor and direct grid typing now reject
+  a word that duplicates, or is a plain plural of, another complete word
+  already in the puzzle; the same check filters both suggestion-list
+  endpoints so a conflicting word is never offered in the first place
+  (see `docs/dev/no_duplicate_words.md`)
+- Puzzle content snapshots: a full copy of the puzzle (grid, fill, clues)
+  is now saved on every save, not just state changes, so an earlier
+  version — e.g. what was actually submitted to a publisher — can always
+  be recovered even after later edits; "Restore" button added to the
+  puzzle history popup (see `docs/dev/puzzle_content_snapshots.md`)
+
 ## [5.3.2] - 2026-07-30
 
 ### Fixed
