@@ -1,7 +1,9 @@
 import os
 import tempfile
 
-from crossword import Grid, Puzzle
+import pytest
+
+from crossword import Grid, Puzzle, Word
 
 
 class TestPuzzle:
@@ -467,3 +469,69 @@ class TestPuzzle:
         puzzle_string = str(puzzle)
         assert "+-----+" in puzzle_string
         assert "| | | |" in puzzle_string
+
+
+class TestPuzzleDuplicateWords:
+    """Tests for the duplicate/near-duplicate check in Puzzle.set_text"""
+
+    def test_rejects_exact_duplicate(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(4, Word.ACROSS, "EFTS")
+        with pytest.raises(ValueError, match="EFTS duplicates EFTS"):
+            puzzle.set_text(8, Word.ACROSS, "EFTS")
+
+    def test_rejects_plural_of_shorter_existing_word(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(7, Word.DOWN, "CAT")
+        with pytest.raises(ValueError, match="CATS duplicates CAT"):
+            puzzle.set_text(4, Word.ACROSS, "CATS")
+
+    def test_rejects_singular_of_longer_existing_word(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(4, Word.ACROSS, "CATS")
+        with pytest.raises(ValueError, match="CAT duplicates CATS"):
+            puzzle.set_text(7, Word.DOWN, "CAT")
+
+    def test_allows_non_conflicting_word(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(7, Word.DOWN, "CAT")
+        puzzle.set_text(4, Word.ACROSS, "DOGS")
+        assert "DOGS" == puzzle.get_text(4, Word.ACROSS)
+
+    def test_incomplete_word_is_not_checked(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(4, Word.ACROSS, "EFTS")
+        # 8-across is 4 letters; leaving a blank means it's not "EFTS" yet
+        puzzle.set_text(8, Word.ACROSS, "EFT ")
+        assert "EFT " == puzzle.get_text(8, Word.ACROSS)
+
+    def test_incomplete_word_is_not_used_as_a_conflict_source(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(4, Word.ACROSS, "EFT ")  # left incomplete
+        puzzle.set_text(8, Word.ACROSS, "EFTS")
+        assert "EFTS" == puzzle.get_text(8, Word.ACROSS)
+
+    def test_rewriting_the_same_word_does_not_conflict_with_itself(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(4, Word.ACROSS, "EFTS")
+        puzzle.set_text(4, Word.ACROSS, "EFTS")
+        assert "EFTS" == puzzle.get_text(4, Word.ACROSS)
+
+    def test_rejected_word_leaves_the_grid_unchanged(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(4, Word.ACROSS, "EFTS")
+        with pytest.raises(ValueError):
+            puzzle.set_text(8, Word.ACROSS, "EFTS")
+        assert "    " == puzzle.get_text(8, Word.ACROSS)
+
+    def test_error_message_names_the_conflicting_location(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(7, Word.DOWN, "CAT")
+        with pytest.raises(ValueError, match="7 down"):
+            puzzle.set_text(4, Word.ACROSS, "CATS")
+
+    def test_check_duplicates_false_bypasses_the_check(self):
+        puzzle = TestPuzzle.create_atlantic_puzzle()
+        puzzle.set_text(7, Word.DOWN, "CAT")
+        puzzle.set_text(4, Word.ACROSS, "CATS", check_duplicates=False)
+        assert "CATS" == puzzle.get_text(4, Word.ACROSS)

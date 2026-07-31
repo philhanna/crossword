@@ -957,6 +957,20 @@ SPEC = {
                     "schema": {"type": "string"},
                     "description": "Pattern using ? or . as wildcard, or a full regex. e.g. '?HALE'",
                     "example": "?HALE",
+                }, {
+                    "name": "puzzle", "in": "query", "required": False,
+                    "schema": {"type": "string"},
+                    "description": "Puzzle name. When given together with seq and direction, "
+                                    "results that duplicate (or are a plural of) another complete "
+                                    "word already elsewhere in that puzzle are left out.",
+                }, {
+                    "name": "seq", "in": "query", "required": False,
+                    "schema": {"type": "integer"},
+                    "description": "Numbered cell sequence of the word being edited",
+                }, {
+                    "name": "direction", "in": "query", "required": False,
+                    "schema": {"type": "string", "enum": ["across", "down"]},
+                    "description": "Direction of the word being edited",
                 }],
                 "responses": {
                     "200": {"description": "Matching words",

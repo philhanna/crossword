@@ -1,6 +1,7 @@
 import json
 from .word import AcrossWord, DownWord, Word
 from .grid import Grid
+from .word_similarity import find_duplicate
 
 
 class Puzzle:
@@ -94,16 +95,37 @@ class Puzzle:
         word = self.get_word(seq, direction)
         return word.get_text()
 
-    def set_text(self, seq, direction, text, undo=True):
+    def set_text(self, seq, direction, text, undo=True, check_duplicates=True):
         """ Sets the text of the word at <seq><direction> """
         word = self.get_word(seq, direction)
         if undo:
             new_value = text
             old_value = word.get_text()
             if old_value != new_value:
+                if check_duplicates:
+                    self._check_for_duplicate(seq, direction, new_value)
                 undoable = ['text', seq, direction, old_value]
                 self.undo_stack.append(undoable)
         word.set_text(text)
+
+    def _check_for_duplicate(self, seq, direction, text):
+        """ Raises ValueError if text, once complete, duplicates or is a
+        near-duplicate (e.g. a plain plural) of another complete word
+        already in the puzzle. """
+        length = self.get_word(seq, direction).length
+        normalized = (text + " " * length)[:length]
+        if " " in normalized:
+            return  # word isn't fully filled in yet; nothing to compare
+        others = [
+            w for w in list(self.across_words.values()) + list(self.down_words.values())
+            if (w.seq, w.direction) != (seq, direction) and w.is_complete()
+        ]
+        for other in others:
+            if find_duplicate(normalized, [other.get_text()]):
+                raise ValueError(
+                    f"{normalized.strip()} duplicates {other.get_text().strip()}, "
+                    f"already used at {other.location}"
+                )
 
     def get_clue(self, seq, direction):
         """ Returns the clue of the word at <seq><directino>"""

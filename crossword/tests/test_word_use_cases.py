@@ -74,6 +74,22 @@ class TestWordUseCasesGetSuggestions:
         # . should be treated as regex any-char, passed to port
         assert result == ["APPLE", "AMPLE", "ANGLE"]
 
+    def test_get_suggestions_excludes_duplicates_and_near_duplicates(self, word_uc, mock_word_list):
+        """exclude_words filters out exact and near-duplicate (plural) matches"""
+        mock_word_list.get_matches.return_value = ["cat", "cats", "cot"]
+
+        result = word_uc.get_suggestions("???", exclude_words=["CAT"])
+
+        assert result == ["cot"]
+
+    def test_get_suggestions_without_exclude_words_is_unfiltered(self, word_uc, mock_word_list):
+        """No exclude_words means no filtering, same as before this feature"""
+        mock_word_list.get_matches.return_value = ["cat", "cats", "cot"]
+
+        result = word_uc.get_suggestions("???")
+
+        assert result == ["cat", "cats", "cot"]
+
 
 class TestWordUseCasesGetAllWords:
     """Tests for get_all_words"""
@@ -212,15 +228,34 @@ class TestWordUseCasesPatternToRegex:
         assert result == "^G[^Q][^BGJL-NP-QTW-XZ][^DF-GJ-MQX][A-EH-JMOR-UWY][^DF-HJQX-Z]$"
 
 
-def _make_mock_word(text, length, location, cells, crossing_words):
-    """Build a mock Word with the given properties."""
+def _make_mock_word(text, length, location, cells, crossing_words,
+                     seq=1, direction="A", puzzle=None):
+    """Build a mock Word with the given properties.
+
+    By default the word's puzzle has no other words in it, so callers that
+    don't care about duplicate filtering don't need to set one up.
+    """
     word = Mock()
     word.get_text.return_value = text
     word.length = length
     word.location = location
     word.cell_iterator.return_value = iter(cells)
     word.get_crossing_words.return_value = crossing_words
+    word.seq = seq
+    word.direction = direction
+    word.puzzle = puzzle if puzzle is not None else Mock(across_words={}, down_words={})
     return word
+
+
+def _make_mock_other_word(text, seq, direction="A", complete=True):
+    """Build a mock Word standing in for another word already in a puzzle,
+    for duplicate-filtering tests."""
+    other = Mock()
+    other.get_text.return_value = text
+    other.seq = seq
+    other.direction = direction
+    other.is_complete.return_value = complete
+    return other
 
 
 def _make_mock_crossing(text, location, cells):
@@ -466,3 +501,71 @@ class TestWordUseCasesGetRankedSuggestions:
 
         assert len(result) == 3
         assert all(item["score"] == 0 for item in result)
+
+    def test_excludes_candidates_that_duplicate_another_word_in_the_puzzle(self, word_uc, mock_word_list):
+        """Candidates already used elsewhere in the puzzle, or a plural of one, are left out"""
+        cw1 = _make_mock_crossing("   ", "1 down", [(1, 1), (2, 1), (3, 1)])
+        cw2 = _make_mock_crossing("   ", "2 down", [(1, 2), (2, 2), (3, 2)])
+        cw3 = _make_mock_crossing("   ", "3 down", [(1, 3), (2, 3), (3, 3)])
+        other = _make_mock_other_word("CAT", seq=5, direction="D")
+        puzzle = Mock(across_words={}, down_words={5: other})
+        word = _make_mock_word("   ", 3, "1 across", [(1, 1), (1, 2), (1, 3)], [cw1, cw2, cw3],
+                                seq=1, direction="A", puzzle=puzzle)
+        mock_word_list.get_matches.side_effect = [
+            [], [], [],  # no crossing constraints
+            ["cat", "cats", "cot"],  # candidates: exact dup, plural dup, unrelated
+        ]
+
+        result = word_uc.get_ranked_suggestions(word)
+
+        assert result == [{"word": "cot", "score": 0}]
+
+    def test_incomplete_words_elsewhere_do_not_exclude_candidates(self, word_uc, mock_word_list):
+        """A word that isn't fully filled in yet doesn't count as a conflict source"""
+        cw1 = _make_mock_crossing("  ", "1 down", [(1, 1), (2, 1)])
+        cw2 = _make_mock_crossing("  ", "2 down", [(1, 2), (2, 2)])
+        other = _make_mock_other_word("CA", seq=5, direction="D", complete=False)
+        puzzle = Mock(across_words={}, down_words={5: other})
+        word = _make_mock_word("  ", 2, "1 across", [(1, 1), (1, 2)], [cw1, cw2],
+                                seq=1, direction="A", puzzle=puzzle)
+        mock_word_list.get_matches.side_effect = [
+            [], [],
+            ["ca"],
+        ]
+
+        result = word_uc.get_ranked_suggestions(word)
+
+        assert result == [{"word": "ca", "score": 0}]
+
+
+class TestWordUseCasesGetOtherCompleteWords:
+    """Tests for get_other_complete_words"""
+
+    def test_returns_complete_words_excluding_self(self, word_uc):
+        other_across = _make_mock_other_word("CAT", seq=2, direction="A")
+        other_down = _make_mock_other_word("DOG", seq=3, direction="D")
+        self_word = _make_mock_other_word("XXX", seq=1, direction="A")
+        puzzle = Mock(across_words={1: self_word, 2: other_across}, down_words={3: other_down})
+        word = _make_mock_word("XXX", 3, "1 across", [(1, 1), (1, 2), (1, 3)], [],
+                                seq=1, direction="A", puzzle=puzzle)
+
+        result = word_uc.get_other_complete_words(word)
+
+        assert sorted(result) == ["CAT", "DOG"]
+
+    def test_excludes_incomplete_words(self, word_uc):
+        other = _make_mock_other_word("CA", seq=2, direction="A", complete=False)
+        puzzle = Mock(across_words={2: other}, down_words={})
+        word = _make_mock_word("   ", 3, "1 across", [(1, 1), (1, 2), (1, 3)], [],
+                                seq=1, direction="A", puzzle=puzzle)
+
+        result = word_uc.get_other_complete_words(word)
+
+        assert result == []
+
+    def test_no_other_words_returns_empty_list(self, word_uc):
+        puzzle = Mock(across_words={}, down_words={})
+        word = _make_mock_word("XXX", 3, "1 across", [(1, 1), (1, 2), (1, 3)], [],
+                                seq=1, direction="A", puzzle=puzzle)
+
+        assert word_uc.get_other_complete_words(word) == []

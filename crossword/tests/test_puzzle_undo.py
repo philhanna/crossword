@@ -77,6 +77,23 @@ class TestPuzzleUndo:
         ] == puzzle.undo_stack
         assert [] == puzzle.redo_stack
 
+    def test_undo_restores_a_value_that_now_conflicts(self):
+        """Undo must never fail, even if the value it's restoring would be
+        rejected as a duplicate if it were a fresh edit."""
+        puzzle = self.create_test_puzzle()
+
+        # Place STS at 22-across too, bypassing the duplicate check, as if
+        # it had been entered before 7-down's STS was ever changed away.
+        puzzle.set_text(22, 'A', 'STS', undo=False)
+        assert 'STS' == puzzle.get_text(22, 'A')
+
+        puzzle.set_text(7, 'D', 'ANT')
+        assert 'ANT' == puzzle.get_text(7, 'D')
+
+        puzzle.undo()
+        assert 'STS' == puzzle.get_text(7, 'D')
+        assert 'STS' == puzzle.get_text(22, 'A')
+
     def test_to_json(self):
         puzzle = self.create_test_puzzle()
         assert puzzle.title is None

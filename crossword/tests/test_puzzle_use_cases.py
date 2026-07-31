@@ -567,6 +567,35 @@ class TestPuzzleUseCasesSetWordClue:
         assert word.get_clue() is None
         mock_persistence.save_puzzle.assert_called_once()
 
+    def test_set_word_clue_rejects_duplicate_word(self, puzzle_uc, mock_persistence, test_puzzle):
+        """Setting a word's text to one already used elsewhere in the puzzle is rejected"""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        # 15-across and 16-across are both 15 letters long in this fixture
+        puzzle_uc.set_word_clue(1, "test_puzzle", 15, "across", None, "A" * 15)
+        assert mock_persistence.save_puzzle.call_count == 1
+
+        with pytest.raises(ValueError, match="duplicates"):
+            puzzle_uc.set_word_clue(1, "test_puzzle", 16, "across", None, "A" * 15)
+
+        # The failed attempt never reached the save
+        assert mock_persistence.save_puzzle.call_count == 1
+        assert test_puzzle.across_words[16].get_text() != "A" * 15
+
+    def test_set_word_clue_on_locked_word_bypasses_duplicate_check(
+            self, puzzle_uc, mock_persistence, test_puzzle):
+        """Forcing an edit through on a locked word is already a deliberate
+        override, so it isn't also blocked by the duplicate check."""
+        mock_persistence.load_puzzle.return_value = test_puzzle
+
+        puzzle_uc.set_word_clue(1, "test_puzzle", 15, "across", None, "A" * 15)
+        test_puzzle.across_words[16].set_locked(True)
+
+        puzzle_uc.set_word_clue(1, "test_puzzle", 16, "across", None, "A" * 15)
+
+        assert test_puzzle.across_words[16].get_text() == "A" * 15
+        assert not test_puzzle.across_words[16].is_locked()
+
 
 class TestPuzzleUseCasesUndo:
     """Tests for undo_puzzle"""

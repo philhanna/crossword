@@ -553,11 +553,14 @@ class PuzzleUseCases:
         # unlock it first so the cell writes below aren't silently dropped by
         # Puzzle.set_cell. (The UI never does this - the Answer field is
         # disabled while a word is locked - but guard against it anyway.)
-        if text is not None and text != word.get_text() and word.is_locked():
+        # Forcing an edit through on a locked word is already a deliberate
+        # override, so the duplicate check steps aside for it too.
+        was_locked = text is not None and text != word.get_text() and word.is_locked()
+        if was_locked:
             puzzle.set_locked(seq, word_dir, False)
 
         if text is not None:
-            puzzle.set_text(seq, word_dir, text)
+            puzzle.set_text(seq, word_dir, text, check_duplicates=not was_locked)
 
         if locked is not None:
             puzzle.set_locked(seq, word_dir, locked)

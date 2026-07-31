@@ -22,7 +22,9 @@ from crossword.http_server.puzzle_handlers import (
     handle_get_puzzle_state_history,
     handle_restore_puzzle_from_history,
     handle_open_puzzle_for_editing,
+    handle_set_word_clue,
 )
+from crossword.http_server.word_handlers import handle_get_suggestions
 from crossword.tests import TestPuzzle
 
 
@@ -464,6 +466,69 @@ class TestMergedPuzzleHandlers:
 
         app.puzzle_uc.toggle_black_cell.assert_called_once_with(1, "demo", 1, 1)
         assert response["grid"]["cells"][0] is True
+
+
+class TestWordHandlers:
+    """Direct handler tests for word-related endpoints."""
+
+    @pytest.fixture
+    def request_handler(self):
+        handler = Mock()
+        handler.command = "PUT"
+        handler.path = "/api/test"
+        return handler
+
+    @pytest.fixture
+    def app(self):
+        app = Mock()
+        app.puzzle_uc = Mock()
+        app.word_uc = Mock()
+        return app
+
+    def test_handle_set_word_clue_surfaces_duplicate_error(self, request_handler, app):
+        """A duplicate-word ValueError from the use case comes back as {"error": ...},
+        not a 500 - the same path already used for other invalid input."""
+        app.puzzle_uc.set_word_clue.side_effect = ValueError(
+            "GARDEN duplicates GARDENS, already used at 12 across"
+        )
+
+        response = handle_set_word_clue(
+            ("demo", "5", "across"), {}, {"text": "GARDEN", "clue": ""}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        assert response == {"error": "GARDEN duplicates GARDENS, already used at 12 across"}
+
+    def test_handle_get_suggestions_filters_using_puzzle_context(self, request_handler, app):
+        """puzzle/seq/direction query params load the word and exclude its
+        duplicates from the suggestion list."""
+        word = Mock()
+        app.puzzle_uc.get_word_at.return_value = word
+        app.word_uc.get_other_complete_words.return_value = ["CAT"]
+        app.word_uc.get_suggestions.return_value = ["cot"]
+
+        response = handle_get_suggestions(
+            (), {"pattern": "???", "puzzle": "demo", "seq": "5", "direction": "across"},
+            {}, None, request_handler, app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        app.puzzle_uc.get_word_at.assert_called_once_with(1, "demo", 5, "across")
+        app.word_uc.get_other_complete_words.assert_called_once_with(word)
+        app.word_uc.get_suggestions.assert_called_once_with("???", ["CAT"])
+        assert response == {"pattern": "???", "suggestions": ["cot"], "count": 1}
+
+    def test_handle_get_suggestions_without_puzzle_context_is_unfiltered(self, request_handler, app):
+        """Without puzzle/seq/direction, behavior is unchanged from before this feature."""
+        app.word_uc.get_suggestions.return_value = ["cat", "cats"]
+
+        response = handle_get_suggestions(
+            (), {"pattern": "???"}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        app.puzzle_uc.get_word_at.assert_not_called()
+        app.word_uc.get_suggestions.assert_called_once_with("???", None)
+        assert response == {"pattern": "???", "suggestions": ["cat", "cats"], "count": 2}
 
 
 class TestPuzzleStateHandlers:

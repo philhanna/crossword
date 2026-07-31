@@ -10,6 +10,7 @@ Public interface:
 
 import re
 from crossword.domain.letter_list import regexp as letter_regexp
+from crossword.domain.word_similarity import find_duplicate
 from crossword.ports.word_list_port import WordListPort
 
 
@@ -23,7 +24,7 @@ class WordUseCases:
     def __init__(self, word_list: WordListPort):
         self.word_list = word_list
 
-    def get_suggestions(self, pattern: str) -> list[str]:
+    def get_suggestions(self, pattern: str, exclude_words: list[str] = None) -> list[str]:
         """
         Get word suggestions matching a pattern.
 
@@ -32,6 +33,9 @@ class WordUseCases:
 
         Args:
             pattern: Pattern string with wildcards or regex
+            exclude_words: Optional list of words already used elsewhere in a
+                puzzle; candidates that duplicate or are a near-duplicate
+                (e.g. plural) of one of these are left out of the results
 
         Returns:
             List of matching words (lowercase), or empty list if no matches
@@ -42,9 +46,12 @@ class WordUseCases:
         # Convert simple pattern (with ?) to regex if needed
         regex_pattern = self._pattern_to_regex(pattern)
         try:
-            return self.word_list.get_matches(regex_pattern)
+            matches = self.word_list.get_matches(regex_pattern)
         except ValueError as e:
             raise ValueError(f"Invalid pattern: {e}")
+        if exclude_words:
+            matches = [m for m in matches if not find_duplicate(m.upper(), exclude_words)]
+        return matches
 
     def get_all_words(self) -> list[str]:
         """
@@ -180,6 +187,9 @@ class WordUseCases:
             word: A Word domain object (AcrossWord or DownWord)
             input_pattern: Optional string of letters and '.' (e.g. "CA..T")
 
+        Candidates that duplicate or are a near-duplicate (e.g. plural) of
+        another complete word already elsewhere in the puzzle are left out.
+
         Returns:
             List of dicts sorted by score descending:
               [{"word": "crane", "score": 142}, ...]
@@ -189,6 +199,8 @@ class WordUseCases:
         pattern = constraints["pattern"]
 
         candidates = self.word_list.get_matches(self._pattern_to_regex(pattern), length=word.length)
+        other_words = self.get_other_complete_words(word)
+        candidates = [c for c in candidates if not find_duplicate(c.upper(), other_words)]
 
         def score(candidate):
             total = 0
@@ -220,6 +232,23 @@ class WordUseCases:
         return len(self.word_list.get_matches(pattern, length=word.length))
 
     # Helper methods
+
+    def get_other_complete_words(self, word) -> list[str]:
+        """
+        Return the text of every other complete word in word's puzzle,
+        excluding word itself.
+
+        Args:
+            word: A Word domain object (AcrossWord or DownWord)
+
+        Returns:
+            List of word texts (uppercase)
+        """
+        puzzle = word.puzzle
+        return [
+            w.get_text() for w in list(puzzle.across_words.values()) + list(puzzle.down_words.values())
+            if (w.seq, w.direction) != (word.seq, word.direction) and w.is_complete()
+        ]
 
     def _pattern_to_regex(self, pattern: str) -> str:
         """

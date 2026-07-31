@@ -787,8 +787,13 @@ async function _fetchPatternSuggestions() {
     const pattern = rawText.replace(/ /g, '.').toUpperCase();
     if (!pattern) return;
     try {
+        const sw = AppState.selectedWord;
+        const wn = AppState.puzzleWorkingName;
+        const puzzleParams = (sw && wn)
+            ? `&puzzle=${encodeURIComponent(wn)}&seq=${sw.seq}&direction=${sw.direction}`
+            : '';
         const data = await apiFetch('GET',
-            `/api/words/suggestions?pattern=${encodeURIComponent(pattern)}`);
+            `/api/words/suggestions?pattern=${encodeURIComponent(pattern)}${puzzleParams}`);
         if (!_isWordEditorOpen()) return;
         const matchEl = document.getElementById('we-match');
         if (!matchEl) return;
