@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.5.1] - 2026-08-01
+
+### Fixed
+
+- PDF export filenames now correctly use the puzzle name instead of a generic name
+
 ## [5.5.0] - 2026-07-31
 
 ### Added
