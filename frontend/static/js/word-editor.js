@@ -81,6 +81,12 @@ function _selectedWordIsComplete() {
     return !((sw.draftText || '').includes(' '));
 }
 
+function _selectedWordIsPlausibleAnswer() {
+    const sw = AppState.selectedWord;
+    if (!sw) return false;
+    return /^[A-Z ]*$/.test(sw.draftText || '');
+}
+
 function _hydrateSelectedWord(word, options = {}) {
     if (!word) return null;
     const len = word.cells.length;
@@ -131,6 +137,11 @@ async function completeSelectedWordEdit(options = {}) {
     }
 
     if (_isWordEditorOpen()) _syncSelectedWordFromInputs();
+
+    if (!_selectedWordIsPlausibleAnswer()) {
+        showMessageLine('Cannot apply: the Answer field holds a search pattern, not an answer', 'error', 0);
+        sw.draftText = sw.originalText;
+    }
 
     if (!_selectedWordIsComplete()) {
         sw.draftClue = '';
@@ -506,7 +517,7 @@ function renderWordEditorPanel() {
       <div class="we-suggestions-toolbar">
         <label class="we-label" style="margin:0">Suggestions</label>
         <label style="cursor:pointer;font-size:0.78rem;color:var(--c-text-muted);display:flex;align-items:center;gap:4px">
-          <input type="checkbox" id="we-constrained" checked> Constrained
+          <input type="checkbox" id="we-constrained" checked onchange="weHandleConstrainedToggle(this.checked)"> Constrained
         </label>
         <button class="ab-btn" type="button" ${lockDisabled} onclick="doWordSuggestFetch()" style="height:26px;font-size:0.75rem">
           <i class="material-icons" style="font-size:13px">search</i> Suggest
@@ -571,11 +582,31 @@ function _weSyncAnswerFromInput() {
     return rawText;
 }
 
+function _weIsConstrained() {
+    return document.getElementById('we-constrained')?.checked ?? true;
+}
+
+function weHandleConstrainedToggle(checked) {
+    const inp = document.getElementById('we-text');
+    const sw  = AppState.selectedWord;
+    if (!inp || !sw) return;
+    const len = sw.cells.length;
+    if (checked) {
+        inp.maxLength = len;
+        inp.value = inp.value.slice(0, len);
+        weHandleTextInput(inp.value);
+    } else {
+        inp.removeAttribute('maxlength');
+    }
+}
+
 function weHandleTextInput(value) {
     const sw = AppState.selectedWord;
     if (sw) sw.draftText = _normalizeWordText(value, sw.cells.length);
     weUpdateDefinitionsBtn();
-    renderPuzzleEditorLhs();
+    // In unconstrained (free-form regex) mode, the field holds a search
+    // pattern, not a draft answer — don't flash it into the grid preview.
+    if (_weIsConstrained()) renderPuzzleEditorLhs();
 }
 
 function weHandleClueInput(value) {
@@ -773,7 +804,7 @@ function closeWordEditor() {
 // ---------------------------------------------------------------------------
 
 async function doWordSuggestFetch() {
-    const constrained = document.getElementById('we-constrained')?.checked ?? true;
+    const constrained = _weIsConstrained();
     if (constrained) {
         await _fetchConstrainedSuggestions();
     } else {

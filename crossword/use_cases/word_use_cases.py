@@ -13,6 +13,8 @@ from crossword.domain.letter_list import regexp as letter_regexp
 from crossword.domain.word_similarity import find_duplicate
 from crossword.ports.word_list_port import WordListPort
 
+MAX_PATTERN_LENGTH = 200
+
 
 class WordUseCases:
     """
@@ -24,7 +26,8 @@ class WordUseCases:
     def __init__(self, word_list: WordListPort):
         self.word_list = word_list
 
-    def get_suggestions(self, pattern: str, exclude_words: list[str] = None) -> list[str]:
+    def get_suggestions(self, pattern: str, exclude_words: list[str] = None,
+                         length: int = None) -> list[str]:
         """
         Get word suggestions matching a pattern.
 
@@ -36,17 +39,24 @@ class WordUseCases:
             exclude_words: Optional list of words already used elsewhere in a
                 puzzle; candidates that duplicate or are a near-duplicate
                 (e.g. plural) of one of these are left out of the results
+            length: Optional exact word length to restrict the search to.
+                Since an arbitrary regex puts no ceiling on match length
+                (e.g. "C.*T" matches "CAT" and "CROCHET" alike), this is
+                what keeps a free-form search scoped to one puzzle slot.
 
         Returns:
             List of matching words (lowercase), or empty list if no matches
 
         Raises:
-            ValueError: If pattern is not a valid regex
+            ValueError: If pattern is not a valid regex, or longer than
+                MAX_PATTERN_LENGTH
         """
+        if len(pattern) > MAX_PATTERN_LENGTH:
+            raise ValueError(f"pattern too long (max {MAX_PATTERN_LENGTH} characters)")
         # Convert simple pattern (with ?) to regex if needed
         regex_pattern = self._pattern_to_regex(pattern)
         try:
-            matches = self.word_list.get_matches(regex_pattern)
+            matches = self.word_list.get_matches(regex_pattern, length=length)
         except ValueError as e:
             raise ValueError(f"Invalid pattern: {e}")
         if exclude_words:

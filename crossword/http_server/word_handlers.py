@@ -2,6 +2,7 @@
 Word handlers - word operations (suggestions, validation) via HTTP.
 
 Routes:
+  GET /api/words/suggestions?pattern=<pattern>&length=<n>  → get_suggestions
   GET /api/words/suggestions?pattern=<pattern>&puzzle=<name>&seq=<seq>&direction=<dir>  → get_suggestions
   GET /api/words/all                            → get_all_words
   GET /api/words/validate?word=<word>           → validate_word
@@ -21,11 +22,15 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
     """
     Get word suggestions matching a pattern.
     GET /api/words/suggestions?pattern=?HALE
+    GET /api/words/suggestions?pattern=?HALE&length=<n>
     GET /api/words/suggestions?pattern=?HALE&puzzle=<name>&seq=<seq>&direction=<dir>
 
     When puzzle, seq, and direction are all given, results that duplicate or
     are a near-duplicate (e.g. plural) of another complete word already
-    elsewhere in that puzzle are left out.
+    elsewhere in that puzzle are left out, and the search is scoped to that
+    word's length. Without puzzle context, an explicit 'length' query
+    parameter can be used instead to scope the search; without either, the
+    search is unscoped by length.
     """
     logger.debug("Entering %s %s", request_handler.command, request_handler.path)
     logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
@@ -38,6 +43,7 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
             return {"error": "Missing or invalid 'pattern' query parameter"}
 
         exclude_words = None
+        length = None
         name = query_params.get("puzzle")
         seq_str = query_params.get("seq")
         direction = query_params.get("direction")
@@ -45,8 +51,18 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
             user_id = current_user["id"]
             word = app.puzzle_uc.get_word_at(user_id, name, int(seq_str), direction)
             exclude_words = app.word_uc.get_other_complete_words(word)
+            length = word.length
+        else:
+            length_str = query_params.get("length")
+            if length_str:
+                try:
+                    length = int(length_str)
+                except ValueError:
+                    logger.debug("  returning: %s", {"error": "'length' query parameter must be an integer"})
+                    logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+                    return {"error": "'length' query parameter must be an integer"}
 
-        suggestions = app.word_uc.get_suggestions(pattern, exclude_words)
+        suggestions = app.word_uc.get_suggestions(pattern, exclude_words, length=length)
 
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"pattern": pattern, "suggestions": suggestions, "count": len(suggestions)}

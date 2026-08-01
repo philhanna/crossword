@@ -541,9 +541,11 @@ class TestWordHandlers:
         assert response == {"error": "GARDEN duplicates GARDENS, already used at 12 across"}
 
     def test_handle_get_suggestions_filters_using_puzzle_context(self, request_handler, app):
-        """puzzle/seq/direction query params load the word and exclude its
-        duplicates from the suggestion list."""
+        """puzzle/seq/direction query params load the word, exclude its
+        duplicates from the suggestion list, and scope the search to the
+        word's length."""
         word = Mock()
+        word.length = 3
         app.puzzle_uc.get_word_at.return_value = word
         app.word_uc.get_other_complete_words.return_value = ["CAT"]
         app.word_uc.get_suggestions.return_value = ["cot"]
@@ -555,11 +557,12 @@ class TestWordHandlers:
 
         app.puzzle_uc.get_word_at.assert_called_once_with(1, "demo", 5, "across")
         app.word_uc.get_other_complete_words.assert_called_once_with(word)
-        app.word_uc.get_suggestions.assert_called_once_with("???", ["CAT"])
+        app.word_uc.get_suggestions.assert_called_once_with("???", ["CAT"], length=3)
         assert response == {"pattern": "???", "suggestions": ["cot"], "count": 1}
 
     def test_handle_get_suggestions_without_puzzle_context_is_unfiltered(self, request_handler, app):
-        """Without puzzle/seq/direction, behavior is unchanged from before this feature."""
+        """Without puzzle/seq/direction or a 'length' param, behavior is
+        unchanged from before this feature."""
         app.word_uc.get_suggestions.return_value = ["cat", "cats"]
 
         response = handle_get_suggestions(
@@ -568,8 +571,34 @@ class TestWordHandlers:
         )
 
         app.puzzle_uc.get_word_at.assert_not_called()
-        app.word_uc.get_suggestions.assert_called_once_with("???", None)
+        app.word_uc.get_suggestions.assert_called_once_with("???", None, length=None)
         assert response == {"pattern": "???", "suggestions": ["cat", "cats"], "count": 2}
+
+    def test_handle_get_suggestions_with_standalone_length_param(self, request_handler, app):
+        """A bare 'length' query parameter, with no puzzle context, is
+        forwarded so a free-form regex can still be scoped to a length."""
+        app.word_uc.get_suggestions.return_value = ["cat", "cot"]
+
+        response = handle_get_suggestions(
+            (), {"pattern": "C.*T", "length": "3"}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        app.puzzle_uc.get_word_at.assert_not_called()
+        app.word_uc.get_suggestions.assert_called_once_with("C.*T", None, length=3)
+        assert response == {"pattern": "C.*T", "suggestions": ["cat", "cot"], "count": 2}
+
+    def test_handle_get_suggestions_pattern_too_long_is_rejected(self, request_handler, app):
+        """The use case's max-pattern-length ValueError surfaces as the same
+        'Invalid pattern' error used for broken regex syntax."""
+        app.word_uc.get_suggestions.side_effect = ValueError("pattern too long (max 200 characters)")
+
+        response = handle_get_suggestions(
+            (), {"pattern": "A" * 201}, {}, None, request_handler,
+            app=app, current_user={"id": 1, "username": "test"}
+        )
+
+        assert response == {"error": "Invalid pattern: pattern too long (max 200 characters)"}
 
 
 class TestCopyPuzzleHandler:

@@ -41,6 +41,24 @@ class TestWordUseCasesGetSuggestions:
         mock_word_list.get_matches.assert_called_once()
         assert result == ["HELLO", "HALLO"]
 
+    def test_get_suggestions_forwards_length(self, word_uc, mock_word_list):
+        """length is forwarded to word_list.get_matches, so a variable-length
+        regex only ever matches words of the slot's length."""
+        mock_word_list.get_matches.return_value = ["cat"]
+
+        result = word_uc.get_suggestions("C.*T", length=3)
+
+        mock_word_list.get_matches.assert_called_once_with("^C.*T$", length=3)
+        assert result == ["cat"]
+
+    def test_get_suggestions_pattern_too_long_raises(self, word_uc, mock_word_list):
+        """A pattern past the sanity cap is rejected before it ever reaches
+        the word list."""
+        with pytest.raises(ValueError, match="too long"):
+            word_uc.get_suggestions("A" * 201)
+
+        mock_word_list.get_matches.assert_not_called()
+
     def test_get_suggestions_no_matches(self, word_uc, mock_word_list):
         """Get suggestions with no matches"""
         mock_word_list.get_matches.return_value = []

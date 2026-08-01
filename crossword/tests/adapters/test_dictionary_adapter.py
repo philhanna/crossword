@@ -82,6 +82,13 @@ class TestFlatFileWordListAdapter:
         assert 'bird' in matches   # 4 letters, starts with b
         assert 'books' not in matches  # 5 letters, filtered by length
 
+    def test_get_matches_variable_length_regex_respects_length(self):
+        """A regex with no built-in length ceiling (e.g. 'c.*t') would also
+        match longer words on its own; length=3 must keep those out."""
+        adapter = make_adapter(['cat', 'court', 'circuit'])
+        matches = adapter.get_matches("^c.*t$", length=3)
+        assert matches == ['cat']
+
     def test_load_from_ascii_file(self, tmp_path):
         word_file = tmp_path / "words.txt"
         word_file.write_text("Delta\necho\n\necho\nFoxtrot\n", encoding="ascii")
