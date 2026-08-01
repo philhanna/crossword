@@ -111,7 +111,7 @@ def handle_export_puzzle_to_solver_pdf(path_params, query_params, body_params, s
         return {"error": "Missing puzzle name"}
     try:
         pdf_bytes = app.export_uc.export_puzzle_to_solver_pdf(current_user["id"], name)
-        _send_download(request_handler, pdf_bytes, "application/pdf", f"{name}-solver.pdf")
+        _send_download(request_handler, pdf_bytes, "application/pdf", f"{name}.pdf")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:
@@ -142,7 +142,7 @@ def handle_export_puzzle_to_solved_pdf(path_params, query_params, body_params, s
         return {"error": "Missing puzzle name"}
     try:
         pdf_bytes = app.export_uc.export_puzzle_to_solved_pdf(current_user["id"], name)
-        _send_download(request_handler, pdf_bytes, "application/pdf", f"{name}-solved.pdf")
+        _send_download(request_handler, pdf_bytes, "application/pdf", f"{name}-solution.pdf")
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return None
     except PersistenceError:

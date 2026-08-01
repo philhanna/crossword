@@ -26,6 +26,10 @@ from crossword.http_server.puzzle_handlers import (
     handle_copy_puzzle,
 )
 from crossword.http_server.word_handlers import handle_get_suggestions
+from crossword.http_server.export_handlers import (
+    handle_export_puzzle_to_solver_pdf,
+    handle_export_puzzle_to_solved_pdf,
+)
 from crossword.tests import TestPuzzle
 
 
@@ -320,6 +324,42 @@ class TestMergedPuzzleRoutes:
         assert router.get_handler("GET", "/api/puzzles/demo/state") is not None
         assert router.get_handler("PUT", "/api/puzzles/demo/state") is not None
         assert router.get_handler("GET", "/api/dashboard") is not None
+
+
+class TestPdfExportFilenames:
+    @pytest.fixture
+    def request_handler(self):
+        handler = Mock()
+        handler.command = "GET"
+        handler.path = "/api/export/puzzles/demo/pdf"
+        return handler
+
+    @pytest.fixture
+    def app(self):
+        app = Mock()
+        app.export_uc.export_puzzle_to_solver_pdf.return_value = b"solver"
+        app.export_uc.export_puzzle_to_solved_pdf.return_value = b"solved"
+        return app
+
+    def test_solver_pdf_uses_plain_pdf_suffix(self, request_handler, app):
+        handle_export_puzzle_to_solver_pdf(
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1},
+        )
+
+        request_handler.send_header.assert_any_call(
+            "Content-Disposition", 'attachment; filename="demo.pdf"'
+        )
+
+    def test_solved_pdf_uses_solution_suffix(self, request_handler, app):
+        handle_export_puzzle_to_solved_pdf(
+            ("demo",), {}, {}, None, request_handler,
+            app=app, current_user={"id": 1},
+        )
+
+        request_handler.send_header.assert_any_call(
+            "Content-Disposition", 'attachment; filename="demo-solution.pdf"'
+        )
 
 
 class TestMergedPuzzleHandlers:
