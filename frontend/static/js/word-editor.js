@@ -495,7 +495,7 @@ function renderWordEditorPanel() {
       <label class="we-label">Answer</label>
       <div style="position:relative">
         <input class="we-word-input" id="we-text" type="text" ${lockDisabled}
-               maxlength="${len}" value="${escapeHtml(text.replace(/ /g, '.'))}"
+               value="${escapeHtml(text.replace(/ /g, '.'))}"
                oninput="weHandleTextInput(this.value)"/>
         ${locked ? '<i class="material-icons" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--c-text-muted)">lock</i>' : ''}
       </div>
@@ -517,7 +517,7 @@ function renderWordEditorPanel() {
       <div class="we-suggestions-toolbar">
         <label class="we-label" style="margin:0">Suggestions</label>
         <label style="cursor:pointer;font-size:0.78rem;color:var(--c-text-muted);display:flex;align-items:center;gap:4px">
-          <input type="checkbox" id="we-constrained" checked onchange="weHandleConstrainedToggle(this.checked)"> Constrained
+          <input type="checkbox" id="we-constrained" checked> Constrained
         </label>
         <button class="ab-btn" type="button" ${lockDisabled} onclick="doWordSuggestFetch()" style="height:26px;font-size:0.75rem">
           <i class="material-icons" style="font-size:13px">search</i> Suggest
@@ -586,27 +586,22 @@ function _weIsConstrained() {
     return document.getElementById('we-constrained')?.checked ?? true;
 }
 
-function weHandleConstrainedToggle(checked) {
-    const inp = document.getElementById('we-text');
-    const sw  = AppState.selectedWord;
-    if (!inp || !sw) return;
-    const len = sw.cells.length;
-    if (checked) {
-        inp.maxLength = len;
-        inp.value = inp.value.slice(0, len);
-        weHandleTextInput(inp.value);
-    } else {
-        inp.removeAttribute('maxlength');
-    }
+function _weLooksLikeDraftAnswer(value, len) {
+    return value.length <= len && /^[A-Za-z. ]*$/.test(value);
 }
 
 function weHandleTextInput(value) {
     const sw = AppState.selectedWord;
-    if (sw) sw.draftText = _normalizeWordText(value, sw.cells.length);
+    if (!sw) return;
     weUpdateDefinitionsBtn();
-    // In unconstrained (free-form regex) mode, the field holds a search
-    // pattern, not a draft answer — don't flash it into the grid preview.
-    if (_weIsConstrained()) renderPuzzleEditorLhs();
+    // The field doubles as a search pattern box (in either Constrained
+    // state) and a direct draft-answer box. Only treat it as a draft
+    // answer — updating draftText and the live grid preview — when its
+    // contents could plausibly be one; a longer or regex-flavored value is
+    // a search pattern, and shouldn't flash into the grid while typed.
+    if (!_weLooksLikeDraftAnswer(value, sw.cells.length)) return;
+    sw.draftText = _normalizeWordText(value, sw.cells.length);
+    renderPuzzleEditorLhs();
 }
 
 function weHandleClueInput(value) {

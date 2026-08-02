@@ -102,6 +102,11 @@ class WordUseCases:
             input_pattern: Optional string of letters and '.' wildcards from
                 the live word editor input. Specific letters override the
                 word's current text while computing crossing constraints.
+                Ignored here (but still applied afterward, by
+                get_ranked_suggestions, as a filter on the results) when it
+                looks like a real regex rather than one character per
+                position — a regex fragment like "[AEIOU]" can't be spliced
+                into a single crossing position.
 
         Returns:
             Dict with keys:
@@ -116,7 +121,7 @@ class WordUseCases:
         word_text = word.get_text()
         crossing_words = word.get_crossing_words()
         effective_chars = list(word_text)
-        if input_pattern:
+        if input_pattern and not self._is_regex_like(input_pattern):
             for i, ch in enumerate(input_pattern.upper()):
                 if i >= len(effective_chars):
                     break
@@ -193,9 +198,16 @@ class WordUseCases:
         If input_pattern is provided (letters and '.' for wildcards), any position
         with a specific letter overrides the crossing-word constraint at that position.
 
+        If input_pattern instead looks like a real regex (e.g. "C[AEIOU]T"),
+        it can't be mapped onto individual crossing positions, so crossing
+        constraints are computed from the word's current text as usual, and
+        the regex is applied as an additional filter on top of those
+        candidates — still ranked by crossing viability score.
+
         Args:
             word: A Word domain object (AcrossWord or DownWord)
-            input_pattern: Optional string of letters and '.' (e.g. "CA..T")
+            input_pattern: Optional string of letters and '.' (e.g. "CA..T"),
+                or an arbitrary regex (e.g. "C[AEIOU]T")
 
         Candidates that duplicate or are a near-duplicate (e.g. plural) of
         another complete word already elsewhere in the puzzle are left out.
@@ -203,12 +215,27 @@ class WordUseCases:
         Returns:
             List of dicts sorted by score descending:
               [{"word": "crane", "score": 142}, ...]
+
+        Raises:
+            ValueError: If input_pattern looks like regex but isn't valid,
+                or is longer than MAX_PATTERN_LENGTH
         """
-        constraints = self.get_word_constraints(word, input_pattern)
+        if input_pattern and len(input_pattern) > MAX_PATTERN_LENGTH:
+            raise ValueError(f"pattern too long (max {MAX_PATTERN_LENGTH} characters)")
+
+        is_regex = bool(input_pattern) and self._is_regex_like(input_pattern)
+        constraints = self.get_word_constraints(word, None if is_regex else input_pattern)
         crossers = constraints["crossers"]
         pattern = constraints["pattern"]
 
         candidates = self.word_list.get_matches(self._pattern_to_regex(pattern), length=word.length)
+        if is_regex:
+            try:
+                regex = re.compile(self._pattern_to_regex(input_pattern), re.IGNORECASE)
+            except re.error as e:
+                raise ValueError(f"Invalid pattern: {e}")
+            candidates = [c for c in candidates if regex.fullmatch(c)]
+
         other_words = self.get_other_complete_words(word)
         candidates = [c for c in candidates if not find_duplicate(c.upper(), other_words)]
 
@@ -274,7 +301,7 @@ class WordUseCases:
             Regex pattern string
         """
         # If already contains regex syntax, add anchors if missing
-        if any(c in pattern for c in "[]()*+^$|"):
+        if self._is_regex_like(pattern):
             p = pattern
             if not p.startswith("^"):
                 p = "^" + p
@@ -285,3 +312,11 @@ class WordUseCases:
         # Convert ? to . (any character) and ^ . $ anchors
         escaped = pattern.replace("?", ".")
         return f"^{escaped}$"
+
+    def _is_regex_like(self, pattern: str) -> bool:
+        """
+        Heuristic for whether a pattern is a real regex, as opposed to a
+        simple letters-and-wildcards pattern that maps one character to one
+        word position.
+        """
+        return any(c in pattern for c in "[]()*+^$|")

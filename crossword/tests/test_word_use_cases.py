@@ -426,6 +426,19 @@ class TestWordUseCasesGetWordConstraints:
 
         assert "letter_freq" in result["crossers"][0]
 
+    def test_regex_like_input_pattern_is_ignored_for_crossing_override(self, word_uc, mock_word_list):
+        """A regex-like input_pattern can't be spliced onto one crossing
+        position, so it's ignored here — crossing lookups use the word's
+        own (possibly blank) text instead."""
+        cw1 = _make_mock_crossing("  ", "1 down", [(1, 1), (2, 1)])
+        word = _make_mock_word(" ", 1, "1 across", [(1, 1)], [cw1])
+        mock_word_list.get_matches.return_value = ["ab", "eb"]
+
+        result = word_uc.get_word_constraints(word, input_pattern="[AEIOU]")
+
+        mock_word_list.get_matches.assert_called_once_with("^..$", length=cw1.length)
+        assert result["word"] == "."
+
     def test_letter_freq_counts_letters_at_crossing_index(self, word_uc, mock_word_list):
         """letter_freq tallies letters at crossing_index across matching words"""
         # across word at row 1: cells (1,1),(1,2)
@@ -554,6 +567,48 @@ class TestWordUseCasesGetRankedSuggestions:
         result = word_uc.get_ranked_suggestions(word)
 
         assert result == [{"word": "ca", "score": 0}]
+
+    def test_regex_input_pattern_filters_candidates_without_overriding_crossers(self, word_uc, mock_word_list):
+        """A regex input_pattern (e.g. from an unconstrained-looking search
+        typed while Constrained is still checked) can't be spliced into one
+        crossing position, so crossing constraints are computed from the
+        word's own text as before, and the regex is applied as an extra
+        filter on the resulting candidates — still ranked by score."""
+        cw1 = _make_mock_crossing("  ", "1 down", [(1, 1), (2, 1)])
+        cw2 = _make_mock_crossing("  ", "2 down", [(1, 2), (2, 2)])
+        word = _make_mock_word("  ", 2, "1 across", [(1, 1), (1, 2)], [cw1, cw2])
+        mock_word_list.get_matches.side_effect = [
+            [],  # crosser 1: no matches → falls back to blank wildcard
+            [],  # crosser 2: no matches → falls back to blank wildcard
+            ["ab", "eb", "xb"],  # base candidates from crossing-derived pattern
+        ]
+
+        result = word_uc.get_ranked_suggestions(word, input_pattern="[AEI]B")
+
+        # Crosser lookups used the word's own blank text, not fragments of
+        # the regex — confirmed by the crossing pattern sent to get_matches.
+        assert mock_word_list.get_matches.call_args_list[0].args[0] == "^..$"
+        assert {item["word"] for item in result} == {"ab", "eb"}
+
+    def test_invalid_regex_input_pattern_raises(self, word_uc, mock_word_list):
+        """A malformed regex surfaces the same 'Invalid pattern' error as
+        the plain search path."""
+        cw1 = _make_mock_crossing("  ", "1 down", [(1, 1), (2, 1)])
+        word = _make_mock_word(" ", 1, "1 across", [(1, 1)], [cw1])
+        mock_word_list.get_matches.side_effect = [[], ["ab"]]
+
+        with pytest.raises(ValueError, match="Invalid pattern"):
+            word_uc.get_ranked_suggestions(word, input_pattern="[invalid(regex")
+
+    def test_regex_input_pattern_too_long_raises(self, word_uc, mock_word_list):
+        """A regex input_pattern past the sanity cap is rejected before any
+        crossing lookups happen."""
+        word = _make_mock_word(" ", 1, "1 across", [(1, 1)], [])
+
+        with pytest.raises(ValueError, match="too long"):
+            word_uc.get_ranked_suggestions(word, input_pattern="[A]" * 100)
+
+        mock_word_list.get_matches.assert_not_called()
 
 
 class TestWordUseCasesGetOtherCompleteWords:
