@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.6.0] - 2026-08-02
+
+### Added
+
+- Regex search in the word editor: the Answer field's typing behavior now
+  depends on the content itself (plausible draft answer vs. search
+  pattern) rather than being tied to the "Constrained" checkbox, so a
+  regex can be typed regardless of which search algorithm is selected.
+  The plain suggestion search (`/api/words/suggestions`) now accepts a
+  length to scope matching so unbounded regexes can't match words longer
+  than the puzzle slot; the ranked/crossing search applies a regex-looking
+  pattern as a filter on top of its crossing-derived, ranked candidates
+  (see `docs/dev/word_editor_regex_search.md`)
+
 ## [5.5.1] - 2026-08-01
 
 ### Fixed
