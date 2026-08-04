@@ -465,14 +465,14 @@ function _historyTableHtml(history) {
         return '<p class="dash-empty">No state history recorded.</p>';
     }
     const sorted = [...history].sort((a, b) => b.id - a.id);
-    const rows = sorted.map(h => {
+    const rows = sorted.map((h, i) => {
         let detail = '';
         if (h.state === 'submitted' && h.publisher) {
             detail = `submitted to ${escapeHtml(h.publisher)}`;
         } else if (h.state === 'published' && h.publisher) {
             detail = `published by ${escapeHtml(h.publisher)}`;
         }
-        const restoreCell = h.has_content
+        const restoreCell = (h.has_content && i > 0)
             ? `<button class="dash-history-restore" data-history-restore="${h.id}">Restore</button>`
             : '';
         return `<tr>
