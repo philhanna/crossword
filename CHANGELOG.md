@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.6.1] - 2026-08-04
+
+### Fixed
+
+- Show history dialog now closes automatically when a version is restored
+- Sorted the show history dialog by date
+- Set explicit widths for the history dialog's Details and Comment columns,
+  and widened the Details column so it dismisses before restoring
+
 ## [5.6.0] - 2026-08-02
 
 ### Added
