@@ -59,7 +59,8 @@ function fmtDateTime(iso) {
     if (isNaN(d.getTime())) return '';
     const hh = String(d.getHours()).padStart(2, '0');
     const min = String(d.getMinutes()).padStart(2, '0');
-    return `${fmtMonthDay(iso)} ${hh}:${min}`;
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${fmtMonthDay(iso)} ${hh}:${min}:${ss}`;
 }
 
 function _dashRowLengths(row) {
@@ -463,7 +464,8 @@ function _historyTableHtml(history) {
     if (history.length === 0) {
         return '<p class="dash-empty">No state history recorded.</p>';
     }
-    const rows = history.map(h => {
+    const sorted = [...history].sort((a, b) => b.id - a.id);
+    const rows = sorted.map(h => {
         let detail = '';
         if (h.state === 'submitted' && h.publisher) {
             detail = `submitted to ${escapeHtml(h.publisher)}`;
