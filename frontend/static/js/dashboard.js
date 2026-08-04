@@ -484,7 +484,11 @@ function _historyTableHtml(history) {
           </tr>`;
     }).join('');
     return `
-      <table class="dash-table">
+      <table class="dash-table" style="table-layout:fixed">
+        <colgroup>
+          <col style="width:130px"><col style="width:90px"><col style="width:200px">
+          <col><col style="width:70px">
+        </colgroup>
         <thead><tr><th>Changed</th><th>State</th><th>Details</th><th>Comment</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
@@ -503,6 +507,7 @@ function _dashConfirmRestore(name, historyId) {
 }
 
 async function _dashRestorePuzzle(name, historyId) {
+    hideElement('history-popup');
     try {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(name)}/state/history/${historyId}/restore`);
@@ -510,7 +515,6 @@ async function _dashRestorePuzzle(name, historyId) {
             showMessageLine(`Restore failed: ${data.error}`, 'error', 0);
             return;
         }
-        hideElement('history-popup');
         await _openWorkingCopyInEditor(name, data.working_name);
     } catch (e) { showMessageLine('Error restoring puzzle', 'error', 0); }
 }
