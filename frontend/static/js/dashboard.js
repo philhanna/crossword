@@ -486,7 +486,7 @@ function _historyTableHtml(history) {
     return `
       <table class="dash-table" style="table-layout:fixed">
         <colgroup>
-          <col style="width:130px"><col style="width:90px"><col style="width:150px">
+          <col style="width:150px"><col style="width:90px"><col style="width:150px">
           <col style="width:250px"><col style="width:70px">
         </colgroup>
         <thead><tr><th>Changed</th><th>State</th><th>Details</th><th>Comment</th><th></th></tr></thead>
@@ -495,6 +495,7 @@ function _historyTableHtml(history) {
 }
 
 function _dashConfirmRestore(name, historyId) {
+    hideElement('history-popup');
     messageBox(
         'Restore puzzle',
         `Open this earlier saved version of <b>'${escapeHtml(name)}'</b> for editing? ` +
@@ -507,7 +508,6 @@ function _dashConfirmRestore(name, historyId) {
 }
 
 async function _dashRestorePuzzle(name, historyId) {
-    hideElement('history-popup');
     try {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(name)}/state/history/${historyId}/restore`);
