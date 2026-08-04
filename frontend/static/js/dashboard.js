@@ -486,8 +486,8 @@ function _historyTableHtml(history) {
     return `
       <table class="dash-table" style="table-layout:fixed">
         <colgroup>
-          <col style="width:130px"><col style="width:90px"><col style="width:200px">
-          <col><col style="width:70px">
+          <col style="width:130px"><col style="width:90px"><col style="width:150px">
+          <col style="width:250px"><col style="width:70px">
         </colgroup>
         <thead><tr><th>Changed</th><th>State</th><th>Details</th><th>Comment</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
