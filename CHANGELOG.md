@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.6.2] - 2026-08-06
+
+### Changed
+
+- Hide the restore button on the current history row
+- Allow the mouse wheel to page through word editor suggestions
+- Scroll word editor suggestions one line at a time
+
 ## [5.6.1] - 2026-08-04
 
 ### Fixed
