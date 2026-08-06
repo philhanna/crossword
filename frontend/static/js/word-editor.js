@@ -18,6 +18,7 @@ let _weSuggestions           = [];    // full list from last fetch: string[] or 
 let _weSuggestionsConstrained = false; // true when last fetch was constrained (has scores)
 let _wePage                  = 0;     // current page (0-indexed)
 const WE_PAGE_SIZE           = 5;
+let _weWheelLocked           = false; // debounce guard for wheel-driven paging
 
 // ---------------------------------------------------------------------------
 // Shared selected-word state
@@ -524,7 +525,7 @@ function renderWordEditorPanel() {
         </button>
       </div>
       <div id="we-match" class="we-match-label" style="display:none"></div>
-      <ul id="we-suggestion-list" class="we-suggestion-list" style="display:none"></ul>
+      <ul id="we-suggestion-list" class="we-suggestion-list" style="display:none" onwheel="_weHandleSuggestionWheel(event)"></ul>
       <div id="we-pagination" style="display:none;margin-top:4px;align-items:center;gap:8px">
         <button class="ab-btn" type="button" id="we-page-prev" onclick="wePagePrev()" style="height:24px;padding:0 8px">&#9664;</button>
         <span id="we-page-label" style="flex:1;text-align:center;font-size:0.78rem;color:var(--c-text-muted)"></span>
@@ -934,6 +935,15 @@ function wePagePrev() {
 
 function wePageNext() {
     if ((_wePage + 1) * WE_PAGE_SIZE < _weSuggestions.length) { _wePage++; _weRenderSuggestionList(); }
+}
+
+function _weHandleSuggestionWheel(e) {
+    e.preventDefault();
+    if (_weWheelLocked) return;
+    if (e.deltaY > 0) wePageNext();
+    else if (e.deltaY < 0) wePagePrev();
+    _weWheelLocked = true;
+    setTimeout(() => { _weWheelLocked = false; }, 200);
 }
 
 // ---------------------------------------------------------------------------
