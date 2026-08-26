@@ -16,8 +16,9 @@ const CLICK_DELAY = 280;
 
 let _weSuggestions           = [];    // full list from last fetch: string[] or {word,score}[]
 let _weSuggestionsConstrained = false; // true when last fetch was constrained (has scores)
-let _weOffset                = 0;     // index of first visible suggestion
+let _wePage                  = 0;     // current page (0-indexed)
 const WE_PAGE_SIZE           = 5;
+let _weWheelLocked           = false; // debounce guard for wheel-driven paging
 
 // ---------------------------------------------------------------------------
 // Shared selected-word state
@@ -770,7 +771,7 @@ async function openWordEditor(seq, direction) {
     }
     AppState.sidebarTab  = 'word';
     _weSuggestions = [];
-    _weOffset      = 0;
+    _wePage        = 0;
     document.removeEventListener('keydown', _peKeydown);
     document.addEventListener('keydown', _weKeydown);
     updateMenu();
@@ -789,7 +790,7 @@ function closeWordEditor() {
     AppState.showingStats = false;
     AppState.sidebarTab   = 'clues';
     _weSuggestions = [];
-    _weOffset      = 0;
+    _wePage        = 0;
     updateMenu();
     renderPuzzleEditor();
 }
@@ -830,7 +831,7 @@ async function _fetchPatternSuggestions() {
         } else {
             _weSuggestions            = data.suggestions.map(w => w.toUpperCase());
             _weSuggestionsConstrained = false;
-            _weOffset                 = 0;
+            _wePage                   = 0;
             _weRenderSuggestionList();
         }
     } catch (e) {
@@ -863,7 +864,7 @@ async function _fetchConstrainedSuggestions() {
                     : { word: item.word.toUpperCase(), score: item.score }
             );
             _weSuggestionsConstrained = true;
-            _weOffset                 = 0;
+            _wePage                   = 0;
             _weRenderSuggestionList();
         }
     } catch (e) {
@@ -882,7 +883,7 @@ function _weRenderSuggestionList() {
     const labelEl  = document.getElementById('we-page-label');
 
     const total     = _weSuggestions.length;
-    const pageStart = _weOffset;
+    const pageStart = _wePage * WE_PAGE_SIZE;
     const pageEnd   = Math.min(pageStart + WE_PAGE_SIZE, total);
     const pageItems = _weSuggestions.slice(pageStart, pageEnd);
 
@@ -920,7 +921,7 @@ function _weRenderSuggestionList() {
     // Pagination controls
     if (total > WE_PAGE_SIZE) {
         labelEl.textContent    = `${pageStart + 1}–${pageEnd} of ${total}`;
-        prevBtn.disabled       = _weOffset === 0;
+        prevBtn.disabled       = _wePage === 0;
         nextBtn.disabled       = pageEnd >= total;
         pageDiv.style.display  = 'flex';
     } else {
@@ -929,30 +930,20 @@ function _weRenderSuggestionList() {
 }
 
 function wePagePrev() {
-    if (_weOffset > 0) {
-        _weOffset = Math.max(0, _weOffset - WE_PAGE_SIZE);
-        _weRenderSuggestionList();
-    }
+    if (_wePage > 0) { _wePage--; _weRenderSuggestionList(); }
 }
 
 function wePageNext() {
-    const maxOffset = Math.max(0, _weSuggestions.length - WE_PAGE_SIZE);
-    if (_weOffset < maxOffset) {
-        _weOffset = Math.min(maxOffset, _weOffset + WE_PAGE_SIZE);
-        _weRenderSuggestionList();
-    }
+    if ((_wePage + 1) * WE_PAGE_SIZE < _weSuggestions.length) { _wePage++; _weRenderSuggestionList(); }
 }
 
 function _weHandleSuggestionWheel(e) {
     e.preventDefault();
-    const maxOffset = Math.max(0, _weSuggestions.length - WE_PAGE_SIZE);
-    if (e.deltaY > 0 && _weOffset < maxOffset) {
-        _weOffset++;
-        _weRenderSuggestionList();
-    } else if (e.deltaY < 0 && _weOffset > 0) {
-        _weOffset--;
-        _weRenderSuggestionList();
-    }
+    if (_weWheelLocked) return;
+    if (e.deltaY > 0) wePageNext();
+    else if (e.deltaY < 0) wePagePrev();
+    _weWheelLocked = true;
+    setTimeout(() => { _weWheelLocked = false; }, 200);
 }
 
 // ---------------------------------------------------------------------------
