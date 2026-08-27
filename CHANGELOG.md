@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.6.3] - 2026-08-26
+
+### Changed
+
+- Renamed the "Solved PDF" export menu item and success message to "Solution PDF"
+
+### Reverted
+
+- Reverted "Scroll word editor suggestions one line at a time" — word editor
+  suggestions page five at a time again (mouse wheel still pages through them)
+
 ## [5.6.2] - 2026-08-06
 
 ### Changed
