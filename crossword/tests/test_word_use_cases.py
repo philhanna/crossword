@@ -131,58 +131,6 @@ class TestWordUseCasesGetAllWords:
         assert result == []
 
 
-class TestWordUseCasesValidateWord:
-    """Tests for validate_word"""
-
-    def test_validate_word_exists(self, word_uc, mock_word_list):
-        """Validate word that exists"""
-        mock_word_list.get_all_words.return_value = ["apple", "banana", "cherry"]
-
-        result = word_uc.validate_word("APPLE")
-
-        assert result is True
-
-    def test_validate_word_exists_lowercase(self, word_uc, mock_word_list):
-        """Validate word with lowercase input"""
-        mock_word_list.get_all_words.return_value = ["apple", "banana", "cherry"]
-
-        result = word_uc.validate_word("apple")
-
-        assert result is True
-
-    def test_validate_word_not_exists(self, word_uc, mock_word_list):
-        """Validate word that doesn't exist"""
-        mock_word_list.get_all_words.return_value = ["apple", "banana", "cherry"]
-
-        result = word_uc.validate_word("zebra")
-
-        assert result is False
-
-    def test_validate_word_empty_string(self, word_uc, mock_word_list):
-        """Validate empty string"""
-        mock_word_list.get_all_words.return_value = ["apple"]
-
-        result = word_uc.validate_word("")
-
-        assert result is False
-
-    def test_validate_word_none(self, word_uc, mock_word_list):
-        """Validate None"""
-        mock_word_list.get_all_words.return_value = ["apple"]
-
-        result = word_uc.validate_word(None)
-
-        assert result is False
-
-    def test_validate_word_non_string(self, word_uc, mock_word_list):
-        """Validate non-string input"""
-        mock_word_list.get_all_words.return_value = ["apple"]
-
-        result = word_uc.validate_word(123)
-
-        assert result is False
-
-
 class TestWordUseCasesPatternToRegex:
     """Tests for _pattern_to_regex helper"""
 

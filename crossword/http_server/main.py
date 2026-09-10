@@ -42,8 +42,6 @@ from crossword.http_server.puzzle_handlers import (
 )
 from crossword.http_server.word_handlers import (
     handle_get_suggestions,
-    handle_get_all_words,
-    handle_validate_word,
     handle_get_word_constraints,
     handle_get_ranked_suggestions,
     handle_get_word_definitions,
@@ -119,8 +117,6 @@ def register_routes(router):
 
     # Word routes
     router.add_route("GET", r"^/api/words/suggestions$", handle_get_suggestions)
-    router.add_route("GET", r"^/api/words/all$", handle_get_all_words)
-    router.add_route("GET", r"^/api/words/validate$", handle_validate_word)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/constraints$", handle_get_word_constraints)
     router.add_route("GET", r"^/api/puzzles/([^/]+)/words/(\d+)/([a-z]+)/suggestions$", handle_get_ranked_suggestions)
     router.add_route("GET", r"^/api/words/([A-Za-z]+)/definitions$", handle_get_word_definitions)

@@ -57,7 +57,7 @@ Modules: `puzzle_handlers.py`, `word_handlers.py`
 | GET | `/api/puzzles/{name}/preview` | [handle_get_puzzle_preview](../../crossword/http_server/puzzle_handlers.py#L1025) |
 | GET | `/api/puzzles/{name}/stats` | [handle_get_puzzle_stats](../../crossword/http_server/puzzle_handlers.py#L1057) |
 | GET | `/api/puzzles/{name}/fill-order` | [handle_get_fill_order](../../crossword/http_server/puzzle_handlers.py#L1089) |
-| GET | `/api/puzzles/{name}/words/{seq}/{direction}/suggestions` | [handle_get_ranked_suggestions](../../crossword/http_server/word_handlers.py#L184) |
+| GET | `/api/puzzles/{name}/words/{seq}/{direction}/suggestions` | [handle_get_ranked_suggestions](../../crossword/http_server/word_handlers.py#L130) |
 
 ## Words
 
@@ -65,11 +65,9 @@ Modules: `word_handlers.py`
 
 | Method | Path | Handler |
 |--------|------|---------|
-| GET | `/api/words/suggestions?pattern=` | [handle_get_suggestions](../../crossword/http_server/word_handlers.py#L22) |
-| GET | `/api/words/all` | [handle_get_all_words](../../crossword/http_server/word_handlers.py#L87) |
-| GET | `/api/words/validate?word=` | [handle_validate_word](../../crossword/http_server/word_handlers.py#L109) |
-| GET | `/api/puzzles/{name}/words/{seq}/{direction}/constraints` | [handle_get_word_constraints](../../crossword/http_server/word_handlers.py#L139) |
-| GET | `/api/words/{word}/definitions` | [handle_get_word_definitions](../../crossword/http_server/word_handlers.py#L231) |
+| GET | `/api/words/suggestions?pattern=` | [handle_get_suggestions](../../crossword/http_server/word_handlers.py#L20) |
+| GET | `/api/puzzles/{name}/words/{seq}/{direction}/constraints` | [handle_get_word_constraints](../../crossword/http_server/word_handlers.py#L85) |
+| GET | `/api/words/{word}/definitions` | [handle_get_word_definitions](../../crossword/http_server/word_handlers.py#L177) |
 
 ## Export
 

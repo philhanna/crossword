@@ -4,8 +4,6 @@ Word handlers - word operations (suggestions, validation) via HTTP.
 Routes:
   GET /api/words/suggestions?pattern=<pattern>&length=<n>  → get_suggestions
   GET /api/words/suggestions?pattern=<pattern>&puzzle=<name>&seq=<seq>&direction=<dir>  → get_suggestions
-  GET /api/words/all                            → get_all_words
-  GET /api/words/validate?word=<word>           → validate_word
   GET /api/words/<word>/definitions             → get_word_definitions
   GET /api/puzzles/<name>/words/<seq>/<dir>/constraints  → get_word_constraints
   GET /api/puzzles/<name>/words/<seq>/<dir>/suggestions  → get_ranked_suggestions
@@ -76,58 +74,6 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         raise ApiError(404, f"Puzzle not found: {name}")
-    except ApiError:
-        raise
-    except Exception as e:
-        logger.debug("  returning: %s", {"error": str(e)})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        raise ApiError(500, str(e))
-
-
-def handle_get_all_words(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
-    """
-    Get all words in the dictionary.
-    GET /api/words/all
-    """
-    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
-    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
-    try:
-        words = app.word_uc.get_all_words()
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"count": len(words), "words": words}
-
-    except ValueError as e:
-        raise ApiError(400, str(e))
-    except ApiError:
-        raise
-    except Exception as e:
-        logger.debug("  returning: %s", {"error": str(e)})
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        raise ApiError(500, str(e))
-
-
-def handle_validate_word(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
-    """
-    Validate if a word is in the dictionary.
-    GET /api/words/validate?word=HELLO
-    """
-    logger.debug("Entering %s %s", request_handler.command, request_handler.path)
-    logger.debug("  path_params=%s query_params=%s body_params=%s", path_params, query_params, body_params)
-    try:
-        word = query_params.get("word")
-
-        if not word or not isinstance(word, str):
-            logger.debug("  returning: %s", {"error": "Missing or invalid 'word' query parameter"})
-            logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            raise ApiError(400, "Missing or invalid 'word' query parameter")
-
-        is_valid = app.word_uc.validate_word(word)
-
-        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"word": word, "valid": is_valid}
-
-    except ValueError as e:
-        raise ApiError(400, str(e))
     except ApiError:
         raise
     except Exception as e:

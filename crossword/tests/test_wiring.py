@@ -256,14 +256,9 @@ class TestEndToEndWiring:
         reloaded = app.puzzle_uc.load_puzzle(1, "discardme")
         assert reloaded.title is None
 
-    def test_word_validation_end_to_end(self, base_config):
-        """Can validate words via wired app"""
+    def test_word_lookup_end_to_end(self, base_config):
+        """Can read the word list via wired app"""
         app = make_app(base_config)
-
-        # Validation works (with empty dictionary)
-        result = app.word_uc.validate_word("HELLO")
-        # Result depends on whether words are in DB, but should not raise
-        assert isinstance(result, bool)
 
         # Get all words (should be empty or have words from DB)
         words = app.word_uc.get_all_words()

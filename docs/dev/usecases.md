@@ -64,7 +64,6 @@ analysis. Not user-scoped — the dictionary is shared.
 |---|---|---|
 | `get_suggestions(pattern, exclude_words=None, length=None)` | `list[str]` | Words matching a `?`/regex pattern, excluding duplicates/near-duplicates of `exclude_words`. |
 | `get_all_words()` | `list[str]` | Every word in the dictionary. |
-| `validate_word(word)` | `bool` | Whether a word is in the dictionary. |
 | `get_word_constraints(word, input_pattern=None, cache=None)` | `dict` | Per-position letter constraints for a word, derived from what its crossing words allow. |
 | `get_ranked_suggestions(word, input_pattern=None)` | `list[dict]` | Candidates for a word's slot, ranked by a crossing-viability score (`[{word, score}, ...]`). |
 | `get_candidate_count(word, cache=None)` | `int` | Number of dictionary words satisfying a word's current crossing constraints. |

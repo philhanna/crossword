@@ -992,44 +992,6 @@ SPEC = {
             },
         },
 
-        "/api/words/validate": {
-            "get": {
-                "tags": ["words"],
-                "summary": "Check whether a word is in the dictionary",
-                "parameters": [{
-                    "name": "word", "in": "query", "required": True,
-                    "schema": {"type": "string"}, "example": "HELLO",
-                }],
-                "responses": {
-                    "200": {"description": "Validation result",
-                            "content": {"application/json": {"schema": {
-                                "type": "object",
-                                "properties": {
-                                    "word":  {"type": "string"},
-                                    "valid": {"type": "boolean"},
-                                },
-                            }}}},
-                },
-            },
-        },
-
-        "/api/words/all": {
-            "get": {
-                "tags": ["words"],
-                "summary": "Get all words in the dictionary",
-                "responses": {
-                    "200": {"description": "All words",
-                            "content": {"application/json": {"schema": {
-                                "type": "object",
-                                "properties": {
-                                    "count": {"type": "integer"},
-                                    "words": {"type": "array", "items": {"type": "string"}},
-                                },
-                            }}}},
-                },
-            },
-        },
-
         # ================================================================
         # EXPORT
         # ================================================================
@@ -1348,8 +1310,6 @@ ERROR_RESPONSES = {
     ("/api/puzzles/{name}/stats", "get"): [400, 404],
     ("/api/words/{word}/definitions", "get"): [400, 404],
     ("/api/words/suggestions", "get"): [400, 404],
-    ("/api/words/validate", "get"): [400],
-    ("/api/words/all", "get"): [],
     ("/api/export/puzzles/{name}/solver-pdf", "get"): [400, 404],
     ("/api/export/puzzles/{name}/solved-pdf", "get"): [400, 404],
     ("/api/export/puzzles/{name}/acrosslite", "get"): [400, 404],

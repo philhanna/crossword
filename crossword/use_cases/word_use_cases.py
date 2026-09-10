@@ -4,7 +4,6 @@ Word use cases - Word suggestions, validation, and lookup.
 Public interface:
   get_suggestions(pattern) -> list[str]
   get_all_words() -> list[str]
-  validate_word(word) -> bool
   get_word_constraints(word) -> dict
 """
 
@@ -71,23 +70,6 @@ class WordUseCases:
             List of all words (lowercase)
         """
         return self.word_list.get_all_words()
-
-    def validate_word(self, word: str) -> bool:
-        """
-        Check if a word is in the dictionary.
-
-        Args:
-            word: Word to validate (case-insensitive)
-
-        Returns:
-            True if word is in dictionary, False otherwise
-        """
-        if not isinstance(word, str) or not word:
-            return False
-
-        word_lower = word.lower()
-        all_words = self.word_list.get_all_words()
-        return word_lower in all_words
 
     def get_word_constraints(self, word, input_pattern: str = None, cache: dict = None) -> dict:
         """
