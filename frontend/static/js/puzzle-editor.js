@@ -1117,10 +1117,7 @@ async function do_puzzle_save() {
     if (!name) { do_puzzle_save_as(); return; }
     const isDirty = AppState.puzzleSavedHash !== null &&
         _hash(AppState.puzzleData.puzzle) !== AppState.puzzleSavedHash;
-    if (!isDirty) {
-        await _doPuzzleSave(wn, name, '');
-        return;
-    }
+    if (!isDirty) return;
     inputBox('Save puzzle', 'What changed?', '', async (comment) => {
         await _doPuzzleSave(wn, name, comment);
     });
