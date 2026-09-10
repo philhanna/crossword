@@ -1,0 +1,16 @@
+[Unit]
+Description=Crossword HTTP Server
+After=network.target
+
+[Service]
+# Replace with your actual Ubuntu username
+User=saspeh
+# The directory where your 'crossword' package lives
+WorkingDirectory=/home/saspeh/dev/python/crossword
+# Full path to python3 (usually /usr/bin/python3)
+ExecStart=/home/saspeh/dev/python/crossword/.venv/bin/python -m crossword.http_server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
