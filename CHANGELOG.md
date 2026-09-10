@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.6.4] - 2026-09-10
+
+### Fixed
+
+- Saving a puzzle with no unsaved changes is now a true no-op: no "What
+  changed?" prompt, and no failed save call behind it
+- The API reports failures with real HTTP status codes instead of sending
+  every error with status 200
+
+### Changed
+
+- The server handles requests concurrently, so a definition lookup or a PDF
+  export no longer blocks every other request, including static files
+- Invalid input now reports 400 rather than 500 in the handlers that
+  previously left it unmapped
+
+### Added
+
+- `docs/dev/usecases.md`, a method-by-method reference for the use-case layer
+
+### Reverted
+
+- Reverted "Allow mouse wheel to page through word editor suggestions"
+
 ## [5.6.3] - 2026-08-26
 
 ### Changed
