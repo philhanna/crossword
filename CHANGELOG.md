@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.6.5] - 2026-09-10
+
+### Removed
+
+- `GET /api/words/validate` and `GET /api/words/all`, with the `validate_word`
+  use case behind them. Nothing called either one, and validating a single word
+  meant loading the whole dictionary into memory
+
+### Added
+
+- `crossword.service`, a systemd unit for running the server as a service
+
 ## [5.6.4] - 2026-09-10
 
 ### Fixed
