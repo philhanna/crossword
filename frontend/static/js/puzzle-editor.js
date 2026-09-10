@@ -1115,17 +1115,27 @@ async function do_puzzle_save() {
     const wn   = AppState.puzzleWorkingName;
     const name = AppState.puzzleName;
     if (!name) { do_puzzle_save_as(); return; }
+    const isDirty = AppState.puzzleSavedHash !== null &&
+        _hash(AppState.puzzleData.puzzle) !== AppState.puzzleSavedHash;
+    if (!isDirty) {
+        await _doPuzzleSave(wn, name, '');
+        return;
+    }
     inputBox('Save puzzle', 'What changed?', '', async (comment) => {
-        try {
-            await _settlePuzzleEditingBeforeSave();
-            const data = await apiFetch('POST',
-                `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name, comment });
-            if (data.error) { showMessageLine(`Save failed: ${data.error}`, 'error', 0); return; }
-            AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
-            renderPuzzleEditor();
-            showMessageLine(`Puzzle ${name} saved.`, 'notice');
-        } catch (e) { showMessageLine('Error saving puzzle', 'error', 0); }
+        await _doPuzzleSave(wn, name, comment);
     });
+}
+
+async function _doPuzzleSave(wn, name, comment) {
+    try {
+        await _settlePuzzleEditingBeforeSave();
+        const data = await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name, comment });
+        if (data.error) { showMessageLine(`Save failed: ${data.error}`, 'error', 0); return; }
+        AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
+        renderPuzzleEditor();
+        showMessageLine(`Puzzle ${name} saved.`, 'notice');
+    } catch (e) { showMessageLine('Error saving puzzle', 'error', 0); }
 }
 
 async function _listSavedPuzzleNames() {
