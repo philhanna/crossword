@@ -9,6 +9,8 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, unquote, urlparse
 from io import BytesIO
 
+from crossword.http_server.errors import ApiError
+
 CURRENT_USER = {"id": 1}
 logger = logging.getLogger(__name__)
 
@@ -142,7 +144,10 @@ class RequestHandler(BaseHTTPRequestHandler):
             else:
                 self._send_text(str(response))
 
+        except ApiError as e:
+            self._send_error(e.status, e.message)
         except Exception as e:
+            logger.exception("Unhandled error in %s %s", method, path)
             self._send_error(500, str(e))
 
     def _send_cors_headers(self):
@@ -200,12 +205,14 @@ def create_server(port: int = 8000, host: str = "127.0.0.1"):
     Returns:
         (server, router) tuple ready for start_server()
     """
-    from http.server import HTTPServer
+    from http.server import ThreadingHTTPServer
 
     router = Router()
 
-    # Create server instance
-    server = HTTPServer((host, port), RequestHandler)
+    # Create server instance. ThreadingHTTPServer keeps a slow request (an
+    # external definition lookup, a headless-Chrome PDF export) from blocking
+    # every other request, including static file serving.
+    server = ThreadingHTTPServer((host, port), RequestHandler)
 
     # Attach router to request handler
     RequestHandler.router = router

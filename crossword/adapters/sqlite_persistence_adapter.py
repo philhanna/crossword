@@ -4,7 +4,9 @@ SQLitePersistenceAdapter - SQLite implementation of the Persistence Port.
 Uses sqlite3 directly (no ORM). The persisted construction unit is a puzzle.
 """
 
+import functools
 import sqlite3
+import threading
 from datetime import datetime
 from crossword import Puzzle
 from crossword.ports.persistence_port import PersistencePort, PersistenceError
@@ -18,12 +20,30 @@ LATEST_STATE_SQL = """
 """
 
 
+def _synchronized(method):
+    """
+    Serialize access to the shared SQLite connection.
+
+    The HTTP server handles requests on multiple threads, so without this two
+    requests could interleave statements on the one connection and commit each
+    other's half-finished work.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
+
 class SQLitePersistenceAdapter(PersistencePort):
     """
     SQLite adapter for persistent storage of unified puzzles.
 
     Connects to a SQLite database and implements CRUD operations.
-    All operations are synchronous and single-threaded.
+    All operations are synchronous. The connection is shared between threads
+    and every public method is serialized by a lock.
     """
 
     def __init__(self, db_path: str):
@@ -37,8 +57,9 @@ class SQLitePersistenceAdapter(PersistencePort):
             PersistenceError: If database connection fails
         """
         self.db_path = db_path
+        self._lock = threading.RLock()
         try:
-            self.conn = sqlite3.connect(db_path)
+            self.conn = sqlite3.connect(db_path, check_same_thread=False)
             self.conn.row_factory = sqlite3.Row  # Enable column access by name
             self.conn.execute("PRAGMA foreign_keys = ON")
             self._ensure_schema_compatibility()
@@ -110,6 +131,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to ensure schema compatibility: {e}")
 
+    @_synchronized
     def init_schema(self) -> None:
         """
         Initialize the database schema (for testing with :memory: databases).
@@ -130,6 +152,7 @@ class SQLitePersistenceAdapter(PersistencePort):
     # Puzzle Operations
     # ======================================================================
 
+    @_synchronized
     def save_puzzle(self, user_id: int, name: str, puzzle: Puzzle) -> None:
         """Save a puzzle to the database."""
         try:
@@ -165,6 +188,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to save puzzle: {e}")
 
+    @_synchronized
     def load_puzzle(self, user_id: int, name: str) -> Puzzle:
         """Load a puzzle from the database."""
         try:
@@ -190,6 +214,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except Exception as e:
             raise PersistenceError(f"Failed to deserialize puzzle: {e}")
 
+    @_synchronized
     def delete_puzzle(self, user_id: int, name: str) -> None:
         """Delete a puzzle from the database."""
         try:
@@ -208,6 +233,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to delete puzzle: {e}")
 
+    @_synchronized
     def set_puzzle_state(self, user_id: int, name: str, state: str, *,
                          publisher: str | None = None,
                          date_submitted: str | None = None,
@@ -239,6 +265,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to set puzzle state: {e}")
 
+    @_synchronized
     def get_puzzle_state(self, user_id: int, name: str) -> dict | None:
         """Return the most recent state-history row for this puzzle, or None if absent."""
         try:
@@ -263,6 +290,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to get puzzle state: {e}")
 
+    @_synchronized
     def get_puzzle_state_history(self, user_id: int, name: str) -> list[dict] | None:
         """Return every state-history row for this puzzle, oldest first, or None if absent."""
         try:
@@ -299,6 +327,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to get puzzle state history: {e}")
 
+    @_synchronized
     def get_puzzle_state_history_content(self, user_id: int, name: str, history_id: int) -> str | None:
         """Return the saved puzzle-content JSON for one history row, or None if
         that row doesn't exist, doesn't belong to this puzzle/user, or predates
@@ -319,6 +348,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to get puzzle state history content: {e}")
 
+    @_synchronized
     def rename_puzzle(self, user_id: int, old_name: str, new_name: str) -> None:
         """Rename in place, preserving id — state history (keyed by puzzle_id) follows."""
         try:
@@ -341,6 +371,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to rename puzzle: {e}")
 
+    @_synchronized
     def list_puzzles(self, user_id: int, state: str | None = None) -> list[str]:
         """Get list of puzzle names for a user, sorted by most recently modified."""
         try:
@@ -365,6 +396,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to list puzzles: {e}")
 
+    @_synchronized
     def list_puzzle_summaries(self, user_id: int) -> list[dict]:
         """Return summary rows for the user's real puzzles, most recent first."""
         try:
@@ -396,6 +428,7 @@ class SQLitePersistenceAdapter(PersistencePort):
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to list puzzle summaries: {e}")
 
+    @_synchronized
     def close(self) -> None:
         """Close the database connection."""
         if hasattr(self, "conn") and self.conn:

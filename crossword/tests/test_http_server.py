@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 
+from crossword.http_server.errors import ApiError
 from crossword.http_server.server import Route, Router, RequestHandler, create_server, start_server
 from crossword.http_server.main import register_routes, run_http_server
 from crossword.http_server.puzzle_handlers import (
@@ -462,12 +463,14 @@ class TestMergedPuzzleHandlers:
     def test_handle_list_puzzles_invalid_state_returns_error(self, request_handler, app):
         app.puzzle_uc.list_puzzles.side_effect = ValueError("Invalid state: 'bogus'")
 
-        response = handle_list_puzzles(
-            (), {"state": "bogus"}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        with pytest.raises(ApiError) as exc_info:
+            handle_list_puzzles(
+                (), {"state": "bogus"}, {}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"}
+            )
 
-        assert response == {"error": "Invalid state: 'bogus'"}
+        assert exc_info.value.status == 400
+        assert exc_info.value.message == "Invalid state: 'bogus'"
 
     def test_handle_switch_to_grid_mode(self, request_handler, app):
         puzzle = TestPuzzle.create_puzzle()
@@ -527,18 +530,20 @@ class TestWordHandlers:
         return app
 
     def test_handle_set_word_clue_surfaces_duplicate_error(self, request_handler, app):
-        """A duplicate-word ValueError from the use case comes back as {"error": ...},
+        """A duplicate-word ValueError from the use case comes back as a 400,
         not a 500 - the same path already used for other invalid input."""
         app.puzzle_uc.set_word_clue.side_effect = ValueError(
             "GARDEN duplicates GARDENS, already used at 12 across"
         )
 
-        response = handle_set_word_clue(
-            ("demo", "5", "across"), {}, {"text": "GARDEN", "clue": ""}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        with pytest.raises(ApiError) as exc_info:
+            handle_set_word_clue(
+                ("demo", "5", "across"), {}, {"text": "GARDEN", "clue": ""}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"}
+            )
 
-        assert response == {"error": "GARDEN duplicates GARDENS, already used at 12 across"}
+        assert exc_info.value.status == 400
+        assert exc_info.value.message == "GARDEN duplicates GARDENS, already used at 12 across"
 
     def test_handle_get_suggestions_filters_using_puzzle_context(self, request_handler, app):
         """puzzle/seq/direction query params load the word, exclude its
@@ -593,12 +598,14 @@ class TestWordHandlers:
         'Invalid pattern' error used for broken regex syntax."""
         app.word_uc.get_suggestions.side_effect = ValueError("pattern too long (max 200 characters)")
 
-        response = handle_get_suggestions(
-            (), {"pattern": "A" * 201}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        with pytest.raises(ApiError) as exc_info:
+            handle_get_suggestions(
+                (), {"pattern": "A" * 201}, {}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"}
+            )
 
-        assert response == {"error": "Invalid pattern: pattern too long (max 200 characters)"}
+        assert exc_info.value.status == 400
+        assert exc_info.value.message == "Invalid pattern: pattern too long (max 200 characters)"
 
 
 class TestCopyPuzzleHandler:
@@ -618,21 +625,25 @@ class TestCopyPuzzleHandler:
         return app
 
     def test_missing_comment_is_rejected(self, request_handler, app):
-        response = handle_copy_puzzle(
-            ("demo",), {}, {"new_name": "demo-copy"}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        with pytest.raises(ApiError) as exc_info:
+            handle_copy_puzzle(
+                ("demo",), {}, {"new_name": "demo-copy"}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"}
+            )
 
-        assert response == {"error": "Missing or invalid 'comment'"}
+        assert exc_info.value.status == 400
+        assert exc_info.value.message == "Missing or invalid 'comment'"
         app.puzzle_uc.copy_puzzle.assert_not_called()
 
     def test_blank_comment_is_rejected(self, request_handler, app):
-        response = handle_copy_puzzle(
-            ("demo",), {}, {"new_name": "demo-copy", "comment": "   "}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        with pytest.raises(ApiError) as exc_info:
+            handle_copy_puzzle(
+                ("demo",), {}, {"new_name": "demo-copy", "comment": "   "}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"}
+            )
 
-        assert response == {"error": "Missing or invalid 'comment'"}
+        assert exc_info.value.status == 400
+        assert exc_info.value.message == "Missing or invalid 'comment'"
         app.puzzle_uc.copy_puzzle.assert_not_called()
 
     def test_valid_comment_is_passed_through(self, request_handler, app):
@@ -650,15 +661,17 @@ class TestCopyPuzzleHandler:
 
     def test_value_error_from_use_case_surfaces(self, request_handler, app):
         """Any ValueError from the use case (empty comment, bad name, etc.)
-        comes back as {"error": ...}, not a 500."""
+        comes back as a 400, not a 500."""
         app.puzzle_uc.copy_puzzle.side_effect = ValueError("comment must not be empty")
 
-        response = handle_copy_puzzle(
-            ("demo",), {}, {"new_name": "demo-copy", "comment": "x"}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        with pytest.raises(ApiError) as exc_info:
+            handle_copy_puzzle(
+                ("demo",), {}, {"new_name": "demo-copy", "comment": "x"}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"}
+            )
 
-        assert response == {"error": "comment must not be empty"}
+        assert exc_info.value.status == 400
+        assert exc_info.value.message == "comment must not be empty"
 
 
 class TestPuzzleStateHandlers:
@@ -721,13 +734,13 @@ class TestPuzzleStateHandlers:
 
     def test_set_puzzle_state_validation_error_returns_400(self, request_handler, app):
         app.puzzle_uc.set_puzzle_state.side_effect = ValueError("publisher is required")
-        response = handle_set_puzzle_state(
-            ("demo",), {}, {"state": "submitted"}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        assert response is None
-        request_handler._send_json.assert_called_once()
-        assert request_handler._send_json.call_args.kwargs["status"] == 400
+        with pytest.raises(ApiError) as exc_info:
+            handle_set_puzzle_state(
+                ("demo",), {}, {"state": "submitted"}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"},
+            )
+        assert exc_info.value.status == 400
+        assert exc_info.value.message == "publisher is required"
 
     def test_get_puzzle_state_history(self, request_handler, app):
         app.puzzle_uc.get_puzzle_state_history.return_value = [
@@ -747,11 +760,12 @@ class TestPuzzleStateHandlers:
     def test_get_puzzle_state_history_not_found(self, request_handler, app):
         from crossword.ports.persistence_port import PersistenceError
         app.puzzle_uc.get_puzzle_state_history.side_effect = PersistenceError("not found")
-        response = handle_get_puzzle_state_history(
-            ("nope",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        assert "error" in response
+        with pytest.raises(ApiError) as exc_info:
+            handle_get_puzzle_state_history(
+                ("nope",), {}, {}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"},
+            )
+        assert exc_info.value.status == 404
 
     def test_restore_puzzle_from_history_happy_path(self, request_handler, app):
         app.puzzle_uc.restore_puzzle_from_history.return_value = "__wc__demo__a1b2c3d4"
@@ -763,19 +777,21 @@ class TestPuzzleStateHandlers:
         assert response == {"original_name": "demo", "working_name": "__wc__demo__a1b2c3d4"}
 
     def test_restore_puzzle_from_history_missing_history_id(self, request_handler, app):
-        response = handle_restore_puzzle_from_history(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        assert "error" in response
+        with pytest.raises(ApiError) as exc_info:
+            handle_restore_puzzle_from_history(
+                ("demo",), {}, {}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"},
+            )
+        assert exc_info.value.status == 400
         app.puzzle_uc.restore_puzzle_from_history.assert_not_called()
 
     def test_restore_puzzle_from_history_non_integer_id(self, request_handler, app):
-        response = handle_restore_puzzle_from_history(
-            ("demo", "not-a-number"), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        assert "error" in response
+        with pytest.raises(ApiError) as exc_info:
+            handle_restore_puzzle_from_history(
+                ("demo", "not-a-number"), {}, {}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"},
+            )
+        assert exc_info.value.status == 400
         app.puzzle_uc.restore_puzzle_from_history.assert_not_called()
 
     def test_restore_puzzle_from_history_no_content_returns_error(self, request_handler, app):
@@ -783,8 +799,10 @@ class TestPuzzleStateHandlers:
         app.puzzle_uc.restore_puzzle_from_history.side_effect = PersistenceError(
             "No restorable content for history row 31 of puzzle 'demo'"
         )
-        response = handle_restore_puzzle_from_history(
-            ("demo", "31"), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        assert "No restorable content" in response["error"]
+        with pytest.raises(ApiError) as exc_info:
+            handle_restore_puzzle_from_history(
+                ("demo", "31"), {}, {}, None, request_handler,
+                app=app, current_user={"id": 1, "username": "test"},
+            )
+        assert exc_info.value.status == 404
+        assert "No restorable content" in exc_info.value.message

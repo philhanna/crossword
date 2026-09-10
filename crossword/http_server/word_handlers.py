@@ -12,6 +12,7 @@ Routes:
 """
 
 import logging
+from crossword.http_server.errors import ApiError
 from crossword.ports.definition_port import DefinitionNotFound
 from crossword.ports.persistence_port import PersistenceError
 
@@ -40,7 +41,7 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
         if not pattern or not isinstance(pattern, str):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'pattern' query parameter"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'pattern' query parameter"}
+            raise ApiError(400, "Missing or invalid 'pattern' query parameter")
 
         exclude_words = None
         length = None
@@ -60,7 +61,7 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
                 except ValueError:
                     logger.debug("  returning: %s", {"error": "'length' query parameter must be an integer"})
                     logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-                    return {"error": "'length' query parameter must be an integer"}
+                    raise ApiError(400, "'length' query parameter must be an integer")
 
         suggestions = app.word_uc.get_suggestions(pattern, exclude_words, length=length)
 
@@ -70,15 +71,17 @@ def handle_get_suggestions(path_params, query_params, body_params, session_token
     except ValueError as e:
         logger.debug("  returning: %s", {"error": f"Invalid pattern: {str(e)}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Invalid pattern: {str(e)}"}
+        raise ApiError(400, f"Invalid pattern: {str(e)}")
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_all_words(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -93,10 +96,14 @@ def handle_get_all_words(path_params, query_params, body_params, session_token, 
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"count": len(words), "words": words}
 
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_validate_word(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -112,17 +119,21 @@ def handle_validate_word(path_params, query_params, body_params, session_token, 
         if not word or not isinstance(word, str):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'word' query parameter"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'word' query parameter"}
+            raise ApiError(400, "Missing or invalid 'word' query parameter")
 
         is_valid = app.word_uc.validate_word(word)
 
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"word": word, "valid": is_valid}
 
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_word_constraints(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -140,14 +151,14 @@ def handle_get_word_constraints(path_params, query_params, body_params, session_
         if not name or not seq_str or not direction:
             logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing name, seq, or direction"}
+            raise ApiError(400, "Missing name, seq, or direction")
 
         try:
             seq = int(seq_str)
         except ValueError:
             logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "seq must be an integer"}
+            raise ApiError(400, "seq must be an integer")
 
         user_id = current_user["id"]
         word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
@@ -157,15 +168,17 @@ def handle_get_word_constraints(path_params, query_params, body_params, session_
     except ValueError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_ranked_suggestions(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -183,14 +196,14 @@ def handle_get_ranked_suggestions(path_params, query_params, body_params, sessio
         if not name or not seq_str or not direction:
             logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing name, seq, or direction"}
+            raise ApiError(400, "Missing name, seq, or direction")
 
         try:
             seq = int(seq_str)
         except ValueError:
             logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "seq must be an integer"}
+            raise ApiError(400, "seq must be an integer")
 
         user_id = current_user["id"]
         input_pattern = query_params.get("pattern", None) or None
@@ -202,15 +215,17 @@ def handle_get_ranked_suggestions(path_params, query_params, body_params, sessio
     except ValueError as e:  # ranked suggestions
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_word_definitions(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -223,7 +238,7 @@ def handle_get_word_definitions(path_params, query_params, body_params, session_
     try:
         word = path_params[0] if path_params else None
         if not word:
-            return {"error": "Missing word"}
+            raise ApiError(400, "Missing word")
 
         result = app.definition_uc.lookup(word)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
@@ -232,8 +247,12 @@ def handle_get_word_definitions(path_params, query_params, body_params, session_
     except DefinitionNotFound:
         logger.debug("  returning: word not found: %s", path_params)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"No definitions found for '{word}'"}
+        raise ApiError(404, f"No definitions found for '{word}'")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))

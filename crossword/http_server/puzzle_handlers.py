@@ -34,6 +34,7 @@ Routes:
 """
 
 import logging
+from crossword.http_server.errors import ApiError
 from crossword.ports.persistence_port import PersistenceError
 
 logger = logging.getLogger(__name__)
@@ -126,10 +127,14 @@ def handle_list_puzzles(path_params, query_params, body_params, session_token, r
         puzzles = [name for name in puzzles if not name.startswith("__new__")]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return {"puzzles": puzzles}
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_dashboard(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -144,10 +149,14 @@ def handle_get_dashboard(path_params, query_params, body_params, session_token, 
         data = app.puzzle_uc.get_dashboard(user_id)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return data
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_create_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -165,11 +174,11 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
         if not name or not isinstance(name, str):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'name'"}
+            raise ApiError(400, "Missing or invalid 'name'")
         if not isinstance(size, int):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'size' (must be integer >= 1)"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'size' (must be integer >= 1)"}
+            raise ApiError(400, "Missing or invalid 'size' (must be integer >= 1)")
 
         user_id = current_user["id"]
         app.puzzle_uc.create_puzzle(user_id, name, size=size)
@@ -180,15 +189,18 @@ def handle_create_puzzle(path_params, query_params, body_params, session_token, 
     except ValueError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
     except PersistenceError as e:
+        # Creating a puzzle never looks one up, so this is a failed write.
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_load_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -203,7 +215,7 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.load_puzzle(user_id, name)
@@ -213,11 +225,15 @@ def handle_load_puzzle(path_params, query_params, body_params, session_token, re
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_delete_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -232,7 +248,7 @@ def handle_delete_puzzle(path_params, query_params, body_params, session_token, 
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         app.puzzle_uc.delete_puzzle(user_id, name)
@@ -243,11 +259,15 @@ def handle_delete_puzzle(path_params, query_params, body_params, session_token, 
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_open_puzzle_for_editing(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -263,7 +283,7 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         working_name = app.puzzle_uc.open_puzzle_for_editing(user_id, name)
@@ -273,11 +293,15 @@ def handle_open_puzzle_for_editing(path_params, query_params, body_params, sessi
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_puzzle_state(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -293,7 +317,7 @@ def handle_get_puzzle_state(path_params, query_params, body_params, session_toke
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         state = app.puzzle_uc.get_puzzle_state(user_id, name)
@@ -303,11 +327,15 @@ def handle_get_puzzle_state(path_params, query_params, body_params, session_toke
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_set_puzzle_state(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -325,7 +353,7 @@ def handle_set_puzzle_state(path_params, query_params, body_params, session_toke
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         state = body_params.get("state")
         if not state or not isinstance(state, str):
@@ -347,8 +375,11 @@ def handle_set_puzzle_state(path_params, query_params, body_params, session_toke
     except ValueError as e:
         logger.debug("  returning 400: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        request_handler._send_json({"error": str(e)}, status=400)
-        return None
+        raise ApiError(400, str(e))
+    except PersistenceError as e:
+        logger.debug("  returning: %s", {"error": str(e)})
+        logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
+        raise ApiError(404, str(e))
 
 
 def handle_get_puzzle_state_history(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -366,7 +397,7 @@ def handle_get_puzzle_state_history(path_params, query_params, body_params, sess
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         history = app.puzzle_uc.get_puzzle_state_history(user_id, name)
@@ -376,11 +407,15 @@ def handle_get_puzzle_state_history(path_params, query_params, body_params, sess
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_restore_puzzle_from_history(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -398,13 +433,13 @@ def handle_restore_puzzle_from_history(path_params, query_params, body_params, s
         if not name or history_id is None:
             logger.debug("  returning: %s", {"error": "Missing name or history id"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing name or history id"}
+            raise ApiError(400, "Missing name or history id")
         try:
             history_id = int(history_id)
         except ValueError:
             logger.debug("  returning: %s", {"error": "history id must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "history id must be an integer"}
+            raise ApiError(400, "history id must be an integer")
 
         user_id = current_user["id"]
         working_name = app.puzzle_uc.restore_puzzle_from_history(user_id, name, history_id)
@@ -414,11 +449,13 @@ def handle_restore_puzzle_from_history(path_params, query_params, body_params, s
     except PersistenceError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(404, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_set_puzzle_title(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -434,17 +471,17 @@ def handle_set_puzzle_title(path_params, query_params, body_params, session_toke
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         if "title" not in body_params:
             logger.debug("  returning: %s", {"error": "Missing 'title'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing 'title'"}
+            raise ApiError(400, "Missing 'title'")
         title = body_params["title"]
         if not isinstance(title, str):
             logger.debug("  returning: %s", {"error": "'title' must be a string"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "'title' must be a string"}
+            raise ApiError(400, "'title' must be a string")
 
         user_id = current_user["id"]
         app.puzzle_uc.set_puzzle_title(user_id, name, title)
@@ -454,11 +491,15 @@ def handle_set_puzzle_title(path_params, query_params, body_params, session_toke
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_switch_to_grid_mode(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -468,15 +509,19 @@ def handle_switch_to_grid_mode(path_params, query_params, body_params, session_t
     try:
         name = path_params[0] if path_params else None
         if not name:
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.switch_to_grid_mode(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_switch_to_puzzle_mode(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -486,15 +531,19 @@ def handle_switch_to_puzzle_mode(path_params, query_params, body_params, session
     try:
         name = path_params[0] if path_params else None
         if not name:
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.switch_to_puzzle_mode(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_toggle_puzzle_black_cell(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -510,20 +559,22 @@ def handle_toggle_puzzle_black_cell(path_params, query_params, body_params, sess
         r = path_params[1] if len(path_params) > 1 else None
         c = path_params[2] if len(path_params) > 2 else None
         if not name or r is None or c is None:
-            return {"error": "Missing name, r, or c"}
+            raise ApiError(400, "Missing name, r, or c")
         try:
             r = int(r) + 1
             c = int(c) + 1
         except ValueError:
-            return {"error": "r and c must be integers"}
+            raise ApiError(400, "r and c must be integers")
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.toggle_black_cell(user_id, name, r, c)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_rotate_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -533,15 +584,19 @@ def handle_rotate_puzzle_grid(path_params, query_params, body_params, session_to
     try:
         name = path_params[0] if path_params else None
         if not name:
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.rotate_grid(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_generate_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -551,18 +606,22 @@ def handle_generate_puzzle_grid(path_params, query_params, body_params, session_
     try:
         name = path_params[0] if path_params else None
         if not name:
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
         user_id = current_user["id"]
         spec = _parse_spec(query_params.get("spec"))
         puzzle = app.puzzle_uc.generate_grid(user_id, name, spec)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except RuntimeError as e:
         return {"notice": str(e)}
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_undo_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -572,15 +631,19 @@ def handle_undo_puzzle_grid(path_params, query_params, body_params, session_toke
     try:
         name = path_params[0] if path_params else None
         if not name:
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.undo_grid(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_redo_puzzle_grid(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -590,15 +653,19 @@ def handle_redo_puzzle_grid(path_params, query_params, body_params, session_toke
     try:
         name = path_params[0] if path_params else None
         if not name:
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.redo_grid(user_id, name)
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
         return _puzzle_response(puzzle)
     except PersistenceError:
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 
@@ -621,11 +688,11 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
         if not name or not r or not c:
             logger.debug("  returning: %s", {"error": "Missing name, r, or c"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing name, r, or c"}
+            raise ApiError(400, "Missing name, r, or c")
         if letter is None:
             logger.debug("  returning: %s", {"error": "Missing 'letter'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing 'letter'"}
+            raise ApiError(400, "Missing 'letter'")
 
         try:
             r = int(r) + 1  # Convert 0-indexed to 1-indexed
@@ -633,7 +700,7 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
         except ValueError:
             logger.debug("  returning: %s", {"error": "r and c must be integers"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "r and c must be integers"}
+            raise ApiError(400, "r and c must be integers")
 
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.set_cell_letter(user_id, name, r, c, letter)
@@ -649,15 +716,17 @@ def handle_set_cell_letter(path_params, query_params, body_params, session_token
     except ValueError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_word_at(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -675,14 +744,14 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
         if not name or not seq or not direction:
             logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing name, seq, or direction"}
+            raise ApiError(400, "Missing name, seq, or direction")
 
         try:
             seq = int(seq)
         except ValueError:
             logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "seq must be an integer"}
+            raise ApiError(400, "seq must be an integer")
 
         user_id = current_user["id"]
         word = app.puzzle_uc.get_word_at(user_id, name, seq, direction)
@@ -699,15 +768,17 @@ def handle_get_word_at(path_params, query_params, body_params, session_token, re
     except ValueError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_set_word_clue(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -731,14 +802,14 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
         if not name or not seq or not direction:
             logger.debug("  returning: %s", {"error": "Missing name, seq, or direction"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing name, seq, or direction"}
+            raise ApiError(400, "Missing name, seq, or direction")
 
         try:
             seq = int(seq)
         except ValueError:
             logger.debug("  returning: %s", {"error": "seq must be an integer"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "seq must be an integer"}
+            raise ApiError(400, "seq must be an integer")
 
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.set_word_clue(user_id, name, seq, direction, clue, text, locked)
@@ -748,15 +819,17 @@ def handle_set_word_clue(path_params, query_params, body_params, session_token, 
     except ValueError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_undo_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -771,7 +844,7 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.undo_puzzle(user_id, name)
@@ -781,11 +854,15 @@ def handle_undo_puzzle(path_params, query_params, body_params, session_token, re
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_redo_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -800,7 +877,7 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.redo_puzzle(user_id, name)
@@ -810,11 +887,15 @@ def handle_redo_puzzle(path_params, query_params, body_params, session_token, re
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 def handle_clear_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
     """
@@ -828,7 +909,7 @@ def handle_clear_puzzle(path_params, query_params, body_params, session_token, r
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.clear_unlocked(user_id, name)
@@ -838,11 +919,15 @@ def handle_clear_puzzle(path_params, query_params, body_params, session_token, r
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_copy_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -858,19 +943,19 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         new_name = body_params.get("new_name")
         if not new_name or not isinstance(new_name, str):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'new_name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'new_name'"}
+            raise ApiError(400, "Missing or invalid 'new_name'")
 
         comment = body_params.get("comment")
         if not comment or not isinstance(comment, str) or not comment.strip():
             logger.debug("  returning: %s", {"error": "Missing or invalid 'comment'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'comment'"}
+            raise ApiError(400, "Missing or invalid 'comment'")
 
         user_id = current_user["id"]
         puzzle = app.puzzle_uc.copy_puzzle(user_id, name, new_name, comment)
@@ -882,15 +967,17 @@ def handle_copy_puzzle(path_params, query_params, body_params, session_token, re
     except ValueError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_rename_puzzle(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -906,13 +993,13 @@ def handle_rename_puzzle(path_params, query_params, body_params, session_token, 
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         new_name = body_params.get("new_name")
         if not new_name or not isinstance(new_name, str):
             logger.debug("  returning: %s", {"error": "Missing or invalid 'new_name'"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing or invalid 'new_name'"}
+            raise ApiError(400, "Missing or invalid 'new_name'")
 
         user_id = current_user["id"]
         app.puzzle_uc.rename_puzzle(user_id, name, new_name)
@@ -922,15 +1009,17 @@ def handle_rename_puzzle(path_params, query_params, body_params, session_token, 
     except ValueError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_puzzle_preview(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -945,7 +1034,7 @@ def handle_get_puzzle_preview(path_params, query_params, body_params, session_to
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
@@ -954,11 +1043,15 @@ def handle_get_puzzle_preview(path_params, query_params, body_params, session_to
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_puzzle_stats(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -973,7 +1066,7 @@ def handle_get_puzzle_stats(path_params, query_params, body_params, session_toke
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
@@ -982,11 +1075,15 @@ def handle_get_puzzle_stats(path_params, query_params, body_params, session_toke
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_get_fill_order(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -1001,7 +1098,7 @@ def handle_get_fill_order(path_params, query_params, body_params, session_token,
         if not name:
             logger.debug("  returning: %s", {"error": "Missing puzzle name"})
             logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-            return {"error": "Missing puzzle name"}
+            raise ApiError(400, "Missing puzzle name")
 
         user_id = current_user["id"]
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
@@ -1010,8 +1107,12 @@ def handle_get_fill_order(path_params, query_params, body_params, session_token,
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))

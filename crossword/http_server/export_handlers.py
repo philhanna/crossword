@@ -13,6 +13,7 @@ Routes:
 """
 
 import logging
+from crossword.http_server.errors import ApiError
 from crossword.ports.persistence_port import PersistenceError
 from crossword.ports.export_port import ExportError
 
@@ -46,7 +47,7 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
     if not name:
         logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     try:
         txt = app.export_uc.export_puzzle_to_acrosslite(current_user["id"], name)
         _send_download(request_handler, txt, "text/plain", f"{name}.txt")
@@ -55,15 +56,19 @@ def handle_export_puzzle_to_acrosslite(path_params, query_params, body_params, s
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except ExportError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -77,7 +82,7 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
     if not name:
         logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     try:
         xml_text = app.export_uc.export_puzzle_to_xml(current_user["id"], name)
         _send_download(request_handler, xml_text, "application/xml", f"{name}.xml")
@@ -86,15 +91,19 @@ def handle_export_puzzle_to_xml(path_params, query_params, body_params, session_
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except ExportError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_export_puzzle_to_solver_pdf(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -108,7 +117,7 @@ def handle_export_puzzle_to_solver_pdf(path_params, query_params, body_params, s
     if not name:
         logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     try:
         pdf_bytes = app.export_uc.export_puzzle_to_solver_pdf(current_user["id"], name)
         _send_download(request_handler, pdf_bytes, "application/pdf", f"{name}.pdf")
@@ -117,15 +126,19 @@ def handle_export_puzzle_to_solver_pdf(path_params, query_params, body_params, s
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except ExportError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_export_puzzle_to_solved_pdf(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -139,7 +152,7 @@ def handle_export_puzzle_to_solved_pdf(path_params, query_params, body_params, s
     if not name:
         logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     try:
         pdf_bytes = app.export_uc.export_puzzle_to_solved_pdf(current_user["id"], name)
         _send_download(request_handler, pdf_bytes, "application/pdf", f"{name}-solution.pdf")
@@ -148,15 +161,19 @@ def handle_export_puzzle_to_solved_pdf(path_params, query_params, body_params, s
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except ExportError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_export_puzzle_to_puz(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -170,7 +187,7 @@ def handle_export_puzzle_to_puz(path_params, query_params, body_params, session_
     if not name:
         logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     try:
         puz_bytes = app.export_uc.export_puzzle_to_puz(current_user["id"], name)
         _send_download(request_handler, puz_bytes, "application/octet-stream", f"{name}.puz")
@@ -179,15 +196,19 @@ def handle_export_puzzle_to_puz(path_params, query_params, body_params, session_
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except ExportError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_export_puzzle_to_xd(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -201,7 +222,7 @@ def handle_export_puzzle_to_xd(path_params, query_params, body_params, session_t
     if not name:
         logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     try:
         xd_text = app.export_uc.export_puzzle_to_xd(current_user["id"], name)
         _send_download(request_handler, xd_text.encode("utf-8"), "text/plain; charset=utf-8", f"{name}.xd")
@@ -210,15 +231,19 @@ def handle_export_puzzle_to_xd(path_params, query_params, body_params, session_t
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except ExportError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_export_puzzle_to_ipuz(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -232,7 +257,7 @@ def handle_export_puzzle_to_ipuz(path_params, query_params, body_params, session
     if not name:
         logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     try:
         ipuz_text = app.export_uc.export_puzzle_to_ipuz(current_user["id"], name)
         _send_download(request_handler, ipuz_text.encode("utf-8"), "application/x-ipuz+json", f"{name}.ipuz")
@@ -241,15 +266,19 @@ def handle_export_puzzle_to_ipuz(path_params, query_params, body_params, session
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except ExportError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
 
 
 def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, session_token, request_handler, app=None, current_user=None, **kwargs):
@@ -263,7 +292,7 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
     if not name:
         logger.debug("  returning: %s", {"error": "Missing puzzle name"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     try:
         pdf_bytes = app.export_uc.export_puzzle_to_nytimes(current_user["id"], name)
         from crossword.adapters.settings_adapter import get_settings
@@ -275,12 +304,16 @@ def handle_export_puzzle_to_nytimes(path_params, query_params, body_params, sess
     except PersistenceError:
         logger.debug("  returning: %s", {"error": f"Puzzle not found: {name}"})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": f"Puzzle not found: {name}"}
+        raise ApiError(404, f"Puzzle not found: {name}")
     except ExportError as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
+    except ValueError as e:
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
-        return {"error": str(e)}
+        raise ApiError(500, str(e))

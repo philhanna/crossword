@@ -12,6 +12,7 @@ Routes:
 
 import base64
 import logging
+from crossword.http_server.errors import ApiError
 
 from crossword.ports.import_port import PuzzleImportError
 from crossword.ports.persistence_port import PersistenceError
@@ -42,9 +43,9 @@ def handle_import_puzzle_from_acrosslite(
     content = body_params.get("content") or ""
 
     if not name:
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     if not content:
-        return {"error": "Missing file content"}
+        raise ApiError(400, "Missing file content")
 
     try:
         app.import_uc.import_puzzle_from_acrosslite(current_user["id"], name, content)
@@ -52,10 +53,12 @@ def handle_import_puzzle_from_acrosslite(
         return {"name": name}
     except (ValueError, PuzzleImportError, PersistenceError) as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
     finally:
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
 
@@ -83,9 +86,9 @@ def handle_import_puzzle_from_xd(
     content = body_params.get("content") or ""
 
     if not name:
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     if not content:
-        return {"error": "Missing file content"}
+        raise ApiError(400, "Missing file content")
 
     try:
         app.import_uc.import_puzzle_from_xd(current_user["id"], name, content)
@@ -93,10 +96,12 @@ def handle_import_puzzle_from_xd(
         return {"name": name}
     except (ValueError, PuzzleImportError, PersistenceError) as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
     finally:
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
 
@@ -124,9 +129,9 @@ def handle_import_puzzle_from_ipuz(
     content = body_params.get("content") or ""
 
     if not name:
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     if not content:
-        return {"error": "Missing file content"}
+        raise ApiError(400, "Missing file content")
 
     try:
         app.import_uc.import_puzzle_from_ipuz(current_user["id"], name, content)
@@ -134,10 +139,12 @@ def handle_import_puzzle_from_ipuz(
         return {"name": name}
     except (ValueError, PuzzleImportError, PersistenceError) as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
     finally:
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
 
@@ -165,9 +172,9 @@ def handle_import_puzzle_from_ccxml(
     content = body_params.get("content") or ""
 
     if not name:
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     if not content:
-        return {"error": "Missing file content"}
+        raise ApiError(400, "Missing file content")
 
     try:
         app.import_uc.import_puzzle_from_ccxml(current_user["id"], name, content)
@@ -175,10 +182,12 @@ def handle_import_puzzle_from_ccxml(
         return {"name": name}
     except (ValueError, PuzzleImportError, PersistenceError) as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
     finally:
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)
 
@@ -202,14 +211,16 @@ def handle_import_puzzle_from_puz(
     content_b64 = body_params.get("content_b64") or ""
 
     if not name:
-        return {"error": "Missing puzzle name"}
+        raise ApiError(400, "Missing puzzle name")
     if not content_b64:
-        return {"error": "Missing file content"}
+        raise ApiError(400, "Missing file content")
 
     try:
         content = base64.b64decode(content_b64)
+    except ApiError:
+        raise
     except Exception:
-        return {"error": "Invalid base64 encoding"}
+        raise ApiError(500, "Invalid base64 encoding")
 
     try:
         app.import_uc.import_puzzle_from_puz(current_user["id"], name, content)
@@ -217,9 +228,11 @@ def handle_import_puzzle_from_puz(
         return {"name": name}
     except (ValueError, PuzzleImportError, PersistenceError) as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(400, str(e))
+    except ApiError:
+        raise
     except Exception as e:
         logger.debug("  returning: %s", {"error": str(e)})
-        return {"error": str(e)}
+        raise ApiError(500, str(e))
     finally:
         logger.debug("Leaving %s %s", request_handler.command, request_handler.path)

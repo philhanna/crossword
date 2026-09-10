@@ -649,13 +649,13 @@ SPEC = {
                 "tags": ["puzzles"],
                 "summary": "Generate a random valid grid for a puzzle",
                 "responses": {
-                    "200": {"description": "Updated puzzle data",
-                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PuzzleData"}}}},
-                    "200 (notice)": {"description": "Generation failed but puzzle unchanged",
-                            "content": {"application/json": {"schema": {
-                                "type": "object",
-                                "properties": {"notice": {"type": "string"}},
-                            }}}},
+                    "200": {"description": "Updated puzzle data, or a notice if generation "
+                                           "failed and the puzzle was left unchanged",
+                            "content": {"application/json": {"schema": {"oneOf": [
+                                {"$ref": "#/components/schemas/PuzzleData"},
+                                {"type": "object",
+                                 "properties": {"notice": {"type": "string"}}},
+                            ]}}}},
                     "404": {"description": "Not found",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
                 },
@@ -1302,6 +1302,93 @@ SPEC = {
         },
     },
 }
+
+# ---------------------------------------------------------------------------
+# Error responses
+# ---------------------------------------------------------------------------
+# Failure statuses each operation can return, read off the handlers in
+# crossword/http_server/. Every endpoint can also return 500, so that is added
+# to all of them rather than repeated in the table. Operations that already
+# spell out a status above keep their own wording; this only fills gaps.
+
+ERROR_RESPONSES = {
+    ("/api/config", "get"): [],
+    ("/api/settings", "get"): [],
+    ("/api/settings", "put"): [],
+    ("/api/dashboard", "get"): [],
+    ("/api/puzzles", "get"): [400],
+    ("/api/puzzles", "post"): [400],
+    ("/api/puzzles/{name}", "get"): [400, 404],
+    ("/api/puzzles/{name}", "delete"): [400, 404],
+    ("/api/puzzles/{name}/copy", "post"): [400, 404],
+    ("/api/puzzles/{name}/open", "post"): [400, 404],
+    ("/api/puzzles/{name}/state", "get"): [400, 404],
+    ("/api/puzzles/{name}/state", "put"): [400, 404],
+    ("/api/puzzles/{name}/state/history", "get"): [400, 404],
+    ("/api/puzzles/{name}/state/history/{id}/restore", "post"): [400, 404],
+    ("/api/puzzles/{name}/rename", "post"): [400, 404],
+    ("/api/puzzles/{name}/mode/grid", "post"): [400, 404],
+    ("/api/puzzles/{name}/mode/puzzle", "post"): [400, 404],
+    ("/api/puzzles/{name}/title", "put"): [400, 404],
+    ("/api/puzzles/{name}/grid/cells/{r}/{c}", "put"): [400, 404],
+    ("/api/puzzles/{name}/grid/generate", "post"): [400, 404],
+    ("/api/puzzles/{name}/grid/rotate", "post"): [400, 404],
+    ("/api/puzzles/{name}/grid/undo", "post"): [400, 404],
+    ("/api/puzzles/{name}/grid/redo", "post"): [400, 404],
+    ("/api/puzzles/{name}/fill-order", "get"): [400, 404],
+    ("/api/puzzles/{name}/cells/{r}/{c}", "put"): [400, 404],
+    ("/api/puzzles/{name}/words/{seq}/{direction}", "get"): [400, 404],
+    ("/api/puzzles/{name}/words/{seq}/{direction}", "put"): [400, 404],
+    ("/api/puzzles/{name}/words/{seq}/{direction}/suggestions", "get"): [400, 404],
+    ("/api/puzzles/{name}/words/{seq}/{direction}/constraints", "get"): [400, 404],
+    ("/api/puzzles/{name}/undo", "post"): [400, 404],
+    ("/api/puzzles/{name}/redo", "post"): [400, 404],
+    ("/api/puzzles/{name}/clear", "post"): [400, 404],
+    ("/api/puzzles/{name}/preview", "get"): [400, 404],
+    ("/api/puzzles/{name}/stats", "get"): [400, 404],
+    ("/api/words/{word}/definitions", "get"): [400, 404],
+    ("/api/words/suggestions", "get"): [400, 404],
+    ("/api/words/validate", "get"): [400],
+    ("/api/words/all", "get"): [],
+    ("/api/export/puzzles/{name}/solver-pdf", "get"): [400, 404],
+    ("/api/export/puzzles/{name}/solved-pdf", "get"): [400, 404],
+    ("/api/export/puzzles/{name}/acrosslite", "get"): [400, 404],
+    ("/api/export/puzzles/{name}/nytimes", "get"): [400, 404],
+    ("/api/export/puzzles/{name}/puz", "get"): [400, 404],
+    ("/api/export/puzzles/{name}/xd", "get"): [400, 404],
+    ("/api/export/puzzles/{name}/ipuz", "get"): [400, 404],
+    ("/api/export/puzzles/{name}/xml", "get"): [400, 404],
+    ("/api/import/acrosslite", "post"): [400],
+    ("/api/import/xd", "post"): [400],
+    ("/api/import/puz", "post"): [400],
+    ("/api/import/ipuz", "post"): [400],
+    ("/api/import/ccxml", "post"): [400],
+}
+
+ERROR_DESCRIPTIONS = {
+    400: "Invalid request",
+    404: "Not found",
+    500: "Server error",
+}
+
+
+def apply_error_responses(spec):
+    """Add the error responses each operation can return to the spec."""
+    for (path, method), statuses in ERROR_RESPONSES.items():
+        responses = spec["paths"][path][method]["responses"]
+        for status in list(statuses) + [500]:
+            responses.setdefault(str(status), error_response(status))
+
+
+def error_response(status):
+    """Build a generic error response for one status code."""
+    return {
+        "description": ERROR_DESCRIPTIONS[status],
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+    }
+
+
+apply_error_responses(SPEC)
 
 # ---------------------------------------------------------------------------
 # Minimal HTTP server
