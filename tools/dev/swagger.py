@@ -4,6 +4,11 @@ Swagger UI for the Crossword API.
 Serves a Swagger UI on http://localhost:5001 that documents all endpoints
 served by the main app (http://localhost:5000).
 
+The app itself now publishes an OpenAPI document at /openapi.json and a
+browsable version at /docs, generated from the routes rather than written
+by hand. This tool is still useful for --check, which reports where the
+hand-written spec below has fallen behind the app.
+
 Usage:
     python3 tools/swagger.py [--port 5001]
 """
@@ -1418,28 +1423,25 @@ def _normalize(path: str) -> str:
 
 
 def _routes_from_app():
-    """Return a set of (METHOD, normalized-path) pairs from the live app."""
-    import re
+    """Return a set of (METHOD, path) pairs from the live app."""
     import os
     # Ensure project root is importable
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if root not in sys.path:
         sys.path.insert(0, root)
 
-    from crossword.http_server.main import register_routes
+    from fastapi import FastAPI
 
-    class Collector:
-        def __init__(self):
-            self.routes = []
-        def add_route(self, method, pattern, *_):
-            # Convert regex pattern to a plain path
-            path = pattern.strip("^$")
-            path = re.sub(r"\([^)]+\)", "{}", path)
-            self.routes.append((method.upper(), path))
+    from crossword.http_server.main import iter_routes, register_routes
 
-    c = Collector()
-    register_routes(c)
-    return set(c.routes)
+    app = FastAPI()
+    register_routes(app)
+    return {
+        (method, route.path)
+        for route in iter_routes(app)
+        for method in route.methods
+        if method in ("GET", "POST", "PUT", "DELETE", "PATCH")
+    }
 
 
 def check():

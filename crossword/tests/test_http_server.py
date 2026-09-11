@@ -1,388 +1,131 @@
 """
-Unit tests for HTTP server - router and request handler.
+Tests for the FastAPI web layer.
+
+Every test drives the app through a TestClient, so what is checked is the
+contract the frontend sees: paths, status codes, and response bodies.
 """
 
-import json
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
+from fastapi.testclient import TestClient
 
-from crossword.http_server.errors import ApiError
-from crossword.http_server.server import Route, Router, RequestHandler, create_server, start_server
-from crossword.http_server.main import register_routes, run_http_server
-from crossword.http_server.puzzle_handlers import (
-    _puzzle_response,
-    handle_create_puzzle,
-    handle_get_dashboard,
-    handle_list_puzzles,
-    handle_switch_to_grid_mode,
-    handle_switch_to_puzzle_mode,
-    handle_toggle_puzzle_black_cell,
-    handle_get_puzzle_state,
-    handle_set_puzzle_state,
-    handle_get_puzzle_state_history,
-    handle_restore_puzzle_from_history,
-    handle_open_puzzle_for_editing,
-    handle_set_word_clue,
-    handle_copy_puzzle,
-)
-from crossword.http_server.word_handlers import handle_get_suggestions
-from crossword.http_server.export_handlers import (
-    handle_export_puzzle_to_solver_pdf,
-    handle_export_puzzle_to_solved_pdf,
-)
+from crossword.http_server.main import create_app, iter_routes, run_http_server
+from crossword.http_server.puzzle_routes import _puzzle_response
+from crossword.ports.definition_port import DefinitionNotFound
+from crossword.ports.persistence_port import PersistenceError
 from crossword.tests import TestPuzzle
 
 
-class TestRoute:
-    """Tests for Route class"""
+@pytest.fixture
+def container():
+    """A stand-in for the wired application container."""
+    container = Mock()
+    container.config = {"message_line_timeout_ms": 1000, "theme_color": ""}
+    return container
 
-    def test_route_matches_method_and_path(self):
-        """Route matches when method and path both match"""
-        handler = Mock()
-        route = Route("GET", r"^/grids$", handler)
 
-        assert route.matches("GET", "/grids")
+@pytest.fixture
+def client(container):
+    """A test client whose 500 responses come back instead of being raised."""
+    app = create_app(container=container)
+    return TestClient(app, raise_server_exceptions=False)
 
-    def test_route_no_match_wrong_method(self):
-        """Route doesn't match with wrong method"""
-        handler = Mock()
-        route = Route("GET", r"^/grids$", handler)
 
-        assert not route.matches("POST", "/grids")
+class TestRouteTable:
+    """The registered paths the frontend depends on."""
 
-    def test_route_no_match_wrong_path(self):
-        """Route doesn't match with wrong path"""
-        handler = Mock()
-        route = Route("GET", r"^/grids$", handler)
+    def test_every_expected_route_is_registered(self, client):
+        registered = {
+            (method, route.path)
+            for route in iter_routes(client.app)
+            for method in route.methods
+        }
 
-        assert not route.matches("GET", "/puzzles")
+        for method, path in [
+            ("GET", "/"),
+            ("GET", "/static/css/theme.css"),
+            ("GET", "/api/config"),
+            ("GET", "/api/settings"),
+            ("PUT", "/api/settings"),
+            ("GET", "/api/dashboard"),
+            ("GET", "/api/puzzles"),
+            ("POST", "/api/puzzles"),
+            ("GET", "/api/puzzles/{name}"),
+            ("DELETE", "/api/puzzles/{name}"),
+            ("POST", "/api/puzzles/{name}/mode/grid"),
+            ("POST", "/api/puzzles/{name}/mode/puzzle"),
+            ("PUT", "/api/puzzles/{name}/grid/cells/{r}/{c}"),
+            ("POST", "/api/puzzles/{name}/grid/rotate"),
+            ("POST", "/api/puzzles/{name}/grid/undo"),
+            ("POST", "/api/puzzles/{name}/grid/redo"),
+            ("GET", "/api/puzzles/{name}/state"),
+            ("PUT", "/api/puzzles/{name}/state"),
+            ("GET", "/api/export/puzzles/{name}/solved-pdf"),
+            ("POST", "/api/import/puz"),
+        ]:
+            assert (method, path) in registered
 
-    def test_route_captures_path_params(self):
-        """Route extracts capture groups from path"""
-        handler = Mock()
-        route = Route("GET", r"^/grids/(\d+)$", handler)
+    def test_static_assets_are_mounted(self, client):
+        assert any(getattr(route, "name", None) == "static"
+                   for route in client.app.routes)
 
-        params = route.extract_params("/grids/42")
-        assert params == ("42",)
+    def test_unknown_path_returns_the_error_envelope(self, client):
+        response = client.get("/api/nothing-here")
 
-    def test_route_multiple_captures(self):
-        """Route extracts multiple capture groups"""
-        handler = Mock()
-        route = Route("PUT", r"^/grids/(\d+)/cells/(\d+)/(\d+)$", handler)
+        assert response.status_code == 404
+        assert "error" in response.json()
 
-        params = route.extract_params("/grids/1/cells/5/7")
-        assert params == ("1", "5", "7")
 
-    def test_route_case_insensitive_method(self):
-        """Route method matching is case-insensitive"""
-        handler = Mock()
-        route = Route("GET", r"^/grids$", handler)
+class TestErrorEnvelope:
+    """Every failure reaches the frontend as {"error": ...}."""
 
-        assert route.matches("get", "/grids")
-        assert route.matches("Get", "/grids")
+    def test_use_case_value_error_becomes_400(self, client, container):
+        container.puzzle_uc.list_puzzles.side_effect = ValueError("Invalid state: 'bogus'")
 
+        response = client.get("/api/puzzles", params={"state": "bogus"})
 
-class TestRouter:
-    """Tests for Router class"""
+        assert response.status_code == 400
+        assert response.json() == {"error": "Invalid state: 'bogus'"}
 
-    def test_router_add_route(self):
-        """Router can add routes"""
-        router = Router()
-        handler = Mock()
+    def test_missing_puzzle_becomes_404(self, client, container):
+        container.puzzle_uc.load_puzzle.side_effect = PersistenceError("gone")
 
-        router.add_route("GET", r"^/grids$", handler)
+        response = client.get("/api/puzzles/nope")
 
-        assert len(router.routes) == 1
+        assert response.status_code == 404
+        assert response.json() == {"error": "Puzzle not found: nope"}
 
-    def test_router_find_route_success(self):
-        """Router finds matching route"""
-        router = Router()
-        handler = Mock()
-        router.add_route("GET", r"^/grids$", handler)
+    def test_unexpected_error_becomes_500(self, client, container):
+        container.puzzle_uc.get_dashboard.side_effect = RuntimeError("disk on fire")
 
-        route, params = router.find_route("GET", "/grids")
+        response = client.get("/api/dashboard")
 
-        assert route is not None
-        assert route.handler == handler
-        assert params == ()
+        assert response.status_code == 500
+        assert response.json() == {"error": "disk on fire"}
 
-    def test_router_find_route_with_params(self):
-        """Router finds route and extracts params"""
-        router = Router()
-        handler = Mock()
-        router.add_route("GET", r"^/grids/(\d+)$", handler)
+    def test_missing_body_field_becomes_400(self, client, container):
+        response = client.put("/api/puzzles/demo/state", json={})
 
-        route, params = router.find_route("GET", "/grids/42")
+        assert response.status_code == 400
+        assert response.json() == {"error": "Missing 'state'"}
+        container.puzzle_uc.set_puzzle_state.assert_not_called()
 
-        assert route is not None
-        assert params == ("42",)
+    def test_non_numeric_path_parameter_becomes_400(self, client, container):
+        response = client.post("/api/puzzles/demo/state/history/not-a-number/restore")
 
-    def test_router_find_route_not_found(self):
-        """Router returns None for non-matching route"""
-        router = Router()
-        handler = Mock()
-        router.add_route("GET", r"^/grids$", handler)
+        assert response.status_code == 400
+        container.puzzle_uc.restore_puzzle_from_history.assert_not_called()
 
-        route, _ = router.find_route("POST", "/grids")
 
-        assert route is None
-
-    def test_router_get_handler_success(self):
-        """Router.get_handler returns handler for matching route"""
-        router = Router()
-        handler = Mock()
-        router.add_route("GET", r"^/grids$", handler)
-
-        result = router.get_handler("GET", "/grids")
-
-        assert result == handler
-
-    def test_router_get_handler_not_found(self):
-        """Router.get_handler returns None for non-matching route"""
-        router = Router()
-        handler = Mock()
-        router.add_route("GET", r"^/grids$", handler)
-
-        result = router.get_handler("POST", "/grids")
-
-        assert result is None
-
-    def test_router_multiple_routes(self):
-        """Router can handle multiple routes"""
-        router = Router()
-        handler1 = Mock()
-        handler2 = Mock()
-        handler3 = Mock()
-
-        router.add_route("GET", r"^/grids$", handler1)
-        router.add_route("POST", r"^/grids$", handler2)
-        router.add_route("GET", r"^/puzzles$", handler3)
-
-        assert router.get_handler("GET", "/grids") == handler1
-        assert router.get_handler("POST", "/grids") == handler2
-        assert router.get_handler("GET", "/puzzles") == handler3
-
-
-class TestRequestHandler:
-    """Tests for RequestHandler"""
-
-    def _create_handler(self):
-        """Create a RequestHandler instance with mocked dependencies"""
-        handler = Mock(spec=RequestHandler)
-        handler._send_json = RequestHandler._send_json.__get__(handler, RequestHandler)
-        handler._send_error = RequestHandler._send_error.__get__(handler, RequestHandler)
-        return handler
-
-    def test_send_json(self):
-        """RequestHandler.send_json sends JSON response"""
-        handler = self._create_handler()
-        handler.wfile = MagicMock()
-        handler.send_response = Mock()
-        handler.send_header = Mock()
-        handler.end_headers = Mock()
-
-        data = {"key": "value", "number": 42}
-        handler._send_json(data, status=200)
-
-        handler.send_response.assert_called_once_with(200)
-        handler.send_header.assert_any_call("Content-Type", "application/json")
-        handler.end_headers.assert_called_once()
-
-    def test_send_error(self):
-        """RequestHandler.send_error sends error as JSON"""
-        handler = self._create_handler()
-        handler.wfile = MagicMock()
-        handler.send_response = Mock()
-        handler.send_header = Mock()
-        handler.end_headers = Mock()
-
-        handler._send_error(404, "Not Found")
-
-        handler.send_response.assert_called_once_with(404)
-
-    def test_log_message_uses_logger(self, caplog):
-        """Request logging is emitted through the configured logger."""
-        handler = Mock(spec=RequestHandler)
-        handler.address_string.return_value = "127.0.0.1"
-
-        with caplog.at_level("INFO"):
-            RequestHandler.log_message(handler, '"%s" %s %s', "GET / HTTP/1.1", "200", "123")
-
-        assert '127.0.0.1 - "GET / HTTP/1.1" 200 123' in caplog.text
-
-
-class TestCreateServer:
-    """Tests for create_server function"""
-
-    def test_create_server_returns_tuple(self):
-        """create_server returns (server, router) tuple"""
-        fake_server = Mock()
-        fake_server.server_address = ("127.0.0.1", 9999)
-        with patch("http.server.HTTPServer", return_value=fake_server):
-            server, router = create_server(port=9999)
-
-        assert server is not None
-        assert isinstance(router, Router)
-        assert RequestHandler.router == router
-
-    def test_create_server_router_attached(self):
-        """create_server attaches router to RequestHandler"""
-        fake_server = Mock()
-        fake_server.server_address = ("127.0.0.1", 9998)
-        with patch("http.server.HTTPServer", return_value=fake_server):
-            server, router = create_server(port=9998)
-
-        assert RequestHandler.router == router
-
-    def test_create_server_custom_port_and_host(self):
-        """create_server accepts custom port and host"""
-        fake_server = Mock()
-        fake_server.server_address = ("0.0.0.0", 8080)
-        with patch("http.server.HTTPServer", return_value=fake_server):
-            server, router = create_server(port=8080, host="0.0.0.0")
-
-        assert server.server_address[1] == 8080
-        assert server.server_address[0] == "0.0.0.0"
-
-
-class TestServerLogging:
-    """Tests for server lifecycle logging."""
-
-    def test_start_server_logs_with_logger(self, caplog):
-        server = Mock()
-        router = Mock()
-        router.routes = [Mock(), Mock()]
-        app_container = Mock()
-        server.serve_forever.side_effect = KeyboardInterrupt
-
-        with caplog.at_level("DEBUG"):
-            start_server(server, router, app_container, host="127.0.0.1", port=5000)
-
-        assert "Starting HTTP server on http://127.0.0.1:5000" in caplog.text
-        assert "Registered routes: 2" in caplog.text
-        assert "Shutting down server" in caplog.text
-        server.shutdown.assert_called_once()
-
-    def test_run_http_server_uses_logger_not_print(self):
-        config = {"host": "127.0.0.1", "port": 5000}
-        app_container = Mock()
-        app_container.config = config
-        server = Mock()
-        router = Mock()
-
-        with patch("crossword.http_server.main.make_app", return_value=app_container), \
-             patch("crossword.http_server.main.create_server", return_value=(server, router)), \
-             patch("crossword.http_server.main.start_server") as start_server_mock, \
-             patch("builtins.print") as print_mock:
-            run_http_server(config)
-
-        print_mock.assert_not_called()
-        start_server_mock.assert_called_once_with(
-            server, router, app_container, host="127.0.0.1", port=5000
-        )
-
-
-class TestRequestParsing:
-    """Integration tests for request parsing"""
-
-    def test_parse_query_parameters(self):
-        """Request parsing extracts query parameters"""
-        # This test verifies the logic (actual HTTP testing would use integration tests)
-        from urllib.parse import parse_qs
-
-        query_string = "name=test&size=15&active=true"
-        query_dict = parse_qs(query_string)
-        query_params = {k: v[0] if len(v) == 1 else v for k, v in query_dict.items()}
-
-        assert query_params["name"] == "test"
-        assert query_params["size"] == "15"
-        assert query_params["active"] == "true"
-
-    def test_parse_json_body(self):
-        """Request parsing decodes JSON body"""
-        body_text = '{"name": "test_grid", "size": 15}'
-        body_params = json.loads(body_text)
-
-        assert body_params["name"] == "test_grid"
-        assert body_params["size"] == 15
-
-
-class TestMergedPuzzleRoutes:
-    """Tests for Phase 4 puzzle-centric route registration."""
-
-    def test_register_routes_adds_new_puzzle_mode_routes(self):
-        router = Router()
-        register_routes(router)
-
-        assert router.get_handler("POST", "/api/puzzles/demo/mode/grid") is not None
-        assert router.get_handler("POST", "/api/puzzles/demo/mode/puzzle") is not None
-        assert router.get_handler("PUT", "/api/puzzles/demo/grid/cells/0/1") is not None
-        assert router.get_handler("POST", "/api/puzzles/demo/grid/rotate") is not None
-        assert router.get_handler("POST", "/api/puzzles/demo/grid/undo") is not None
-        assert router.get_handler("POST", "/api/puzzles/demo/grid/redo") is not None
-        assert router.get_handler("GET", "/api/export/puzzles/demo/solved-pdf") is not None
-        assert router.get_handler("GET", "/api/puzzles/demo/state") is not None
-        assert router.get_handler("PUT", "/api/puzzles/demo/state") is not None
-        assert router.get_handler("GET", "/api/dashboard") is not None
-
-
-class TestPdfExportFilenames:
-    @pytest.fixture
-    def request_handler(self):
-        handler = Mock()
-        handler.command = "GET"
-        handler.path = "/api/export/puzzles/demo/pdf"
-        return handler
-
-    @pytest.fixture
-    def app(self):
-        app = Mock()
-        app.export_uc.export_puzzle_to_solver_pdf.return_value = b"solver"
-        app.export_uc.export_puzzle_to_solved_pdf.return_value = b"solved"
-        return app
-
-    def test_solver_pdf_uses_plain_pdf_suffix(self, request_handler, app):
-        handle_export_puzzle_to_solver_pdf(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1},
-        )
-
-        request_handler.send_header.assert_any_call(
-            "Content-Disposition", 'attachment; filename="demo.pdf"'
-        )
-
-    def test_solved_pdf_uses_solution_suffix(self, request_handler, app):
-        handle_export_puzzle_to_solved_pdf(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1},
-        )
-
-        request_handler.send_header.assert_any_call(
-            "Content-Disposition", 'attachment; filename="demo-solution.pdf"'
-        )
-
-
-class TestMergedPuzzleHandlers:
-    """Direct handler tests for the merged puzzle API."""
-
-    @pytest.fixture
-    def request_handler(self):
-        handler = Mock()
-        handler.command = "POST"
-        handler.path = "/api/test"
-        return handler
-
-    @pytest.fixture
-    def app(self):
-        app = Mock()
-        app.puzzle_uc = Mock()
-        return app
+class TestPuzzleRoutes:
+    """Puzzle CRUD and editing."""
 
     def test_puzzle_response_includes_mode_metadata(self):
         puzzle = TestPuzzle.create_solved_atlantic_puzzle()
         puzzle.enter_grid_mode()
         puzzle.grid_undo_stack = ["old"]
+
         response = _puzzle_response(puzzle)
 
         assert response["mode"] == "grid"
@@ -392,417 +135,510 @@ class TestMergedPuzzleHandlers:
         assert response["puzzle_can_redo"] is False
         assert response["can_undo"] is True
 
-    def test_handle_create_puzzle_accepts_size(self, request_handler, app):
+    def test_create_puzzle_accepts_size(self, client, container):
         puzzle = TestPuzzle.create_puzzle()
-        app.puzzle_uc.load_puzzle.return_value = puzzle
+        container.puzzle_uc.load_puzzle.return_value = puzzle
 
-        response = handle_create_puzzle(
-            (), {}, {"name": "demo", "size": 15}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.post("/api/puzzles", json={"name": "demo", "size": 15})
 
-        app.puzzle_uc.create_puzzle.assert_called_once_with(1, "demo", size=15)
-        assert response["grid"]["size"] == puzzle.n
+        container.puzzle_uc.create_puzzle.assert_called_once_with(1, "demo", size=15)
+        assert response.status_code == 200
+        assert response.json()["grid"]["size"] == puzzle.n
 
-    def test_handle_list_puzzles_hides_internal_new_entries(self, request_handler, app):
-        app.puzzle_uc.list_puzzles.return_value = ["alpha", "__new__abcd1234", "beta"]
+    def test_create_puzzle_write_failure_is_a_500(self, client, container):
+        container.puzzle_uc.create_puzzle.side_effect = PersistenceError("read-only database")
 
-        response = handle_list_puzzles(
-            (), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.post("/api/puzzles", json={"name": "demo", "size": 15})
 
-        app.puzzle_uc.list_puzzles.assert_called_once_with(1, state=None)
-        assert response == {"puzzles": ["alpha", "beta"]}
+        assert response.status_code == 500
+        assert response.json() == {"error": "read-only database"}
 
-    def test_handle_get_dashboard_returns_puzzles(self, request_handler, app):
-        app.puzzle_uc.get_dashboard.return_value = {
+    def test_list_puzzles_hides_internal_new_entries(self, client, container):
+        container.puzzle_uc.list_puzzles.return_value = ["alpha", "__new__abcd1234", "beta"]
+
+        response = client.get("/api/puzzles")
+
+        container.puzzle_uc.list_puzzles.assert_called_once_with(1, state=None)
+        assert response.json() == {"puzzles": ["alpha", "beta"]}
+
+    def test_list_puzzles_passes_state_query_param(self, client, container):
+        container.puzzle_uc.list_puzzles.return_value = ["alpha"]
+
+        response = client.get("/api/puzzles", params={"state": "draft"})
+
+        container.puzzle_uc.list_puzzles.assert_called_once_with(1, state="draft")
+        assert response.json() == {"puzzles": ["alpha"]}
+
+    def test_dashboard_returns_puzzles(self, client, container):
+        container.puzzle_uc.get_dashboard.return_value = {
             "puzzles": [{"name": "alpha", "state": "draft"}]
         }
 
-        response = handle_get_dashboard(
-            (), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.get("/api/dashboard")
 
-        app.puzzle_uc.get_dashboard.assert_called_once_with(1)
-        assert response == {"puzzles": [{"name": "alpha", "state": "draft"}]}
+        container.puzzle_uc.get_dashboard.assert_called_once_with(1)
+        assert response.json() == {"puzzles": [{"name": "alpha", "state": "draft"}]}
 
-    def test_handle_get_dashboard_empty(self, request_handler, app):
-        app.puzzle_uc.get_dashboard.return_value = {"puzzles": []}
+    def test_delete_puzzle(self, client, container):
+        response = client.delete("/api/puzzles/demo")
 
-        response = handle_get_dashboard(
-            (), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        container.puzzle_uc.delete_puzzle.assert_called_once_with(1, "demo")
+        assert response.json() == {"status": "deleted", "name": "demo"}
 
-        assert response == {"puzzles": []}
+    def test_open_puzzle_for_editing(self, client, container):
+        container.puzzle_uc.open_puzzle_for_editing.return_value = "__wc__demo__a1b2c3d4"
 
-    def test_handle_list_puzzles_passes_state_query_param(self, request_handler, app):
-        app.puzzle_uc.list_puzzles.return_value = ["alpha"]
+        response = client.post("/api/puzzles/demo/open")
 
-        response = handle_list_puzzles(
-            (), {"state": "draft"}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        assert response.json() == {
+            "original_name": "demo", "working_name": "__wc__demo__a1b2c3d4"}
 
-        app.puzzle_uc.list_puzzles.assert_called_once_with(1, state="draft")
-        assert response == {"puzzles": ["alpha"]}
-
-    def test_handle_list_puzzles_state_all_is_forwarded(self, request_handler, app):
-        app.puzzle_uc.list_puzzles.return_value = ["alpha"]
-
-        response = handle_list_puzzles(
-            (), {"state": "all"}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
-
-        app.puzzle_uc.list_puzzles.assert_called_once_with(1, state="all")
-        assert response == {"puzzles": ["alpha"]}
-
-    def test_handle_list_puzzles_invalid_state_returns_error(self, request_handler, app):
-        app.puzzle_uc.list_puzzles.side_effect = ValueError("Invalid state: 'bogus'")
-
-        with pytest.raises(ApiError) as exc_info:
-            handle_list_puzzles(
-                (), {"state": "bogus"}, {}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"}
-            )
-
-        assert exc_info.value.status == 400
-        assert exc_info.value.message == "Invalid state: 'bogus'"
-
-    def test_handle_switch_to_grid_mode(self, request_handler, app):
+    def test_switch_to_grid_mode(self, client, container):
         puzzle = TestPuzzle.create_puzzle()
         puzzle.enter_grid_mode()
-        app.puzzle_uc.switch_to_grid_mode.return_value = puzzle
+        container.puzzle_uc.switch_to_grid_mode.return_value = puzzle
 
-        response = handle_switch_to_grid_mode(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.post("/api/puzzles/demo/mode/grid")
 
-        app.puzzle_uc.switch_to_grid_mode.assert_called_once_with(1, "demo")
-        assert response["mode"] == "grid"
+        container.puzzle_uc.switch_to_grid_mode.assert_called_once_with(1, "demo")
+        assert response.json()["mode"] == "grid"
 
-    def test_handle_switch_to_puzzle_mode(self, request_handler, app):
+    def test_switch_to_puzzle_mode(self, client, container):
         puzzle = TestPuzzle.create_puzzle()
         puzzle.enter_puzzle_mode()
-        app.puzzle_uc.switch_to_puzzle_mode.return_value = puzzle
+        container.puzzle_uc.switch_to_puzzle_mode.return_value = puzzle
 
-        response = handle_switch_to_puzzle_mode(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.post("/api/puzzles/demo/mode/puzzle")
 
-        app.puzzle_uc.switch_to_puzzle_mode.assert_called_once_with(1, "demo")
-        assert response["mode"] == "puzzle"
+        container.puzzle_uc.switch_to_puzzle_mode.assert_called_once_with(1, "demo")
+        assert response.json()["mode"] == "puzzle"
 
-    def test_handle_toggle_puzzle_black_cell(self, request_handler, app):
+    def test_toggle_black_cell_converts_to_one_based_coordinates(self, client, container):
         puzzle = TestPuzzle.create_puzzle()
         puzzle.toggle_black_cell(1, 1)
-        app.puzzle_uc.toggle_black_cell.return_value = puzzle
+        container.puzzle_uc.toggle_black_cell.return_value = puzzle
 
-        response = handle_toggle_puzzle_black_cell(
-            ("demo", "0", "0"), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.put("/api/puzzles/demo/grid/cells/0/0")
 
-        app.puzzle_uc.toggle_black_cell.assert_called_once_with(1, "demo", 1, 1)
-        assert response["grid"]["cells"][0] is True
+        container.puzzle_uc.toggle_black_cell.assert_called_once_with(1, "demo", 1, 1)
+        assert response.json()["grid"]["cells"][0] is True
+
+    def test_set_cell_letter_converts_to_one_based_coordinates(self, client, container):
+        response = client.put("/api/puzzles/demo/cells/2/3", json={"letter": "a"})
+
+        container.puzzle_uc.set_cell_letter.assert_called_once_with(1, "demo", 3, 4, "a")
+        assert response.json() == {"name": "demo", "r": 3, "c": 4, "letter": "A"}
+
+    def test_generate_grid_reports_a_notice_instead_of_failing(self, client, container):
+        container.puzzle_uc.generate_grid.side_effect = RuntimeError("no grid of that shape")
+
+        response = client.post("/api/puzzles/demo/grid/generate")
+
+        assert response.status_code == 200
+        assert response.json() == {"notice": "no grid of that shape"}
+
+    def test_generate_grid_passes_the_parsed_spec(self, client, container):
+        container.puzzle_uc.generate_grid.return_value = TestPuzzle.create_puzzle()
+
+        client.post("/api/puzzles/demo/grid/generate", params={"spec": "3,4,5"})
+
+        container.puzzle_uc.generate_grid.assert_called_once_with(1, "demo", [3, 4, 5])
+
+    def test_set_puzzle_title(self, client, container):
+        response = client.put("/api/puzzles/demo/title", json={"title": "My Puzzle"})
+
+        container.puzzle_uc.set_puzzle_title.assert_called_once_with(1, "demo", "My Puzzle")
+        assert response.json() == {"name": "demo", "title": "My Puzzle"}
+
+    def test_get_word_at(self, client, container):
+        word = Mock()
+        word.cell_iterator.return_value = iter([(1, 1), (1, 2)])
+        word.get_text.return_value = "AT"
+        word.get_clue.return_value = None
+        container.puzzle_uc.get_word_at.return_value = word
+
+        response = client.get("/api/puzzles/demo/words/5/across")
+
+        container.puzzle_uc.get_word_at.assert_called_once_with(1, "demo", 5, "across")
+        assert response.json() == {
+            "seq": 5, "direction": "across",
+            "cells": [[1, 1], [1, 2]], "answer": "AT", "clue": "",
+        }
 
 
-class TestWordHandlers:
-    """Direct handler tests for word-related endpoints."""
+class TestWordRoutes:
+    """Suggestions, constraints and definitions."""
 
-    @pytest.fixture
-    def request_handler(self):
-        handler = Mock()
-        handler.command = "PUT"
-        handler.path = "/api/test"
-        return handler
+    def test_set_word_clue_surfaces_duplicate_error(self, client, container):
+        container.puzzle_uc.set_word_clue.side_effect = ValueError(
+            "GARDEN duplicates GARDENS, already used at 12 across")
 
-    @pytest.fixture
-    def app(self):
-        app = Mock()
-        app.puzzle_uc = Mock()
-        app.word_uc = Mock()
-        return app
+        response = client.put("/api/puzzles/demo/words/5/across",
+                              json={"text": "GARDEN", "clue": ""})
 
-    def test_handle_set_word_clue_surfaces_duplicate_error(self, request_handler, app):
-        """A duplicate-word ValueError from the use case comes back as a 400,
-        not a 500 - the same path already used for other invalid input."""
-        app.puzzle_uc.set_word_clue.side_effect = ValueError(
-            "GARDEN duplicates GARDENS, already used at 12 across"
-        )
+        assert response.status_code == 400
+        assert response.json() == {
+            "error": "GARDEN duplicates GARDENS, already used at 12 across"}
 
-        with pytest.raises(ApiError) as exc_info:
-            handle_set_word_clue(
-                ("demo", "5", "across"), {}, {"text": "GARDEN", "clue": ""}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"}
-            )
-
-        assert exc_info.value.status == 400
-        assert exc_info.value.message == "GARDEN duplicates GARDENS, already used at 12 across"
-
-    def test_handle_get_suggestions_filters_using_puzzle_context(self, request_handler, app):
-        """puzzle/seq/direction query params load the word, exclude its
-        duplicates from the suggestion list, and scope the search to the
-        word's length."""
+    def test_suggestions_filter_using_puzzle_context(self, client, container):
         word = Mock()
         word.length = 3
-        app.puzzle_uc.get_word_at.return_value = word
-        app.word_uc.get_other_complete_words.return_value = ["CAT"]
-        app.word_uc.get_suggestions.return_value = ["cot"]
+        container.puzzle_uc.get_word_at.return_value = word
+        container.word_uc.get_other_complete_words.return_value = ["CAT"]
+        container.word_uc.get_suggestions.return_value = ["cot"]
 
-        response = handle_get_suggestions(
-            (), {"pattern": "???", "puzzle": "demo", "seq": "5", "direction": "across"},
-            {}, None, request_handler, app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.get("/api/words/suggestions", params={
+            "pattern": "???", "puzzle": "demo", "seq": 5, "direction": "across"})
 
-        app.puzzle_uc.get_word_at.assert_called_once_with(1, "demo", 5, "across")
-        app.word_uc.get_other_complete_words.assert_called_once_with(word)
-        app.word_uc.get_suggestions.assert_called_once_with("???", ["CAT"], length=3)
-        assert response == {"pattern": "???", "suggestions": ["cot"], "count": 1}
+        container.puzzle_uc.get_word_at.assert_called_once_with(1, "demo", 5, "across")
+        container.word_uc.get_other_complete_words.assert_called_once_with(word)
+        container.word_uc.get_suggestions.assert_called_once_with("???", ["CAT"], length=3)
+        assert response.json() == {"pattern": "???", "suggestions": ["cot"], "count": 1}
 
-    def test_handle_get_suggestions_without_puzzle_context_is_unfiltered(self, request_handler, app):
-        """Without puzzle/seq/direction or a 'length' param, behavior is
-        unchanged from before this feature."""
-        app.word_uc.get_suggestions.return_value = ["cat", "cats"]
+    def test_suggestions_without_puzzle_context_are_unfiltered(self, client, container):
+        container.word_uc.get_suggestions.return_value = ["cat", "cats"]
 
-        response = handle_get_suggestions(
-            (), {"pattern": "???"}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.get("/api/words/suggestions", params={"pattern": "???"})
 
-        app.puzzle_uc.get_word_at.assert_not_called()
-        app.word_uc.get_suggestions.assert_called_once_with("???", None, length=None)
-        assert response == {"pattern": "???", "suggestions": ["cat", "cats"], "count": 2}
+        container.puzzle_uc.get_word_at.assert_not_called()
+        container.word_uc.get_suggestions.assert_called_once_with("???", None, length=None)
+        assert response.json() == {
+            "pattern": "???", "suggestions": ["cat", "cats"], "count": 2}
 
-    def test_handle_get_suggestions_with_standalone_length_param(self, request_handler, app):
-        """A bare 'length' query parameter, with no puzzle context, is
-        forwarded so a free-form regex can still be scoped to a length."""
-        app.word_uc.get_suggestions.return_value = ["cat", "cot"]
+    def test_suggestions_accept_a_standalone_length(self, client, container):
+        container.word_uc.get_suggestions.return_value = ["cat", "cot"]
 
-        response = handle_get_suggestions(
-            (), {"pattern": "C.*T", "length": "3"}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"}
-        )
+        response = client.get("/api/words/suggestions",
+                              params={"pattern": "C.*T", "length": 3})
 
-        app.puzzle_uc.get_word_at.assert_not_called()
-        app.word_uc.get_suggestions.assert_called_once_with("C.*T", None, length=3)
-        assert response == {"pattern": "C.*T", "suggestions": ["cat", "cot"], "count": 2}
+        container.puzzle_uc.get_word_at.assert_not_called()
+        container.word_uc.get_suggestions.assert_called_once_with("C.*T", None, length=3)
+        assert response.json()["count"] == 2
 
-    def test_handle_get_suggestions_pattern_too_long_is_rejected(self, request_handler, app):
-        """The use case's max-pattern-length ValueError surfaces as the same
-        'Invalid pattern' error used for broken regex syntax."""
-        app.word_uc.get_suggestions.side_effect = ValueError("pattern too long (max 200 characters)")
+    def test_suggestions_reject_a_pattern_that_is_too_long(self, client, container):
+        container.word_uc.get_suggestions.side_effect = ValueError(
+            "pattern too long (max 200 characters)")
 
-        with pytest.raises(ApiError) as exc_info:
-            handle_get_suggestions(
-                (), {"pattern": "A" * 201}, {}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"}
-            )
+        response = client.get("/api/words/suggestions", params={"pattern": "A" * 201})
 
-        assert exc_info.value.status == 400
-        assert exc_info.value.message == "Invalid pattern: pattern too long (max 200 characters)"
+        assert response.status_code == 400
+        assert response.json() == {
+            "error": "Invalid pattern: pattern too long (max 200 characters)"}
+
+    def test_suggestions_require_a_pattern(self, client):
+        response = client.get("/api/words/suggestions")
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "Missing 'pattern'"}
+
+    def test_word_constraints(self, client, container):
+        word = Mock()
+        container.puzzle_uc.get_word_at.return_value = word
+        container.word_uc.get_word_constraints.return_value = {"cells": []}
+
+        response = client.get("/api/puzzles/demo/words/5/across/constraints")
+
+        container.word_uc.get_word_constraints.assert_called_once_with(word)
+        assert response.json() == {"cells": []}
+
+    def test_ranked_suggestions(self, client, container):
+        word = Mock()
+        container.puzzle_uc.get_word_at.return_value = word
+        container.word_uc.get_ranked_suggestions.return_value = ["CAT"]
+
+        response = client.get("/api/puzzles/demo/words/5/across/suggestions",
+                              params={"pattern": "C??"})
+
+        container.word_uc.get_ranked_suggestions.assert_called_once_with(word, "C??")
+        assert response.json() == {"suggestions": ["CAT"], "count": 1}
+
+    def test_definitions_not_found(self, client, container):
+        container.definition_uc.lookup.side_effect = DefinitionNotFound("nope")
+
+        response = client.get("/api/words/zzzz/definitions")
+
+        assert response.status_code == 404
+        assert response.json() == {"error": "No definitions found for 'zzzz'"}
 
 
-class TestCopyPuzzleHandler:
-    """Direct handler tests for handle_copy_puzzle (Save/Save As)."""
+class TestExportRoutes:
+    """Downloads carry the right filename and content type."""
 
     @pytest.fixture
-    def request_handler(self):
-        handler = Mock()
-        handler.command = "POST"
-        handler.path = "/api/test"
-        return handler
+    def client(self, container):
+        container.export_uc.export_puzzle_to_solver_pdf.return_value = b"solver"
+        container.export_uc.export_puzzle_to_solved_pdf.return_value = b"solved"
+        container.export_uc.export_puzzle_to_acrosslite.return_value = "grid text"
+        return TestClient(create_app(container=container), raise_server_exceptions=False)
 
-    @pytest.fixture
-    def app(self):
-        app = Mock()
-        app.puzzle_uc = Mock()
-        return app
+    def test_solver_pdf_uses_plain_pdf_suffix(self, client):
+        response = client.get("/api/export/puzzles/demo/solver-pdf")
 
-    def test_missing_comment_is_rejected(self, request_handler, app):
-        with pytest.raises(ApiError) as exc_info:
-            handle_copy_puzzle(
-                ("demo",), {}, {"new_name": "demo-copy"}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"}
-            )
+        assert response.headers["content-disposition"] == 'attachment; filename="demo.pdf"'
+        assert response.headers["content-type"] == "application/pdf"
+        assert response.content == b"solver"
 
-        assert exc_info.value.status == 400
-        assert exc_info.value.message == "Missing or invalid 'comment'"
-        app.puzzle_uc.copy_puzzle.assert_not_called()
+    def test_solved_pdf_uses_solution_suffix(self, client):
+        response = client.get("/api/export/puzzles/demo/solved-pdf")
 
-    def test_blank_comment_is_rejected(self, request_handler, app):
-        with pytest.raises(ApiError) as exc_info:
-            handle_copy_puzzle(
-                ("demo",), {}, {"new_name": "demo-copy", "comment": "   "}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"}
-            )
+        assert response.headers["content-disposition"] == \
+            'attachment; filename="demo-solution.pdf"'
 
-        assert exc_info.value.status == 400
-        assert exc_info.value.message == "Missing or invalid 'comment'"
-        app.puzzle_uc.copy_puzzle.assert_not_called()
+    def test_text_export_is_encoded(self, client):
+        response = client.get("/api/export/puzzles/demo/acrosslite")
 
-    def test_valid_comment_is_passed_through(self, request_handler, app):
-        puzzle = TestPuzzle.create_puzzle()
-        app.puzzle_uc.copy_puzzle.return_value = puzzle
+        assert response.content == b"grid text"
+        assert response.headers["content-disposition"] == 'attachment; filename="demo.txt"'
 
-        response = handle_copy_puzzle(
-            ("demo",), {}, {"new_name": "demo-copy", "comment": "Fixed the theme entries"},
-            None, request_handler, app=app, current_user={"id": 1, "username": "test"}
-        )
+    def test_missing_puzzle_is_a_404(self, client, container):
+        container.export_uc.export_puzzle_to_solver_pdf.side_effect = PersistenceError("gone")
 
-        app.puzzle_uc.copy_puzzle.assert_called_once_with(
+        response = client.get("/api/export/puzzles/nope/solver-pdf")
+
+        assert response.status_code == 404
+        assert response.json() == {"error": "Puzzle not found: nope"}
+
+
+class TestImportRoutes:
+    """Uploads are validated before the importer sees them."""
+
+    def test_acrosslite_import(self, client, container):
+        response = client.post("/api/import/acrosslite",
+                               json={"name": " demo ", "content": "grid text"})
+
+        container.import_uc.import_puzzle_from_acrosslite.assert_called_once_with(
+            1, "demo", "grid text")
+        assert response.json() == {"name": "demo"}
+
+    def test_missing_name_is_rejected(self, client, container):
+        response = client.post("/api/import/xd", json={"content": "text"})
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "Missing puzzle name"}
+        container.import_uc.import_puzzle_from_xd.assert_not_called()
+
+    def test_missing_content_is_rejected(self, client, container):
+        response = client.post("/api/import/ipuz", json={"name": "demo"})
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "Missing file content"}
+
+    def test_unusable_file_is_a_400(self, client, container):
+        from crossword.ports.import_port import PuzzleImportError
+        container.import_uc.import_puzzle_from_ccxml.side_effect = PuzzleImportError("bad xml")
+
+        response = client.post("/api/import/ccxml",
+                               json={"name": "demo", "content": "<nope/>"})
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "bad xml"}
+
+    def test_puz_import_decodes_base64(self, client, container):
+        response = client.post("/api/import/puz",
+                               json={"name": "demo", "content_b64": "aGVsbG8="})
+
+        container.import_uc.import_puzzle_from_puz.assert_called_once_with(1, "demo", b"hello")
+        assert response.json() == {"name": "demo"}
+
+    def test_puz_import_rejects_bad_base64(self, client, container):
+        response = client.post("/api/import/puz",
+                               json={"name": "demo", "content_b64": "!!!not base64!!!"})
+
+        assert response.status_code == 500
+        assert response.json() == {"error": "Invalid base64 encoding"}
+
+
+class TestSaveRoutes:
+    """Save and Save As, which copy a working copy back to a real puzzle."""
+
+    def test_missing_comment_is_rejected(self, client, container):
+        response = client.post("/api/puzzles/demo/copy", json={"new_name": "demo-copy"})
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "Missing or invalid 'comment'"}
+        container.puzzle_uc.copy_puzzle.assert_not_called()
+
+    def test_blank_comment_is_rejected(self, client, container):
+        response = client.post("/api/puzzles/demo/copy",
+                               json={"new_name": "demo-copy", "comment": "   "})
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "Missing or invalid 'comment'"}
+        container.puzzle_uc.copy_puzzle.assert_not_called()
+
+    def test_missing_new_name_is_rejected(self, client, container):
+        response = client.post("/api/puzzles/demo/copy", json={"comment": "why not"})
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "Missing or invalid 'new_name'"}
+
+    def test_valid_comment_is_passed_through(self, client, container):
+        container.puzzle_uc.copy_puzzle.return_value = TestPuzzle.create_puzzle()
+
+        response = client.post("/api/puzzles/demo/copy", json={
+            "new_name": "demo-copy", "comment": "Fixed the theme entries"})
+
+        container.puzzle_uc.copy_puzzle.assert_called_once_with(
             1, "demo", "demo-copy", "Fixed the theme entries")
-        assert response["name"] == "demo-copy"
+        assert response.json()["name"] == "demo-copy"
 
-    def test_value_error_from_use_case_surfaces(self, request_handler, app):
-        """Any ValueError from the use case (empty comment, bad name, etc.)
-        comes back as a 400, not a 500."""
-        app.puzzle_uc.copy_puzzle.side_effect = ValueError("comment must not be empty")
+    def test_use_case_rejection_surfaces_as_400(self, client, container):
+        container.puzzle_uc.copy_puzzle.side_effect = ValueError("comment must not be empty")
 
-        with pytest.raises(ApiError) as exc_info:
-            handle_copy_puzzle(
-                ("demo",), {}, {"new_name": "demo-copy", "comment": "x"}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"}
-            )
+        response = client.post("/api/puzzles/demo/copy",
+                               json={"new_name": "demo-copy", "comment": "x"})
 
-        assert exc_info.value.status == 400
-        assert exc_info.value.message == "comment must not be empty"
+        assert response.status_code == 400
+        assert response.json() == {"error": "comment must not be empty"}
+
+    def test_rename_puzzle(self, client, container):
+        response = client.post("/api/puzzles/demo/rename", json={"new_name": "demo2"})
+
+        container.puzzle_uc.rename_puzzle.assert_called_once_with(1, "demo", "demo2")
+        assert response.json() == {"name": "demo2"}
 
 
-class TestPuzzleStateHandlers:
-    """Handler tests for the puzzle-state endpoints."""
+class TestPuzzleStateRoutes:
+    """The lifecycle state of a puzzle and its history."""
 
-    @pytest.fixture
-    def request_handler(self):
-        handler = Mock()
-        handler.command = "PUT"
-        handler.path = "/api/puzzles/demo/state"
-        return handler
-
-    @pytest.fixture
-    def app(self):
-        app = Mock()
-        app.puzzle_uc = Mock()
-        return app
-
-    def test_get_puzzle_state(self, request_handler, app):
-        app.puzzle_uc.get_puzzle_state.return_value = {
+    def test_get_puzzle_state(self, client, container):
+        container.puzzle_uc.get_puzzle_state.return_value = {
             "state": "submitted", "publisher": "NYT",
             "date_submitted": "2026-06-06", "date_published": None,
         }
-        response = handle_get_puzzle_state(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        app.puzzle_uc.get_puzzle_state.assert_called_once_with(1, "demo")
-        assert response == {
+
+        response = client.get("/api/puzzles/demo/state")
+
+        container.puzzle_uc.get_puzzle_state.assert_called_once_with(1, "demo")
+        assert response.json() == {
             "name": "demo", "state": "submitted", "publisher": "NYT",
             "date_submitted": "2026-06-06", "date_published": None,
         }
 
-    def test_set_puzzle_state_happy_path(self, request_handler, app):
-        app.puzzle_uc.set_puzzle_state.return_value = {
+    def test_set_puzzle_state(self, client, container):
+        container.puzzle_uc.set_puzzle_state.return_value = {
             "state": "submitted", "publisher": "NYT",
             "date_submitted": "2026-06-06", "date_published": None,
         }
-        response = handle_set_puzzle_state(
-            ("demo",), {},
-            {"state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06"},
-            None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        app.puzzle_uc.set_puzzle_state.assert_called_once_with(
+
+        response = client.put("/api/puzzles/demo/state", json={
+            "state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06"})
+
+        container.puzzle_uc.set_puzzle_state.assert_called_once_with(
             1, "demo", "submitted",
             publisher="NYT", date_submitted="2026-06-06", date_published=None,
         )
-        assert response["state"] == "submitted"
+        assert response.json()["state"] == "submitted"
 
-    def test_set_puzzle_state_missing_state_returns_400(self, request_handler, app):
-        response = handle_set_puzzle_state(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        assert response is None
-        request_handler._send_json.assert_called_once()
-        assert request_handler._send_json.call_args.kwargs["status"] == 400
-        app.puzzle_uc.set_puzzle_state.assert_not_called()
+    def test_set_puzzle_state_validation_error_is_a_400(self, client, container):
+        container.puzzle_uc.set_puzzle_state.side_effect = ValueError("publisher is required")
 
-    def test_set_puzzle_state_validation_error_returns_400(self, request_handler, app):
-        app.puzzle_uc.set_puzzle_state.side_effect = ValueError("publisher is required")
-        with pytest.raises(ApiError) as exc_info:
-            handle_set_puzzle_state(
-                ("demo",), {}, {"state": "submitted"}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"},
-            )
-        assert exc_info.value.status == 400
-        assert exc_info.value.message == "publisher is required"
+        response = client.put("/api/puzzles/demo/state", json={"state": "submitted"})
 
-    def test_get_puzzle_state_history(self, request_handler, app):
-        app.puzzle_uc.get_puzzle_state_history.return_value = [
-            {"state": "draft", "publisher": None, "date_submitted": None,
-             "date_published": None, "changed_at": "2026-01-01T00:00:00"},
-            {"state": "submitted", "publisher": "NYT", "date_submitted": "2026-06-06",
-             "date_published": None, "changed_at": "2026-06-06T00:00:00"},
+        assert response.status_code == 400
+        assert response.json() == {"error": "publisher is required"}
+
+    def test_get_puzzle_state_history(self, client, container):
+        container.puzzle_uc.get_puzzle_state_history.return_value = [
+            {"state": "draft", "changed_at": "2026-01-01T00:00:00"},
+            {"state": "submitted", "changed_at": "2026-06-06T00:00:00"},
         ]
-        response = handle_get_puzzle_state_history(
-            ("demo",), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        app.puzzle_uc.get_puzzle_state_history.assert_called_once_with(1, "demo")
-        assert response["name"] == "demo"
-        assert [row["state"] for row in response["history"]] == ["draft", "submitted"]
 
-    def test_get_puzzle_state_history_not_found(self, request_handler, app):
-        from crossword.ports.persistence_port import PersistenceError
-        app.puzzle_uc.get_puzzle_state_history.side_effect = PersistenceError("not found")
-        with pytest.raises(ApiError) as exc_info:
-            handle_get_puzzle_state_history(
-                ("nope",), {}, {}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"},
-            )
-        assert exc_info.value.status == 404
+        response = client.get("/api/puzzles/demo/state/history")
 
-    def test_restore_puzzle_from_history_happy_path(self, request_handler, app):
-        app.puzzle_uc.restore_puzzle_from_history.return_value = "__wc__demo__a1b2c3d4"
-        response = handle_restore_puzzle_from_history(
-            ("demo", "31"), {}, {}, None, request_handler,
-            app=app, current_user={"id": 1, "username": "test"},
-        )
-        app.puzzle_uc.restore_puzzle_from_history.assert_called_once_with(1, "demo", 31)
-        assert response == {"original_name": "demo", "working_name": "__wc__demo__a1b2c3d4"}
+        container.puzzle_uc.get_puzzle_state_history.assert_called_once_with(1, "demo")
+        body = response.json()
+        assert body["name"] == "demo"
+        assert [row["state"] for row in body["history"]] == ["draft", "submitted"]
 
-    def test_restore_puzzle_from_history_missing_history_id(self, request_handler, app):
-        with pytest.raises(ApiError) as exc_info:
-            handle_restore_puzzle_from_history(
-                ("demo",), {}, {}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"},
-            )
-        assert exc_info.value.status == 400
-        app.puzzle_uc.restore_puzzle_from_history.assert_not_called()
+    def test_get_puzzle_state_history_not_found(self, client, container):
+        container.puzzle_uc.get_puzzle_state_history.side_effect = PersistenceError("not found")
 
-    def test_restore_puzzle_from_history_non_integer_id(self, request_handler, app):
-        with pytest.raises(ApiError) as exc_info:
-            handle_restore_puzzle_from_history(
-                ("demo", "not-a-number"), {}, {}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"},
-            )
-        assert exc_info.value.status == 400
-        app.puzzle_uc.restore_puzzle_from_history.assert_not_called()
+        response = client.get("/api/puzzles/nope/state/history")
 
-    def test_restore_puzzle_from_history_no_content_returns_error(self, request_handler, app):
-        from crossword.ports.persistence_port import PersistenceError
-        app.puzzle_uc.restore_puzzle_from_history.side_effect = PersistenceError(
-            "No restorable content for history row 31 of puzzle 'demo'"
-        )
-        with pytest.raises(ApiError) as exc_info:
-            handle_restore_puzzle_from_history(
-                ("demo", "31"), {}, {}, None, request_handler,
-                app=app, current_user={"id": 1, "username": "test"},
-            )
-        assert exc_info.value.status == 404
-        assert "No restorable content" in exc_info.value.message
+        assert response.status_code == 404
+
+    def test_restore_from_history(self, client, container):
+        container.puzzle_uc.restore_puzzle_from_history.return_value = "__wc__demo__a1b2c3d4"
+
+        response = client.post("/api/puzzles/demo/state/history/31/restore")
+
+        container.puzzle_uc.restore_puzzle_from_history.assert_called_once_with(1, "demo", 31)
+        assert response.json() == {
+            "original_name": "demo", "working_name": "__wc__demo__a1b2c3d4"}
+
+    def test_restore_from_history_without_content(self, client, container):
+        container.puzzle_uc.restore_puzzle_from_history.side_effect = PersistenceError(
+            "No restorable content for history row 31 of puzzle 'demo'")
+
+        response = client.post("/api/puzzles/demo/state/history/31/restore")
+
+        assert response.status_code == 404
+        assert "No restorable content" in response.json()["error"]
+
+
+class TestFrontendRoutes:
+    """The page itself, its theme, and the settings screen."""
+
+    def test_index_is_served(self, client):
+        response = client.get("/")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/html")
+
+    def test_config_comes_from_the_wired_config(self, client):
+        response = client.get("/api/config")
+
+        assert response.json() == {"message_line_timeout_ms": 1000}
+
+    def test_theme_css_is_empty_without_a_theme_color(self, client):
+        response = client.get("/static/css/theme.css")
+
+        assert response.headers["content-type"].startswith("text/css")
+        assert response.text == ""
+
+    def test_theme_css_derives_a_palette(self, container):
+        container.config["theme_color"] = "#154d71"
+        client = TestClient(create_app(container=container))
+
+        response = client.get("/static/css/theme.css")
+
+        assert "--c-primary: #154d71;" in response.text
+        assert "--c-appbar-bg:" in response.text
+
+    def test_settings_are_read_and_written(self, client):
+        with patch("crossword.http_server.static_routes.get_settings",
+                   return_value={"author_name": "Phil"}) as read, \
+             patch("crossword.http_server.static_routes.put_settings",
+                   return_value=True) as write:
+            assert client.get("/api/settings").json() == {"author_name": "Phil"}
+            response = client.put("/api/settings", json={"author_name": "Someone"})
+
+        read.assert_called_once_with()
+        write.assert_called_once_with({"author_name": "Someone"})
+        assert response.json() == {"restart_required": True}
+
+
+class TestServerStartup:
+    """Starting the server."""
+
+    def test_run_http_server_hands_uvicorn_the_configured_address(self):
+        container = Mock()
+        container.config = {"host": "127.0.0.1", "port": 5000}
+
+        with patch("crossword.http_server.main.make_app", return_value=container), \
+             patch("crossword.http_server.main.uvicorn.run") as run, \
+             patch("builtins.print") as printed:
+            run_http_server({"host": "127.0.0.1", "port": 5000})
+
+        printed.assert_not_called()
+        assert run.call_args.kwargs["host"] == "127.0.0.1"
+        assert run.call_args.kwargs["port"] == 5000
+
+    def test_create_app_wires_the_container_onto_the_app(self):
+        container = Mock()
+        container.config = {}
+
+        app = create_app(container=container)
+
+        assert app.state.container is container

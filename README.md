@@ -48,6 +48,9 @@ From the repository root you can also start the app directly with:
 - Windows: `run_server.bat`
 - Any platform with Python on `PATH`: `python -m crossword.http_server`
 
+The API documents itself while the server is running: a browsable reference is
+at `/docs` and the OpenAPI document at `/openapi.json`.
+
 ## Using the application
 
 Open a browser and go to the host and port configured in config.yaml (e.g. **http://localhost:5000**).
@@ -101,7 +104,7 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 | Ports | `persistence`, `word_list`, `export` |
 | Adapters | `SQLiteAdapter`, `DictionaryAdapter`, `ExportAdapter` |
 | Use Cases | `PuzzleUseCases`, `WordUseCases`, `ExportUseCases` |
-| HTTP Server | `BaseHTTPRequestHandler` with regex router (no Flask) |
+| HTTP Server | FastAPI app served by uvicorn |
 | Frontend | Single `index.html` + `static/css/style.css` + `static/js/{state,ui,svg,puzzle-editor,word-editor,settings}.js` |
 
 ## Tools
@@ -124,7 +127,7 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 
 | Script | Description |
 |--------|-------------|
-| `tools/dev/swagger.py` | Swagger UI for the REST API (`python3 tools/dev/swagger.py`) |
+| `tools/dev/swagger.py` | Hand-written Swagger UI for the REST API (`python3 tools/dev/swagger.py`); the server's own `/docs` covers the same ground |
 | `tools/dev/gen_endpoints_doc.py` | Regenerate `docs/dev/endpoints.md` from live route registrations |
 | `tools/dev/import_grid.py` | Bulk-import `.xd` puzzle files as blank grids (reads paths from stdin) |
 | `tools/dev/impgrid.py` | Import a puzzle from an old `grids.db` into the main database |

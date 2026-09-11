@@ -9,13 +9,18 @@ description = "Crossword Puzzle Editor"
 license = { text = "MIT" }
 authors = [{ name = "Phil Hanna" }]
 requires-python = ">=3.10"
-dependencies = ["PyYAML", "puzpy", "requests"]
+dependencies = [
+    "PyYAML",
+    "puzpy",
+    "requests",
+    "fastapi",
+    "uvicorn[standard]",
+    "pytest",
+    "httpx2",
+]
 
 [project.urls]
 Homepage = "https://github.com/philhanna/crossword"
-
-[project.optional-dependencies]
-dev = ["pytest"]
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -1,165 +1,41 @@
 #!/usr/bin/env python3
 """
-Generate docs/dev/endpoints.md from live route registrations.
+Generate docs/dev/endpoints.md from the live route table.
 
-Imports register_routes() to discover all routes and their handler functions,
-then uses inspect to find source file and line number for each handler.
-Pretty path names (with named parameters) are sourced from the Swagger SPEC.
-
-The only manual upkeep needed: if you add a route that's not in the
-swagger SPEC and has path parameters, add an entry to _EXTRA_PATHS in
-the script so the param names come out correctly instead of {param}.
+Builds the FastAPI app's routers without wiring any adapters, so no database
+is needed, then uses inspect to find the source file and line of each route
+function. FastAPI already knows the readable path and the required query
+parameters, so nothing here has to be kept in step by hand.
 
 Usage:
     python3 tools/dev/gen_endpoints_doc.py
 """
 
-import importlib.util
 import inspect
 import os
-import re
 import sys
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
+from fastapi import FastAPI
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DEV_TOOLS_DIR = os.path.join(ROOT, "tools", "dev")
 OUT_PATH = os.path.join(ROOT, "docs", "dev", "endpoints.md")
 
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-# ---------------------------------------------------------------------------
-# Load swagger SPEC for pretty path names (e.g. {name} instead of ([^/]+))
-# ---------------------------------------------------------------------------
+SECTION_ORDER = ["Static", "Puzzles", "Words", "Export", "Import"]
 
-def _load_swagger_spec():
-    spec = importlib.util.spec_from_file_location(
-        "swagger", os.path.join(DEV_TOOLS_DIR, "swagger.py"))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod.SPEC
-
-
-def _build_spec_map(swagger_spec):
-    """
-    Return a dict mapping (METHOD, normalized_path) -> display_path.
-
-    normalized_path replaces all {param} with {} for matching against regex-derived paths.
-    display_path is the original OpenAPI path, with required query params appended.
-    """
-    path_map = {}
-    for pretty_path, path_data in swagger_spec["paths"].items():
-        norm = re.sub(r"\{[^}]+\}", "{}", pretty_path)
-        shared_params = path_data.get("parameters", [])
-        for method_name, method_data in path_data.items():
-            if method_name not in ("get", "post", "put", "delete", "patch"):
-                continue
-            all_params = shared_params + method_data.get("parameters", [])
-            query_params = [
-                p["name"] for p in all_params
-                if p.get("in") == "query" and p.get("required")
-            ]
-            display = pretty_path
-            if query_params:
-                display += "?" + "&".join(f"{p}=" for p in query_params)
-            path_map[(method_name.upper(), norm)] = display
-    return path_map
-
-# ---------------------------------------------------------------------------
-# Collect routes from the app
-# ---------------------------------------------------------------------------
-
-class _Collector:
-    def __init__(self):
-        self.routes = []
-
-    def add_route(self, method, pattern, handler):
-        self.routes.append((method.upper(), pattern, handler))
-
-
-def _normalize_pattern(pattern):
-    """Strip anchors and replace capture groups with {}."""
-    p = pattern.strip("^$")
-    return re.sub(r"\([^)]+\)", "{}", p)
-
-
-def _fallback_display(pattern):
-    """Last-resort human-readable path when not found in SPEC."""
-    p = pattern.strip("^$")
-    return re.sub(r"\([^)]+\)", "{param}", p)
-
-
-# ---------------------------------------------------------------------------
-# Handler → markdown link
-# ---------------------------------------------------------------------------
-
-def _handler_link(handler_func):
-    src_file = inspect.getfile(handler_func)
-    _, start_line = inspect.getsourcelines(handler_func)
-    # Path relative to docs/dev/ so the link works from that directory
-    link_path = os.path.relpath(src_file, os.path.join(ROOT, "docs", "dev"))
-    return f"[{handler_func.__name__}]({link_path}#L{start_line})"
-
-
-def _module_name(handler_func):
-    return os.path.basename(inspect.getfile(handler_func))
-
-
-# Routes not in the swagger SPEC — provide pretty display paths manually.
-_EXTRA_PATHS = {
-    ("POST",   "/api/grids/{}/from-puzzle"):                    "/api/grids/from-puzzle",
-    ("GET",    "/api/grids/{}/preview"):                        "/api/grids/{name}/preview",
-    ("GET",    "/api/grids/{}/stats"):                          "/api/grids/{name}/stats",
-    ("GET",    "/api/puzzles/{}/preview"):                      "/api/puzzles/{name}/preview",
-    ("GET",    "/api/puzzles/{}/stats"):                        "/api/puzzles/{name}/stats",
-    ("GET",    "/api/puzzles/{}/words/{}/{}/constraints"):      "/api/puzzles/{name}/words/{seq}/{direction}/constraints",
-    ("GET",    "/api/export/puzzles/{}/acrosslite"):            "/api/export/puzzles/{name}/acrosslite",
-    ("GET",    "/api/export/puzzles/{}/nytimes"):               "/api/export/puzzles/{name}/nytimes",
-}
-
-# ---------------------------------------------------------------------------
-# Section assignment
-# ---------------------------------------------------------------------------
-
-SECTION_ORDER = ["Static", "Grids", "Puzzles", "Words", "Export"]
-
-def _section(norm_path):
-    if norm_path.startswith("/api/grids"):
-        return "Grids"
-    if norm_path.startswith("/api/puzzles") and not norm_path.endswith("/constraints"):
-        return "Puzzles"
-    if norm_path.startswith("/api/words") or norm_path.endswith("/constraints"):
-        return "Words"
-    if norm_path.startswith("/api/export"):
-        return "Export"
-    return "Static"
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 def main():
-    from crossword.http_server.main import register_routes
+    from crossword.http_server.main import iter_routes, register_routes
 
-    swagger_spec = _load_swagger_spec()
-    spec_map = _build_spec_map(swagger_spec)
+    app = FastAPI()
+    register_routes(app)
 
-    collector = _Collector()
-    register_routes(collector)
-
-    sections = {s: [] for s in SECTION_ORDER}
-
-    for method, pattern, handler in collector.routes:
-        norm = _normalize_pattern(pattern)
-        section = _section(norm)
-        display = spec_map.get((method, norm)) \
-               or _EXTRA_PATHS.get((method, norm)) \
-               or _fallback_display(pattern)
-        sections[section].append((method, display, handler))
+    sections = {name: [] for name in SECTION_ORDER}
+    for route in iter_routes(app):
+        for method in sorted(route.methods):
+            sections[_section(route.path)].append((method, _display_path(route), route.endpoint))
 
     lines = [
         "# API Endpoints",
@@ -168,30 +44,61 @@ def main():
         "",
         "> Generated by `tools/dev/gen_endpoints_doc.py` — do not edit by hand.",
         "",
+        "> The running server also publishes this API as OpenAPI at `/openapi.json`,",
+        "> with a browsable version at `/docs`.",
+        "",
     ]
-
     for section in SECTION_ORDER:
         routes = sections[section]
         if not routes:
             continue
-        modules = list(dict.fromkeys(_module_name(h) for _, _, h in routes))
+        modules = list(dict.fromkeys(_module_name(endpoint) for _, _, endpoint in routes))
         lines.append(f"## {section}")
         lines.append("")
-        lines.append("Modules: " + ", ".join(f"`{m}`" for m in modules))
+        lines.append("Modules: " + ", ".join(f"`{module}`" for module in modules))
         lines.append("")
         lines.append("| Method | Path | Handler |")
         lines.append("|--------|------|---------|")
-        for method, display, handler in routes:
-            lines.append(
-                f"| {method} | `{display}` | {_handler_link(handler)} |"
-            )
+        for method, path, endpoint in routes:
+            lines.append(f"| {method} | `{path}` | {_handler_link(endpoint)} |")
         lines.append("")
 
-    output = "\n".join(lines)
-
     with open(OUT_PATH, "w") as f:
-        f.write(output)
+        f.write("\n".join(lines))
     print(f"Written: {OUT_PATH}")
+
+
+def _section(path):
+    """Group a path under the heading it belongs to."""
+    if path.startswith("/api/export"):
+        return "Export"
+    if path.startswith("/api/import"):
+        return "Import"
+    if path.startswith("/api/words") or "/words/" in path:
+        return "Words"
+    if path.startswith("/api/puzzles") or path == "/api/dashboard":
+        return "Puzzles"
+    return "Static"
+
+
+def _display_path(route):
+    """The route's path, with any required query parameters spelled out."""
+    required = [field.name for field in route.dependant.query_params if field.field_info.is_required()]
+    if not required:
+        return route.path
+    return route.path + "?" + "&".join(f"{name}=" for name in required)
+
+
+def _module_name(endpoint):
+    return os.path.basename(inspect.getfile(endpoint))
+
+
+def _handler_link(endpoint):
+    source_file = inspect.getfile(endpoint)
+    _, start_line = inspect.getsourcelines(endpoint)
+    # Path relative to docs/dev/ so the link works from that directory
+    link_path = os.path.relpath(source_file, os.path.join(ROOT, "docs", "dev"))
+    return f"[{endpoint.__name__}]({link_path}#L{start_line})"
 
 
 if __name__ == "__main__":

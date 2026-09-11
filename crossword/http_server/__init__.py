@@ -1,6 +1,7 @@
+# crossword.http_server
 """
-HTTP Server module - custom request handler with regex router.
+The web layer: a FastAPI application serving the crossword API and frontend.
 
-Provides a lightweight HTTP server for the crossword API, independent of Flask.
-Uses Python's built-in http.server with a custom regex-based router.
+crossword.http_server.main.create_app() assembles it; running the package as a
+module starts it under uvicorn.
 """
