@@ -58,7 +58,7 @@ reintroduces that lock.
   `get_puzzle_state`/`set_puzzle_state` (188-251), `get_dashboard`/
   `_dashboard_row` (611-650).
 - HTTP: `GET`/`PUT /api/puzzles/<name>/state` in
-  [puzzle_handlers.py](../../crossword/http_server/puzzle_handlers.py)
+  [puzzle_routes.py](../../crossword/http_server/puzzle_routes.py)
   (routes at 12-13, handlers at 281+ and 311+).
 - Frontend consumer:
   [dashboard.js](../../frontend/static/js/dashboard.js) — reads `row.state` /
@@ -272,7 +272,7 @@ all (pre-`b67e678`). The two tools serve different source schemas.
 
 No changes. `handle_get_puzzle_state`, `handle_set_puzzle_state`, and
 `handle_get_dashboard` in
-[puzzle_handlers.py](../../crossword/http_server/puzzle_handlers.py) keep
+[puzzle_routes.py](../../crossword/http_server/puzzle_routes.py) keep
 their exact request/response JSON shapes — this whole doc is scoped to sit
 entirely underneath them.
 

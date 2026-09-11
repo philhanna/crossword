@@ -285,7 +285,7 @@ POST /api/puzzles/<name>/state/history/<id>/restore
 ```
 
 `handle_restore_puzzle_from_history` mirrors
-`handle_open_puzzle_for_editing` ([puzzle_handlers.py:252-281](../../crossword/http_server/puzzle_handlers.py#L252-L281))
+`handle_open_puzzle_for_editing` ([puzzle_routes.py:132-137](../../crossword/http_server/puzzle_routes.py#L132-L137))
 almost exactly — same auth check, same shape of response — just calling
 `restore_puzzle_from_history` instead of `open_puzzle_for_editing`, with the
 history id taken from the URL.

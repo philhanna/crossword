@@ -28,7 +28,7 @@ the requirement:
   [puzzle-editor.js:1137](../../frontend/static/js/puzzle-editor.js#L1137))
   both call `POST /api/puzzles/<name>/copy` with `{ new_name }`.
 - Backend: `handle_copy_puzzle`
-  ([puzzle_handlers.py:848](../../crossword/http_server/puzzle_handlers.py#L848))
+  ([puzzle_routes.py:68](../../crossword/http_server/puzzle_routes.py#L68))
   calls `PuzzleUseCases.copy_puzzle()`
   ([puzzle_use_cases.py:139](../../crossword/use_cases/puzzle_use_cases.py#L139)),
   which saves the new content and then calls `_auto_set_state_on_save()`
@@ -172,7 +172,7 @@ def handle_copy_puzzle(...):
 ```
 
 (`handle_copy_puzzle` is at
-[puzzle_handlers.py:848](../../crossword/http_server/puzzle_handlers.py#L848).)
+[puzzle_routes.py:68](../../crossword/http_server/puzzle_routes.py#L68).)
 The use case's own check stays too — same double-checked pattern the
 handler already uses for `new_name`, so the use case is safe to call
 directly (from tests, from any future caller) without relying on the HTTP

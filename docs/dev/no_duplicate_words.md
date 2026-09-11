@@ -34,7 +34,7 @@ they already converge on one function:
 
 - **Word editor "OK"** sends `PUT /api/puzzles/<name>/words/<seq>/<direction>`
   with a `text` field
-  ([puzzle_handlers.py:713](../../crossword/http_server/puzzle_handlers.py#L713)),
+  ([puzzle_routes.py:237](../../crossword/http_server/puzzle_routes.py#L237)),
   which calls `PuzzleUseCases.set_word_clue()`
   ([puzzle_use_cases.py:508](../../crossword/use_cases/puzzle_use_cases.py#L508)).
 - **Typing letters directly into a word on the grid** doesn't save anything
@@ -218,7 +218,7 @@ and the "name already exists" check in
 
 `set_word_clue()` calls `puzzle.set_text()` directly, so the `ValueError`
 propagates straight up. `handle_set_word_clue`
-([puzzle_handlers.py:748](../../crossword/http_server/puzzle_handlers.py#L748))
+([puzzle_routes.py:237](../../crossword/http_server/puzzle_routes.py#L237))
 already catches `ValueError` and returns `{"error": str(e)}`, and
 `completeSelectedWordEdit()` already checks for `data.error` and calls
 `showMessageLine(...)` to show it
@@ -236,12 +236,12 @@ treatment because one already has full puzzle context and the other
 doesn't.
 
 **`get_ranked_suggestions()`**
-([word_use_cases.py:167](../../crossword/use_cases/word_use_cases.py#L167))
+([word_use_cases.py:171](../../crossword/use_cases/word_use_cases.py#L171))
 is the one actually used by default in the word editor (the "constrained"
 checkbox is checked by default —
 [word-editor.js:776](../../frontend/static/js/word-editor.js#L776)). It's
 called with a real `Word` domain object
-([word_handlers.py:163-164](../../crossword/http_server/word_handlers.py#L163-L164)),
+([word_routes.py:53-54](../../crossword/http_server/word_routes.py#L53-L54)),
 and every `Word` already carries a reference back to its puzzle
 (`self.puzzle`, set in `Word.__init__`,
 [word.py:16](../../crossword/domain/word.py#L16)). So this needs no new
@@ -256,7 +256,7 @@ candidates = [c for c in candidates if not find_duplicate(c.upper(), others)]
 ```
 
 **`get_suggestions(pattern)`**
-([word_use_cases.py:26](../../crossword/use_cases/word_use_cases.py#L26))
+([word_use_cases.py:28](../../crossword/use_cases/word_use_cases.py#L28))
 is the "unconstrained" mode (checkbox unchecked —
 `_fetchPatternSuggestions()`,
 [word-editor.js:784](../../frontend/static/js/word-editor.js#L784)). Today
@@ -270,7 +270,7 @@ the same identifiers the ranked-suggestions endpoint already takes as path
 segments. When they're present, `handle_get_suggestions` loads the word the
 same way `handle_get_ranked_suggestions` does
 (`app.puzzle_uc.get_word_at(...)`,
-[word_handlers.py:163](../../crossword/http_server/word_handlers.py#L163))
+[word_routes.py:53](../../crossword/http_server/word_routes.py#L53))
 and applies the same filter. When they're absent — e.g. a tool hitting this
 endpoint standalone, like `tools/swagger.py`'s documented use of it — it
 behaves exactly as it does today, with no filtering. This keeps the

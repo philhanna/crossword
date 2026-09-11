@@ -8,7 +8,7 @@ dictionary words. Under the hood, that box is quietly more powerful than it
 looks: if you type something with regex characters in it (`[AEIOU]`, `CAT|DOG`,
 and so on), the backend already understands it as a real Python regular
 expression and searches with it correctly
-([word_use_cases.py:253-277](../../crossword/use_cases/word_use_cases.py#L253-L277)).
+([word_use_cases.py:28-62](../../crossword/use_cases/word_use_cases.py#L28-L62)).
 
 The catch is that you can never actually type one in. The Answer field that
 doubles as the pattern box is capped, in the HTML itself, to exactly the
@@ -37,7 +37,7 @@ itself to words of the right length:
   from the crossing words, so its own pattern is always exactly
   `word.length` positions long by construction, and it already calls
   `word_list.get_matches(pattern, length=word.length)`
-  ([word_use_cases.py:201](../../crossword/use_cases/word_use_cases.py#L201)).
+  ([word_use_cases.py:213](../../crossword/use_cases/word_use_cases.py#L213)).
   A typed-in regex can't be spliced into that per-position scheme — a
   fragment like `[AEIOU]` is one logical position but many characters — so
   this path handles regex differently from the plain search (see "Letting
@@ -46,7 +46,7 @@ itself to words of the right length:
 - **Plain pattern search** (`GET /api/words/suggestions`, backing
   `get_suggestions`) is the one this doc is about. It calls
   `word_list.get_matches(regex_pattern)` with **no length argument**
-  ([word_use_cases.py:49](../../crossword/use_cases/word_use_cases.py#L49)).
+  ([word_use_cases.py](../../crossword/use_cases/word_use_cases.py)).
   The dictionary is organized internally as separate lists, one per word
   length, so the search can jump straight to (say) "all the 5-letter
   words" instead of checking every word in the dictionary. But that only
@@ -96,7 +96,7 @@ def get_suggestions(self, pattern: str, exclude_words: list[str] = None,
 
 `handle_get_suggestions` already loads the `Word` object whenever
 `puzzle`/`seq`/`direction` are given, in order to compute `exclude_words`
-([word_handlers.py:44-47](../../crossword/http_server/word_handlers.py#L44-L47)).
+([word_routes.py:27-31](../../crossword/http_server/word_routes.py#L27-L31)).
 That same `word` already knows its own length, so the handler can pass
 `length=word.length` at no extra cost — no new lookup, no new request
 parameter needed for the normal case (searching from inside the word
@@ -200,7 +200,7 @@ pattern" error handling as the plain search path apply here too.
 
 The backend was already willing to run anything that "looked like regex"
 through Python's regex engine before this change
-([word_use_cases.py:267-273](../../crossword/use_cases/word_use_cases.py#L267-L273)).
+([word_use_cases.py:272-296](../../crossword/use_cases/word_use_cases.py#L272-L296)).
 So this isn't opening the door to a new kind of input — it's just making a
 door that was already unlocked actually easy to find and use from the
 screen. Two things are worth tightening up now that it's a real, advertised
