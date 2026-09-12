@@ -52,3 +52,28 @@ def test_put_settings_preserves_unknown_keys(tmp_path, monkeypatch):
         saved = yaml.safe_load(f)
     assert saved["database_url"] == "sqlite:///keep-me.db"
     assert saved["host"] == "0.0.0.0"
+
+
+def test_put_settings_requires_restart_for_author_fields(tmp_path, monkeypatch):
+    """Author fields reach the export adapters only when the server is wired."""
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("author_name: Old Name\n", encoding="utf-8")
+    monkeypatch.setattr(settings_adapter, "_config_path", lambda: str(config_path))
+
+    restart_required = settings_adapter.put_settings({"author_name": "New Name"})
+
+    assert restart_required is True
+    with open(config_path) as f:
+        saved = yaml.safe_load(f)
+    assert saved["author_name"] == "New Name"
+
+
+def test_put_settings_message_line_timeout_needs_no_restart(tmp_path, monkeypatch):
+    """The frontend re-reads this from /api/config on the next page load."""
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("message_line_timeout_ms: 2000\n", encoding="utf-8")
+    monkeypatch.setattr(settings_adapter, "_config_path", lambda: str(config_path))
+
+    restart_required = settings_adapter.put_settings({"message_line_timeout_ms": "4000"})
+
+    assert restart_required is False

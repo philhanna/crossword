@@ -16,9 +16,14 @@ SETTINGS_KEYS = [
     'definition_provider',
 ]
 
+# Keys read once at startup, so a new value only takes effect on restart. The
+# author fields look like presentation data that could apply straight away, but
+# make_app() passes them to the export adapters' constructors, so exported files
+# carry the old value until the server is restarted.
 _RESTART_REQUIRED_KEYS = {
     'host', 'port', 'log_level', 'dbfile', 'xdfile', 'word_file', 'theme_color',
     'definition_provider',
+    'author_name', 'author_address', 'author_email',
 }
 
 
