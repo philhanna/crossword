@@ -147,7 +147,7 @@ The old command-line export and import scripts were removed; use the **Import** 
 
 | Script | Description |
 |--------|-------------|
-| `tools/dev/gen_endpoints_doc.py` | Regenerate `docs/dev/endpoints.md` from live route registrations |
+| `tools/dev/gen_endpoints_doc.py` | Regenerate `docs/dev/endpoints.md`, and the wiki's copy `docs/dev/endpoints-wiki.md`, from live route registrations |
 | `tools/dev/import_grid.py` | Bulk-import `.xd` puzzle files as blank grids (reads paths from stdin) |
 | `tools/dev/impgrid.py` | Import a puzzle from an old `grids.db` into the main database |
 | `tools/dev/migrate_puzzle_state.py` | One-off migration: rebuild the database with lifecycle state as columns on `puzzles` |

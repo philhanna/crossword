@@ -27,7 +27,7 @@ this task goes bad.
 
 | Kind | Files | Rule |
 |---|---|---|
-| Generated | `docs/dev/endpoints.md` | Never hand-edit. Run its generator. |
+| Generated | `docs/dev/endpoints.md`, `docs/dev/endpoints-wiki.md` | Never hand-edit. Run its generator, which writes both. |
 | Living reference | `README.md`, `docs/dev/usecases.md` | Must describe the code as it is today. Edit freely. |
 | Design doc | `docs/dev/no_duplicate_words.md`, `puzzle_content_snapshots.md`, `puzzle_save_comments.md`, `puzzle_state_history.md`, `word_editor_regex_search.md` | A point-in-time record of a proposal. **Do not rewrite the prose to match today's code.** Fix only the links. |
 
@@ -40,11 +40,15 @@ short status note at the top. Never silently rewrite its argument.
 
 ```bash
 python3 tools/dev/gen_endpoints_doc.py
-git diff --stat docs/dev/endpoints.md
+git diff --stat docs/dev/endpoints.md docs/dev/endpoints-wiki.md
 ```
 
 An empty diff means the route table has not moved. A non-empty diff is the
 list of route changes to keep in mind for the rest of the pass.
+
+`endpoints-wiki.md` is the same table with absolute GitHub links, written for
+the wiki's `API-Reference` page. When it changes, the wiki page is stale until
+someone copies the new file over it.
 
 ## Step 2 — Fix the links
 
