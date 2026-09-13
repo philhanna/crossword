@@ -718,7 +718,8 @@ class PuzzleUseCases:
 
         Returns:
             {"puzzles": [ {name, title, state, publisher, date_submitted,
-                           date_published, modified, size, word_count,
+                           date_published, submitted_publisher,
+                           modified, size, word_count,
                            top_lengths: [{length, count}, ...],   # top 2 desc
                            fill_pct}  ... ]}
         """
@@ -743,6 +744,7 @@ class PuzzleUseCases:
             "publisher": summary["publisher"],
             "date_submitted": summary["date_submitted"],
             "date_published": summary["date_published"],
+            "submitted_publisher": summary["submitted_publisher"],
             "modified": summary["modified"],
             "size": puzzle.n,
             "word_count": puzzle.get_word_count(),

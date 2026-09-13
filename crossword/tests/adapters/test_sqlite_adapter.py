@@ -123,7 +123,30 @@ class TestSQLitePersistenceAdapter:
         assert row["publisher"] == "NYT"
         assert row["date_submitted"] == "2026-06-06"
         assert row["date_published"] is None
+        assert row["submitted_publisher"] == "NYT"
         assert row["modified"]
+
+    def test_list_puzzle_summaries_submitted_publisher_survives_archiving(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p1", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p1", state=ps.SUBMITTED,
+                                 publisher="WSJ", date_submitted="2026-05-05")
+        adapter.set_puzzle_state(user_id=1, name="p1", state=ps.SUBMITTED,
+                                 publisher="NYT", date_submitted="2026-06-06")
+        adapter.set_puzzle_state(user_id=1, name="p1", state=ps.ARCHIVED)
+
+        row = adapter.list_puzzle_summaries(user_id=1)[0]
+
+        assert row["state"] == ps.ARCHIVED
+        assert row["publisher"] is None
+        assert row["submitted_publisher"] == "NYT"
+
+    def test_list_puzzle_summaries_submitted_publisher_none_if_never_submitted(self, adapter, sample_puzzle):
+        adapter.save_puzzle(user_id=1, name="p1", puzzle=sample_puzzle)
+        adapter.set_puzzle_state(user_id=1, name="p1", state=ps.ARCHIVED)
+
+        row = adapter.list_puzzle_summaries(user_id=1)[0]
+
+        assert row["submitted_publisher"] is None
 
     def test_list_puzzle_summaries_excludes_working_copies(self, adapter, sample_puzzle):
         adapter.save_puzzle(user_id=1, name="real", puzzle=sample_puzzle)

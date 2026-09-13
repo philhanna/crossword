@@ -202,7 +202,8 @@ class PersistencePort(ABC):
 
         Each row is a dict with keys: name, modified, state, publisher,
         date_submitted, date_published, sourced from each puzzle's latest
-        state-history row. Excludes working copies
+        state-history row, plus submitted_publisher, the publisher on its
+        latest 'submitted' row (None if never submitted). Excludes working copies
         (puzzlename LIKE '__wc__%' / '__new__%') and legacy NULL names.
 
         Args:

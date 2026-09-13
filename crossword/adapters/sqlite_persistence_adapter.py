@@ -19,6 +19,15 @@ LATEST_STATE_SQL = """
     WHERE id IN (SELECT MAX(id) FROM puzzle_state_history GROUP BY puzzle_id)
 """
 
+# The latest 'submitted' puzzle_state_history row per puzzle_id, so a puzzle
+# that has since moved on (e.g. to 'archived') still knows who it went to.
+LATEST_SUBMITTED_SQL = """
+    SELECT puzzle_id, publisher
+    FROM puzzle_state_history
+    WHERE id IN (SELECT MAX(id) FROM puzzle_state_history
+                 WHERE state = 'submitted' GROUP BY puzzle_id)
+"""
+
 
 def _synchronized(method):
     """
@@ -403,9 +412,11 @@ class SQLitePersistenceAdapter(PersistencePort):
             cursor = self.conn.cursor()
             cursor.execute(
                 f"""SELECT p.puzzlename, p.modified, h.state, h.publisher,
-                           h.date_submitted, h.date_published
+                           h.date_submitted, h.date_published,
+                           s.publisher AS submitted_publisher
                     FROM puzzles p
                     LEFT JOIN ({LATEST_STATE_SQL}) h ON h.puzzle_id = p.id
+                    LEFT JOIN ({LATEST_SUBMITTED_SQL}) s ON s.puzzle_id = p.id
                     WHERE p.userid = ?
                       AND p.puzzlename IS NOT NULL
                       AND p.puzzlename NOT LIKE '@_@_wc@_@_%' ESCAPE '@'
@@ -422,6 +433,7 @@ class SQLitePersistenceAdapter(PersistencePort):
                     "publisher": row["publisher"],
                     "date_submitted": row["date_submitted"],
                     "date_published": row["date_published"],
+                    "submitted_publisher": row["submitted_publisher"],
                 }
                 for row in rows
             ]

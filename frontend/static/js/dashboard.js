@@ -28,7 +28,7 @@ const DashboardState = {
 // `val` extracts the sort value; `numeric` columns compare numerically.
 const DASH_COLUMNS = [
     { key: 'state',     label: 'State',     pubOnly: false, val: r => r.state || '' },
-    { key: 'publisher', label: 'Publisher', pubOnly: true,  val: r => r.publisher || '' },
+    { key: 'publisher', label: 'Publisher', pubOnly: true,  val: r => _dashPublisher(r) },
     { key: 'name',      label: 'Name',      pubOnly: false, val: r => r.name || '' },
     { key: 'title',     label: 'Title',     pubOnly: false, val: r => _dashDisplayTitle(r) || '' },
     { key: 'size',      label: 'Size',      pubOnly: false, val: r => r.size, numeric: true },
@@ -72,6 +72,13 @@ function _dashRowLengths(row) {
 
 function _dashDisplayTitle(row) {
     return row.title || row.name;
+}
+
+function _dashPublisher(row) {
+    // Archived puzzles no longer carry a publisher, so show the one they were
+    // last submitted to.
+    if (row.state === 'archived') return row.submitted_publisher || '';
+    return row.publisher || '';
 }
 
 // ---------------------------------------------------------------------------
@@ -179,7 +186,7 @@ function _dashTableHtml(puzzles) {
 }
 
 function _dashShowsPublisher(tab) {
-    return tab === 'submitted' || tab === 'published' || tab === 'all';
+    return tab === 'submitted' || tab === 'published' || tab === 'archived' || tab === 'all';
 }
 
 function _dashVisibleColumns(tab) {
@@ -237,7 +244,7 @@ function _dashTableBodyHtml() {
         const cells = [
             `<td><select class="dash-state-select" data-dash-state="${name}">${options}</select></td>`,
         ];
-        if (showPub) cells.push(`<td>${escapeHtml(row.publisher || '')}</td>`);
+        if (showPub) cells.push(`<td>${escapeHtml(_dashPublisher(row))}</td>`);
         cells.push(`<td><span class="dash-link" data-dash-preview="${name}">${name}</span></td>`);
         cells.push(`<td><span class="dash-link" data-dash-preview="${name}">${escapeHtml(_dashDisplayTitle(row))}</span></td>`);
         cells.push(`<td>${row.size} x ${row.size}</td>`);

@@ -234,9 +234,11 @@ class TestPuzzleUseCasesGetDashboard:
     def test_get_dashboard_one_row_per_summary(self, puzzle_uc, mock_persistence, test_puzzle):
         mock_persistence.list_puzzle_summaries.return_value = [
             {"name": "alpha", "modified": "2026-06-06T00:00:00", "state": "draft",
-             "publisher": None, "date_submitted": None, "date_published": None},
+             "publisher": None, "date_submitted": None, "date_published": None,
+             "submitted_publisher": None},
             {"name": "beta", "modified": "2026-01-01T00:00:00", "state": "submitted",
-             "publisher": "NYT", "date_submitted": "2026-01-01", "date_published": None},
+             "publisher": "NYT", "date_submitted": "2026-01-01", "date_published": None,
+             "submitted_publisher": "NYT"},
         ]
         mock_persistence.load_puzzle.return_value = test_puzzle
 
@@ -247,7 +249,8 @@ class TestPuzzleUseCasesGetDashboard:
     def test_get_dashboard_row_shape(self, puzzle_uc, mock_persistence, test_puzzle):
         mock_persistence.list_puzzle_summaries.return_value = [
             {"name": "alpha", "modified": "2026-06-06T00:00:00", "state": "submitted",
-             "publisher": "NYT", "date_submitted": "2026-06-06", "date_published": None},
+             "publisher": "NYT", "date_submitted": "2026-06-06", "date_published": None,
+             "submitted_publisher": "NYT"},
         ]
         mock_persistence.load_puzzle.return_value = test_puzzle
 
@@ -255,12 +258,13 @@ class TestPuzzleUseCasesGetDashboard:
 
         assert set(row.keys()) == {
             "name", "title", "state", "publisher", "date_submitted",
-            "date_published", "modified", "size", "word_count",
-            "top_lengths", "fill_pct",
+            "date_published", "submitted_publisher", "modified", "size",
+            "word_count", "top_lengths", "fill_pct",
         }
         assert row["title"] == test_puzzle.title
         assert row["state"] == "submitted"
         assert row["publisher"] == "NYT"
+        assert row["submitted_publisher"] == "NYT"
         assert row["size"] == test_puzzle.n
         assert row["word_count"] == test_puzzle.get_word_count()
         assert row["fill_pct"] == 0  # blank puzzle
@@ -268,7 +272,8 @@ class TestPuzzleUseCasesGetDashboard:
     def test_get_dashboard_top_lengths_are_two_largest(self, puzzle_uc, mock_persistence, test_puzzle):
         mock_persistence.list_puzzle_summaries.return_value = [
             {"name": "alpha", "modified": "2026-06-06T00:00:00", "state": "draft",
-             "publisher": None, "date_submitted": None, "date_published": None},
+             "publisher": None, "date_submitted": None, "date_published": None,
+             "submitted_publisher": None},
         ]
         mock_persistence.load_puzzle.return_value = test_puzzle
 
