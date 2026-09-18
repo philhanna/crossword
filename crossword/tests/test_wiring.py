@@ -3,11 +3,9 @@ Unit tests for dependency wiring - verify make_app() assembles and injected corr
 """
 
 import pytest
-import sqlite3
 import tempfile
 import os
 from crossword.wiring import make_app, AppContainer
-from crossword.ports.persistence_port import PersistenceError
 from crossword.tests import TestPuzzle
 
 
@@ -32,6 +30,7 @@ def temp_db():
 
     # Initialize schema
     from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
+
     adapter = SQLitePersistenceAdapter(path)
     adapter.init_schema()
 
@@ -106,19 +105,25 @@ class TestDefinitionProviderWiring:
     """Tests for selectable DefinitionProviderPort wiring in make_app()"""
 
     def test_defaults_to_wiktionary(self, base_config):
-        from crossword.adapters.wiktionary_api_definition_adapter import WiktionaryAPIDefinition
+        from crossword.adapters.wiktionary_api_definition_adapter import (
+            WiktionaryAPIDefinition,
+        )
 
         app = make_app(base_config)
         assert isinstance(app.definition_uc.definition_port, WiktionaryAPIDefinition)
 
     def test_selects_dictionaryapi(self, base_config):
-        from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDefinition
+        from crossword.adapters.dictionary_api_definition_adapter import (
+            DictionaryAPIDefinition,
+        )
 
         app = make_app({**base_config, "definition_provider": "dictionaryapi"})
         assert isinstance(app.definition_uc.definition_port, DictionaryAPIDefinition)
 
     def test_selects_wiktionary_explicitly(self, base_config):
-        from crossword.adapters.wiktionary_api_definition_adapter import WiktionaryAPIDefinition
+        from crossword.adapters.wiktionary_api_definition_adapter import (
+            WiktionaryAPIDefinition,
+        )
 
         app = make_app({**base_config, "definition_provider": "wiktionary"})
         assert isinstance(app.definition_uc.definition_port, WiktionaryAPIDefinition)

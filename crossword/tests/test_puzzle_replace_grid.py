@@ -76,7 +76,7 @@ class TestPuzzleReplaceGrid:
                     for x in old['across_words'] + old['down_words']}
         newclues = {x['text']: x['clue']
                     for x in new['across_words'] + new['down_words']}
-        for k, v in newclues.items():
+        for k in newclues.keys():
             if k in oldclues:
                 oldclue = oldclues[k]
                 assert oldclue == newclues[k]

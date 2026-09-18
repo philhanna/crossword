@@ -5,7 +5,7 @@ Public interface:
   lookup(word) -> dict
 """
 
-from crossword.ports.definition_port import DefinitionNotFound, DefinitionProviderPort
+from crossword.ports.definition_port import DefinitionProviderPort
 
 
 class DefinitionUseCases:

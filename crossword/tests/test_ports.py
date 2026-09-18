@@ -4,9 +4,7 @@ Tests for Port Interfaces
 Verification that ports are properly defined and can be imported.
 """
 
-import pytest
 from abc import ABC
-from crossword import Grid, Puzzle
 from crossword.ports import (
     PersistencePort,
     PersistenceError,
