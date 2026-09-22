@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.7.0] - 2026-09-21
+
+### Changed
+
+- The HTTP server is now a FastAPI application served by uvicorn, replacing the
+  hand-rolled `BaseHTTPRequestHandler` server and its regex router. All 51
+  routes and their responses are preserved, errors still reach the frontend as
+  `{"error": "..."}`, and `python -m crossword.http_server` still starts it
+- The wiki's API reference is generated rather than hand-derived:
+  `gen_endpoints_doc.py` now also writes `docs/dev/endpoints-wiki.md`, with
+  absolute GitHub handler links, to be copied over the wiki page whole
+- The Settings panel now warns that changing `author_name`, `author_address` or
+  `author_email` requires a server restart; they are read into the export
+  adapters at startup, so exports kept the old author with no explanation
+
+### Added
+
+- A `sync-docs` skill that regenerates the endpoint reference, checks every code
+  link in `README.md` and `docs/`, and reconciles the reference docs against the
+  code. Running it repaired fifteen stale links and anchors and brought the
+  README's tool list, export formats and architecture table up to date
+- The dashboard's Archived tab shows each puzzle's publisher, taken from its
+  most recent `submitted` state-history row
+
+### Removed
+
+- `tools/dev/swagger.py`, a hand-maintained OpenAPI spec that the server now
+  publishes itself at `/openapi.json` and `/docs`
+- The `python-dotenv` dependency
+
 ## [5.6.5] - 2026-09-10
 
 ### Removed
