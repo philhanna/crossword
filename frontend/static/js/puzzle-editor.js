@@ -313,15 +313,16 @@ function renderClues() {
     const items = list.map(w => {
         const isSelected = selected && selected.seq === w.seq && selected.direction === dir;
         const hasMissing = !w.clue;
-        return `<li class="clue-row${isSelected ? ' clue-row-selected' : ''}"${hasMissing ? ' data-noclue="1"' : ''}>` +
-            `<a class="clue-row-link" onclick="selectWord(${w.seq},'${dir}');return false;">` +
+        return `<tr class="clue-row${isSelected ? ' clue-row-selected' : ''}"${hasMissing ? ' data-noclue="1"' : ''}` +
+            ` onclick="selectWord(${w.seq},'${dir}');">` +
+            `<td class="clue-num">${w.seq}</td>` +
+            `<td class="clue-answer">${escapeHtml((w.answer || '').replace(/ /g, '.'))}</td>` +
+            `<td class="clue-text${hasMissing ? ' clue-text-missing' : ''}">` +
             (hasMissing ? '<span class="clue-missing-dot"></span>' : '') +
-            `<span class="clue-num">${w.seq}</span>` +
-            `<span class="clue-answer">${escapeHtml((w.answer || '').replace(/ /g, '.'))}</span>` +
-            `<span class="clue-text${hasMissing ? ' clue-text-missing' : ''}">${escapeHtml(w.clue || 'No clue')}</span>` +
-            `</a>` +
-            `<a class="clue-edit-link" onclick="do_puzzle_edit_word(${w.seq},'${dir}');return false;">edit</a>` +
-            `</li>`;
+            escapeHtml(w.clue || 'No clue') +
+            `<a class="clue-edit-link" onclick="event.stopPropagation();do_puzzle_edit_word(${w.seq},'${dir}');return false;">edit</a>` +
+            `</td>` +
+            `</tr>`;
     }).join('');
 
     return `
@@ -332,7 +333,9 @@ function renderClues() {
   </div>
   <span class="clue-count ${countClass}">${countLabel}</span>
 </div>
-<ul id="clue-list-active" class="clue-list-new">${items}</ul>`;
+<div id="clue-list-active" class="clue-list-new">
+  <table class="clue-table"><tbody>${items}</tbody></table>
+</div>`;
 }
 
 // ---------------------------------------------------------------------------

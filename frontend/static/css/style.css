@@ -544,17 +544,27 @@ body.editor-open #workspace {
   background: var(--c-surface);
 }
 
+.clue-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
 .clue-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-2);
-  padding: 5px var(--sp-3);
-  border-bottom: 1px solid #f0ede6;
+  cursor: pointer;
   font-size: 0.84rem;
   line-height: 1.4;
 }
 
-.clue-row:last-child { border-bottom: none; }
+.clue-row td {
+  padding: 5px var(--sp-2);
+  border-bottom: 1px solid #f0ede6;
+  vertical-align: baseline;
+}
+
+.clue-row td:first-child { padding-left: var(--sp-3); }
+.clue-row td:last-child  { padding-right: var(--sp-3); }
+
+.clue-row:last-child td { border-bottom: none; }
 
 .clue-row:hover { background: #f5f4ff; }
 
@@ -562,37 +572,24 @@ body.editor-open #workspace {
   background: #dce8f6 !important;
 }
 
-.clue-row-link {
-  flex: 1;
-  min-width: 0;
-  text-decoration: none;
-  color: var(--c-text);
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-1);
-}
-
 .clue-num {
-  flex-shrink: 0;
+  width: 1%;
+  text-align: right;
   font-weight: 600;
   font-size: 0.8rem;
   color: var(--c-text-muted);
-  min-width: 20px;
 }
 
 .clue-answer {
-  flex-shrink: 0;
+  width: 1%;
+  white-space: nowrap;
   font-family: monospace;
   font-weight: 600;
   letter-spacing: 0.05em;
 }
 
 .clue-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--c-text);
 }
 
 .clue-text-missing {
@@ -606,12 +603,12 @@ body.editor-open #workspace {
   height: 6px;
   border-radius: 50%;
   background: #e07020;
-  flex-shrink: 0;
-  margin-bottom: 1px;
+  margin: 0 var(--sp-1) 1px 0;
 }
 
 .clue-edit-link {
-  flex-shrink: 0;
+  float: right;
+  margin-left: var(--sp-2);
   font-size: 0.75rem;
   color: var(--c-primary);
   text-decoration: none;
