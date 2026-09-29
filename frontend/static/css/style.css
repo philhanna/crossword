@@ -550,7 +550,6 @@ body.editor-open #workspace {
 }
 
 .clue-row {
-  cursor: pointer;
   font-size: 0.84rem;
   line-height: 1.4;
 }
@@ -570,6 +569,12 @@ body.editor-open #workspace {
 
 .clue-row-selected {
   background: #dce8f6 !important;
+}
+
+.clue-num,
+.clue-answer,
+.clue-text {
+  cursor: pointer;
 }
 
 .clue-num {
@@ -606,17 +611,15 @@ body.editor-open #workspace {
   margin: 0 var(--sp-1) 1px 0;
 }
 
-.clue-edit-link {
-  float: right;
-  margin-left: var(--sp-2);
-  font-size: 0.75rem;
-  color: var(--c-primary);
-  text-decoration: none;
-  opacity: 0;
-  transition: opacity 0.1s;
+.clue-inline-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 1px 4px;
+  border: 1px solid var(--c-primary);
+  border-radius: 3px;
+  outline: none;
 }
-
-.clue-row:hover .clue-edit-link { opacity: 1; }
 
 /* =========================================================
    Word tab (editor panel)

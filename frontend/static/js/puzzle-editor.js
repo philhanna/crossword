@@ -313,14 +313,14 @@ function renderClues() {
     const items = list.map(w => {
         const isSelected = selected && selected.seq === w.seq && selected.direction === dir;
         const hasMissing = !w.clue;
-        return `<tr class="clue-row${isSelected ? ' clue-row-selected' : ''}"${hasMissing ? ' data-noclue="1"' : ''}` +
-            ` onclick="selectWord(${w.seq},'${dir}');">` +
-            `<td class="clue-num">${w.seq}</td>` +
-            `<td class="clue-answer">${escapeHtml((w.answer || '').replace(/ /g, '.'))}</td>` +
-            `<td class="clue-text${hasMissing ? ' clue-text-missing' : ''}">` +
+        const editWord = `onclick="do_puzzle_edit_word(${w.seq},'${dir}');"`;
+        return `<tr class="clue-row${isSelected ? ' clue-row-selected' : ''}"${hasMissing ? ' data-noclue="1"' : ''}>` +
+            `<td class="clue-num" ${editWord}>${w.seq}</td>` +
+            `<td class="clue-answer" ${editWord}>${escapeHtml((w.answer || '').replace(/ /g, '.'))}</td>` +
+            `<td class="clue-text${hasMissing ? ' clue-text-missing' : ''}" data-seq="${w.seq}"` +
+            ` onclick="startInlineClueEdit(${w.seq},'${dir}');">` +
             (hasMissing ? '<span class="clue-missing-dot"></span>' : '') +
             escapeHtml(w.clue || 'No clue') +
-            `<a class="clue-edit-link" onclick="event.stopPropagation();do_puzzle_edit_word(${w.seq},'${dir}');return false;">edit</a>` +
             `</td>` +
             `</tr>`;
     }).join('');
@@ -336,6 +336,61 @@ function renderClues() {
 <div id="clue-list-active" class="clue-list-new">
   <table class="clue-table"><tbody>${items}</tbody></table>
 </div>`;
+}
+
+let _inlineClueSave = Promise.resolve();  // pending save from the last inline clue edit
+
+async function startInlineClueEdit(seq, direction) {
+    if (_currentEditorMode() !== 'puzzle') return;
+    await _inlineClueSave;  // a blur-triggered save re-renders the list; let it finish first
+    const word = _getPuzzleWord(seq, direction);
+    if (!word) return;
+    if (!word.answer || word.answer.includes(' ')) {
+        showMessageLine('Fill in the word before giving it a clue', 'error');
+        return;
+    }
+    const result = await completeSelectedWordEdit({ nextSelection: { seq, direction } });
+    if (result.error) return;
+
+    const cell = document.querySelector(`#clue-list-active .clue-text[data-seq="${seq}"]`);
+    if (!cell) return;
+    cell.classList.remove('clue-text-missing');
+    cell.onclick = null;
+    cell.innerHTML = '';
+    const input = document.createElement('input');
+    input.type        = 'text';
+    input.className   = 'clue-inline-input';
+    input.value       = word.clue || '';
+    input.placeholder = 'Enter clue…';
+    cell.appendChild(input);
+    input.focus();
+
+    let finished = false;
+    const finish = (save) => {
+        if (finished) return;
+        finished = true;
+        if (save) {
+            _inlineClueSave = _saveInlineClue(seq, direction, input.value.trim());
+        } else {
+            renderPuzzleEditorRhs();
+        }
+    };
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter')  { e.preventDefault(); finish(true); }
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+    });
+    input.addEventListener('blur', () => finish(true));
+}
+
+async function _saveInlineClue(seq, direction, clue) {
+    const sw = AppState.selectedWord;
+    if (!sw || sw.seq !== seq || sw.direction !== direction) {
+        renderPuzzleEditorRhs();
+        return;
+    }
+    sw.draftClue = clue;
+    const result = await completeSelectedWordEdit();
+    if (!result.error) renderPuzzleEditor();
 }
 
 // ---------------------------------------------------------------------------
