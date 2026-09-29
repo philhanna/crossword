@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.8.0] - 2026-09-29
+
+### Changed
+
+- The Clues tab lists each word as a three-column table: number, word, and
+  clue. Unfilled squares in the word show as `.`, and long clues wrap instead
+  of being cut off
+- Words and clues are edited straight from the clue list, replacing the
+  per-row "edit" link: clicking a word's number or letters opens the word
+  editor, and clicking its clue edits the clue in place (Enter or clicking
+  away saves, Escape cancels). A word must be completely filled in before it
+  can be given a clue
+
 ## [5.7.0] - 2026-09-21
 
 ### Changed
