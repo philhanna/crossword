@@ -272,7 +272,10 @@ function _scrollCluesToFirstMissing() {
     const list = document.getElementById('clue-list-active');
     if (!list) return;
     const first = list.querySelector('[data-noclue]');
-    if (first) first.scrollIntoView({ block: 'nearest' });
+    if (!first) return;
+    // Scroll so the first unclued row sits in the top third of the list
+    const rowTop = first.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+    list.scrollTop = Math.max(0, rowTop - list.clientHeight / 3);
 }
 
 function renderGridModePanel() {
