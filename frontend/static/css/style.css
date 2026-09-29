@@ -580,6 +580,13 @@ body.editor-open #workspace {
   min-width: 20px;
 }
 
+.clue-answer {
+  flex-shrink: 0;
+  font-family: monospace;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
 .clue-text {
   flex: 1;
   min-width: 0;

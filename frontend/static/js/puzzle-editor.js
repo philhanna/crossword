@@ -317,6 +317,7 @@ function renderClues() {
             `<a class="clue-row-link" onclick="selectWord(${w.seq},'${dir}');return false;">` +
             (hasMissing ? '<span class="clue-missing-dot"></span>' : '') +
             `<span class="clue-num">${w.seq}</span>` +
+            `<span class="clue-answer">${escapeHtml((w.answer || '').replace(/ /g, '.'))}</span>` +
             `<span class="clue-text${hasMissing ? ' clue-text-missing' : ''}">${escapeHtml(w.clue || 'No clue')}</span>` +
             `</a>` +
             `<a class="clue-edit-link" onclick="do_puzzle_edit_word(${w.seq},'${dir}');return false;">edit</a>` +
