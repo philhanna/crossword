@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.8.1] - 2026-09-29
+
+### Changed
+
+- When the clue list opens, the first word without a clue is scrolled into
+  the top third of the list instead of just barely into view
+
 ## [5.8.0] - 2026-09-29
 
 ### Changed
