@@ -905,7 +905,7 @@ function _weRenderSuggestionList() {
         li.onclick     = () => weListItemClick(word);
         li.ondblclick  = () => weListItemDoubleClick(word);
 
-        let inner = `<span style="font-family:Courier;font-size:14px;min-width:${word.length * 9}px">${escapeHtml(word)}</span>`;
+        let inner = `<span style="font-family:var(--font-mono);font-size:14px;min-width:${word.length * 9}px">${escapeHtml(word)}</span>`;
         if (score !== null) {
             const pct = Math.round((score / maxScore) * 100);
             inner += `<span style="display:inline-block;width:60px;height:8px;background:#ddd;border-radius:3px;flex-shrink:0">` +
