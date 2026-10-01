@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.8.2] - 2026-10-01
+
+### Fixed
+
+- Words in the word editor's suggestion list showed up blank on systems where
+  the Courier font resolves to a Type 1 font, which browsers no longer render.
+  The list now uses the app's monospace font
+
 ## [5.8.1] - 2026-09-29
 
 ### Changed
