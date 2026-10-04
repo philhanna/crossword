@@ -220,10 +220,30 @@ function renderPuzzleEditorRhs() {
         }
     }
 
+    // Remember where the clue list was scrolled so a re-render doesn't lose it
+    const oldList   = document.getElementById('clue-list-active');
+    const oldScroll = oldList ? oldList.scrollTop : null;
+
     document.getElementById('rhs').innerHTML =
         renderSidebarTabs(activeTab, tabList) +
         `<div class="sidebar-content">${contentHtml}</div>`;
-    _scrollCluesToFirstMissing();
+
+    if (oldScroll !== null && _clueDirection === _lastClueDirection) {
+        _restoreCluesScroll(oldScroll);
+    } else {
+        _scrollCluesToFirstMissing();
+    }
+    _lastClueDirection = _clueDirection;
+}
+
+function _restoreCluesScroll(scrollTop) {
+    const list = document.getElementById('clue-list-active');
+    if (!list) return;
+    list.scrollTop = scrollTop;
+
+    // Keep the selected row (e.g. the word just clued) in view
+    const selected = list.querySelector('.clue-row-selected');
+    if (selected) selected.scrollIntoView({ block: 'nearest' });
 }
 
 function _getActiveTab(mode) {
@@ -262,6 +282,8 @@ async function switchSidebarTab(tab) {
     AppState.showingFillOrder = (tab === 'fill-order');
     renderPuzzleEditorRhs();
 }
+
+let _lastClueDirection = null;  // direction shown by the previous render
 
 function switchClueDirection(dir) {
     _clueDirection = dir;
