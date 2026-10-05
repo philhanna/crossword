@@ -62,6 +62,27 @@ class PuzzleUseCases:
     def _invalidate_fill_order(self, user_id, name):
         self._fill_order_cache.pop((user_id, name), None)
 
+    def _edit(self, user_id: int, name: str, mutate, *, only_if=None,
+              invalidate: bool = True) -> Puzzle:
+        """
+        Load a puzzle, apply a mutation, save it and return it.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            mutate: Callable taking the Puzzle and changing it in place
+            only_if: Optional predicate on the loaded Puzzle; when it is
+                falsy the puzzle is returned unchanged and not saved
+            invalidate: Whether to drop the cached fill order (default True)
+        """
+        if invalidate:
+            self._invalidate_fill_order(user_id, name)
+        puzzle = self.persistence.load_puzzle(user_id, name)
+        if only_if is None or only_if(puzzle):
+            mutate(puzzle)
+            self.persistence.save_puzzle(user_id, name, puzzle)
+        return puzzle
+
     def create_puzzle(self, user_id: int, name: str, size: int) -> None:
         """
         Create a new puzzle and save it.
@@ -377,61 +398,35 @@ class PuzzleUseCases:
 
     def switch_to_grid_mode(self, user_id: int, name: str) -> Puzzle:
         """Enter Grid mode and reset Grid-mode history for this session."""
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        puzzle.enter_grid_mode()
-        self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
+        return self._edit(user_id, name, lambda p: p.enter_grid_mode(), invalidate=False)
 
     def switch_to_puzzle_mode(self, user_id: int, name: str) -> Puzzle:
         """Enter Puzzle mode and reset Puzzle-mode history for this session."""
-        self._invalidate_fill_order(user_id, name)
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        puzzle.enter_puzzle_mode()
-        self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
+        return self._edit(user_id, name, lambda p: p.enter_puzzle_mode())
 
     def toggle_black_cell(self, user_id: int, name: str, r: int, c: int) -> Puzzle:
         """Toggle a black cell in the puzzle grid and save the change."""
-        self._invalidate_fill_order(user_id, name)
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        puzzle.toggle_black_cell(r, c)
-        self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
+        return self._edit(user_id, name, lambda p: p.toggle_black_cell(r, c))
 
     def rotate_grid(self, user_id: int, name: str) -> Puzzle:
         """Rotate the puzzle grid and save the change."""
-        self._invalidate_fill_order(user_id, name)
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        puzzle.rotate_grid()
-        self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
+        return self._edit(user_id, name, lambda p: p.rotate_grid())
 
     def generate_grid(self, user_id: int, name: str, spec: list[int] | None = None) -> Puzzle:
         """Generate a random valid grid for the puzzle and save the change."""
-        self._invalidate_fill_order(user_id, name)
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        newgrid = self.grid_generator.generate(puzzle.n, spec)
-        puzzle.apply_generated_grid(newgrid)
-        self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
+        return self._edit(
+            user_id, name,
+            lambda p: p.apply_generated_grid(self.grid_generator.generate(p.n, spec)))
 
     def undo_grid(self, user_id: int, name: str) -> Puzzle:
         """Undo the last Grid-mode operation."""
-        self._invalidate_fill_order(user_id, name)
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        if puzzle.grid_undo_stack:
-            puzzle.undo_grid_change()
-            self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
+        return self._edit(user_id, name, lambda p: p.undo_grid_change(),
+                          only_if=lambda p: p.grid_undo_stack)
 
     def redo_grid(self, user_id: int, name: str) -> Puzzle:
         """Redo the last undone Grid-mode operation."""
-        self._invalidate_fill_order(user_id, name)
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        if puzzle.grid_redo_stack:
-            puzzle.redo_grid_change()
-            self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
+        return self._edit(user_id, name, lambda p: p.redo_grid_change(),
+                          only_if=lambda p: p.grid_redo_stack)
 
     def set_puzzle_title(self, user_id: int, name: str, title: str) -> Puzzle:
         """
@@ -448,11 +443,8 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If load/save fails
         """
-        puzzle = self.persistence.load_puzzle(user_id, name)
-        puzzle.title = title
-        self.persistence.save_puzzle(user_id, name, puzzle)
-        return puzzle
-
+        return self._edit(user_id, name, lambda p: setattr(p, "title", title),
+                          invalidate=False)
 
     def set_cell_letter(self, user_id: int, name: str, r: int, c: int, letter: str) -> Puzzle:
         """
@@ -621,14 +613,8 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If load/save fails
         """
-        self._invalidate_fill_order(user_id, name)
-        puzzle = self.persistence.load_puzzle(user_id, name)
-
-        if puzzle.undo_stack:
-            puzzle.undo()
-            self.persistence.save_puzzle(user_id, name, puzzle)
-
-        return puzzle
+        return self._edit(user_id, name, lambda p: p.undo(),
+                          only_if=lambda p: p.undo_stack)
 
     def redo_puzzle(self, user_id: int, name: str) -> Puzzle:
         """
@@ -644,14 +630,8 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If load/save fails
         """
-        self._invalidate_fill_order(user_id, name)
-        puzzle = self.persistence.load_puzzle(user_id, name)
-
-        if puzzle.redo_stack:
-            puzzle.redo()
-            self.persistence.save_puzzle(user_id, name, puzzle)
-
-        return puzzle
+        return self._edit(user_id, name, lambda p: p.redo(),
+                          only_if=lambda p: p.redo_stack)
 
     def get_puzzle_stats(self, user_id: int, name: str) -> dict:
         """
