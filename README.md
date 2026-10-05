@@ -2,8 +2,6 @@
 
 A web-based application for creating and editing crossword puzzles.
 
-**Version: 5.7.0**
-
 ## Table of contents
 - [Requirements](#requirements)
 - [Setup](#setup)
@@ -47,6 +45,7 @@ See [Running the Server](https://github.com/philhanna/crossword/wiki/Running-The
 
 From the repository root you can also start the app directly with:
 
+- Linux/macOS: `./run_server`
 - Windows: `run_server.bat`
 - Any platform with Python on `PATH`: `python -m crossword.http_server`
 
