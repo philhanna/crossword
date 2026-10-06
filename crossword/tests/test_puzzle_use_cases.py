@@ -134,7 +134,9 @@ class TestPuzzleUseCasesCopy:
         # Set a clue on the first across word if any exist
         if test_puzzle.across_words:
             seq = next(iter(test_puzzle.across_words))
-            test_puzzle.across_words[seq].set_clue("Test clue")
+            word = test_puzzle.across_words[seq]
+            word.set_text("A" * word.length)
+            word.set_clue("Test clue")
         mock_persistence.load_puzzle.return_value = test_puzzle
 
         result = puzzle_uc.copy_puzzle(1, "original", "copy", "Initial save")
@@ -1106,3 +1108,69 @@ class TestPuzzleUseCasesGetStateHistory:
         mock_persistence.get_puzzle_state_history.return_value = None
         with pytest.raises(PersistenceError, match="not found"):
             puzzle_uc.get_puzzle_state_history(1, "nope")
+
+
+class TestStaleClues:
+    """Clues must not outlive the letters they were written for"""
+
+    @staticmethod
+    def _clued_across_and_crossing_down(puzzle):
+        seq = list(puzzle.across_words.keys())[0]
+        across = puzzle.across_words[seq]
+        r, c = list(across.cell_iterator())[0]
+        down = across.get_crossing_word(r, c)
+        for w in (across, down):
+            w.set_text("A" * w.length)
+            w.set_clue("old clue")
+        return seq, across, down, r, c
+
+    def test_set_word_clue_clears_crossing_clue(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        seq, across, down, _, _ = self._clued_across_and_crossing_down(test_puzzle)
+
+        puzzle_uc.set_word_clue(1, "p", seq, "across", "new clue", "B" * across.length)
+
+        assert across.get_clue() == "new clue"
+        assert down.get_clue() is None
+
+    def test_set_cell_letter_clears_clues_of_both_words(
+            self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        _, across, down, r, c = self._clued_across_and_crossing_down(test_puzzle)
+
+        puzzle_uc.set_cell_letter(1, "p", r, c, "Z")
+
+        assert across.get_clue() is None
+        assert down.get_clue() is None
+
+    def test_clear_unlocked_clears_clues(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        _, across, down, _, _ = self._clued_across_and_crossing_down(test_puzzle)
+
+        puzzle_uc.clear_unlocked(1, "p")
+
+        assert across.get_clue() is None
+        assert down.get_clue() is None
+
+    def test_undo_text_change_clears_clue(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        seq, across, down, _, _ = self._clued_across_and_crossing_down(test_puzzle)
+        puzzle_uc.set_word_clue(1, "p", seq, "across", "new", "B" * across.length)
+        down.set_clue("keep?")
+
+        puzzle_uc.undo_puzzle(1, "p")
+
+        assert across.get_clue() == "new"
+        assert down.get_clue() is None
+
+    def test_save_drops_clues_of_incomplete_words(self, puzzle_uc, mock_persistence, test_puzzle):
+        mock_persistence.load_puzzle.return_value = test_puzzle
+        mock_persistence.get_puzzle_state.return_value = None
+        seq = list(test_puzzle.across_words.keys())[0]
+        word = test_puzzle.across_words[seq]
+        word.set_text(" " * word.length)
+        word.set_clue("orphan")
+
+        puzzle_uc.copy_puzzle(1, "wc", "p", "comment")
+
+        assert word.get_clue() is None

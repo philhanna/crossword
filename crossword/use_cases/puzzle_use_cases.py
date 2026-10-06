@@ -189,6 +189,7 @@ class PuzzleUseCases:
         puzzle.grid_redo_stack = []
         puzzle.undo_stack = []
         puzzle.redo_stack = []
+        self._clear_clues_of_incomplete_words(puzzle)
         self.persistence.save_puzzle(user_id, new_name, puzzle)
         self._auto_set_state_on_save(user_id, new_name, puzzle, comment=comment)
         return puzzle
@@ -477,7 +478,9 @@ class PuzzleUseCases:
         if letter_upper != ' ' and not letter_upper.isalpha():
             raise ValueError(f"Letter must be A-Z or space, got {repr(letter)}")
 
+        texts_before = self._word_texts(puzzle)
         puzzle.set_cell(r, c, letter_upper)
+        self._clear_clues_of_changed_words(puzzle, texts_before)
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle
 
@@ -554,6 +557,7 @@ class PuzzleUseCases:
 
         word_dir = Word.ACROSS if dir_lower == "across" else Word.DOWN
         word = puzzle.get_word(seq, word_dir)
+        texts_before = self._word_texts(puzzle)
 
         # If the text is actually changing and the word is currently locked,
         # unlock it first so the cell writes below aren't silently dropped by
@@ -571,10 +575,33 @@ class PuzzleUseCases:
         if locked is not None:
             puzzle.set_locked(seq, word_dir, locked)
 
+        # Crossing words whose letters just changed no longer match their clues
+        self._clear_clues_of_changed_words(puzzle, texts_before)
+
         word.set_clue(clue if word.is_complete() else None)
 
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle
+
+    @staticmethod
+    def _word_texts(puzzle: Puzzle) -> dict:
+        words = list(puzzle.across_words.values()) + list(puzzle.down_words.values())
+        return {(w.seq, w.direction): w.get_text() for w in words}
+
+    @staticmethod
+    def _clear_clues_of_incomplete_words(puzzle: Puzzle) -> None:
+        words = list(puzzle.across_words.values()) + list(puzzle.down_words.values())
+        for w in words:
+            if not w.is_complete():
+                w.set_clue(None)
+
+    @staticmethod
+    def _clear_clues_of_changed_words(puzzle: Puzzle, texts_before: dict) -> None:
+        words = list(puzzle.across_words.values()) + list(puzzle.down_words.values())
+        for w in words:
+            key = (w.seq, w.direction)
+            if key in texts_before and w.get_text() != texts_before[key]:
+                w.set_clue(None)
 
     def clear_unlocked(self, user_id: int, name: str) -> Puzzle:
         """
@@ -613,7 +640,7 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If load/save fails
         """
-        return self._edit(user_id, name, lambda p: p.undo(),
+        return self._edit(user_id, name, lambda p: self._replay(p, p.undo, p.undo_stack),
                           only_if=lambda p: p.undo_stack)
 
     def redo_puzzle(self, user_id: int, name: str) -> Puzzle:
@@ -630,8 +657,21 @@ class PuzzleUseCases:
         Raises:
             PersistenceError: If load/save fails
         """
-        return self._edit(user_id, name, lambda p: p.redo(),
+        return self._edit(user_id, name, lambda p: self._replay(p, p.redo, p.redo_stack),
                           only_if=lambda p: p.redo_stack)
+
+    def _replay(self, puzzle: Puzzle, step, stack: list) -> None:
+        """Run puzzle.undo/redo; crossing-word clues of words whose text changed are
+        dropped, except when restoring a whole-puzzle clear (which restores
+        the clues itself). The edited word keeps its own clue."""
+        op = stack[-1]
+        texts_before = self._word_texts(puzzle)
+        step()
+        if op[0] == 'clear':
+            return
+        if op[0] == 'text':
+            texts_before.pop((op[1], op[2]), None)
+        self._clear_clues_of_changed_words(puzzle, texts_before)
 
     def get_puzzle_stats(self, user_id: int, name: str) -> dict:
         """
