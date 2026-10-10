@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.9.0] - 2026-10-09
+
+### Added
+
+- New Puzzle can now generate a random grid that matches the theme word
+  lengths. Theme words are placed in symmetric rows in the order given, and
+  no other entry clashes with the theme lengths. Themed grids may use up to
+  25% black cells
+- When no sample grid in the xd database matches the size or theme, New
+  Puzzle falls back to generating a random grid instead of failing
+
+### Changed
+
+- Clues are cleared when their word's letters change so they no longer match
+- The clue list keeps its scroll position when it redraws
+
 ## [5.8.2] - 2026-10-01
 
 ### Fixed
