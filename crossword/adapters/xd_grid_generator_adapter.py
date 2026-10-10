@@ -28,7 +28,7 @@ class XdGridGeneratorAdapter(GridGeneratorPort):
                 ).fetchone()
 
         if row is None:
-            raise RuntimeError(f"No grid of size {n} found in xdfile database")
+            return self._random_fallback().generate(n, spec)
 
         rows = row["grid_text"].split("\n")
         black_cells = [

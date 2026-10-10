@@ -15,12 +15,14 @@ from crossword.domain.grid_generator import (
     _no_forced_short_white_runs,
     _no_long_word_stack,
     _partial_columns_feasible,
+    _rows_matching,
     _place_middle_row,
     _place_row_pair,
     _clear_row_pair,
     _clear_middle_row,
     _spans_overlap,
     _validate_grid,
+    _white_run_lengths,
 )
 
 
@@ -437,3 +439,111 @@ class TestValidateGrid:
             grid[8][c] = W
         ok, reason = _validate_grid(grid)
         assert not ok
+
+
+# ---------------------------------------------------------------------------
+# Theme spec
+# ---------------------------------------------------------------------------
+
+def _raw_rows(grid):
+    """Return the grid as a list of strings of BLACK/WHITE, row by row."""
+    black = set(grid.get_black_cells())
+    return [
+        "".join(BLACK if (r, c) in black else WHITE for c in range(1, grid.n + 1))
+        for r in range(1, grid.n + 1)
+    ]
+
+
+def _assert_matches_spec(grid, spec):
+    """Check a generated grid against the theme spec rules, independently of the generator."""
+    rows = _raw_rows(grid)
+    cols = ["".join(row[c] for row in rows) for c in range(grid.n)]
+    lengths = sorted(set(spec))
+    gaps = {x for a, b in zip(lengths, lengths[1:]) for x in range(a + 1, b)}
+
+    # Theme entries appear in spec order, top to bottom
+    across = [x for row in rows for x in _white_run_lengths(row)]
+    assert [x for x in across if x in lengths] == list(spec)
+    for x in across + [x for col in cols for x in _white_run_lengths(col)]:
+        assert x <= lengths[-1]
+        assert x not in gaps
+    for col in cols:
+        assert not set(_white_run_lengths(col)) & set(lengths)
+    ok, reason = _validate_grid(rows)
+    assert ok, reason
+
+
+class TestThemeSpec:
+
+    @pytest.mark.parametrize("n, spec", [
+        (15, [15]),
+        (15, [11, 15, 11]),
+        (15, [13, 13]),
+        (15, [9, 9, 9]),
+        (15, [14, 14]),
+        (9, [9]),
+    ])
+    def test_generated_grid_matches_spec(self, n, spec):
+        grid = GridGenerator(n, seed=1, spec=spec).generate()
+        assert grid is not None
+        _assert_matches_spec(grid, spec)
+
+    def test_no_spec_is_unconstrained(self):
+        gen = GridGenerator(9, seed=1, spec=None)
+        assert gen.free_lengths is None
+        assert gen.generate() is not None
+
+    def test_free_lengths_exclude_gaps_and_theme_lengths(self):
+        gen = GridGenerator(15, spec=[7, 11, 7])
+        assert gen.free_lengths == frozenset({3, 4, 5, 6})
+
+    def test_non_palindrome_raises(self):
+        with pytest.raises(ValueError, match="palindrome"):
+            GridGenerator(15, spec=[7, 11])
+
+    def test_word_longer_than_grid_raises(self):
+        with pytest.raises(ValueError, match="between 3 and 15"):
+            GridGenerator(15, spec=[17])
+
+    def test_too_many_theme_words_raises(self):
+        with pytest.raises(ValueError, match="too many"):
+            GridGenerator(9, spec=[3] * 10)
+
+    def test_even_centre_word_raises(self):
+        # A lone centre word must be centred, so its length must share n's parity
+        with pytest.raises(ValueError, match="centre row"):
+            GridGenerator(15, spec=[14])
+
+    def test_no_filler_rows_raises(self):
+        # Only 3-letter entries allowed, and those are all theme words
+        with pytest.raises(ValueError, match="no legal rows"):
+            GridGenerator(15, spec=[3, 3])
+
+
+class TestRowsMatching:
+
+    def test_filler_rows_use_only_free_lengths(self):
+        rows = _rows_matching(["...#....#......", "...............", "....#.........."], frozenset({3, 4, 6}))
+        assert rows == ["...#....#......"]
+
+    def test_theme_row_needs_exactly_one_theme_run(self):
+        rows = ["....#.....#....", ".....#...#.....", "..............."]
+        assert _rows_matching(rows, frozenset({4}), 5) == ["....#.....#...."]
+
+    def test_white_run_lengths(self):
+        assert _white_run_lengths("...#....##.....") == [3, 4, 5]
+
+
+class TestColumnFeasibilityWithAllowed:
+
+    def test_closed_run_with_disallowed_length_fails(self):
+        line = list("#.....#" + "?" * 8)
+        assert not _no_forced_short_white_runs(line, frozenset({3, 4}))
+
+    def test_open_run_longer_than_max_fails(self):
+        line = list("#....." + "?" * 9)
+        assert not _no_forced_short_white_runs(line, frozenset({3, 4}))
+
+    def test_open_run_within_max_passes(self):
+        line = list("#..." + "?" * 11)
+        assert _no_forced_short_white_runs(line, frozenset({3, 4, 6}))

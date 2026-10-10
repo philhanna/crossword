@@ -12,6 +12,7 @@ class GeneratorSettings:
     # User-facing (Could be overridden from YAML)
     BLACK_CELL_PERCENT_MIN: float = 0.10
     BLACK_CELL_PERCENT_MAX: float = 0.20
+    THEME_BLACK_CELL_PERCENT_MAX: float = 0.25  # theme specs need more room to fit
 
     # Internal (Hardcoded safety rails)
     MAX_ITERATIONS: int = 256
@@ -51,6 +52,7 @@ class GridGenerator:
         min_black_pct: float = GeneratorSettings.BLACK_CELL_PERCENT_MIN,
         max_black_pct: float = GeneratorSettings.BLACK_CELL_PERCENT_MAX,
         max_attempts: int = GeneratorSettings.MAX_ITERATIONS,
+        spec: Optional[Sequence[int]] = None,
     ):
         """Initialise the generator and pre-compute legal row templates.
 
@@ -61,10 +63,17 @@ class GridGenerator:
             max_black_pct: Maximum fraction of cells that may be BLACK
             max_attempts: Number of top-level randomised search attempts
                 before giving up.
+            spec: Optional palindromic list of theme-word lengths, read top
+                to bottom.  When given, the grid has exactly these Across
+                theme entries in that order, no entry (either direction)
+                longer than the longest theme word or with a length falling
+                between two theme lengths, and no Down entry with a theme
+                length.
 
         Raises:
-            ValueError: If n is even or < 5, or if the black-percentage
-                bounds are invalid.
+            ValueError: If n is even or < 5, if the black-percentage
+                bounds are invalid, or if the spec is not a palindrome or
+                cannot be placed in an n x n grid.
             RuntimeError: If no legal row templates can be generated for
                 the given n (should not occur in practice).
         """
@@ -87,6 +96,56 @@ class GridGenerator:
         if not self.top_rows or not self.middle_rows:
             raise RuntimeError("failed to generate legal row templates")
 
+        self.spec = list(spec) if spec else None
+        self.free_lengths: Optional[frozenset] = None
+        if self.spec:
+            self._init_spec()
+
+    def _init_spec(self) -> None:
+        """Validate the theme spec and pre-compute the row templates it allows.
+
+        Theme words pair up by 180-degree symmetry: the first half of the
+        spec goes in top-half rows (mirrored in the bottom half), and the
+        middle element of an odd-length spec goes in the centre row.
+
+        free_lengths is the set of lengths any non-theme entry may have:
+        3 up to the longest theme length, minus the gap lengths between
+        theme lengths and minus the theme lengths themselves.
+        """
+        spec = self.spec
+        n = self.n
+        if spec != spec[::-1]:
+            raise ValueError("theme spec must be a palindrome")
+        if any(length < 3 or length > n for length in spec):
+            raise ValueError(f"theme word lengths must be between 3 and {n}")
+
+        self.theme_pairs = spec[:len(spec) // 2]
+        self.theme_middle = spec[len(spec) // 2] if len(spec) % 2 else None
+        if len(self.theme_pairs) > self.mid:
+            raise ValueError(f"too many theme words for a {n}x{n} grid")
+
+        lengths = sorted(set(spec))
+        gaps = {length for a, b in zip(lengths, lengths[1:]) for length in range(a + 1, b)}
+        self.free_lengths = frozenset(range(3, lengths[-1] + 1)) - gaps - set(lengths)
+
+        self.filler_top_rows = _rows_matching(self.top_rows, self.free_lengths)
+        self.filler_middle_rows = _rows_matching(self.middle_rows, self.free_lengths)
+        if not self.filler_top_rows or (self.theme_middle is None and not self.filler_middle_rows):
+            raise ValueError("theme spec leaves no legal rows for the rest of the grid")
+
+        self.theme_top_rows = {
+            length: _rows_matching(self.top_rows, self.free_lengths, length)
+            for length in set(self.theme_pairs)
+        }
+        if self.theme_middle is not None:
+            self.theme_middle_rows = _rows_matching(self.middle_rows, self.free_lengths, self.theme_middle)
+            if not self.theme_middle_rows:
+                raise ValueError(
+                    f"a {self.theme_middle}-letter theme word cannot sit in the centre row of a {n}x{n} grid")
+        for length, rows in self.theme_top_rows.items():
+            if not rows:
+                raise ValueError(f"a {length}-letter theme word cannot be placed in a {n}x{n} grid")
+
     def generate(self) -> Grid:
         """Generate and return one valid Grid.
 
@@ -107,13 +166,31 @@ class GridGenerator:
             target = self.rng.randint(lo, hi)
             raw = [[UNKNOWN] * self.n for _ in range(self.n)]
             nodes = [0]
-            result = self._search(raw, row_index=0, target_black=target, min_black=lo, max_black=hi, nodes=nodes)
+            plan = self._plan_rows()
+            result = self._search(raw, row_index=0, target_black=target, min_black=lo, max_black=hi, nodes=nodes,
+                                  plan=plan)
             if result is not None:
                 ok, _ = _validate_grid(result)
                 if ok:
                     return self._to_grid(result)
         return None
 
+    def _plan_rows(self) -> List[List[str]]:
+        """Return the candidate row templates for each top-half row 0..mid for one attempt.
+
+        Without a spec every top row draws from top_rows and the centre row
+        from middle_rows.  With a spec, a fresh random choice of top-half
+        rows (kept in spec order, top to bottom) receives the theme pairs;
+        every other row draws from the filler templates.
+        """
+        if not self.spec:
+            return [self.top_rows] * self.mid + [self.middle_rows]
+        middle = self.filler_middle_rows if self.theme_middle is None else self.theme_middle_rows
+        plan = [self.filler_top_rows] * self.mid + [middle]
+        theme_rows = sorted(self.rng.sample(range(self.mid), len(self.theme_pairs)))
+        for r, length in zip(theme_rows, self.theme_pairs):
+            plan[r] = self.theme_top_rows[length]
+        return plan
 
     def _to_grid(self, raw: List[List[str]]) -> Grid:
         """Convert the internal 0-based raw grid to a domain Grid (1-based coordinates)."""
@@ -132,6 +209,7 @@ class GridGenerator:
         min_black: int,
         max_black: int,
         nodes: List[int],
+        plan: List[List[str]],
     ) -> Optional[List[List[str]]]:
         """Recursive backtracking search that fills rows from the outside in.
 
@@ -154,6 +232,7 @@ class GridGenerator:
             target_black: The desired total black-cell count for this attempt.
             min_black: Hard lower bound on black-cell count.
             max_black: Hard upper bound on black-cell count.
+            plan: Candidate row templates for each row 0..mid (see _plan_rows).
 
         Returns:
             The completed grid as a list-of-lists on success, or None if no
@@ -178,7 +257,7 @@ class GridGenerator:
             return None
 
         if row_index < mid:
-            candidates = self._rank_top_candidates(target_black, current_black, row_index)
+            candidates = self._rank_top_candidates(plan[row_index], target_black, current_black, row_index)
 
             for row in candidates:
                 nodes[0] += 1
@@ -194,8 +273,8 @@ class GridGenerator:
                 elif rr < n - 1 and not _no_long_word_stack(grid[rr], grid[rr + 1]):
                     stacking_ok = False
 
-                if stacking_ok and _partial_columns_feasible(grid):
-                    result = self._search(grid, row_index + 1, target_black, min_black, max_black, nodes)
+                if stacking_ok and _partial_columns_feasible(grid, self.free_lengths):
+                    result = self._search(grid, row_index + 1, target_black, min_black, max_black, nodes, plan)
                     if result is not None:
                         return result
 
@@ -204,7 +283,7 @@ class GridGenerator:
             return None
 
         if row_index == mid:
-            candidates = self._rank_middle_candidates(target_black, current_black)
+            candidates = self._rank_middle_candidates(plan[mid], target_black, current_black)
 
             for row in candidates:
                 nodes[0] += 1
@@ -216,7 +295,7 @@ class GridGenerator:
                 if (
                     _no_long_word_stack(grid[mid], grid[mid - 1])
                     and _no_long_word_stack(grid[mid], grid[mid + 1])
-                    and _partial_columns_feasible(grid)
+                    and _partial_columns_feasible(grid, self.free_lengths)
                 ):
                     black_count = _count_black_cells(grid)
                     if min_black <= black_count <= max_black:
@@ -230,7 +309,9 @@ class GridGenerator:
 
         return None
 
-    def _rank_top_candidates(self, target_black: int, current_black: int, row_index: int) -> List[str]:
+    def _rank_top_candidates(
+        self, rows: List[str], target_black: int, current_black: int, row_index: int
+    ) -> List[str]:
         """Return top-half row candidates sorted toward the target black-cell count.
 
         Rows are pre-shuffled for randomness, then stable-sorted so that rows
@@ -242,18 +323,18 @@ class GridGenerator:
         """
         remaining_weight = 2 * (self.mid - row_index) + 1  # weight of remaining placements
         step_target = (target_black - current_black) * 2 / remaining_weight
-        rows = self.top_rows[:]
+        rows = rows[:]
         self.rng.shuffle(rows)
         rows.sort(key=lambda row: abs(row.count(BLACK) - step_target))
         return rows
 
-    def _rank_middle_candidates(self, target_black: int, current_black: int) -> List[str]:
+    def _rank_middle_candidates(self, rows: List[str], target_black: int, current_black: int) -> List[str]:
         """Return centre-row candidates sorted toward the target black-cell count.
 
         Like _rank_top_candidates but the centre row is placed only once, so
         its black contribution is counted once rather than twice.
         """
-        rows = self.middle_rows[:]
+        rows = rows[:]
         self.rng.shuffle(rows)
         rows.sort(key=lambda row: abs((current_black + row.count(BLACK)) - target_black))
         return rows
@@ -295,6 +376,29 @@ def _generate_legal_rows(n: int, require_palindrome: bool) -> List[str]:
 
     rec([], 0)
     return rows
+
+
+def _rows_matching(rows: Sequence[str], free_lengths: frozenset, theme_length: Optional[int] = None) -> List[str]:
+    """Return the rows whose WHITE runs all have a length in free_lengths.
+
+    If theme_length is given, a row must also contain exactly one run of
+    that length (which is exempt from the free_lengths check).
+    """
+    result: List[str] = []
+    for row in rows:
+        runs = _white_run_lengths(row)
+        if theme_length is not None:
+            if runs.count(theme_length) != 1:
+                continue
+            runs.remove(theme_length)
+        if all(length in free_lengths for length in runs):
+            result.append(row)
+    return result
+
+
+def _white_run_lengths(line: Sequence[str]) -> List[int]:
+    """Return the lengths of the maximal WHITE runs in a fully assigned line."""
+    return [len(run) for run in "".join(line).split(BLACK) if run]
 
 
 def _place_row_pair(grid: List[List[str]], r: int, row: str) -> None:
@@ -342,7 +446,7 @@ def _count_black_cells(grid: Sequence[Sequence[str]]) -> int:
     return sum(cell == BLACK for row in grid for cell in row)
 
 
-def _no_forced_short_white_runs(line: Sequence[str]) -> bool:
+def _no_forced_short_white_runs(line: Sequence[str], allowed: Optional[frozenset] = None) -> bool:
     """Return True if no completed WHITE run of length < 3 already exists in line.
 
     Used as a pruning check on partially assigned lines (rows or columns).
@@ -351,6 +455,10 @@ def _no_forced_short_white_runs(line: Sequence[str]) -> bool:
 
     Returns False as soon as a WHITE run is found that is both fully bounded
     (closed on both sides by BLACK or the edge) and shorter than 3.
+
+    If allowed is given, also returns False for a closed run whose length is
+    not in allowed, or for any run (closed or not) already longer than the
+    largest allowed length, since a run can only grow.
     """
     n = len(line)
     i = 0
@@ -367,20 +475,27 @@ def _no_forced_short_white_runs(line: Sequence[str]) -> bool:
         right_closed = (end == n - 1) or (line[end + 1] == BLACK)
         if left_closed and right_closed and length < 3:
             return False
+        if allowed is not None:
+            if length > max(allowed, default=0):
+                return False
+            if left_closed and right_closed and length not in allowed:
+                return False
     return True
 
 
-def _partial_columns_feasible(grid: Sequence[Sequence[str]]) -> bool:
+def _partial_columns_feasible(grid: Sequence[Sequence[str]], allowed: Optional[frozenset] = None) -> bool:
     """Return True if every column in the partially filled grid still admits a valid completion.
 
     Applies _no_forced_short_white_runs to each column.  A column that
     already contains a fully bounded WHITE run shorter than 3 can never
     produce a valid grid, so the current partial assignment can be pruned.
+    If allowed is given (the theme spec's free lengths), Down runs must
+    also stay within it.
     """
     n = len(grid)
     for c in range(n):
         col = [grid[r][c] for r in range(n)]
-        if not _no_forced_short_white_runs(col):
+        if not _no_forced_short_white_runs(col, allowed):
             return False
     return True
 
