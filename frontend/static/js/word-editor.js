@@ -1018,6 +1018,19 @@ async function doWordDefinitions() {
 // ---------------------------------------------------------------------------
 
 async function doWordEditOK() {
+    // A lone suggestion is the only possible answer, so take it — unless
+    // the user has already typed a complete answer of their own
+    if (_weSuggestions.length === 1 && !_weInputIsCompleteAnswer()) {
+        const only = _weSuggestions[0];
+        weListItemClick(_weSuggestionsConstrained ? only.word : only);
+    }
     const result = await completeSelectedWordEdit({ editorMode: 'puzzle' });
     if (!result.error) closeWordEditor();
+}
+
+function _weInputIsCompleteAnswer() {
+    const sw = AppState.selectedWord;
+    if (!sw) return false;
+    const raw = _weGetRawInputText();
+    return raw.length === sw.cells.length && /^[A-Za-z]+$/.test(raw);
 }
