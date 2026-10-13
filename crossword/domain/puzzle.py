@@ -1,7 +1,7 @@
 import json
 from .word import AcrossWord, DownWord, Word
 from .grid import Grid
-from .word_similarity import find_duplicate
+from .word_similarity import find_duplicate, is_near_duplicate
 
 
 class Puzzle:
@@ -103,29 +103,44 @@ class Puzzle:
             old_value = word.get_text()
             if old_value != new_value:
                 if check_duplicates:
-                    self._check_for_duplicate(seq, direction, new_value)
+                    texts_before = self._all_word_texts()
+                    word.set_text(text)
+                    try:
+                        self._check_for_duplicates(word, texts_before)
+                    except ValueError:
+                        word.set_text(old_value)
+                        raise
                 undoable = ['text', seq, direction, old_value]
                 self.undo_stack.append(undoable)
         word.set_text(text)
 
-    def _check_for_duplicate(self, seq, direction, text):
-        """ Raises ValueError if text, once complete, duplicates or is a
-        near-duplicate (e.g. a plain plural) of another complete word
-        already in the puzzle. """
-        length = self.get_word(seq, direction).length
-        normalized = (text + " " * length)[:length]
-        if " " in normalized:
-            return  # word isn't fully filled in yet; nothing to compare
-        others = [
-            w for w in list(self.across_words.values()) + list(self.down_words.values())
-            if (w.seq, w.direction) != (seq, direction) and w.is_complete()
+    def _all_word_texts(self):
+        """ Maps (seq, direction) to the current text of every word """
+        return {(w.seq, w.direction): w.get_text() for w in self._all_words()}
+
+    def _all_words(self):
+        return list(self.across_words.values()) + list(self.down_words.values())
+
+    def _check_for_duplicates(self, entered, texts_before):
+        """ Raises ValueError if any complete word whose text differs from
+        texts_before - the word just entered, or a crossing word it
+        completed - duplicates or is a near-duplicate (e.g. a plain plural)
+        of another complete word in the puzzle. """
+        complete = [w for w in self._all_words() if w.is_complete()]
+        changed = [
+            w for w in complete
+            if texts_before[(w.seq, w.direction)] != w.get_text()
         ]
-        for other in others:
-            if find_duplicate(normalized, [other.get_text()]):
-                raise ValueError(
-                    f"{normalized.strip()} duplicates {other.get_text().strip()}, "
-                    f"already used at {other.location}"
-                )
+        for word in changed:
+            for other in complete:
+                if other is word:
+                    continue
+                if find_duplicate(word.get_text(), [other.get_text()]):
+                    where = "" if word is entered else f" at {word.location}"
+                    raise ValueError(
+                        f"{word.get_text().strip()}{where} duplicates "
+                        f"{other.get_text().strip()}, already used at {other.location}"
+                    )
 
     def get_clue(self, seq, direction):
         """ Returns the clue of the word at <seq><directino>"""
@@ -579,7 +594,16 @@ class Puzzle:
             if len(places) > 1:
                 errmsg = f"'{text}' is used in {', '.join(places)}"
                 error_list.append(errmsg)
-            pass
+
+        # Distinct texts where one is a plain plural of the other
+        texts = list(uwmap)
+        for i, text in enumerate(texts):
+            for other in texts[i + 1:]:
+                if is_near_duplicate(text, other):
+                    errmsg = (f"'{text}' ({', '.join(uwmap[text])}) and "
+                              f"'{other}' ({', '.join(uwmap[other])}) "
+                              f"are near-duplicates")
+                    error_list.append(errmsg)
 
         return error_list
 

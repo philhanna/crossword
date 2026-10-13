@@ -482,7 +482,7 @@ class TestPuzzleDuplicateWords:
 
     def test_rejects_plural_of_shorter_existing_word(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
-        puzzle.set_text(7, Word.DOWN, "CAT")
+        puzzle.set_text(22, Word.ACROSS, "CAT")
         with pytest.raises(ValueError, match="CATS duplicates CAT"):
             puzzle.set_text(4, Word.ACROSS, "CATS")
 
@@ -490,7 +490,7 @@ class TestPuzzleDuplicateWords:
         puzzle = TestPuzzle.create_atlantic_puzzle()
         puzzle.set_text(4, Word.ACROSS, "CATS")
         with pytest.raises(ValueError, match="CAT duplicates CATS"):
-            puzzle.set_text(7, Word.DOWN, "CAT")
+            puzzle.set_text(22, Word.ACROSS, "CAT")
 
     def test_allows_non_conflicting_word(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
@@ -526,8 +526,8 @@ class TestPuzzleDuplicateWords:
 
     def test_error_message_names_the_conflicting_location(self):
         puzzle = TestPuzzle.create_atlantic_puzzle()
-        puzzle.set_text(7, Word.DOWN, "CAT")
-        with pytest.raises(ValueError, match="7 down"):
+        puzzle.set_text(22, Word.ACROSS, "CAT")
+        with pytest.raises(ValueError, match="22 across"):
             puzzle.set_text(4, Word.ACROSS, "CATS")
 
     def test_check_duplicates_false_bypasses_the_check(self):
@@ -535,3 +535,30 @@ class TestPuzzleDuplicateWords:
         puzzle.set_text(7, Word.DOWN, "CAT")
         puzzle.set_text(4, Word.ACROSS, "CATS", check_duplicates=False)
         assert "CATS" == puzzle.get_text(4, Word.ACROSS)
+
+    def test_rejects_crossing_word_completed_as_a_plural(self):
+        puzzle = self.create_sin_puzzle()
+
+        # 8-across fills the last letter of 1-down, making it SINS
+        with pytest.raises(ValueError, match="SINS at 1 down duplicates SIN"):
+            puzzle.set_text(8, Word.ACROSS, "SPOOK")
+
+    def test_rejected_crossing_word_leaves_the_grid_unchanged(self):
+        puzzle = self.create_sin_puzzle()
+        with pytest.raises(ValueError):
+            puzzle.set_text(8, Word.ACROSS, "SPOOK")
+        assert "     " == puzzle.get_text(8, Word.ACROSS)
+        assert "SIN " == puzzle.get_text(1, Word.DOWN)
+        assert 3 == len(puzzle.undo_stack)
+
+    @staticmethod
+    def create_sin_puzzle():
+        """ 1-across is SIN and 1-down reads SIN, one letter short """
+        grid = Grid(5)
+        grid.add_black_cell(1, 4)
+        grid.add_black_cell(1, 5)
+        puzzle = Puzzle(grid)
+        puzzle.set_text(1, Word.ACROSS, "SIN")
+        puzzle.set_text(4, Word.ACROSS, "IRATE")
+        puzzle.set_text(7, Word.ACROSS, "NOBLE")
+        return puzzle

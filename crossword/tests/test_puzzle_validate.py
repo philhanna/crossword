@@ -1,4 +1,4 @@
-from crossword import Puzzle, Word
+from crossword import Grid, Puzzle, Word
 
 
 class TestPuzzleValidate:
@@ -15,6 +15,19 @@ class TestPuzzleValidate:
         assert 1 == len(errors)
         assert "1 across" in errors[0]
         assert "7 down" in errors[0]
+
+    def test_near_duplicate_words(self):
+        grid = Grid(5)
+        grid.add_black_cell(1, 4)
+        grid.add_black_cell(1, 5)
+        puzzle = Puzzle(grid)
+        puzzle.set_text(1, Word.ACROSS, "SIN")
+        puzzle.set_text(1, Word.DOWN, "SINS", check_duplicates=False)
+        errors = puzzle.validate_duplicate_words()
+        assert 1 == len(errors)
+        assert "'SIN' (1 across)" in errors[0]
+        assert "'SINS' (1 down)" in errors[0]
+        assert "near-duplicates" in errors[0]
 
     def test_ok_valid(self):
         puzzle = self.create_test_puzzle()
