@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.10.0] - 2026-10-12
+
+### Added
+
+- New `tools/user/get_theme_words.py` prints a puzzle's theme (locked) words,
+  each with its length and clue
+- Design plans for circled squares (`docs/circle.md`) and for even-sized and
+  asymmetric grids (`docs/evensize.md`)
+
+### Fixed
+
+- Pressing Apply in the word editor when there is exactly one suggestion now
+  applies that suggestion
+
 ## [5.9.0] - 2026-10-09
 
 ### Added
