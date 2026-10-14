@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [5.10.1] - 2026-10-13
+
+### Fixed
+
+- Entering a word is now rejected when it completes a crossing word that
+  duplicates another word in the puzzle, or is its plural (e.g. SINS when SIN
+  is already used)
+- Puzzle validation now reports plural pairs as duplicates, not just exact
+  repeats
+- Clicking the puzzle title to edit it works again after using the word
+  editor
+
 ## [5.10.0] - 2026-10-12
 
 ### Added
