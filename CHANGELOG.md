@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.1.1] - 2026-10-14
+
+### Fixed
+
+- Grid letters no longer run into the word numbers. They sit slightly
+  below centre on screen and in the PDF exports, and the PDF letters are a
+  little smaller (13pt instead of 16pt)
+
 ## [6.1.0] - 2026-10-14
 
 ### Added
