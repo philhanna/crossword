@@ -41,6 +41,8 @@ def test_import(app_page, api, tmp_path, item, endpoint, suffix):
 
     with page.expect_file_chooser() as chooser:
         menu(page, "Import", item)
+    accept = page.locator("#import-file-input").get_attribute("accept")
+    assert suffix in accept.split(",")
     chooser.value.set_files(str(sample))
     expect(page.locator("#ib-input")).to_have_value("sample")
     answer_input_box(page, "imported")

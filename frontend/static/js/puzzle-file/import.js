@@ -1,210 +1,72 @@
 // Crossword Puzzle Editor — the Import menu
+//
+// Every format imports the same way: pick a file, name the puzzle, post the
+// file's contents to the format's endpoint, and open the result. The table
+// below holds what differs between formats.
 
 import { registerActions } from '../core/actions.js';
 import { _openPuzzleInEditor } from './lifecycle.js';
 import { apiFetch, inputBox, showMessageLine, showRequestError } from '../ui.js';
 
-const IMPORTERS = {
-    puz:        () => do_puzzle_import_puz(),
-    acrosslite: () => do_puzzle_import(),
-    ipuz:       () => do_puzzle_import_ipuz(),
-    xd:         () => do_puzzle_import_xd(),
-    ccxml:      () => do_puzzle_import_ccxml(),
+// read: 'text' posts { name, content }; 'base64' posts { name, content_b64 }
+const IMPORT_FORMATS = {
+    puz:        { title: 'Import .puz puzzle',               accept: '.puz',        read: 'base64', endpoint: '/api/import/puz' },
+    acrosslite: { title: 'Import AcrossLite puzzle',         accept: '.txt',        read: 'text',   endpoint: '/api/import/acrosslite' },
+    ipuz:       { title: 'Import ipuz puzzle',               accept: '.ipuz,.json', read: 'text',   endpoint: '/api/import/ipuz' },
+    xd:         { title: 'Import xd puzzle',                 accept: '.xd',         read: 'text',   endpoint: '/api/import/xd' },
+    ccxml:      { title: 'Import Crossword Compiler puzzle', accept: '.xml',        read: 'text',   endpoint: '/api/import/ccxml' },
 };
 
 registerActions({
-    'import': (el) => IMPORTERS[el.dataset.format](),
+    'import': (el) => importPuzzle(IMPORT_FORMATS[el.dataset.format]),
 });
 
-async function do_puzzle_import() {
-    const fileInput = document.getElementById('acrosslite-file-input');
-    // Reset so the same file can be selected again
+function importPuzzle(format) {
+    const fileInput = document.getElementById('import-file-input');
+    fileInput.accept = format.accept;
+
+    // Reset so the same file can be picked again
     fileInput.value = '';
-    fileInput.onchange = async (evt) => {
-        const file = evt.target.files[0];
-        if (!file) return;
-
-        // Pre-populate name from filename (strip .txt extension)
-        const defaultName = file.name.replace(/\.txt$/i, '');
-
-        inputBox(
-            'Import AcrossLite puzzle',
-            '<b>Puzzle name:</b>',
-            defaultName,
-            async (name) => {
-                name = name.trim();
-                if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
-
-                let content;
-                try {
-                    content = await file.text();
-                } catch (e) {
-                    showMessageLine('Could not read file', 'error', 0);
-                    return;
-                }
-
-                try {
-                    await apiFetch('POST', '/api/import/acrosslite', { name, content });
-                    showMessageLine(`Imported "${name}" — opening…`, 'notice');
-                    await _openPuzzleInEditor(name);
-                } catch (e) {
-                    showRequestError('Import failed', e);
-                }
-            }
-        );
+    fileInput.onchange = () => {
+        const file = fileInput.files[0];
+        if (file) askNameAndImport(format, file);
     };
     fileInput.click();
 }
 
-async function do_puzzle_import_xd() {
-    const fileInput = document.getElementById('xd-file-input');
-    fileInput.value = '';
-    fileInput.onchange = async (evt) => {
-        const file = evt.target.files[0];
-        if (!file) return;
+function askNameAndImport(format, file) {
+    inputBox(format.title, '<b>Puzzle name:</b>', defaultPuzzleName(file.name, format.accept), async (name) => {
+        name = name.trim();
+        if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
 
-        const defaultName = file.name.replace(/\.xd$/i, '');
+        let body;
+        try {
+            body = await readForUpload(file, format.read, name);
+        } catch (e) {
+            showMessageLine('Could not read file', 'error', 0);
+            return;
+        }
 
-        inputBox(
-            'Import xd puzzle',
-            '<b>Puzzle name:</b>',
-            defaultName,
-            async (name) => {
-                name = name.trim();
-                if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
-
-                let content;
-                try {
-                    content = await file.text();
-                } catch (e) {
-                    showMessageLine('Could not read file', 'error', 0);
-                    return;
-                }
-
-                try {
-                    await apiFetch('POST', '/api/import/xd', { name, content });
-                    showMessageLine(`Imported "${name}" — opening…`, 'notice');
-                    await _openPuzzleInEditor(name);
-                } catch (e) {
-                    showRequestError('Import failed', e);
-                }
-            }
-        );
-    };
-    fileInput.click();
+        try {
+            await apiFetch('POST', format.endpoint, body);
+            showMessageLine(`Imported "${name}" — opening…`, 'notice');
+            await _openPuzzleInEditor(name);
+        } catch (e) {
+            showRequestError('Import failed', e);
+        }
+    });
 }
 
-async function do_puzzle_import_ipuz() {
-    const fileInput = document.getElementById('ipuz-file-input');
-    fileInput.value = '';
-    fileInput.onchange = async (evt) => {
-        const file = evt.target.files[0];
-        if (!file) return;
-
-        const defaultName = file.name.replace(/\.(ipuz|json)$/i, '');
-
-        inputBox(
-            'Import ipuz puzzle',
-            '<b>Puzzle name:</b>',
-            defaultName,
-            async (name) => {
-                name = name.trim();
-                if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
-
-                let content;
-                try {
-                    content = await file.text();
-                } catch (e) {
-                    showMessageLine('Could not read file', 'error', 0);
-                    return;
-                }
-
-                try {
-                    await apiFetch('POST', '/api/import/ipuz', { name, content });
-                    showMessageLine(`Imported "${name}" — opening…`, 'notice');
-                    await _openPuzzleInEditor(name);
-                } catch (e) {
-                    showRequestError('Import failed', e);
-                }
-            }
-        );
-    };
-    fileInput.click();
+// The file name without whichever of the format's extensions it ends in
+function defaultPuzzleName(filename, accept) {
+    const extensions = accept.split(',').map(ext => ext.slice(1)).join('|');
+    return filename.replace(new RegExp(`\\.(${extensions})$`, 'i'), '');
 }
 
-async function do_puzzle_import_ccxml() {
-    const fileInput = document.getElementById('ccxml-file-input');
-    fileInput.value = '';
-    fileInput.onchange = async (evt) => {
-        const file = evt.target.files[0];
-        if (!file) return;
-
-        const defaultName = file.name.replace(/\.xml$/i, '');
-
-        inputBox(
-            'Import Crossword Compiler puzzle',
-            '<b>Puzzle name:</b>',
-            defaultName,
-            async (name) => {
-                name = name.trim();
-                if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
-
-                let content;
-                try {
-                    content = await file.text();
-                } catch (e) {
-                    showMessageLine('Could not read file', 'error', 0);
-                    return;
-                }
-
-                try {
-                    await apiFetch('POST', '/api/import/ccxml', { name, content });
-                    showMessageLine(`Imported "${name}" — opening…`, 'notice');
-                    await _openPuzzleInEditor(name);
-                } catch (e) {
-                    showRequestError('Import failed', e);
-                }
-            }
-        );
-    };
-    fileInput.click();
-}
-
-async function do_puzzle_import_puz() {
-    const fileInput = document.getElementById('puz-file-input');
-    fileInput.value = '';
-    fileInput.onchange = async (evt) => {
-        const file = evt.target.files[0];
-        if (!file) return;
-
-        const defaultName = file.name.replace(/\.puz$/i, '');
-
-        inputBox(
-            'Import .puz puzzle',
-            '<b>Puzzle name:</b>',
-            defaultName,
-            async (name) => {
-                name = name.trim();
-                if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
-
-                let content_b64;
-                try {
-                    const buf = await file.arrayBuffer();
-                    content_b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-                } catch (e) {
-                    showMessageLine('Could not read file', 'error', 0);
-                    return;
-                }
-
-                try {
-                    await apiFetch('POST', '/api/import/puz', { name, content_b64 });
-                    showMessageLine(`Imported "${name}" — opening…`, 'notice');
-                    await _openPuzzleInEditor(name);
-                } catch (e) {
-                    showRequestError('Import failed', e);
-                }
-            }
-        );
-    };
-    fileInput.click();
+async function readForUpload(file, read, name) {
+    if (read === 'base64') {
+        const buf = await file.arrayBuffer();
+        return { name, content_b64: btoa(String.fromCharCode(...new Uint8Array(buf))) };
+    }
+    return { name, content: await file.text() };
 }
