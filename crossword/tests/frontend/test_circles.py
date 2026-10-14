@@ -1,9 +1,9 @@
-"""Circling squares in Puzzle mode with Shift+click and the Circle button."""
+"""Circling squares in Puzzle mode with Shift+click."""
 
 from playwright.sync_api import expect
 
 from crossword.tests.frontend.helpers import (
-    cell_point, click_cell, confirm_message_box, open_from_dashboard,
+    cell_point, confirm_message_box, open_from_dashboard,
 )
 
 
@@ -33,25 +33,18 @@ def test_shift_click_toggles_circle_without_selecting(app_page, api):
     expect(page.locator("#puzzle-svg circle")).to_have_count(0)
 
 
-def test_circle_button_toggles_cursor_square_and_undo_removes_it(app_page, api):
+def test_undo_removes_circle(app_page, api):
     page = app_page
     open_five(page, api)
 
-    circle_btn = page.locator("#puzzle-circle-btn")
-    expect(circle_btn).to_have_class("ab-btn is-disabled")
-
-    # Select a word, close the word editor, then circle the cursor square
-    click_cell(page, 0, 0)
-    page.locator(".we-action-row .btn-primary").click()
-    expect(page.locator("#we-dialog")).to_have_count(0)
-    circle_btn.click()
+    shift_click_cell(page, 0, 0)
     expect(page.locator("#puzzle-svg circle")).to_have_count(1)
 
     page.locator("#puzzle-undo-btn").click()
     expect(page.locator("#puzzle-svg circle")).to_have_count(0)
 
 
-def test_grid_mode_shows_circles_but_offers_no_circle_button(app_page, api):
+def test_grid_mode_shows_circles(app_page, api):
     page = app_page
     open_five(page, api)
 
@@ -62,4 +55,3 @@ def test_grid_mode_shows_circles_but_offers_no_circle_button(app_page, api):
     confirm_message_box(page)
     expect(page.locator(".mode-badge")).to_have_text("Grid Mode")
     expect(page.locator("#puzzle-svg circle")).to_have_count(1)
-    expect(page.locator("#puzzle-circle-btn")).to_have_count(0)

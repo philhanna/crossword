@@ -252,7 +252,7 @@ into the cursor square. So circling needs its own gesture. Offer two:
    **cursor square** of the selected word. It is disabled when no word is
    selected or the word editor dialog is open, in the same way
    `_updatePuzzleToolbar()` handles Edit word. It isn't rendered in Grid
-   mode at all.
+   mode at all. *(Since removed: Shift+click turned out to be enough.)*
 2. **Shift+click** on any white square. In `handlePuzzleClick()`
    ([grid-clicks.js:22](../frontend/static/js/editor/grid-clicks.js#L22)), check
    `event.shiftKey` first, before the single/double-click timer logic. If
