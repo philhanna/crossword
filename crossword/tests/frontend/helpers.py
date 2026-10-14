@@ -53,7 +53,7 @@ def grid_letters(page, size):
     for r in range(size):
         row = ""
         for c in range(size):
-            key = f"{c * BOXSIZE + BOXSIZE // 2},{r * BOXSIZE + BOXSIZE - 5}"
+            key = f"{c * BOXSIZE + BOXSIZE // 2},{r * BOXSIZE + BOXSIZE / 2 + 5.5}"
             row += cells.get(key, ".")
         rows.append(row)
     return rows

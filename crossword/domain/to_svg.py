@@ -24,9 +24,10 @@ class ToSVG:
         self.cell_number_y = 10
         self.cell_number_fontsize = "8pt"
 
-        # Figure out where the cell letter goes
-        self.cell_letter_x = int(ToSVG.BOXSIZE / 3.0)
-        self.cell_letter_y = int(ToSVG.BOXSIZE * 7.0 / 8.0)
+        # Figure out where the cell letter goes: horizontally centred via
+        # text-anchor, with the baseline half a cap height below the centre
+        self.cell_letter_x = ToSVG.BOXSIZE / 2
+        self.cell_letter_y = ToSVG.BOXSIZE / 2 + 7.75
         self.cell_letter_fontsize = str(int(ToSVG.BOXSIZE / 2)) + "pt"
 
         self.root = ET.Element("svg")
@@ -170,4 +171,5 @@ class PuzzleToSVG(ToSVG):
             elem_text.set("x", str(xbase + self.cell_letter_x))
             elem_text.set("y", str(ybase + self.cell_letter_y))
             elem_text.set("font-size", str(self.cell_letter_fontsize))
+            elem_text.set("text-anchor", "middle")
             elem_text.text = letter

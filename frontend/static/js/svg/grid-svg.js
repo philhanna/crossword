@@ -90,8 +90,10 @@ export function buildPuzzleSvg(puzzleData, editState = null) {
                     : (cd.letter || '');
                 if (letter) {
                     const letterFill = (idx === cursorFlatIdx) ? '#1a1a1a' : '#1a1a2e';
+
+                    // Baseline sits half a cap height below the centre so the glyph is centred
                     parts.push(
-                        `<text x="${x + BOXSIZE / 2}" y="${y + BOXSIZE - 5}" ` +
+                        `<text x="${x + BOXSIZE / 2}" y="${y + BOXSIZE / 2 + 5.5}" ` +
                         `font-size="16" font-family="'IBM Plex Mono', monospace" font-weight="500" ` +
                         `fill="${letterFill}" text-anchor="middle">${escapeHtml(letter)}</text>`
                     );
