@@ -9,6 +9,7 @@ A web-based application for creating and editing crossword puzzles.
 - [Running the server](https://github.com/philhanna/crossword/wiki/Running-The-Server)
 - [Using the application](#using-the-application)
 - [Architecture](#architecture)
+- [Running the tests](#running-the-tests)
 - [Tools](#tools)
 - [References](#references)
 
@@ -83,8 +84,8 @@ Create the grid and fill the puzzle in one editor, switching modes as needed.
 - If `theme_color` is set in config, the app derives the app bar, primary accent, and sidebar colors from that base color.
 
 ### Import
-Available from anywhere via the **Import** menu. Each entry prompts for a file and
-creates a new puzzle from it:
+Available from the dashboard via the **Import** menu. Each entry prompts for a file and
+creates a new puzzle from it, which then opens in the editor:
 
 | Format | Description |
 |--------|-------------|
@@ -125,10 +126,23 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 | Adapters | `sqlite_persistence`, `flat_file_word_list`, `random_grid_generator`, `settings`, one export adapter per format (Across Lite text and binary, Crossword Compiler XML, ipuz, xd, NYTimes PDF, solver PDF, solved PDF), one import adapter per format (Across Lite text and binary, Crossword Compiler XML, ipuz, xd), and two definition providers (Dictionary API, Wiktionary) |
 | Use Cases | `PuzzleUseCases`, `WordUseCases`, `ExportUseCases`, `ImportUseCases`, `DefinitionUseCases` |
 | HTTP Server | FastAPI app served by uvicorn, wired in `crossword/wiring/` |
-| Frontend | Single `index.html` + `static/css/style.css` + `static/js/{state,ui,svg,dashboard,puzzle-editor,word-editor,settings}.js` |
+| Frontend | Single `index.html` + six stylesheets in `static/css/` + plain-JavaScript ES modules in `static/js/` (`core/`, `ui/`, `dashboard/`, `editor/`, `puzzle-file/`, `settings/`, `svg/`), started by `main.js`; no build step |
 
 Routes are listed in [docs/dev/endpoints.md](docs/dev/endpoints.md) and the use-case
-methods behind them in [docs/dev/usecases.md](docs/dev/usecases.md).
+methods behind them in [docs/dev/usecases.md](docs/dev/usecases.md). The frontend's
+modules, and how to add a menu item, side panel or import format, are described in
+[docs/dev/frontend.md](docs/dev/frontend.md).
+
+## Running the tests
+
+```
+pip install -e .
+playwright install chromium   # once: the browser the frontend tests drive
+pytest crossword/tests/
+```
+
+The tests in `crossword/tests/frontend/` click through the app in a real
+browser; see [docs/dev/frontend.md](docs/dev/frontend.md#tests).
 
 ## Tools
 
@@ -137,6 +151,7 @@ methods behind them in [docs/dev/usecases.md](docs/dev/usecases.md).
 | Script | Description |
 |--------|-------------|
 | `tools/user/clear_work_files.py` | Remove leftover working-copy (`__wc__`) and new-puzzle (`__new__`) rows from the database |
+| `tools/user/get_theme_words.py` | Print a puzzle's theme (locked) words with their lengths and clues |
 | `tools/user/grid_generator.py` | Generate a random valid grid and print it to stdout |
 
 The old command-line export and import scripts were removed; use the **Import** and

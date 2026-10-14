@@ -39,11 +39,11 @@ they already converge on one function:
   ([puzzle_use_cases.py:508](../../crossword/use_cases/puzzle_use_cases.py#L508)).
 - **Typing letters directly into a word on the grid** doesn't save anything
   keystroke by keystroke. `_peKeydown`
-  ([word-editor.js:300](../../frontend/static/js/word-editor.js#L300)) just
+  ([keyboard.js:19](../../frontend/static/js/editor/keyboard.js#L19)) just
   builds up the typed text in memory (`AppState.selectedWord.draftText`).
   The moment that word is completed or the selection moves on,
   `completeSelectedWordEdit()`
-  ([word-editor.js:123](../../frontend/static/js/word-editor.js#L123))
+  ([selection.js:135](../../frontend/static/js/editor/selection.js#L135))
   fires the **same** `PUT .../words/<seq>/<direction>` call, just with
   `draftText` as the `text` field.
 
@@ -222,7 +222,7 @@ propagates straight up. `handle_set_word_clue`
 already catches `ValueError` and returns `{"error": str(e)}`, and
 `completeSelectedWordEdit()` already checks for `data.error` and calls
 `showMessageLine(...)` to show it
-([word-editor.js:150](../../frontend/static/js/word-editor.js#L150)). That
+([selection.js:167](../../frontend/static/js/editor/selection.js#L167)). That
 covers both the word editor and direct grid typing, since — as established
 above — they're the same save call. Nothing in the frontend needs to
 change for the block itself to show up as a message like:
@@ -239,7 +239,7 @@ doesn't.
 ([word_use_cases.py:171](../../crossword/use_cases/word_use_cases.py#L171))
 is the one actually used by default in the word editor (the "constrained"
 checkbox is checked by default —
-[word-editor.js:776](../../frontend/static/js/word-editor.js#L776)). It's
+[word-editor.js:184](../../frontend/static/js/editor/word-editor.js#L184)). It's
 called with a real `Word` domain object
 ([word_routes.py:53-54](../../crossword/http_server/word_routes.py#L53-L54)),
 and every `Word` already carries a reference back to its puzzle
@@ -259,7 +259,7 @@ candidates = [c for c in candidates if not find_duplicate(c.upper(), others)]
 ([word_use_cases.py:28](../../crossword/use_cases/word_use_cases.py#L28))
 is the "unconstrained" mode (checkbox unchecked —
 `_fetchPatternSuggestions()`,
-[word-editor.js:784](../../frontend/static/js/word-editor.js#L784)). Today
+[word-editor.js:308](../../frontend/static/js/editor/word-editor.js#L308)). Today
 it's a pure dictionary lookup with no puzzle context at all —
 `GET /api/words/suggestions?pattern=...` doesn't know which puzzle or which
 word slot it's being called for. The only caller of this endpoint anywhere

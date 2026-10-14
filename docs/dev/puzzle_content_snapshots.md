@@ -296,7 +296,7 @@ entry gains `has_content: true/false`.
 ## Frontend
 
 In the "Show history" popup (`_dashShowHistory` /
-`_historyTableHtml` in [dashboard.js:441-476](../../frontend/static/js/dashboard.js#L441-L476)),
+`_historyTableHtml` in [history-popup.js:25-72](../../frontend/static/js/dashboard/history-popup.js#L25-L72)),
 add a "Restore" link/button on each row where `has_content` is true. Clicking
 it should:
 

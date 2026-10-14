@@ -57,9 +57,9 @@ Odd sizes and symmetry are enforced in a few separate places, not one:
   accepts any size of 1 or more already. Even sizes work in the domain
   model as they are: with an even size, no cell is its own mirror.
 - The New puzzle dialog refuses even numbers
-  ([puzzle-editor.js:1127](../frontend/static/js/puzzle-editor.js#L1127)),
+  ([lifecycle.js:92](../frontend/static/js/puzzle-file/lifecycle.js#L92)),
   and its label says "an odd positive integer"
-  ([puzzle-editor.js:1106](../frontend/static/js/puzzle-editor.js#L1106)).
+  ([lifecycle.js:67](../frontend/static/js/puzzle-file/lifecycle.js#L67)).
 - `GridGenerator` raises an error for even `n`
   ([grid_generator.py:80](../crossword/domain/grid_generator.py#L80)).
   It fills rows in mirror pairs from the outside in and finishes with a
@@ -68,8 +68,8 @@ Odd sizes and symmetry are enforced in a few separate places, not one:
   ([grid_generator.py:613](../crossword/domain/grid_generator.py#L613)).
 - The Generate button and the "Auto-generate" line in grid info are only
   enabled for odd sizes of 9 or more
-  ([puzzle-editor.js:114](../frontend/static/js/puzzle-editor.js#L114),
-  [puzzle-editor.js:307](../frontend/static/js/puzzle-editor.js#L307)).
+  ([editor.js:179](../frontend/static/js/editor/editor.js#L179),
+  [grid-mode.js:30](../frontend/static/js/editor/grid-mode.js#L30)).
 - The theme-spec field must be a palindrome. The middle number of an
   odd-length spec goes in the centre row, and an even-sized grid has no
   centre row.

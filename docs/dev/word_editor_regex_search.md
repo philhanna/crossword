@@ -13,8 +13,7 @@ expression and searches with it correctly
 The catch is that you can never actually type one in. The Answer field that
 doubles as the pattern box is capped, in the HTML itself, to exactly the
 number of letters in the crossword slot
-([word-editor.js:487](../../frontend/static/js/word-editor.js#L487),
-`maxlength="${len}"`). A useful regex is almost always *longer* than the word
+(`maxlength="${len}"`). A useful regex is almost always *longer* than the word
 it's meant to match — `[AEIOU]{3}` is 9 characters for a 3-letter search,
 `C[AR]..E` is 8 characters for a 5-letter one. The box simply won't let you
 type them.
@@ -67,11 +66,11 @@ itself to words of the right length:
 ### Frontend: the input box is too short to type a regex into
 
 Even with the backend fixed, the Answer field
-([word-editor.js:486-488](../../frontend/static/js/word-editor.js#L486-L488))
+([word-editor.js:163-165](../../frontend/static/js/editor/word-editor.js#L163-L165))
 is hard-capped at the slot length via `maxlength`, and every keystroke also
 writes a truncated, padded-to-length copy of the box into the live grid
 preview (`weHandleTextInput` →
-[word-editor.js:574-579](../../frontend/static/js/word-editor.js#L574-L579)).
+[word-editor.js:227-239](../../frontend/static/js/editor/word-editor.js#L227-L239)).
 That's exactly right for its main job — typing a candidate answer directly
 into a slot and watching it appear on the grid — but it leaves no room to
 type a longer search expression, and even if the cap were simply removed,
@@ -155,7 +154,7 @@ or a search pattern.
 
 Picking a result from the suggestion list already does the right thing and
 needs no change: `weListItemClick`
-([word-editor.js:543-552](../../frontend/static/js/word-editor.js#L543-L552))
+([word-editor.js:435-444](../../frontend/static/js/editor/word-editor.js#L435-L444))
 replaces whatever is in the Answer field with the chosen word and re-syncs
 `draftText` from it. So the flow becomes: type a regex (either search mode),
 hit Suggest, double-click (or click, then Apply) a result — at which point

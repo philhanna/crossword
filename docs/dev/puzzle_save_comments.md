@@ -22,10 +22,10 @@ As** funnel through the same two functions, so there's one place to add
 the requirement:
 
 - Frontend: `do_puzzle_save()`
-  ([puzzle-editor.js:1114](../../frontend/static/js/puzzle-editor.js#L1114))
+  ([lifecycle.js:160](../../frontend/static/js/puzzle-file/lifecycle.js#L160))
   and `do_puzzle_save_as()` → `_savePuzzleAsName()`
-  ([puzzle-editor.js:1160](../../frontend/static/js/puzzle-editor.js#L1160),
-  [puzzle-editor.js:1137](../../frontend/static/js/puzzle-editor.js#L1137))
+  ([lifecycle.js:183](../../frontend/static/js/puzzle-file/lifecycle.js#L183),
+  [lifecycle.js:204](../../frontend/static/js/puzzle-file/lifecycle.js#L204))
   both call `POST /api/puzzles/<name>/copy` with `{ new_name }`.
 - Backend: `handle_copy_puzzle`
   ([puzzle_routes.py:68](../../crossword/http_server/puzzle_routes.py#L68))
@@ -38,7 +38,7 @@ the requirement:
 A brand-new puzzle's very first Save also goes through this same path:
 `do_puzzle_save()` falls back to `do_puzzle_save_as()` whenever
 `AppState.puzzleName` is still empty
-([puzzle-editor.js:1117](../../frontend/static/js/puzzle-editor.js#L1117)).
+([lifecycle.js:163](../../frontend/static/js/puzzle-file/lifecycle.js#L163)).
 So there's exactly one gate to add the comment requirement to, and every
 kind of save — first save, Save, Save As — already passes through it.
 
@@ -186,9 +186,9 @@ needed there.
 ## Frontend
 
 **Save** (`do_puzzle_save()`,
-[puzzle-editor.js:1114](../../frontend/static/js/puzzle-editor.js#L1114)):
-prompt for a comment with the existing `inputBox()` helper
-([ui.js:104](../../frontend/static/js/ui.js#L104)), which already supports
+[lifecycle.js:160](../../frontend/static/js/puzzle-file/lifecycle.js#L160)):
+prompt for a comment with the existing `inputBox()` helper,
+which already supports
 a `required` option that blocks submission client-side while empty —
 exactly what's needed here, no new modal:
 
@@ -217,10 +217,10 @@ without calling the callback — the same as cancelling any other
 save the user backs out of.
 
 **Save As** (`do_puzzle_save_as()`,
-[puzzle-editor.js:1160](../../frontend/static/js/puzzle-editor.js#L1160)):
+[lifecycle.js:183](../../frontend/static/js/puzzle-file/lifecycle.js#L183)):
 already prompts for a name with `inputBox()`. Since it needs two fields
-now, switch it to `multiInputBox()`
-([ui.js:129](../../frontend/static/js/ui.js#L129)), which works the same
+now, switch it to `multiInputBox()`,
+which works the same
 way but takes a list of fields and gives back a `{name: value}` object —
 each field defaults to `required: true`, so both name and comment are
 enforced the same way:
@@ -246,13 +246,13 @@ async function do_puzzle_save_as() {
 ```
 
 `_savePuzzleAsName()`
-([puzzle-editor.js:1137](../../frontend/static/js/puzzle-editor.js#L1137))
+([lifecycle.js:204](../../frontend/static/js/puzzle-file/lifecycle.js#L204))
 gains a `comment` parameter and passes it through in the `/copy` body,
 same as the `do_puzzle_save()` change above. It has exactly one caller
 (itself, from `do_puzzle_save_as()`), so this is a contained change.
 
 **History popup** (`_historyTableHtml()`,
-[dashboard.js:462](../../frontend/static/js/dashboard.js#L462)): add a
+[history-popup.js:39](../../frontend/static/js/dashboard/history-popup.js#L39)): add a
 "Comment" column, rendered plainly (escaped, no truncation — comments are
 expected to be short, and there's no existing precedent in this table for
 truncating a text field):

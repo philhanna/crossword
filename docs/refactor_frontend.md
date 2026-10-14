@@ -1,5 +1,37 @@
 # Frontend refactoring plan
 
+## Status
+
+Carried out on 2026-10-13, one commit per phase (Phase 4 and Phase 7 in
+several). The result is described in [dev/frontend.md](dev/frontend.md).
+"Where things stand today" below describes the code *before* the work.
+
+Where the result differs from the plan:
+
+- The confirm and alert dialogs are `askConfirm` and `showAlert`, not
+  `confirm` and `alert`. Those names belong to the browser's own dialogs,
+  so a forgotten import would silently show the wrong one.
+- Two files not in the target layout: `editor/selection.js` (the selected
+  word, used by the click, keyboard, clue and word-editor code alike) and
+  `ui/view.js` (switching between dashboard and editor).
+- Fonts and icons still load from Google (the optional last step of Phase 7).
+- Error messages are now worded the same way everywhere: "*what failed*:
+  *the server's reason*".
+
+Three bugs turned up and were fixed on the way:
+
+- Text typed into the word editor's clue box and then cancelled with Escape
+  was saved anyway with the next edit (Phase 3).
+- Renaming a puzzle to a name already in use showed a garbled message box
+  and then did nothing (Phase 5).
+- ipuz and Crossword Compiler import stayed enabled in the editor while the
+  other three formats did not (Phase 1). All five are now dashboard-only.
+
+Screenshots of 26 screens, menus and dialogs were compared with the original
+code once Phases 1–6 were done, and again after each step of Phase 7, in two
+color themes (and, for Phase 7.2, at two window widths). They match pixel for
+pixel, apart from timestamps.
+
 ## Purpose
 
 The frontend works, but its insides have grown hard to change safely. This

@@ -39,7 +39,7 @@ There are two subclasses:
   (`PuzzleUseCases.get_puzzle_preview()`,
   [puzzle_use_cases.py:793](../crossword/use_cases/puzzle_use_cases.py#L793)).
 
-**Browser: `buildPuzzleSvg()` in [svg.js](../frontend/static/js/svg.js#L62).**
+**Browser: `buildPuzzleSvg()` in [grid-svg.js](../frontend/static/js/svg/grid-svg.js#L7).**
 It builds the editor grid from the API response, in both Puzzle mode and
 Grid mode. (There is also a `buildGridSvg()` in the same file, but nothing
 calls it.) The data it reads comes from `_puzzle_response()`
@@ -212,7 +212,7 @@ which is how newspaper puzzles usually draw it.
 
 ### Drawing circles in the browser (`buildPuzzleSvg`)
 
-In [svg.js](../frontend/static/js/svg.js), after pushing a white square's
+In [grid-svg.js](../frontend/static/js/svg/grid-svg.js), after pushing a white square's
 `<rect>` and before its number and letter, add:
 
 ```js
@@ -236,7 +236,7 @@ Notes:
 - `buildPuzzleSvg()` is also used in Grid mode, so circles show there too,
   read-only. That lets the user see what a grid change would affect.
 - The word editor dialog calls the same function
-  ([word-editor.js:195](../frontend/static/js/word-editor.js#L195)), so
+  ([editor.js:127](../frontend/static/js/editor/editor.js#L127)), so
   circles show there as well.
 
 ### Toggling circles in Puzzle mode
@@ -247,14 +247,14 @@ into the cursor square. So circling needs its own gesture. Offer two:
 
 1. **A "Circle" button in the Puzzle-mode action bar**, in the group with
    Edit word / Fill order / Stats (`renderActionBar()`,
-   [puzzle-editor.js:100](../frontend/static/js/puzzle-editor.js#L100)),
+   [editor.js:165](../frontend/static/js/editor/editor.js#L165)),
    using the `radio_button_unchecked` icon. It toggles the circle on the
    **cursor square** of the selected word. It is disabled when no word is
    selected or the word editor dialog is open, in the same way
    `_updatePuzzleToolbar()` handles Edit word. It isn't rendered in Grid
    mode at all.
 2. **Shift+click** on any white square. In `handlePuzzleClick()`
-   ([word-editor.js:210](../frontend/static/js/word-editor.js#L210)), check
+   ([grid-clicks.js:22](../frontend/static/js/editor/grid-clicks.js#L22)), check
    `event.shiftKey` first, before the single/double-click timer logic. If
    it is set, toggle the circle at the clicked square and return without
    changing the selection. Add `<kbd>Shift</kbd>+<kbd>Click</kbd> circle`

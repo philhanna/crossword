@@ -61,7 +61,7 @@ reintroduces that lock.
   [puzzle_routes.py](../../crossword/http_server/puzzle_routes.py)
   (routes at 12-13, handlers at 281+ and 311+).
 - Frontend consumer:
-  [dashboard.js](../../frontend/static/js/dashboard.js) — reads `row.state` /
+  [dashboard/](../../frontend/static/js/dashboard/) — reads `row.state` /
   `row.publisher` etc. from `GET /api/dashboard` rows, and drives
   `PUT /api/puzzles/<name>/state` from the state-change dialog.
 - Existing one-off migration tool:
