@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.1.0] - 2026-10-14
+
+### Added
+
+- Squares can be circled. In Puzzle mode, Shift+click a square or use the
+  Circle button to circle or un-circle it; Grid mode shows circles but
+  cannot change them. Circles are undoable, saved with the puzzle, drawn in
+  the editor, dashboard thumbnails and all three PDF exports, and carried
+  through .puz export and import
+- Puzzle > Delete in the editor deletes the open puzzle after confirming,
+  instead of showing the chooser. It is disabled while the word editor is
+  open
+
+### Fixed
+
+- Letters in the grid are centred in their squares, on screen and in the
+  PDF exports, so they line up with circles
+
 ## [6.0.0] - 2026-10-14
 
 ### Changed
