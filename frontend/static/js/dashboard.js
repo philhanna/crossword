@@ -10,6 +10,17 @@ import {
     showRequestError,
 } from './ui.js';
 import { _openPuzzleInEditor, _openWorkingCopyInEditor } from './puzzle-editor.js';
+import { registerActions } from './core/actions.js';
+
+registerActions({
+    'dash-tab':            (el) => _dashSelectTab(el.getAttribute('data-dash-tab')),
+    'dash-sort':           (el) => _dashSortBy(el.getAttribute('data-dash-sort')),
+    'dash-open':           (el) => _dashOpenPuzzle(el.getAttribute('data-dash-preview')),
+    'dash-state':          (el) => _dashStateChosen(el),
+    'dash-row-menu':       (el, e) => _dashOpenContextMenu(e, el.getAttribute('data-dash-name')),
+    'state-dialog-cancel': () => _dashCloseStateDialog(true),
+    'history-restore':     (el) => _dashConfirmRestore(el.dataset.name, parseInt(el.dataset.historyId, 10)),
+});
 
 const ALL_STATES = ['draft', 'filled', 'finished', 'submitted', 'published', 'archived'];
 
@@ -104,7 +115,6 @@ export async function renderDashboard() {
     DashboardState.puzzles = data.puzzles || [];
     document.getElementById('rhs').innerHTML = '';
     document.getElementById('lhs').innerHTML = dashboardHtml(DashboardState.puzzles);
-    bindDashboardEvents();
 }
 
 // ---------------------------------------------------------------------------
@@ -159,9 +169,9 @@ function _dashCardRowHtml(card, row) {
     }
 
     return `
-      <div class="dash-row" data-dash-name="${name}">
+      <div class="dash-row" data-contextmenu="dash-row-menu" data-dash-name="${name}">
         <div class="dash-row-head">
-          <span class="dash-row-title dash-link" data-dash-preview="${name}">${title}</span>
+          <span class="dash-row-title dash-link" data-action="dash-open" data-dash-preview="${name}">${title}</span>
           ${extra}
         </div>
         <div class="dash-row-meta">${escapeHtml(meta)}</div>
@@ -175,7 +185,7 @@ function _dashCardRowHtml(card, row) {
 function _dashTableHtml(puzzles) {
     const tabs = DASH_TABS.map(tab => {
         const active = tab === DashboardState.activeTab ? ' dash-tab-active' : '';
-        return `<button class="dash-tab${active}" data-dash-tab="${tab}">${tab}</button>`;
+        return `<button class="dash-tab${active}" data-action="dash-tab" data-dash-tab="${tab}">${tab}</button>`;
     }).join('');
 
     return `
@@ -227,7 +237,7 @@ function _dashTableBodyHtml() {
         if (DashboardState.sortKey === c.key) {
             ind = DashboardState.sortDir === 'desc' ? ' ▼' : ' ▲';
         }
-        return `<th class="dash-sortable" data-dash-sort="${c.key}">${c.label}${ind}</th>`;
+        return `<th class="dash-sortable" data-action="dash-sort" data-dash-sort="${c.key}">${c.label}${ind}</th>`;
     }).join('')}</tr>`;
 
     if (rows.length === 0) {
@@ -242,93 +252,53 @@ function _dashTableBodyHtml() {
         const options = ALL_STATES.map(s =>
             `<option value="${s}"${s === row.state ? ' selected' : ''}>${s}</option>`).join('');
         const cells = [
-            `<td><select class="dash-state-select" data-dash-state="${name}">${options}</select></td>`,
+            `<td><select class="dash-state-select" data-change="dash-state" data-dash-state="${name}">${options}</select></td>`,
         ];
         if (showPub) cells.push(`<td>${escapeHtml(_dashPublisher(row))}</td>`);
-        cells.push(`<td><span class="dash-link" data-dash-preview="${name}">${name}</span></td>`);
-        cells.push(`<td><span class="dash-link" data-dash-preview="${name}">${escapeHtml(_dashDisplayTitle(row))}</span></td>`);
+        cells.push(`<td><span class="dash-link" data-action="dash-open" data-dash-preview="${name}">${name}</span></td>`);
+        cells.push(`<td><span class="dash-link" data-action="dash-open" data-dash-preview="${name}">${escapeHtml(_dashDisplayTitle(row))}</span></td>`);
         cells.push(`<td>${row.size} x ${row.size}</td>`);
         cells.push(`<td>${row.word_count}</td>`);
         if (showFill) cells.push(`<td>${row.fill_pct || 0}%</td>`);
         cells.push(`<td>${fmtMonthDay(row.modified)}</td>`);
-        return `<tr data-dash-name="${name}">${cells.join('')}</tr>`;
+        return `<tr data-contextmenu="dash-row-menu" data-dash-name="${name}">${cells.join('')}</tr>`;
     }).join('');
 
     return `<table class="dash-table"><thead>${thead}</thead><tbody>${body}</tbody></table>`;
 }
 
 // ---------------------------------------------------------------------------
-// Event wiring
+// Table re-render (tab switches and sorting redraw only the table; cards stay)
 // ---------------------------------------------------------------------------
 
-function bindDashboardEvents() {
-    const root = document.getElementById('lhs');
-    if (!root) return;
-
-    // Tab switches — re-render only the table body (cards stay).
-    root.querySelectorAll('[data-dash-tab]').forEach(btn => {
-        btn.onclick = () => {
-            DashboardState.activeTab = btn.getAttribute('data-dash-tab');
-            const card = root.querySelector('.dash-table-card');
-            if (card) {
-                card.querySelector('.dash-tabs').querySelectorAll('.dash-tab').forEach(t => {
-                    t.classList.toggle('dash-tab-active',
-                        t.getAttribute('data-dash-tab') === DashboardState.activeTab);
-                });
-                card.querySelector('.dash-table-scroll').innerHTML = _dashTableBodyHtml();
-                _bindDashTableBody(root);
-            }
-        };
+function _dashSelectTab(tab) {
+    DashboardState.activeTab = tab;
+    document.querySelectorAll('#lhs .dash-tab').forEach(t => {
+        t.classList.toggle('dash-tab-active', t.getAttribute('data-dash-tab') === tab);
     });
-
-    // Name / title click → open the puzzle directly.
-    root.querySelectorAll('[data-dash-preview]').forEach(el => {
-        el.onclick = () => _dashOpenPuzzle(el.getAttribute('data-dash-preview'));
-    });
-
-    // Right-click a card row → context menu (currently just "Show history").
-    root.querySelectorAll('.dash-row[data-dash-name]').forEach(el => {
-        el.oncontextmenu = (e) => _dashOpenContextMenu(e, el.getAttribute('data-dash-name'));
-    });
-
-    _bindDashTableBody(root);
+    _dashRedrawTable();
 }
 
-function _bindDashTableBody(root) {
-    // State dropdowns and preview links inside the (re-rendered) table body.
-    root.querySelectorAll('.dash-state-select').forEach(sel => {
-        sel.onchange = () => {
-            const name = sel.getAttribute('data-dash-state');
-            const row = DashboardState.puzzles.find(p => p.name === name);
-            openStateDialog(row, sel.value, sel);
-        };
-    });
-    root.querySelectorAll('.dash-table [data-dash-preview]').forEach(el => {
-        el.onclick = () => _dashOpenPuzzle(el.getAttribute('data-dash-preview'));
-    });
+function _dashSortBy(key) {
+    // Clicking the active column flips direction
+    if (DashboardState.sortKey === key) {
+        DashboardState.sortDir = DashboardState.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        DashboardState.sortKey = key;
+        DashboardState.sortDir = 'asc';
+    }
+    _dashRedrawTable();
+}
 
-    // Right-click a table row → context menu (currently just "Show history").
-    root.querySelectorAll('.dash-table tbody tr[data-dash-name]').forEach(tr => {
-        tr.oncontextmenu = (e) => _dashOpenContextMenu(e, tr.getAttribute('data-dash-name'));
-    });
+function _dashRedrawTable() {
+    const scroll = document.querySelector('#lhs .dash-table-scroll');
+    if (scroll) scroll.innerHTML = _dashTableBodyHtml();
+}
 
-    // Column-heading clicks → sort; clicking the active column flips direction.
-    root.querySelectorAll('.dash-table [data-dash-sort]').forEach(th => {
-        th.onclick = () => {
-            const key = th.getAttribute('data-dash-sort');
-            if (DashboardState.sortKey === key) {
-                DashboardState.sortDir = DashboardState.sortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-                DashboardState.sortKey = key;
-                DashboardState.sortDir = 'asc';
-            }
-            const scroll = root.querySelector('.dash-table-scroll');
-            if (scroll) {
-                scroll.innerHTML = _dashTableBodyHtml();
-                _bindDashTableBody(root);
-            }
-        };
-    });
+function _dashStateChosen(sel) {
+    const name = sel.getAttribute('data-dash-state');
+    const row = DashboardState.puzzles.find(p => p.name === name);
+    openStateDialog(row, sel.value, sel);
 }
 
 // ---------------------------------------------------------------------------
@@ -419,7 +389,7 @@ async function _dashSubmitState(row) {
     }
 }
 
-export function _dashCloseStateDialog(revert) {
+function _dashCloseStateDialog(revert) {
     hideElement('state-dialog');
     if (revert && _dashStateRevertSelect) {
         const name = _dashStateRevertSelect.getAttribute('data-dash-state');
@@ -449,16 +419,13 @@ async function _dashShowHistory(name) {
 
     try {
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(name)}/state/history`);
-        body.innerHTML = _historyTableHtml(data.history || []);
-        body.querySelectorAll('[data-history-restore]').forEach(btn => {
-            btn.onclick = () => _dashConfirmRestore(name, parseInt(btn.getAttribute('data-history-restore'), 10));
-        });
+        body.innerHTML = _historyTableHtml(name, data.history || []);
     } catch (e) {
         body.innerHTML = `<p>Error loading history: ${escapeHtml(e.message)}</p>`;
     }
 }
 
-function _historyTableHtml(history) {
+function _historyTableHtml(name, history) {
     if (history.length === 0) {
         return '<p class="dash-empty">No state history recorded.</p>';
     }
@@ -471,7 +438,8 @@ function _historyTableHtml(history) {
             detail = `published by ${escapeHtml(h.publisher)}`;
         }
         const restoreCell = (h.has_content && i > 0)
-            ? `<button class="dash-history-restore" data-history-restore="${h.id}">Restore</button>`
+            ? `<button class="dash-history-restore" data-action="history-restore" ` +
+              `data-name="${escapeHtml(name)}" data-history-id="${h.id}">Restore</button>`
             : '';
         return `<tr>
             <td>${fmtDateTime(h.changed_at)}</td>

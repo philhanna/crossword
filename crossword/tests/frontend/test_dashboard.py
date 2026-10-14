@@ -134,3 +134,15 @@ def test_restore_from_history(app_page, api):
     page.locator("#mb-ok").click()
     expect_editor_name(page, "five")
     expect(page.locator(".clue-answer").first).to_have_text("AAAAA")
+
+
+def test_clicking_state_dialog_backdrop_cancels(app_page, api):
+    page = app_page
+    seed(api, page)
+
+    select = page.locator("[data-dash-state='bravo']")
+    select.select_option("archived")
+    expect(page.locator("#state-dialog")).to_be_visible()
+    page.mouse.click(5, 5)
+    expect(page.locator("#state-dialog")).to_be_hidden()
+    expect(select).to_have_value("draft")

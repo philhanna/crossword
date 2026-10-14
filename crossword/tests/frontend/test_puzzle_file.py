@@ -204,3 +204,17 @@ def test_dashboard_menu_returns_from_editor(app_page, api):
 
     page.locator("#menu-dashboard").click()
     expect_dashboard(page)
+
+
+def test_cancel_in_message_box_keeps_puzzle(app_page, api):
+    page = app_page
+    api.create_puzzle("five")
+    page.reload()
+    open_from_dashboard(page, "five")
+
+    page.locator("#puzzle-delete-btn").click()
+    expect(page.locator("#mb")).to_be_visible()
+    page.locator("#mb .btn-secondary").click()
+    expect(page.locator("#mb")).to_be_hidden()
+    expect_editor_name(page, "five")
+    assert api.puzzle_names() == ["five"]

@@ -9,6 +9,24 @@ import {
     _currentEditorMode, _updatePuzzleToolbar, _updatePuzzleUndoRedo,
     renderPuzzleEditor, renderPuzzleEditorLhs, renderPuzzleEditorRhs,
 } from './puzzle-editor.js';
+import { registerActions } from './core/actions.js';
+
+registerActions({
+    // From a clue row the word is named; from the toolbar it's the selected one
+    'edit-word': (el) => (el.dataset.seq
+        ? do_puzzle_edit_word(Number(el.dataset.seq), el.dataset.direction)
+        : do_puzzle_edit_word()),
+
+    'word-editor-cancel':   () => closeWordEditor(),
+    'word-lock':            (el) => weHandleLockToggle(el.checked),
+    'word-answer':          (el) => weHandleTextInput(el.value),
+    'word-clue':            (el) => weHandleClueInput(el.value),
+    'word-suggest':         () => doWordSuggestFetch(),
+    'word-suggestion-page': (el) => (el.dataset.page === 'prev' ? wePagePrev() : wePageNext()),
+    'word-constraints':     () => doWordConstraints(),
+    'word-definitions':     () => doWordDefinitions(),
+    'word-apply':           () => doWordEditOK(),
+});
 
 // ---------------------------------------------------------------------------
 // Puzzle editor — click handling state
@@ -434,7 +452,7 @@ export function _peOutsideMousedown(e) {
     });
 }
 
-export async function do_puzzle_edit_word(seq, direction) {
+async function do_puzzle_edit_word(seq, direction) {
     if (_currentEditorMode() !== 'puzzle') return;
     // Called from toolbar button (no args) or clue list (with args)
     const sw = AppState.selectedWord;
@@ -470,14 +488,14 @@ export function renderWordEditorPanel() {
       <div class="we-header-title">${sw.seq} ${dirLabel}</div>
       <div class="we-header-sub">${len} letters</div>
     </div>
-    <button class="we-header-close" onclick="closeWordEditor()" aria-label="Close">&times;</button>
+    <button class="we-header-close" data-action="word-editor-cancel" aria-label="Close">&times;</button>
   </div>
 
   <div class="we-body">
     <!-- Lock -->
     <div class="we-field we-lock-row">
       <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
-        <input type="checkbox" id="we-locked" ${locked ? 'checked' : ''} onchange="weHandleLockToggle(this.checked)"> Lock word
+        <input type="checkbox" id="we-locked" ${locked ? 'checked' : ''} data-change="word-lock"> Lock word
       </label>
     </div>
 
@@ -487,7 +505,7 @@ export function renderWordEditorPanel() {
       <div style="position:relative">
         <input class="we-word-input" id="we-text" type="text" ${lockDisabled}
                value="${escapeHtml(text.replace(/ /g, '.'))}"
-               oninput="weHandleTextInput(this.value)"/>
+               data-input="word-answer"/>
         ${locked ? '<i class="material-icons" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--c-text-muted)">lock</i>' : ''}
       </div>
     </div>
@@ -497,8 +515,7 @@ export function renderWordEditorPanel() {
       <label class="we-label">Clue</label>
       <input class="we-clue-input" id="we-clue" type="text"
              value="${escapeHtml(clue)}"
-             oninput="weHandleClueInput(this.value)"
-             onblur="_weOnClueBlur(this.value)"
+             data-input="word-clue"
              placeholder="Enter clue…"/>
     </div>
 
@@ -509,33 +526,33 @@ export function renderWordEditorPanel() {
         <label style="cursor:pointer;font-size:0.78rem;color:var(--c-text-muted);display:flex;align-items:center;gap:4px">
           <input type="checkbox" id="we-constrained" checked> Constrained
         </label>
-        <button class="ab-btn" type="button" ${lockDisabled} onclick="doWordSuggestFetch()" style="height:26px;font-size:0.75rem">
+        <button class="ab-btn" type="button" ${lockDisabled} data-action="word-suggest" style="height:26px;font-size:0.75rem">
           <i class="material-icons" style="font-size:13px">search</i> Suggest
         </button>
       </div>
       <div id="we-match" class="we-match-label" style="display:none"></div>
       <ul id="we-suggestion-list" class="we-suggestion-list" style="display:none"></ul>
       <div id="we-pagination" style="display:none;margin-top:4px;align-items:center;gap:8px">
-        <button class="ab-btn" type="button" id="we-page-prev" onclick="wePagePrev()" style="height:24px;padding:0 8px">&#9664;</button>
+        <button class="ab-btn" type="button" id="we-page-prev" data-action="word-suggestion-page" data-page="prev" style="height:24px;padding:0 8px">&#9664;</button>
         <span id="we-page-label" style="flex:1;text-align:center;font-size:0.78rem;color:var(--c-text-muted)"></span>
-        <button class="ab-btn" type="button" id="we-page-next" onclick="wePageNext()" style="height:24px;padding:0 8px">&#9654;</button>
+        <button class="ab-btn" type="button" id="we-page-next" data-action="word-suggestion-page" data-page="next" style="height:24px;padding:0 8px">&#9654;</button>
       </div>
     </div>
 
     <!-- Secondary tools -->
     <div class="we-secondary-tools">
-      <button class="ab-btn" id="we-constraints-btn" type="button" ${lockDisabled} onclick="doWordConstraints()" style="font-size:0.78rem">
+      <button class="ab-btn" id="we-constraints-btn" type="button" ${lockDisabled} data-action="word-constraints" style="font-size:0.78rem">
         <i class="material-icons" style="font-size:13px">assignment</i> Constraints
       </button>
-      <button class="ab-btn" id="we-definitions-btn" type="button" ${defsDisabled} onclick="doWordDefinitions()" style="font-size:0.78rem">
+      <button class="ab-btn" id="we-definitions-btn" type="button" ${defsDisabled} data-action="word-definitions" style="font-size:0.78rem">
         <i class="material-icons" style="font-size:13px">menu_book</i> Definitions
       </button>
     </div>
 
     <!-- Action row -->
     <div class="we-action-row">
-      <button class="btn btn-primary" type="button" onclick="doWordEditOK()">Apply</button>
-      <button class="btn btn-secondary" type="button" onclick="closeWordEditor()">Cancel</button>
+      <button class="btn btn-primary" type="button" data-action="word-apply">Apply</button>
+      <button class="btn btn-secondary" type="button" data-action="word-editor-cancel">Cancel</button>
     </div>
   </div>
 </div>`;
@@ -580,7 +597,7 @@ function _weLooksLikeDraftAnswer(value, len) {
     return value.length <= len && /^[A-Za-z. ]*$/.test(value);
 }
 
-export function weHandleTextInput(value) {
+function weHandleTextInput(value) {
     const sw = AppState.selectedWord;
     if (!sw) return;
     weUpdateDefinitionsBtn();
@@ -594,11 +611,11 @@ export function weHandleTextInput(value) {
     renderPuzzleEditorLhs();
 }
 
-export function weHandleClueInput(value) {
+function weHandleClueInput(value) {
     if (AppState.selectedWord) AppState.selectedWord.draftClue = value;
 }
 
-export function weHandleLockToggle(checked) {
+function weHandleLockToggle(checked) {
     const sw = AppState.selectedWord;
     if (!sw) return;
     sw.draftLocked = checked;
@@ -619,10 +636,6 @@ function weUpdateDefinitionsBtn() {
     const len = AppState.selectedWord ? AppState.selectedWord.cells.length : 0;
     const val = inp.value;
     btn.disabled = !(val.length === len && /^[A-Za-z]+$/.test(val));
-}
-
-export function _weOnClueBlur(newVal) {
-    if (AppState.selectedWord) AppState.selectedWord.draftClue = newVal;
 }
 
 // ---------------------------------------------------------------------------
@@ -782,7 +795,7 @@ export function closeWordEditor() {
 // Word editor — suggestions (fetch + pagination)
 // ---------------------------------------------------------------------------
 
-export async function doWordSuggestFetch() {
+async function doWordSuggestFetch() {
     const constrained = _weIsConstrained();
     if (constrained) {
         await _fetchConstrainedSuggestions();
@@ -918,11 +931,11 @@ function _weRenderSuggestionList() {
     }
 }
 
-export function wePagePrev() {
+function wePagePrev() {
     if (_wePage > 0) { _wePage--; _weRenderSuggestionList(); }
 }
 
-export function wePageNext() {
+function wePageNext() {
     if ((_wePage + 1) * WE_PAGE_SIZE < _weSuggestions.length) { _wePage++; _weRenderSuggestionList(); }
 }
 
@@ -930,7 +943,7 @@ export function wePageNext() {
 // Word editor — Constraints tab
 // ---------------------------------------------------------------------------
 
-export async function doWordConstraints() {
+async function doWordConstraints() {
     const sw = AppState.selectedWord;
     const wn = AppState.puzzleWorkingName;
 
@@ -973,7 +986,7 @@ export async function doWordConstraints() {
 // Word editor — Definitions tab
 // ---------------------------------------------------------------------------
 
-export async function doWordDefinitions() {
+async function doWordDefinitions() {
     const inp  = document.getElementById('we-text');
     const word = inp ? inp.value.toUpperCase() : '';
 
@@ -1009,7 +1022,7 @@ export async function doWordDefinitions() {
 // Word editor — OK
 // ---------------------------------------------------------------------------
 
-export async function doWordEditOK() {
+async function doWordEditOK() {
     // A lone suggestion is the only possible answer, so take it — unless
     // the user has already typed a complete answer of their own
     if (_weSuggestions.length === 1 && !_weInputIsCompleteAnswer()) {

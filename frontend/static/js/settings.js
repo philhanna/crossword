@@ -1,6 +1,13 @@
 // Crossword Puzzle Editor — settings dialog
 
 import { apiFetch, hideElement, showElement, showMessageLine } from './ui.js';
+import { registerActions } from './core/actions.js';
+
+registerActions({
+    'settings-open':   () => do_settings(),
+    'settings-cancel': () => do_settings_cancel(),
+    'settings-save':   () => do_settings_save(),
+});
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -220,7 +227,7 @@ function _renderSettingsRows(values) {
     }
 }
 
-export async function do_settings() {
+async function do_settings() {
     try {
         const values = await apiFetch('GET', '/api/settings');
         _renderSettingsRows(values);
@@ -230,7 +237,7 @@ export async function do_settings() {
     }
 }
 
-export async function do_settings_save() {
+async function do_settings_save() {
     const values = {};
     for (const field of SETTINGS_FIELDS) {
         const el = document.getElementById(`setting-${field.key}`);
@@ -249,6 +256,6 @@ export async function do_settings_save() {
     }
 }
 
-export function do_settings_cancel() {
+function do_settings_cancel() {
     hideElement('settings-panel');
 }

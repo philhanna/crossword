@@ -224,3 +224,23 @@ def test_constraints_popup(app_page, api):
     page.mouse.click(5, 300)
     expect(popup).to_be_hidden()
     expect(page.locator("#we-dialog")).to_be_visible()
+
+
+def test_escape_discards_clue_typed_in_word_editor(app_page, api):
+    page = app_page
+    open_five(page, api)
+
+    click_cell(page, 0, 0)
+    page.keyboard.type("abcde")
+    page.locator(".we-action-row .btn-primary").click()
+    expect(page.locator("#we-dialog")).to_have_count(0)
+
+    click_cell(page, 0, 0)
+    page.locator("#we-clue").fill("cancelled clue")
+    page.locator("#we-clue").press("Escape")
+    expect(page.locator("#we-dialog")).to_have_count(0)
+
+    # Moving on commits the selected word; the cancelled clue must not go with it
+    click_cell(page, 2, 0)
+    page.keyboard.press("Escape")
+    expect(page.locator(".clue-text").first).to_have_text("No clue")

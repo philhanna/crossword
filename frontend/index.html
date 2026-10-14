@@ -26,24 +26,24 @@
   <nav id="top-menu" class="app-bar-nav">
 
     <!-- Dashboard -->
-    <a id="menu-dashboard" class="app-nav-btn" onclick="showView('dashboard')">Dashboard</a>
+    <a id="menu-dashboard" class="app-nav-btn" data-action="show-dashboard">Dashboard</a>
 
     <!-- Puzzle menu -->
     <div class="w3-dropdown-hover">
       <button class="app-nav-btn">Puzzle</button>
       <div class="w3-dropdown-content w3-card-4 app-dropdown">
-        <a id="menu-puzzle-new"            class="w3-bar-item w3-button" onclick="do_puzzle_new()">New puzzle…</a>
-        <a id="menu-puzzle-open"           class="w3-bar-item w3-button" onclick="do_puzzle_open()">Open puzzle…</a>
+        <a id="menu-puzzle-new"            class="w3-bar-item w3-button" data-action="puzzle-new">New puzzle…</a>
+        <a id="menu-puzzle-open"           class="w3-bar-item w3-button" data-action="puzzle-open">Open puzzle…</a>
         <hr class="dropdown-divider">
-        <a id="menu-puzzle-save"           class="w3-bar-item w3-button" onclick="do_puzzle_save()">Save</a>
-        <a id="menu-puzzle-save-as"        class="w3-bar-item w3-button" onclick="do_puzzle_save_as()">Save as…</a>
-        <a id="menu-puzzle-rename"         class="w3-bar-item w3-button" onclick="do_puzzle_rename()">Rename…</a>
-        <a id="menu-puzzle-close"          class="w3-bar-item w3-button" onclick="do_puzzle_close()">Close</a>
-        <a id="menu-puzzle-delete"         class="w3-bar-item w3-button" onclick="do_puzzle_delete()">Delete…</a>
+        <a id="menu-puzzle-save"           class="w3-bar-item w3-button" data-action="puzzle-save">Save</a>
+        <a id="menu-puzzle-save-as"        class="w3-bar-item w3-button" data-action="puzzle-save-as">Save as…</a>
+        <a id="menu-puzzle-rename"         class="w3-bar-item w3-button" data-action="puzzle-rename">Rename…</a>
+        <a id="menu-puzzle-close"          class="w3-bar-item w3-button" data-action="puzzle-close">Close</a>
+        <a id="menu-puzzle-delete"         class="w3-bar-item w3-button" data-action="puzzle-delete">Delete…</a>
         <hr class="dropdown-divider">
-        <a id="menu-puzzle-title"          class="w3-bar-item w3-button" onclick="do_puzzle_title()">Edit title…</a>
-        <a id="menu-puzzle-grid-mode"      class="w3-bar-item w3-button" onclick="do_switch_to_grid_mode()">Switch to Grid mode</a>
-        <a id="menu-puzzle-puzzle-mode"    class="w3-bar-item w3-button" onclick="do_switch_to_puzzle_mode()">Switch to Puzzle mode</a>
+        <a id="menu-puzzle-title"          class="w3-bar-item w3-button" data-action="puzzle-title">Edit title…</a>
+        <a id="menu-puzzle-grid-mode"      class="w3-bar-item w3-button" data-action="grid-mode">Switch to Grid mode</a>
+        <a id="menu-puzzle-puzzle-mode"    class="w3-bar-item w3-button" data-action="puzzle-mode">Switch to Puzzle mode</a>
       </div>
     </div>
 
@@ -51,11 +51,11 @@
     <div class="w3-dropdown-hover">
       <button class="app-nav-btn">Import</button>
       <div class="w3-dropdown-content w3-card-4 app-dropdown">
-        <a id="menu-import-puz"            class="w3-bar-item w3-button" onclick="do_puzzle_import_puz()">AcrossLite binary</a>
-        <a id="menu-import-acrosslite"     class="w3-bar-item w3-button" onclick="do_puzzle_import()">AcrossLite text</a>
-        <a id="menu-import-ipuz"           class="w3-bar-item w3-button" onclick="do_puzzle_import_ipuz()">ipuz…</a>
-        <a id="menu-import-xd"             class="w3-bar-item w3-button" onclick="do_puzzle_import_xd()">xword xd…</a>
-        <a id="menu-import-ccxml"          class="w3-bar-item w3-button" onclick="do_puzzle_import_ccxml()">Crossword Compiler</a>
+        <a id="menu-import-puz"            class="w3-bar-item w3-button" data-action="import" data-format="puz">AcrossLite binary</a>
+        <a id="menu-import-acrosslite"     class="w3-bar-item w3-button" data-action="import" data-format="acrosslite">AcrossLite text</a>
+        <a id="menu-import-ipuz"           class="w3-bar-item w3-button" data-action="import" data-format="ipuz">ipuz…</a>
+        <a id="menu-import-xd"             class="w3-bar-item w3-button" data-action="import" data-format="xd">xword xd…</a>
+        <a id="menu-import-ccxml"          class="w3-bar-item w3-button" data-action="import" data-format="ccxml">Crossword Compiler</a>
       </div>
     </div>
 
@@ -63,18 +63,18 @@
     <div class="w3-dropdown-hover">
       <button class="app-nav-btn">Export</button>
       <div class="w3-dropdown-content w3-card-4 app-dropdown">
-        <a id="menu-export-puz"            class="w3-bar-item w3-button" onclick="do_export('puzbin')">AcrossLite binary</a>
-        <a id="menu-export-acrosslite"     class="w3-bar-item w3-button" onclick="do_export('puz')">AcrossLite text</a>
-        <a id="menu-export-ipuz"           class="w3-bar-item w3-button" onclick="do_export('ipuz')">ipuz…</a>
-        <a id="menu-export-xd"             class="w3-bar-item w3-button" onclick="do_export('xd')">xword xd…</a>
-        <a id="menu-export-cwcompiler"     class="w3-bar-item w3-button" onclick="do_export('xml')">Crossword Compiler</a>
-        <a id="menu-export-nytimes"        class="w3-bar-item w3-button" onclick="do_export('nyt')">New York Times</a>
-        <a id="menu-export-solver-pdf"     class="w3-bar-item w3-button" onclick="do_export('solver')">Solver PDF</a>
-        <a id="menu-export-solved-pdf"     class="w3-bar-item w3-button" onclick="do_export('solved')">Solution PDF</a>
+        <a id="menu-export-puz"            class="w3-bar-item w3-button" data-action="export" data-format="puzbin">AcrossLite binary</a>
+        <a id="menu-export-acrosslite"     class="w3-bar-item w3-button" data-action="export" data-format="puz">AcrossLite text</a>
+        <a id="menu-export-ipuz"           class="w3-bar-item w3-button" data-action="export" data-format="ipuz">ipuz…</a>
+        <a id="menu-export-xd"             class="w3-bar-item w3-button" data-action="export" data-format="xd">xword xd…</a>
+        <a id="menu-export-cwcompiler"     class="w3-bar-item w3-button" data-action="export" data-format="xml">Crossword Compiler</a>
+        <a id="menu-export-nytimes"        class="w3-bar-item w3-button" data-action="export" data-format="nyt">New York Times</a>
+        <a id="menu-export-solver-pdf"     class="w3-bar-item w3-button" data-action="export" data-format="solver">Solver PDF</a>
+        <a id="menu-export-solved-pdf"     class="w3-bar-item w3-button" data-action="export" data-format="solved">Solution PDF</a>
       </div>
     </div>
 
-    <a class="app-nav-btn app-nav-icon" onclick="do_settings()" title="Settings"><i class="material-icons">settings</i></a>
+    <a class="app-nav-btn app-nav-icon" data-action="settings-open" title="Settings"><i class="material-icons">settings</i></a>
 
     <a class="app-nav-btn"
        href="https://github.com/philhanna/crossword/wiki"
@@ -89,7 +89,7 @@
 <!-- Message line -->
 <div id="ml" class="message-line message-line-notice" style="display:none">
   <span id="ml-text" class="message-line-text"></span>
-  <button id="ml-close" class="message-line-close" onclick="clearMessageLine()" aria-label="Close notification">&times;</button>
+  <button id="ml-close" class="message-line-close" data-action="message-line-close" aria-label="Close notification">&times;</button>
 </div>
 
 <!-- Hidden file input for AcrossLite import -->
@@ -113,12 +113,12 @@
 
 <!-- Constraints popup -->
 <div id="constraints-popup" class="w3-modal" style="display:none"
-     onclick="if(event.target===this)hideElement('constraints-popup')">
+     data-backdrop-action="close-dialog">
   <div class="w3-modal-content dialog-card" style="width:640px;max-width:95vw">
     <div class="dialog-header">
       <i class="material-icons dialog-header-icon">assignment</i>
       <span id="constraints-popup-title" class="dialog-title"></span>
-      <button class="dialog-close-btn" onclick="hideElement('constraints-popup')">&times;</button>
+      <button class="dialog-close-btn" data-action="close-dialog">&times;</button>
     </div>
     <div id="constraints-popup-body" class="dialog-body" style="max-height:60vh;overflow-y:auto"></div>
   </div>
@@ -126,12 +126,12 @@
 
 <!-- Definitions popup -->
 <div id="defs-popup" class="w3-modal" style="display:none"
-     onclick="if(event.target===this)hideElement('defs-popup')">
+     data-backdrop-action="close-dialog">
   <div class="w3-modal-content dialog-card" style="width:480px;max-width:95vw">
     <div class="dialog-header">
       <i class="material-icons dialog-header-icon">menu_book</i>
       <span id="defs-popup-title" class="dialog-title"></span>
-      <button class="dialog-close-btn" onclick="hideElement('defs-popup')">&times;</button>
+      <button class="dialog-close-btn" data-action="close-dialog">&times;</button>
     </div>
     <div id="defs-popup-body" class="dialog-body" style="max-height:60vh;overflow-y:auto"></div>
   </div>
@@ -142,13 +142,13 @@
   <div class="w3-modal-content dialog-card" style="width:380px;max-width:90vw">
     <div class="dialog-header">
       <span id="mb-title" class="dialog-title"></span>
-      <button class="dialog-close-btn" onclick="hideElement('mb')">&times;</button>
+      <button class="dialog-close-btn" data-action="close-dialog">&times;</button>
     </div>
     <div class="dialog-body">
       <p id="mb-prompt" class="dialog-prompt"></p>
       <div class="dialog-actions">
         <a class="btn btn-primary" id="mb-ok" href="#">OK</a>
-        <button class="btn btn-secondary" onclick="hideElement('mb')">Cancel</button>
+        <button class="btn btn-secondary" data-action="close-dialog">Cancel</button>
       </div>
     </div>
   </div>
@@ -182,14 +182,14 @@
   <div class="w3-modal-content dialog-card" style="width:900px;max-width:95vw">
     <div class="dialog-header">
       <span id="ch-title" class="dialog-title"></span>
-      <button class="dialog-close-btn" onclick="hideElement('ch')">&times;</button>
+      <button class="dialog-close-btn" data-action="close-dialog">&times;</button>
     </div>
     <div id="ch-sort" style="padding:6px 12px;border-bottom:1px solid #ddd;display:flex;gap:20px;align-items:center;font-size:13px">
-      <label style="cursor:pointer"><input type="radio" name="ch-sort" value="recent" checked onchange="chSetSort('recent')"> Most recent</label>
-      <label style="cursor:pointer"><input type="radio" name="ch-sort" value="alpha"         onchange="chSetSort('alpha')"> Alphabetical</label>
+      <label style="cursor:pointer"><input type="radio" name="ch-sort" value="recent" checked data-change="chooser-sort"> Most recent</label>
+      <label style="cursor:pointer"><input type="radio" name="ch-sort" value="alpha"         data-change="chooser-sort"> Alphabetical</label>
       <label id="ch-state-filter-wrap" style="display:none;align-items:center;gap:8px;margin-left:auto">
         <span>Puzzle state</span>
-        <select id="ch-state-filter" class="form-input" onchange="chSetPuzzleStateFilter(this.value)" style="width:auto;min-width:140px">
+        <select id="ch-state-filter" class="form-input" data-change="chooser-state-filter" style="width:auto;min-width:140px">
           <option value="all">all</option>
           <option value="draft">draft</option>
           <option value="filled">filled</option>
@@ -202,18 +202,18 @@
     </div>
     <div id="ch-list" class="chooser-list dialog-body"></div>
     <div id="ch-pagination" style="display:none;justify-content:center;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #ddd">
-      <button id="ch-page-first" class="w3-button w3-border" onclick="chPageFirst()">&#171;</button>
-      <button id="ch-page-prev"  class="w3-button w3-border" onclick="chPagePrev()">&#8249;</button>
+      <button id="ch-page-first" class="w3-button w3-border" data-action="chooser-page" data-page="first">&#171;</button>
+      <button id="ch-page-prev"  class="w3-button w3-border" data-action="chooser-page" data-page="prev">&#8249;</button>
       <span id="ch-page-label" style="font-size:13px"></span>
-      <button id="ch-page-next"  class="w3-button w3-border" onclick="chPageNext()">&#8250;</button>
-      <button id="ch-page-last"  class="w3-button w3-border" onclick="chPageLast()">&#187;</button>
+      <button id="ch-page-next"  class="w3-button w3-border" data-action="chooser-page" data-page="next">&#8250;</button>
+      <button id="ch-page-last"  class="w3-button w3-border" data-action="chooser-page" data-page="last">&#187;</button>
     </div>
   </div>
 </div>
 
 <!-- State-change dialog (dashboard) -->
 <div id="state-dialog" class="w3-modal" style="display:none"
-     onclick="if(event.target===this)_dashCloseStateDialog(true)">
+     data-backdrop-action="state-dialog-cancel">
   <div class="w3-modal-content dialog-card" style="width:420px;max-width:92vw">
     <div class="dialog-header">
       <i class="material-icons dialog-header-icon">flag</i>
@@ -252,12 +252,12 @@
 
 <!-- Puzzle state-history popup (dashboard, right-click "Show history") -->
 <div id="history-popup" class="w3-modal" style="display:none"
-     onclick="if(event.target===this)hideElement('history-popup')">
+     data-backdrop-action="close-dialog">
   <div class="w3-modal-content dialog-card" style="width:890px;max-width:95vw">
     <div class="dialog-header">
       <i class="material-icons dialog-header-icon">history</i>
       <span id="history-popup-title" class="dialog-title"></span>
-      <button class="dialog-close-btn" onclick="hideElement('history-popup')">&times;</button>
+      <button class="dialog-close-btn" data-action="close-dialog">&times;</button>
     </div>
     <div id="history-popup-body" class="dialog-body" style="max-height:60vh;overflow-y:auto"></div>
   </div>
@@ -275,8 +275,8 @@
     </div>
   </div>
   <div class="settings-footer">
-    <button class="btn btn-secondary" onclick="do_settings_cancel()">Cancel</button>
-    <button class="btn btn-primary" onclick="do_settings_save()">Save</button>
+    <button class="btn btn-secondary" data-action="settings-cancel">Cancel</button>
+    <button class="btn btn-primary" data-action="settings-save">Save</button>
   </div>
 </div>
 

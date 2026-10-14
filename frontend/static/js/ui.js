@@ -7,6 +7,23 @@ import {
     _currentEditorMode, renderActionBar, renderPuzzleEditor,
     updateAppBarPuzzleInfo,
 } from './puzzle-editor.js';
+import { registerActions } from './core/actions.js';
+
+const CHOOSER_PAGES = {
+    first: () => chPageFirst(),
+    prev:  () => chPagePrev(),
+    next:  () => chPageNext(),
+    last:  () => chPageLast(),
+};
+
+registerActions({
+    'show-dashboard':       () => showView('dashboard'),
+    'message-line-close':   () => clearMessageLine(),
+    'close-dialog':         (el) => { el.closest('.w3-modal').style.display = 'none'; },
+    'chooser-sort':         (el) => chSetSort(el.value),
+    'chooser-state-filter': (el) => chSetPuzzleStateFilter(el.value),
+    'chooser-page':         (el) => CHOOSER_PAGES[el.dataset.page](),
+});
 
 // ---------------------------------------------------------------------------
 // Utility helpers
@@ -85,7 +102,7 @@ export function positionMessageLine() {
     ml.style.top = `${rect.bottom + 8}px`;
 }
 
-export function clearMessageLine() {
+function clearMessageLine() {
     const ml = document.getElementById('ml');
     ml.style.display = 'none';
     ml.classList.remove('message-line-notice', 'message-line-error');
@@ -338,8 +355,8 @@ function _chRender() {
     }
 }
 
-export function chSetSort(order) { _chSortOrder = order; _chPage = 0; _chRender(); }
-export async function chSetPuzzleStateFilter(value) {
+function chSetSort(order) { _chSortOrder = order; _chPage = 0; _chRender(); }
+async function chSetPuzzleStateFilter(value) {
     _chStateFilter = value;
     _chPage = 0;
     if (!_chLoadItems) return;
@@ -349,10 +366,10 @@ export async function chSetPuzzleStateFilter(value) {
         showMessageLine(`Error listing puzzles: ${e.message}`, 'error', 0);
     }
 }
-export function chPageFirst() { _chPage = 0; _chRender(); }
-export function chPagePrev()  { if (_chPage > 0) { _chPage--; _chRender(); } }
-export function chPageNext()  { if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); } }
-export function chPageLast()  { _chPage = Math.ceil(_chPreviews.length / CH_PAGE_SIZE) - 1; _chRender(); }
+function chPageFirst() { _chPage = 0; _chRender(); }
+function chPagePrev()  { if (_chPage > 0) { _chPage--; _chRender(); } }
+function chPageNext()  { if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); } }
+function chPageLast()  { _chPage = Math.ceil(_chPreviews.length / CH_PAGE_SIZE) - 1; _chRender(); }
 
 // ---------------------------------------------------------------------------
 // Right-click context menu
