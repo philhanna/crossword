@@ -95,12 +95,6 @@ async function renderDashboard() {
             `<div class="home-welcome"><p>Error loading dashboard: ${escapeHtml(e.message)}</p></div>`;
         return;
     }
-    if (data.error) {
-        document.getElementById('rhs').innerHTML = '';
-        document.getElementById('lhs').innerHTML =
-            `<div class="home-welcome"><p>Error loading dashboard: ${escapeHtml(data.error)}</p></div>`;
-        return;
-    }
     DashboardState.puzzles = data.puzzles || [];
     document.getElementById('rhs').innerHTML = '';
     document.getElementById('lhs').innerHTML = dashboardHtml(DashboardState.puzzles);
@@ -339,7 +333,7 @@ async function _dashOpenPuzzle(name) {
     try {
         await _openPuzzleInEditor(name);
     } catch (e) {
-        showMessageLine('Error opening puzzle', 'error', 0);
+        showRequestError('Error opening puzzle', e);
     }
 }
 
@@ -410,12 +404,7 @@ async function _dashSubmitState(row) {
     if (newState === 'published') { if (pub) body.publisher = pub; body.date_published = date; }
 
     try {
-        const resp = await apiFetch('PUT',
-            `/api/puzzles/${encodeURIComponent(row.name)}/state`, body);
-        if (resp && resp.error) {
-            errEl.textContent = resp.error;
-            return;
-        }
+        await apiFetch('PUT', `/api/puzzles/${encodeURIComponent(row.name)}/state`, body);
         _dashStateRevertSelect = null;   // success — no need to revert
         _dashCloseStateDialog(false);
         await renderDashboard();
@@ -454,10 +443,6 @@ async function _dashShowHistory(name) {
 
     try {
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(name)}/state/history`);
-        if (data.error) {
-            body.innerHTML = `<p>Error loading history: ${escapeHtml(data.error)}</p>`;
-            return;
-        }
         body.innerHTML = _historyTableHtml(data.history || []);
         body.querySelectorAll('[data-history-restore]').forEach(btn => {
             btn.onclick = () => _dashConfirmRestore(name, parseInt(btn.getAttribute('data-history-restore'), 10));
@@ -518,10 +503,6 @@ async function _dashRestorePuzzle(name, historyId) {
     try {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(name)}/state/history/${historyId}/restore`);
-        if (data.error) {
-            showMessageLine(`Restore failed: ${data.error}`, 'error', 0);
-            return;
-        }
         await _openWorkingCopyInEditor(name, data.working_name);
-    } catch (e) { showMessageLine('Error restoring puzzle', 'error', 0); }
+    } catch (e) { showRequestError('Error restoring puzzle', e); }
 }

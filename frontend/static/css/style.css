@@ -388,45 +388,6 @@ body.editor-open #workspace {
   letter-spacing: 0.01em;
 }
 
-.grid-context-hint {
-  font-size: 0.8125rem;
-  color: var(--c-text-muted);
-  font-style: italic;
-  align-self: flex-start;
-  padding-left: var(--sp-1);
-}
-
-/* =========================================================
-   Clue lists (in sidebar)
-   ========================================================= */
-
-.clue-list {
-  overflow-y: auto;
-  max-height: calc(100vh - var(--app-bar-h) - var(--action-bar-h) - 80px);
-  width: 100%;
-}
-
-.clue-list a {
-  text-decoration: none;
-  color: var(--c-text);
-}
-
-.clue-list li {
-  font-size: 0.84rem;
-  font-family: var(--font-ui);
-  line-height: 1.4;
-}
-
-/* Selected clue highlight — override w3-blue-gray */
-#rhs .clue-list .w3-blue-gray {
-  background: #dce8f6 !important;
-  color: var(--c-text) !important;
-}
-
-/* Clue list background colors — override W3.CSS pale-yellow / pale-green (now unused in tab mode) */
-#rhs .w3-pale-yellow { background: #fefdf4 !important; }
-#rhs .w3-pale-green  { background: #f4fef4 !important; }
-
 /* =========================================================
    Sidebar — tab strip + content
    ========================================================= */
@@ -825,15 +786,6 @@ body.editor-open #workspace {
 .stat-valid   .stat-card-value { color: var(--c-success); }
 .stat-invalid .stat-card-value { color: var(--c-error); }
 
-.stat-section-title {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--c-text-muted);
-  margin: var(--sp-4) 0 var(--sp-2) 0;
-}
-
 .stats-subtabs {
   display: flex;
   border-bottom: 2px solid var(--c-border);
@@ -1166,30 +1118,11 @@ kbd {
 }
 
 /* =========================================================
-   Legacy toolbar (compact buttons used inside word editor)
-   ========================================================= */
-
-.crosstb {
-  vertical-align: top;
-  font-size: calc(12px * var(--font-scale));
-}
-
-.crosstb-icon {
-  font-size: calc(15px * var(--font-scale));
-}
-
-/* =========================================================
    Word editor panel (inside #rhs)
    ========================================================= */
 
 #we-dialog {
   font-family: var(--font-ui);
-}
-
-#we-dialog header.w3-container.w3-blue-gray {
-  background: var(--c-primary) !important;
-  color: #ffffff !important;
-  border-radius: 4px 4px 0 0;
 }
 
 /* =========================================================
@@ -1460,20 +1393,6 @@ kbd {
   letter-spacing: 0.01em;
 }
 
-.settings-header-actions { display: flex; gap: 0.75rem; }
-
-.settings-close-btn {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 4px;
-  opacity: 0.6;
-}
-
-.settings-close-btn:hover { opacity: 1; }
-
 .settings-body {
   flex: 1;
   overflow: hidden;
@@ -1690,7 +1609,6 @@ kbd {
     flex-direction: column;
   }
 
-  .settings-header-actions,
   .settings-footer {
     width: 100%;
   }
@@ -1699,8 +1617,7 @@ kbd {
     justify-content: stretch;
   }
 
-  .settings-footer .btn,
-  .settings-header-actions .btn {
+  .settings-footer .btn {
     flex: 1 1 0;
   }
 

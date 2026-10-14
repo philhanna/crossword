@@ -154,16 +154,11 @@ async function completeSelectedWordEdit(options = {}) {
     if (dirty) {
         const wn = AppState.puzzleWorkingName;
         try {
-            const data = await apiFetch('PUT',
+            AppState.puzzleData = await apiFetch('PUT',
                 `/api/puzzles/${encodeURIComponent(wn)}/words/${sw.seq}/${sw.direction}`,
                 { text: sw.draftText, clue: sw.draftClue, locked: sw.draftLocked });
-            if (data.error) {
-                showMessageLine(`Error saving word: ${data.error}`, 'error', 0);
-                return { saved: false, changedSelection: false, error: true };
-            }
-            AppState.puzzleData = data;
         } catch (e) {
-            showMessageLine('Error saving word', 'error', 0);
+            showRequestError('Error saving word', e);
             return { saved: false, changedSelection: false, error: true };
         }
     }
@@ -184,18 +179,6 @@ async function completeSelectedWordEdit(options = {}) {
 // ---------------------------------------------------------------------------
 // Puzzle editor — click handling (single = select across, double = select down)
 // ---------------------------------------------------------------------------
-
-function _weRenderLhs() {
-    const container = document.getElementById('puzzle-svg-container');
-    if (!container || !AppState.puzzleData) return;
-    const sw        = AppState.selectedWord;
-    const editState = _isWordEditorOpen() && sw
-        ? { cells: sw.cells, cursorIdx: _getSelectedWordCursorIdx(), text: sw.draftText || '' }
-        : null;
-    container.innerHTML = buildPuzzleSvg(AppState.puzzleData, editState);
-    const svg = document.getElementById('puzzle-svg');
-    if (svg) svg.addEventListener('click', handlePuzzleClick);
-}
 
 function _focusPuzzleSvg() {
     const svg = document.getElementById('puzzle-svg');
@@ -638,13 +621,8 @@ function _weOnClueBlur(newVal) {
 }
 
 // ---------------------------------------------------------------------------
-// Word editor — change detection + apply-on-navigate
+// Word editor — apply-on-navigate
 // ---------------------------------------------------------------------------
-
-function _weHasChanges() {
-    _syncSelectedWordFromInputs();
-    return _selectedWordHasChanges();
-}
 
 async function _weApplyAndClose() {
     const result = await completeSelectedWordEdit({ editorMode: 'puzzle' });
@@ -836,8 +814,11 @@ async function _fetchPatternSuggestions() {
         }
     } catch (e) {
         if (!_isWordEditorOpen()) return;
+
+        // A pattern the server can't search with simply matches nothing
         const matchEl = document.getElementById('we-match');
-        if (matchEl) { matchEl.innerHTML = 'Error fetching suggestions'; matchEl.style.display = 'block'; }
+        const text = e instanceof ApiError ? 'No matches found' : 'Error fetching suggestions';
+        if (matchEl) { matchEl.innerHTML = text; matchEl.style.display = 'block'; }
     }
 }
 
@@ -869,8 +850,11 @@ async function _fetchConstrainedSuggestions() {
         }
     } catch (e) {
         if (!_isWordEditorOpen()) return;
+
+        // A pattern the server can't search with simply matches nothing
         const matchEl = document.getElementById('we-match');
-        if (matchEl) { matchEl.innerHTML = 'Error fetching suggestions'; matchEl.style.display = 'block'; }
+        const text = e instanceof ApiError ? 'No matches found' : 'Error fetching suggestions';
+        if (matchEl) { matchEl.innerHTML = text; matchEl.style.display = 'block'; }
     }
 }
 
@@ -954,7 +938,6 @@ async function doWordConstraints() {
     try {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(wn)}/words/${sw.seq}/${sw.direction}/constraints`);
-        if (data.error) { bodyEl.innerHTML = `Error: ${escapeHtml(data.error)}`; return; }
 
         const colNames    = ['Pos', 'Letter', 'Location', 'Text', 'Index', 'Regexp', 'Choices'];
         const crosserKeys = ['pos', 'letter', 'crossing_location', 'crossing_text',
@@ -975,7 +958,9 @@ async function doWordConstraints() {
   ${bodyRows}
 </table>`;
     } catch (e) {
-        bodyEl.innerHTML = 'Error fetching constraints';
+        bodyEl.innerHTML = e instanceof ApiError
+            ? `Error: ${escapeHtml(e.message)}`
+            : 'Error fetching constraints';
     }
 }
 
@@ -995,7 +980,6 @@ async function doWordDefinitions() {
 
     try {
         const data = await apiFetch('GET', `/api/words/${encodeURIComponent(word)}/definitions`);
-        if (data.error) { bodyEl.innerHTML = `<p>${escapeHtml(data.error)}</p>`; return; }
 
         const entriesHtml = data.entries.map(entry => {
             const defsHtml = entry.definitions.map(d => {
@@ -1010,7 +994,9 @@ async function doWordDefinitions() {
 
         bodyEl.innerHTML = entriesHtml || '<p>No definitions found.</p>';
     } catch (e) {
-        bodyEl.innerHTML = 'Error fetching definitions.';
+        bodyEl.innerHTML = e instanceof ApiError
+            ? `<p>${escapeHtml(e.message)}</p>`
+            : 'Error fetching definitions.';
     }
 }
 

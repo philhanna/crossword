@@ -96,3 +96,20 @@ def test_menu_items_follow_the_view(app_page, api):
     assert not disabled("menu-puzzle-close")
     assert not disabled("menu-puzzle-grid-mode")
     assert disabled("menu-puzzle-puzzle-mode")
+    for fmt in ["puz", "acrosslite", "ipuz", "xd", "ccxml"]:
+        assert disabled(f"menu-import-{fmt}")
+    assert not disabled("menu-export-solved-pdf")
+
+
+def test_server_error_reaches_message_line(app_page, api):
+    page = app_page
+    api.create_puzzle("five")
+    page.reload()
+    open_from_dashboard(page, "five")
+
+    # Pull the working copy out from under the editor
+    [wn] = [p for p in api.call("GET", "/api/puzzles")["puzzles"] if p.startswith("__wc__")]
+    api.call("DELETE", f"/api/puzzles/{wn}")
+    page.locator(".ab-btn", has_text="Stats").click()
+    expect(page.locator("#ml")).to_have_class("message-line message-line-error")
+    expect(page.locator("#ml-text")).to_have_text(f"Error fetching stats: Puzzle not found: {wn}")

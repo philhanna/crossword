@@ -257,7 +257,7 @@ function do_settings_cancel() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const cfg = await (await fetch('/api/config')).json();
+        const cfg = await apiFetch('GET', '/api/config');
         if (cfg.message_line_timeout_ms != null) {
             MESSAGE_LINE_TIMEOUT_MS = cfg.message_line_timeout_ms;
         }

@@ -30,11 +30,35 @@ function _closeSidePanels() {
     AppState.sidebarTab       = 'clues';
 }
 
+// A request the server answered with an error status. `message` is the
+// server's own explanation from its {"error": ...} body when it sent one.
+class ApiError extends Error {
+    constructor(message, status) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+    }
+}
+
+// Send a JSON request and return the parsed response body. Throws ApiError
+// when the server answers with an error status, and lets network failures
+// propagate as they are.
 async function apiFetch(method, path, body) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body !== undefined) opts.body = JSON.stringify(body);
     const resp = await fetch(path, opts);
-    return resp.json();
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok) {
+        throw new ApiError((data && data.error) || `HTTP ${resp.status}`, resp.status);
+    }
+    return data;
+}
+
+// Report a failed request on the message line: "<what>: <server message>"
+// when the server explained itself, or just "<what>" when it didn't answer.
+function showRequestError(what, e, timeoutMs = 0) {
+    const text = e instanceof ApiError ? `${what}: ${e.message}` : what;
+    showMessageLine(text, 'error', timeoutMs);
 }
 
 // ---------------------------------------------------------------------------
@@ -185,34 +209,6 @@ function validateUserFacingName(kind, name) {
         return false;
     }
     return true;
-}
-
-async function rejectIfNameExists(kind, name, listExistingNames) {
-    const existingNames = await listExistingNames();
-    if (!existingNames.includes(name)) {
-        return false;
-    }
-    messageBox(
-        `Duplicate ${kind} name`,
-        `${kind.charAt(0).toUpperCase() + kind.slice(1)} <b>${escapeHtml(name)}</b> already exists. Choose a different ${kind} name when creating a new ${kind}.`,
-        null,
-        null
-    );
-    return true;
-}
-
-function showChooser(title, items, onSelect) {
-    document.getElementById('ch-title').innerHTML = title;
-    const listEl = document.getElementById('ch-list');
-    listEl.innerHTML = '';
-    for (const item of items) {
-        const a = document.createElement('a');
-        a.className = 'w3-bar-item w3-button w3-block w3-left-align';
-        a.textContent = item;
-        a.onclick = () => { hideElement('ch'); onSelect(item); };
-        listEl.appendChild(a);
-    }
-    showElement('ch');
 }
 
 const CH_PAGE_SIZE = 5;
@@ -404,59 +400,63 @@ function showContextMenu(x, y, items) {
 // Menu enable / disable
 // ---------------------------------------------------------------------------
 
-const MENU_ITEMS = [
-    'menu-puzzle-new', 'menu-puzzle-open',
-    'menu-puzzle-save', 'menu-puzzle-save-as', 'menu-puzzle-rename', 'menu-puzzle-close', 'menu-puzzle-delete',
-    'menu-puzzle-title', 'menu-puzzle-grid-mode', 'menu-puzzle-puzzle-mode',
-    'menu-import-acrosslite', 'menu-import-puz', 'menu-import-xd',
-    'menu-export-acrosslite', 'menu-export-puz', 'menu-export-xd', 'menu-export-cwcompiler', 'menu-export-nytimes', 'menu-export-solver-pdf',
+// One rule per top-menu item: the item is enabled exactly when its rule
+// returns true for the current menu context (see _menuContext).
+const MENU_RULES = [
+    { id: 'menu-puzzle-new',         enabledWhen: (s) => s.onDashboard },
+    { id: 'menu-puzzle-open',        enabledWhen: (s) => s.onDashboard },
+    { id: 'menu-puzzle-save',        enabledWhen: (s) => s.inEditor },
+    { id: 'menu-puzzle-save-as',     enabledWhen: (s) => s.inEditor },
+    { id: 'menu-puzzle-rename',      enabledWhen: (s) => s.inEditor && s.hasName },
+    { id: 'menu-puzzle-close',       enabledWhen: (s) => s.inEditor && !s.wordEditorOpen },
+    { id: 'menu-puzzle-delete',      enabledWhen: () => true },
+    { id: 'menu-puzzle-title',       enabledWhen: (s) => s.mode === 'puzzle' },
+    { id: 'menu-puzzle-grid-mode',   enabledWhen: (s) => s.mode === 'puzzle' },
+    { id: 'menu-puzzle-puzzle-mode', enabledWhen: (s) => s.mode === 'grid' },
+
+    // Importing opens the imported puzzle, so it's only offered from the dashboard
+    { id: 'menu-import-puz',         enabledWhen: (s) => s.onDashboard },
+    { id: 'menu-import-acrosslite',  enabledWhen: (s) => s.onDashboard },
+    { id: 'menu-import-ipuz',        enabledWhen: (s) => s.onDashboard },
+    { id: 'menu-import-xd',          enabledWhen: (s) => s.onDashboard },
+    { id: 'menu-import-ccxml',       enabledWhen: (s) => s.onDashboard },
+
+    // Exporting works on the open puzzle, or asks which one from the dashboard
+    { id: 'menu-export-puz',         enabledWhen: () => true },
+    { id: 'menu-export-acrosslite',  enabledWhen: () => true },
+    { id: 'menu-export-ipuz',        enabledWhen: () => true },
+    { id: 'menu-export-xd',          enabledWhen: () => true },
+    { id: 'menu-export-cwcompiler',  enabledWhen: () => true },
+    { id: 'menu-export-nytimes',     enabledWhen: () => true },
+    { id: 'menu-export-solver-pdf',  enabledWhen: () => true },
+    { id: 'menu-export-solved-pdf',  enabledWhen: () => true },
 ];
 
-function menuEnable(id)  {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove('w3-disabled');
-    el.style.pointerEvents = '';
-    el.setAttribute('aria-disabled', 'false');
-    el.tabIndex = 0;
-}
-
-function menuDisable(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.add('w3-disabled');
-    el.style.pointerEvents = 'none';
-    el.setAttribute('aria-disabled', 'true');
-    el.tabIndex = -1;
-}
-
 function updateMenu() {
-    const onDashboard = AppState.view === 'dashboard';
-    const editor = AppState.view === 'editor';
-    const canClosePuzzle = editor && !_isWordEditorOpen();
+    const context = _menuContext();
+    for (const rule of MENU_RULES) {
+        setMenuItemEnabled(rule.id, rule.enabledWhen(context));
+    }
+}
 
-    onDashboard ? menuEnable('menu-puzzle-new')     : menuDisable('menu-puzzle-new');
-    onDashboard ? menuEnable('menu-puzzle-open')    : menuDisable('menu-puzzle-open');
-    onDashboard ? menuEnable('menu-import-acrosslite')  : menuDisable('menu-import-acrosslite');
-    onDashboard ? menuEnable('menu-import-puz')         : menuDisable('menu-import-puz');
-    onDashboard ? menuEnable('menu-import-xd')          : menuDisable('menu-import-xd');
-    editor ? menuEnable('menu-puzzle-save')    : menuDisable('menu-puzzle-save');
-    editor ? menuEnable('menu-puzzle-save-as') : menuDisable('menu-puzzle-save-as');
-    (editor && AppState.puzzleName) ? menuEnable('menu-puzzle-rename') : menuDisable('menu-puzzle-rename');
-    canClosePuzzle ? menuEnable('menu-puzzle-close') : menuDisable('menu-puzzle-close');
-    menuEnable('menu-puzzle-delete');
+function _menuContext() {
+    const inEditor = AppState.view === 'editor';
+    return {
+        onDashboard: AppState.view === 'dashboard',
+        inEditor,
+        hasName: !!AppState.puzzleName,
+        mode: inEditor ? _currentEditorMode() : null,
+        wordEditorOpen: _isWordEditorOpen(),
+    };
+}
 
-    const mode = editor ? _currentEditorMode() : null;
-    mode === 'puzzle' ? menuEnable('menu-puzzle-title')       : menuDisable('menu-puzzle-title');
-    mode === 'puzzle' ? menuEnable('menu-puzzle-grid-mode')   : menuDisable('menu-puzzle-grid-mode');
-    mode === 'grid'   ? menuEnable('menu-puzzle-puzzle-mode') : menuDisable('menu-puzzle-puzzle-mode');
-
-    menuEnable('menu-export-acrosslite');
-    menuEnable('menu-export-puz');
-    menuEnable('menu-export-xd');
-    menuEnable('menu-export-cwcompiler');
-    menuEnable('menu-export-nytimes');
-    menuEnable('menu-export-solver-pdf');
+function setMenuItemEnabled(id, enabled) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('w3-disabled', !enabled);
+    el.style.pointerEvents = enabled ? '' : 'none';
+    el.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+    el.tabIndex = enabled ? 0 : -1;
 }
 
 // ---------------------------------------------------------------------------

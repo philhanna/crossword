@@ -561,12 +561,6 @@ function renderFillOrderPanel(data) {
 ${body}`;
 }
 
-function closeStatsPanel() {
-    AppState.showingStats = false;
-    AppState.sidebarTab   = 'clues';
-    renderPuzzleEditorRhs();
-}
-
 async function _openWordFromFillOrder(seq, dir) {
     const result = await completeSelectedWordEdit({
         nextSelection: { seq, direction: dir }
@@ -575,18 +569,11 @@ async function _openWordFromFillOrder(seq, dir) {
     await openWordEditor(seq, dir);
 }
 
-function closeFillOrderPanel() {
-    AppState.showingFillOrder = false;
-    AppState.sidebarTab       = 'clues';
-    renderPuzzleEditorRhs();
-}
-
 async function _refreshPuzzleStatsIfVisible() {
     if (AppState.sidebarTab !== 'stats' || !AppState.puzzleWorkingName) return;
     try {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/stats`);
-        if (data.error) return;
         AppState._statsData = data;
         renderPuzzleEditorRhs();
     } catch (e) {
@@ -604,7 +591,6 @@ async function _refreshFillOrderIfVisible() {
     try {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/fill-order`);
-        if (data.error) return;
         if (AppState._fillOrderCache) AppState._fillOrderCache.set(key, data);
         renderPuzzleEditorRhs();
     } catch (e) {
@@ -639,10 +625,9 @@ async function handleGridModeClick(event) {
     try {
         const data = await apiFetch('PUT',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/cells/${r}/${c}`);
-        if (data.error) { showMessageLine(`Error updating grid: ${data.error}`, 'error', 0); return; }
         await _applyGridModeUpdate(data);
     } catch (e) {
-        showMessageLine('Error updating grid', 'error', 0);
+        showRequestError('Error updating grid', e);
     }
 }
 
@@ -695,7 +680,6 @@ async function _puzzleUndoRedo(action) {
         : `/api/puzzles/${encodeURIComponent(wn)}/${action}`;
     try {
         const data = await apiFetch('POST', path);
-        if (data.error) { showMessageLine(`${action} failed: ${data.error}`, 'error', 0); return; }
         AppState.puzzleData       = data;
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
@@ -703,7 +687,7 @@ async function _puzzleUndoRedo(action) {
         AppState.sidebarTab       = 'clues';
         AppState._statsData       = null;
         renderPuzzleEditor();
-    } catch (e) { showMessageLine(`Error during ${action}`, 'error', 0); }
+    } catch (e) { showRequestError(`Error during ${action}`, e); }
 }
 
 // ---------------------------------------------------------------------------
@@ -737,7 +721,6 @@ async function _switchToGridModeConfirmed() {
         await _settlePuzzleEditingBeforeModeSwitch();
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/grid`);
-        if (data.error) { showMessageLine(`Error switching modes: ${data.error}`, 'error', 0); return; }
         AppState.puzzleData       = data;
         AppState.selectedWord     = null;
         AppState.showingStats     = false;
@@ -745,7 +728,7 @@ async function _switchToGridModeConfirmed() {
         AppState.sidebarTab         = 'grid';
         AppState._statsData         = null;
         renderPuzzleEditor();
-    } catch (e) { showMessageLine('Error switching to Grid mode', 'error', 0); }
+    } catch (e) { showRequestError('Error switching to Grid mode', e); }
 }
 
 async function do_switch_to_grid_mode() {
@@ -775,13 +758,12 @@ async function do_puzzle_clear() {
             try {
                 const data = await apiFetch('POST',
                     `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/clear`);
-                if (data.error) { showMessageLine(`Error clearing puzzle: ${data.error}`, 'error', 0); return; }
                 AppState.puzzleData = data;
                 if (AppState.selectedWord) {
                     _refreshSelectedWordFromPuzzleData();
                 }
                 renderPuzzleEditor();
-            } catch (e) { showMessageLine('Error clearing puzzle', 'error', 0); }
+            } catch (e) { showRequestError('Error clearing puzzle', e); }
         }
     );
 }
@@ -791,7 +773,6 @@ async function do_switch_to_puzzle_mode() {
     try {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/puzzle`);
-        if (data.error) { showMessageLine(`Error switching modes: ${data.error}`, 'error', 0); return; }
         const hadGridStructureChange = AppState.gridStructureChanged;
         AppState.puzzleData   = data;
         AppState.selectedWord     = null;
@@ -807,7 +788,7 @@ async function do_switch_to_puzzle_mode() {
                 'notice'
             );
         }
-    } catch (e) { showMessageLine('Error switching to Puzzle mode', 'error', 0); }
+    } catch (e) { showRequestError('Error switching to Puzzle mode', e); }
 }
 
 async function do_puzzle_rotate_grid() {
@@ -815,9 +796,8 @@ async function do_puzzle_rotate_grid() {
     try {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/rotate`);
-        if (data.error) { showMessageLine(`Error rotating grid: ${data.error}`, 'error', 0); return; }
         await _applyGridModeUpdate(data);
-    } catch (e) { showMessageLine('Error rotating grid', 'error', 0); }
+    } catch (e) { showRequestError('Error rotating grid', e); }
 }
 
 async function do_puzzle_generate_grid() {
@@ -831,9 +811,8 @@ async function do_puzzle_generate_grid() {
         const data = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/generate${specParam}`);
         if (data.notice) { showMessageLine(data.notice, 'notice'); return; }
-        if (data.error) { showMessageLine(`Error generating grid: ${data.error}`, 'error'); return; }
         await _applyGridModeUpdate(data);
-    } catch (e) { showMessageLine('Error generating grid', 'error'); }
+    } catch (e) { showRequestError('Error generating grid', e, MESSAGE_LINE_TIMEOUT_MS); }
     finally {
         if (btn) btn.classList.remove('w3-disabled');
     }
@@ -845,14 +824,11 @@ async function do_puzzle_generate_grid() {
 
 async function _openWorkingCopyInEditor(name, wn) {
     const puzzleData = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}`);
-    if (puzzleData.error) {
-        throw new Error(puzzleData.error);
-    }
     let stateInfo = null;
     try {
         stateInfo = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(name)}/state`);
     } catch (e) { /* state label is informational only — non-fatal */ }
-    AppState.puzzleState       = (stateInfo && !stateInfo.error) ? stateInfo.state : null;
+    AppState.puzzleState       = stateInfo ? stateInfo.state : null;
     AppState.puzzleName        = name;
     AppState.puzzleOriginalName = name;
     AppState.puzzleWorkingName = wn;
@@ -870,9 +846,6 @@ async function _openWorkingCopyInEditor(name, wn) {
 
 async function _openPuzzleInEditor(name) {
     const openData = await apiFetch('POST', `/api/puzzles/${encodeURIComponent(name)}/open`);
-    if (openData.error) {
-        throw new Error(openData.error);
-    }
     await _openWorkingCopyInEditor(name, openData.working_name);
 }
 
@@ -881,7 +854,7 @@ async function do_puzzle_open() {
         await showPreviewChooser('Open puzzle', [], '/api/puzzles', async (name) => {
             try {
                 await _openPuzzleInEditor(name);
-            } catch (e) { showMessageLine('Error opening puzzle', 'error', 0); }
+            } catch (e) { showRequestError('Error opening puzzle', e); }
         }, {
             stateFilterEnabled: true,
             initialStateFilter: 'all',
@@ -889,7 +862,6 @@ async function do_puzzle_open() {
             loadItems: async (state) => {
                 const path = `/api/puzzles?state=${encodeURIComponent(state || 'all')}`;
                 const listData = await apiFetch('GET', path);
-                if (listData.error) throw new Error(listData.error);
                 return (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
             },
         });
@@ -926,12 +898,11 @@ async function do_puzzle_import() {
                 }
 
                 try {
-                    const data = await apiFetch('POST', '/api/import/acrosslite', { name, content });
-                    if (data.error) { showMessageLine(`Import failed: ${data.error}`, 'error', 0); return; }
+                    await apiFetch('POST', '/api/import/acrosslite', { name, content });
                     showMessageLine(`Imported "${name}" — opening…`, 'notice');
                     await _openPuzzleInEditor(name);
                 } catch (e) {
-                    showMessageLine(`Import error: ${e.message || e}`, 'error', 0);
+                    showRequestError('Import failed', e);
                 }
             }
         );
@@ -965,12 +936,11 @@ async function do_puzzle_import_xd() {
                 }
 
                 try {
-                    const data = await apiFetch('POST', '/api/import/xd', { name, content });
-                    if (data.error) { showMessageLine(`Import failed: ${data.error}`, 'error', 0); return; }
+                    await apiFetch('POST', '/api/import/xd', { name, content });
                     showMessageLine(`Imported "${name}" — opening…`, 'notice');
                     await _openPuzzleInEditor(name);
                 } catch (e) {
-                    showMessageLine(`Import error: ${e.message || e}`, 'error', 0);
+                    showRequestError('Import failed', e);
                 }
             }
         );
@@ -1004,12 +974,11 @@ async function do_puzzle_import_ipuz() {
                 }
 
                 try {
-                    const data = await apiFetch('POST', '/api/import/ipuz', { name, content });
-                    if (data.error) { showMessageLine(`Import failed: ${data.error}`, 'error', 0); return; }
+                    await apiFetch('POST', '/api/import/ipuz', { name, content });
                     showMessageLine(`Imported "${name}" — opening…`, 'notice');
                     await _openPuzzleInEditor(name);
                 } catch (e) {
-                    showMessageLine(`Import error: ${e.message || e}`, 'error', 0);
+                    showRequestError('Import failed', e);
                 }
             }
         );
@@ -1043,12 +1012,11 @@ async function do_puzzle_import_ccxml() {
                 }
 
                 try {
-                    const data = await apiFetch('POST', '/api/import/ccxml', { name, content });
-                    if (data.error) { showMessageLine(`Import failed: ${data.error}`, 'error', 0); return; }
+                    await apiFetch('POST', '/api/import/ccxml', { name, content });
                     showMessageLine(`Imported "${name}" — opening…`, 'notice');
                     await _openPuzzleInEditor(name);
                 } catch (e) {
-                    showMessageLine(`Import error: ${e.message || e}`, 'error', 0);
+                    showRequestError('Import failed', e);
                 }
             }
         );
@@ -1083,12 +1051,11 @@ async function do_puzzle_import_puz() {
                 }
 
                 try {
-                    const data = await apiFetch('POST', '/api/import/puz', { name, content_b64 });
-                    if (data.error) { showMessageLine(`Import failed: ${data.error}`, 'error', 0); return; }
+                    await apiFetch('POST', '/api/import/puz', { name, content_b64 });
                     showMessageLine(`Imported "${name}" — opening…`, 'notice');
                     await _openPuzzleInEditor(name);
                 } catch (e) {
-                    showMessageLine(`Import error: ${e.message || e}`, 'error', 0);
+                    showRequestError('Import failed', e);
                 }
             }
         );
@@ -1179,8 +1146,7 @@ async function do_puzzle_new() {
         if (size === null) return;
         try {
             const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
-            const data = await apiFetch('POST', '/api/puzzles', { name: internalName, size });
-            if (data.error) { showMessageLine(`Error creating puzzle: ${data.error}`, 'error', 0); return; }
+            await apiFetch('POST', '/api/puzzles', { name: internalName, size });
             await _openPuzzleInEditor(internalName);
             AppState.puzzleName         = null;
             AppState.puzzleOriginalName = internalName;
@@ -1189,7 +1155,7 @@ async function do_puzzle_new() {
             if (spec) {
                 await do_puzzle_generate_grid();
             }
-        } catch (e) { showMessageLine('Error creating puzzle', 'error', 0); }
+        } catch (e) { showRequestError('Error creating puzzle', e); }
     }
 
     promptForPuzzleDetails();
@@ -1210,30 +1176,23 @@ async function do_puzzle_save() {
 async function _doPuzzleSave(wn, name, comment) {
     try {
         await _settlePuzzleEditingBeforeSave();
-        const data = await apiFetch('POST',
+        await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: name, comment });
-        if (data.error) { showMessageLine(`Save failed: ${data.error}`, 'error', 0); return; }
         AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
         renderPuzzleEditor();
         showMessageLine(`Puzzle ${name} saved.`, 'notice');
-    } catch (e) { showMessageLine('Error saving puzzle', 'error', 0); }
+    } catch (e) { showRequestError('Error saving puzzle', e); }
 }
 
 async function _listSavedPuzzleNames() {
     const listData = await apiFetch('GET', '/api/puzzles');
-    if (listData.error) {
-        throw new Error(listData.error);
-    }
     return (listData.puzzles || []).filter(p => p && !p.startsWith('__'));
 }
 
 async function _savePuzzleAsName(newName, comment) {
     const wn = AppState.puzzleWorkingName;
-    const data = await apiFetch('POST',
+    await apiFetch('POST',
         `/api/puzzles/${encodeURIComponent(wn)}/copy`, { new_name: newName, comment });
-    if (data.error) {
-        throw new Error(data.error);
-    }
     AppState.puzzleSavedHash = _hash(AppState.puzzleData.puzzle);
     if (!AppState.puzzleName) {
         // New (never-saved) puzzle: assign the name and clean up the __new__ entry
@@ -1265,7 +1224,7 @@ async function do_puzzle_save_as() {
                 _listSavedPuzzleNames,
                 () => _savePuzzleAsName(newName, comment)
             );
-        } catch (e) { showMessageLine('Error saving puzzle', 'error', 0); }
+        } catch (e) { showRequestError('Error saving puzzle', e); }
     });
 }
 
@@ -1285,15 +1244,14 @@ async function do_puzzle_rename() {
                 );
                 if (!confirmed) return;
             }
-            const data = await apiFetch('POST',
+            await apiFetch('POST',
                 `/api/puzzles/${encodeURIComponent(currentName)}/rename`, { new_name: newName });
-            if (data.error) { showMessageLine(`Error renaming puzzle: ${data.error}`, 'error', 0); return; }
             AppState.puzzleName         = newName;
             AppState.puzzleOriginalName = newName;
             renderPuzzleEditorLhs();
             updateMenu();
             showMessageLine(`Puzzle renamed to ${newName}.`, 'notice');
-        } catch (e) { showMessageLine('Error renaming puzzle', 'error', 0); }
+        } catch (e) { showRequestError('Error renaming puzzle', e); }
     });
 }
 
@@ -1352,12 +1310,10 @@ async function do_puzzle_title() {
     const current = AppState.puzzleData && AppState.puzzleData.puzzle.title || '';
     inputBox('Set puzzle title', '<b>Puzzle title:</b>', current, async (title) => {
         try {
-            const data = await apiFetch('PUT',
-                `/api/puzzles/${encodeURIComponent(wn)}/title`, { title });
-            if (data.error) { showMessageLine(`Error: ${data.error}`, 'error', 0); return; }
-            const fresh = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}`);
-            if (!fresh.error) { AppState.puzzleData = fresh; renderPuzzleEditorLhs(); }
-        } catch (e) { showMessageLine('Error setting title', 'error', 0); }
+            await apiFetch('PUT', `/api/puzzles/${encodeURIComponent(wn)}/title`, { title });
+            AppState.puzzleData = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}`);
+            renderPuzzleEditorLhs();
+        } catch (e) { showRequestError('Error setting title', e); }
     });
 }
 
@@ -1366,13 +1322,12 @@ async function do_puzzle_stats() {
     try {
         await _settlePuzzleEditingBeforeModeSwitch();
         const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/stats`);
-        if (data.error) { showMessageLine(`Error: ${data.error}`, 'error', 0); return; }
         AppState._statsData       = data;
         AppState.showingFillOrder = false;
         AppState.showingStats     = true;
         AppState.sidebarTab       = 'stats';
         renderPuzzleEditor();
-    } catch (e) { showMessageLine('Error fetching stats', 'error', 0); }
+    } catch (e) { showRequestError('Error fetching stats', e); }
 }
 
 async function do_puzzle_fill_order() {
@@ -1390,14 +1345,13 @@ async function do_puzzle_fill_order() {
         let data = AppState._fillOrderCache && AppState._fillOrderCache.get(key);
         if (!data) {
             data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
-            if (data.error) { showMessageLine(`Error: ${data.error}`, 'error', 0); return; }
             if (AppState._fillOrderCache) AppState._fillOrderCache.set(key, data);
         }
         AppState.showingStats       = false;
         AppState.showingFillOrder   = true;
         AppState.sidebarTab         = 'fill-order';
         renderPuzzleEditor();
-    } catch (e) { showMessageLine('Error fetching fill order', 'error', 0); }
+    } catch (e) { showRequestError('Error fetching fill order', e); }
     finally {
         AppState.fillOrderLoading = false;
         renderActionBar();
@@ -1419,11 +1373,10 @@ async function do_puzzle_delete_current() {
         null,
         async () => {
             try {
-                const data = await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
-                if (data && data.error) { showMessageLine(`Error deleting puzzle: ${data.error}`, 'error', 0); return; }
+                await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
                 await _doPuzzleCloseConfirmed();
                 showMessageLine(`Puzzle ${name} deleted.`, 'notice');
-            } catch (e) { showMessageLine('Error deleting puzzle', 'error', 0); }
+            } catch (e) { showRequestError('Error deleting puzzle', e); }
         }
     );
 }
@@ -1442,19 +1395,18 @@ async function do_puzzle_delete() {
                 null,
                 async () => {
                     try {
-                        const data = await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
-                        if (data && data.error) { showMessageLine(`Error deleting puzzle: ${data.error}`, 'error', 0); return; }
+                        await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
                         if (AppState.puzzleName === name) {
                             await _doPuzzleCloseConfirmed();
                             return;
                         }
                         showMessageLine(`Puzzle ${name} deleted.`, 'notice');
-                    } catch (e) { showMessageLine('Error deleting puzzle', 'error', 0); }
+                    } catch (e) { showRequestError('Error deleting puzzle', e); }
                 }
             );
         });
     } catch (e) {
-        showMessageLine('Error listing puzzles', 'error', 0);
+        showRequestError('Error listing puzzles', e);
     }
 }
 
@@ -1499,7 +1451,6 @@ async function do_export(format) {
     } else {
         try {
             const listData = await apiFetch('GET', '/api/puzzles');
-            if (listData.error) { showMessageLine(`Error: ${listData.error}`, 'error', 0); return; }
             const puzzles = (listData.puzzles || []).filter(p => p && !p.startsWith('__wc__'));
             if (puzzles.length === 0) {
                 showMessageLine('No saved puzzles found.', 'notice');
@@ -1509,7 +1460,7 @@ async function do_export(format) {
                 await _downloadExport(name, format);
             });
         } catch (e) {
-            showMessageLine('Error listing puzzles', 'error', 0);
+            showRequestError('Error listing puzzles', e);
         }
     }
 }

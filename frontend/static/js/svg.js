@@ -1,61 +1,6 @@
 // Crossword Puzzle Editor — client-side SVG renderers
 
 // ---------------------------------------------------------------------------
-// Grid SVG renderer
-// ---------------------------------------------------------------------------
-
-function computeGridNumbers(cells, n) {
-    const nums = new Array(n * n).fill(null);
-    let num = 1;
-    for (let r = 1; r <= n; r++) {
-        for (let c = 1; c <= n; c++) {
-            const idx = (r - 1) * n + (c - 1);
-            if (cells[idx]) continue; // black cell
-            const startsAcross = (c === 1 || cells[(r - 1) * n + (c - 2)]) &&
-                                  c < n && !cells[(r - 1) * n + c];
-            const startsDown   = (r === 1 || cells[(r - 2) * n + (c - 1)]) &&
-                                  r < n && !cells[r * n + (c - 1)];
-            if (startsAcross || startsDown) nums[idx] = num++;
-        }
-    }
-    return nums;
-}
-
-function buildGridSvg(cells, n) {
-    const totalPx = n * BOXSIZE + 1;
-    const nums    = computeGridNumbers(cells, n);
-    const parts   = [
-        `<svg xmlns="http://www.w3.org/2000/svg" id="grid-svg" class="svg-grid-mode" ` +
-        `width="${totalPx}" height="${totalPx}" style="cursor:pointer;display:block">`,
-    ];
-    for (let r = 1; r <= n; r++) {
-        for (let c = 1; c <= n; c++) {
-            const idx   = (r - 1) * n + (c - 1);
-            const x     = (c - 1) * BOXSIZE;
-            const y     = (r - 1) * BOXSIZE;
-            const black = cells[idx];
-            parts.push(
-                `<rect x="${x}" y="${y}" width="${BOXSIZE}" height="${BOXSIZE}" ` +
-                `class="${black ? 'grid-cell-black' : 'grid-cell-white'}" ` +
-                `fill="${black ? '#1a1a1a' : 'white'}" stroke="#c8c4bc" stroke-width="0.5"/>`
-            );
-            if (!black && nums[idx] !== null) {
-                parts.push(
-                    `<text x="${x + 2}" y="${y + 10}" ` +
-                    `font-size="9" font-family="'IBM Plex Sans', sans-serif" fill="#555">${nums[idx]}</text>`
-                );
-            }
-        }
-    }
-    parts.push(
-        `<rect x="0" y="0" width="${totalPx - 1}" height="${totalPx - 1}" ` +
-        `fill="none" stroke="#1a1a1a" stroke-width="2"/>`
-    );
-    parts.push('</svg>');
-    return parts.join('');
-}
-
-// ---------------------------------------------------------------------------
 // Puzzle SVG renderer
 // ---------------------------------------------------------------------------
 
