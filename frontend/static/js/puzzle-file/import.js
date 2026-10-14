@@ -6,7 +6,7 @@
 
 import { registerActions } from '../core/actions.js';
 import { apiFetch } from '../core/api.js';
-import { inputBox } from '../ui/dialogs.js';
+import { askText } from '../ui/dialogs.js';
 import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import { _openPuzzleInEditor } from './lifecycle.js';
 
@@ -36,27 +36,27 @@ function importPuzzle(format) {
     fileInput.click();
 }
 
-function askNameAndImport(format, file) {
-    inputBox(format.title, '<b>Puzzle name:</b>', defaultPuzzleName(file.name, format.accept), async (name) => {
-        name = name.trim();
-        if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
+async function askNameAndImport(format, file) {
+    let name = await askText(format.title, '<b>Puzzle name:</b>', defaultPuzzleName(file.name, format.accept));
+    if (name === null) return;
+    name = name.trim();
+    if (!name) { showMessageLine('Puzzle name is required', 'error', 0); return; }
 
-        let body;
-        try {
-            body = await readForUpload(file, format.read, name);
-        } catch (e) {
-            showMessageLine('Could not read file', 'error', 0);
-            return;
-        }
+    let body;
+    try {
+        body = await readForUpload(file, format.read, name);
+    } catch (e) {
+        showMessageLine('Could not read file', 'error', 0);
+        return;
+    }
 
-        try {
-            await apiFetch('POST', format.endpoint, body);
-            showMessageLine(`Imported "${name}" — opening…`, 'notice');
-            await _openPuzzleInEditor(name);
-        } catch (e) {
-            showRequestError('Import failed', e);
-        }
-    });
+    try {
+        await apiFetch('POST', format.endpoint, body);
+        showMessageLine(`Imported "${name}" — opening…`, 'notice');
+        await _openPuzzleInEditor(name);
+    } catch (e) {
+        showRequestError('Import failed', e);
+    }
 }
 
 // The file name without whichever of the format's extensions it ends in

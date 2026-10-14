@@ -4,7 +4,7 @@ import { registerActions } from '../core/actions.js';
 import { apiFetch } from '../core/api.js';
 import { escapeHtml, hideElement, showElement } from '../core/dom.js';
 import { showContextMenu } from '../ui/context-menu.js';
-import { messageBox } from '../ui/dialogs.js';
+import { askConfirm } from '../ui/dialogs.js';
 import { showRequestError } from '../ui/message-line.js';
 import { fmtMonthDay } from './dashboard.js';
 import { _openWorkingCopyInEditor } from '../puzzle-file/lifecycle.js';
@@ -82,17 +82,16 @@ function fmtDateTime(iso) {
     return `${fmtMonthDay(iso)} ${hh}:${min}:${ss}`;
 }
 
-function _dashConfirmRestore(name, historyId) {
+async function _dashConfirmRestore(name, historyId) {
     hideElement('history-popup');
-    messageBox(
+    const confirmed = await askConfirm(
         'Restore puzzle',
         `Open this earlier saved version of <b>'${escapeHtml(name)}'</b> for editing? ` +
         `This leaves the dashboard. The current version stays untouched until you ` +
         `explicitly Save.`,
-        null,
-        () => _dashRestorePuzzle(name, historyId),
         'Restore',
     );
+    if (confirmed) await _dashRestorePuzzle(name, historyId);
 }
 
 async function _dashRestorePuzzle(name, historyId) {

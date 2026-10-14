@@ -9,7 +9,7 @@ import { apiFetch } from '../core/api.js';
 import { escapeHtml } from '../core/dom.js';
 import { _hash } from '../core/hash.js';
 import { AppState } from '../core/state.js';
-import { inputBox, messageBox } from '../ui/dialogs.js';
+import { askConfirm, askText } from '../ui/dialogs.js';
 import { updateMenu } from '../ui/menu.js';
 import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import { renderClues, restoreCluesScroll, saveCluesScroll } from './clues-panel.js';
@@ -394,12 +394,8 @@ export async function _settlePuzzleEditingBeforeSave() {
 async function do_switch_to_grid_mode() {
     if (!AppState.puzzleWorkingName || _currentEditorMode() === 'grid') return;
     if (AppState.puzzleData.puzzle.words.some(w => w.locked)) return;
-    messageBox(
-        'Modify grid',
-        'Are you sure you want to modify the grid?',
-        null,
-        async () => _switchToGridModeConfirmed()
-    );
+    if (!await askConfirm('Modify grid', 'Are you sure you want to modify the grid?')) return;
+    await _switchToGridModeConfirmed();
 }
 
 async function _switchToGridModeConfirmed() {
@@ -452,32 +448,27 @@ async function do_puzzle_clear() {
     const lockedNote = lockedCount > 0
         ? ` ${lockedCount} locked word${lockedCount === 1 ? '' : 's'} will be skipped.`
         : '';
-    messageBox(
-        'Clear puzzle',
-        `${clearableCount} word${clearableCount === 1 ? '' : 's'} will be cleared.${lockedNote}`,
-        null,
-        async () => {
-            try {
-                const data = await apiFetch('POST',
-                    `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/clear`);
-                AppState.puzzleData = data;
-                if (AppState.selectedWord) {
-                    _refreshSelectedWordFromPuzzleData();
-                }
-                renderPuzzleEditor();
-            } catch (e) { showRequestError('Error clearing puzzle', e); }
+    const confirmed = await askConfirm('Clear puzzle',
+        `${clearableCount} word${clearableCount === 1 ? '' : 's'} will be cleared.${lockedNote}`);
+    if (!confirmed) return;
+    try {
+        AppState.puzzleData = await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/clear`);
+        if (AppState.selectedWord) {
+            _refreshSelectedWordFromPuzzleData();
         }
-    );
+        renderPuzzleEditor();
+    } catch (e) { showRequestError('Error clearing puzzle', e); }
 }
 
 async function do_puzzle_title() {
     const wn = AppState.puzzleWorkingName;
     const current = AppState.puzzleData && AppState.puzzleData.puzzle.title || '';
-    inputBox('Set puzzle title', '<b>Puzzle title:</b>', current, async (title) => {
-        try {
-            await apiFetch('PUT', `/api/puzzles/${encodeURIComponent(wn)}/title`, { title });
-            AppState.puzzleData = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}`);
-            renderPuzzleEditorLhs();
-        } catch (e) { showRequestError('Error setting title', e); }
-    });
+    const title = await askText('Set puzzle title', '<b>Puzzle title:</b>', current);
+    if (title === null) return;
+    try {
+        await apiFetch('PUT', `/api/puzzles/${encodeURIComponent(wn)}/title`, { title });
+        AppState.puzzleData = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}`);
+        renderPuzzleEditorLhs();
+    } catch (e) { showRequestError('Error setting title', e); }
 }

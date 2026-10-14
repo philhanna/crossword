@@ -218,3 +218,18 @@ def test_cancel_in_message_box_keeps_puzzle(app_page, api):
     expect(page.locator("#mb")).to_be_hidden()
     expect_editor_name(page, "five")
     assert api.puzzle_names() == ["five"]
+
+
+def test_rename_to_existing_name_is_refused(app_page, api):
+    page = app_page
+    api.create_puzzle("five")
+    api.create_puzzle("taken")
+    page.reload()
+    open_from_dashboard(page, "five")
+
+    menu(page, "Puzzle", "#menu-puzzle-rename")
+    answer_input_box(page, "taken")
+    expect(page.locator("#mb-title")).to_have_text("Duplicate puzzle name")
+    confirm_message_box(page)
+    expect_editor_name(page, "five")
+    assert sorted(api.puzzle_names()) == ["five", "taken"]

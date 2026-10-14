@@ -7,6 +7,7 @@
 //                                its content (the dimmed backdrop of a dialog)
 //   data-input="name"            run on input
 //   data-change="name"           run on change
+//   data-submit="name"           run when a form is submitted
 //   data-contextmenu="name"      run on a right-click
 //
 // Each module registers the handlers it owns with registerActions(). One
@@ -28,6 +29,7 @@ export function listenForActions(root = document) {
     root.addEventListener('click', onClick);
     root.addEventListener('input', (e) => runClosest(e, 'input'));
     root.addEventListener('change', (e) => runClosest(e, 'change'));
+    root.addEventListener('submit', (e) => runClosest(e, 'submit'));
     root.addEventListener('contextmenu', (e) => runClosest(e, 'contextmenu'));
 }
 

@@ -10,7 +10,7 @@ import { escapeHtml } from '../core/dom.js';
 import { _hash } from '../core/hash.js';
 import { AppState } from '../core/state.js';
 import { showPreviewChooser } from '../ui/chooser.js';
-import { inputBox, messageBox, multiInputBox } from '../ui/dialogs.js';
+import { askConfirm, askFields, askText, showAlert } from '../ui/dialogs.js';
 import { updateMenu } from '../ui/menu.js';
 import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import { showView } from '../ui/view.js';
@@ -38,101 +38,76 @@ registerActions({
 // ---------------------------------------------------------------------------
 
 async function do_puzzle_new() {
-    function promptForPuzzleDetails(sizeVal = '', specVal = '') {
-        multiInputBox(
-            'New puzzle',
-            [
-                {
-                    name: 'size',
-                    label: '<b>Puzzle size:</b> <em>(an odd positive integer, e.g. 15)</em>',
-                    value: sizeVal,
-                },
-                {
-                    name: 'spec',
-                    label: '<b>Theme word lengths</b> <em>(optional — palindromic integers with any delimiter, e.g. 7,5,5,7)</em>',
-                    value: specVal,
-                    required: false,
-                },
-            ],
-            ({ size: enteredSize, spec: enteredSpec }) => {
-                const n = Number(enteredSize);
-                if (!enteredSize || isNaN(n)) {
-                    messageBox(
-                        'Invalid puzzle size',
-                        `${escapeHtml(enteredSize)} is not a number.`,
-                        null,
-                        () => promptForPuzzleDetails(enteredSize, enteredSpec)
-                    );
-                    return;
-                }
-                if (n % 2 === 0) {
-                    messageBox(
-                        'Invalid puzzle size',
-                        `${n} is not an odd number.`,
-                        null,
-                        () => promptForPuzzleDetails(enteredSize, enteredSpec)
-                    );
-                    return;
-                }
-                if (n < 1) {
-                    messageBox(
-                        'Invalid puzzle size',
-                        `${n} is not a positive number.`,
-                        null,
-                        () => promptForPuzzleDetails(enteredSize, enteredSpec)
-                    );
-                    return;
-                }
+    const details = await askNewPuzzleDetails();
+    if (!details) return;
+    try {
+        const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
+        await apiFetch('POST', '/api/puzzles', { name: internalName, size: details.size });
+        await _openPuzzleInEditor(internalName);
+        AppState.puzzleName         = null;
+        AppState.puzzleOriginalName = internalName;
+        AppState.puzzleThemeSpec    = details.spec;
+        renderPuzzleEditorLhs();
+        if (details.spec) {
+            await do_puzzle_generate_grid();
+        }
+    } catch (e) { showRequestError('Error creating puzzle', e); }
+}
 
-                const trimmedSpec = enteredSpec.trim();
-                let spec = null;
-                if (trimmedSpec) {
-                    const parts = trimmedSpec.split(/[^0-9]+/).filter(s => s.length > 0);
-                    const nums = parts.map(Number);
-                    if (nums.some(x => isNaN(x) || !Number.isInteger(x) || x < 1)) {
-                        messageBox(
-                            'Invalid theme spec',
-                            'Each value must be a positive integer.',
-                            null,
-                            () => promptForPuzzleDetails(enteredSize, enteredSpec)
-                        );
-                        return;
-                    }
-                    if (JSON.stringify(nums) !== JSON.stringify([...nums].reverse())) {
-                        messageBox(
-                            'Invalid theme spec',
-                            'The list must be a palindrome (e.g. 7,5,5,7).',
-                            null,
-                            () => promptForPuzzleDetails(enteredSize, enteredSpec)
-                        );
-                        return;
-                    }
-                    spec = nums;
-                }
-
-                createPuzzle(n, spec);
+// Ask for the new puzzle's size and optional theme word lengths, asking
+// again (with what was typed) after each mistake. Resolves to
+// { size, spec } with spec null when no theme was given, or null on Cancel.
+async function askNewPuzzleDetails() {
+    let entered = { size: '', spec: '' };
+    for (;;) {
+        const values = await askFields('New puzzle', [
+            {
+                name: 'size',
+                label: '<b>Puzzle size:</b> <em>(an odd positive integer, e.g. 15)</em>',
+                value: entered.size,
             },
-            { onCancel: () => createPuzzle(null, null) }
-        );
-    }
+            {
+                name: 'spec',
+                label: '<b>Theme word lengths</b> <em>(optional — palindromic integers with any delimiter, e.g. 7,5,5,7)</em>',
+                value: entered.spec,
+                required: false,
+            },
+        ]);
+        if (!values) return null;
+        entered = values;
 
-    async function createPuzzle(size, spec) {
-        if (size === null) return;
-        try {
-            const internalName = '__new__' + Math.random().toString(36).slice(2, 10);
-            await apiFetch('POST', '/api/puzzles', { name: internalName, size });
-            await _openPuzzleInEditor(internalName);
-            AppState.puzzleName         = null;
-            AppState.puzzleOriginalName = internalName;
-            AppState.puzzleThemeSpec    = spec;
-            renderPuzzleEditorLhs();
-            if (spec) {
-                await do_puzzle_generate_grid();
-            }
-        } catch (e) { showRequestError('Error creating puzzle', e); }
-    }
+        const problem = newPuzzleProblem(values);
+        if (!problem) return { size: Number(values.size), spec: parseThemeSpec(values.spec) };
 
-    promptForPuzzleDetails();
+        // OK on the explanation asks again; Cancel gives up
+        if (!await askConfirm(problem.title, problem.message)) return null;
+    }
+}
+
+// What is wrong with the entered size and theme spec, or null if nothing
+function newPuzzleProblem({ size, spec }) {
+    const n = Number(size);
+    if (!size || isNaN(n)) return { title: 'Invalid puzzle size', message: `${escapeHtml(size)} is not a number.` };
+    if (n % 2 === 0) return { title: 'Invalid puzzle size', message: `${n} is not an odd number.` };
+    if (n < 1) return { title: 'Invalid puzzle size', message: `${n} is not a positive number.` };
+
+    const nums = parseThemeSpec(spec);
+    if (nums === null) return null;
+    if (nums.some(x => isNaN(x) || !Number.isInteger(x) || x < 1)) {
+        return { title: 'Invalid theme spec', message: 'Each value must be a positive integer.' };
+    }
+    if (JSON.stringify(nums) !== JSON.stringify([...nums].reverse())) {
+        return { title: 'Invalid theme spec', message: 'The list must be a palindrome (e.g. 7,5,5,7).' };
+    }
+    return null;
+}
+
+// The theme word lengths as numbers, split on anything that isn't a digit;
+// null when none were given
+function parseThemeSpec(spec) {
+    const trimmed = spec.trim();
+    if (!trimmed) return null;
+    return trimmed.split(/[^0-9]+/).filter(s => s.length > 0).map(Number);
 }
 
 async function do_puzzle_open() {
@@ -194,9 +169,9 @@ async function do_puzzle_save() {
     const isDirty = AppState.puzzleSavedHash !== null &&
         _hash(AppState.puzzleData.puzzle) !== AppState.puzzleSavedHash;
     if (!isDirty) return;
-    inputBox('Save puzzle', 'What changed?', '', async (comment) => {
-        await _doPuzzleSave(wn, name, comment);
-    });
+    const comment = await askText('Save puzzle', 'What changed?');
+    if (comment === null) return;
+    await _doPuzzleSave(wn, name, comment);
 }
 
 async function _doPuzzleSave(wn, name, comment) {
@@ -211,22 +186,19 @@ async function _doPuzzleSave(wn, name, comment) {
 }
 
 async function do_puzzle_save_as() {
-    multiInputBox('Save puzzle as', [
+    const values = await askFields('Save puzzle as', [
         { name: 'newName', label: 'Puzzle name:', value: AppState.puzzleName || '' },
         { name: 'comment', label: 'What changed?', value: '' },
-    ], async ({ newName, comment }) => {
-        if (!newName) return;
-        if (!validateUserFacingName('puzzle', newName)) return;
-        try {
-            await _settlePuzzleEditingBeforeSave();
-            await confirmOverwriteIfExists(
-                'puzzle',
-                newName,
-                _listSavedPuzzleNames,
-                () => _savePuzzleAsName(newName, comment)
-            );
-        } catch (e) { showRequestError('Error saving puzzle', e); }
-    });
+    ]);
+    if (!values) return;
+    const { newName, comment } = values;
+    if (!newName) return;
+    if (!await validateUserFacingName('puzzle', newName)) return;
+    try {
+        await _settlePuzzleEditingBeforeSave();
+        if (!await confirmOverwriteIfExists('puzzle', newName)) return;
+        await _savePuzzleAsName(newName, comment);
+    } catch (e) { showRequestError('Error saving puzzle', e); }
 }
 
 async function _listSavedPuzzleNames() {
@@ -257,28 +229,25 @@ async function _savePuzzleAsName(newName, comment) {
 async function do_puzzle_rename() {
     const currentName = AppState.puzzleName;
     if (!currentName) return;
-    inputBox('Rename puzzle', 'New name:', currentName, async (newName) => {
-        if (!newName || newName === currentName) return;
-        if (!validateUserFacingName('puzzle', newName)) return;
-        try {
-            const existing = await _listSavedPuzzleNames();
-            if (existing.includes(newName)) {
-                const confirmed = await new Promise(resolve =>
-                    messageBox(`A puzzle named "${newName}" already exists. Overwrite?`,
-                        [{ label: 'Overwrite', value: true }, { label: 'Cancel', value: false }],
-                        resolve)
-                );
-                if (!confirmed) return;
-            }
-            await apiFetch('POST',
-                `/api/puzzles/${encodeURIComponent(currentName)}/rename`, { new_name: newName });
-            AppState.puzzleName         = newName;
-            AppState.puzzleOriginalName = newName;
-            renderPuzzleEditorLhs();
-            updateMenu();
-            showMessageLine(`Puzzle renamed to ${newName}.`, 'notice');
-        } catch (e) { showRequestError('Error renaming puzzle', e); }
-    });
+    const newName = await askText('Rename puzzle', 'New name:', currentName);
+    if (!newName || newName === currentName) return;
+    if (!await validateUserFacingName('puzzle', newName)) return;
+    try {
+        // The server won't rename over another puzzle, so say so up front
+        const existing = await _listSavedPuzzleNames();
+        if (existing.includes(newName)) {
+            await showAlert('Duplicate puzzle name',
+                `Puzzle <b>${escapeHtml(newName)}</b> already exists. Choose a different name.`);
+            return;
+        }
+        await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(currentName)}/rename`, { new_name: newName });
+        AppState.puzzleName         = newName;
+        AppState.puzzleOriginalName = newName;
+        renderPuzzleEditorLhs();
+        updateMenu();
+        showMessageLine(`Puzzle renamed to ${newName}.`, 'notice');
+    } catch (e) { showRequestError('Error renaming puzzle', e); }
 }
 
 // ---------------------------------------------------------------------------
@@ -291,15 +260,11 @@ async function do_puzzle_close() {
         _hash(AppState.puzzleData.puzzle) !== AppState.puzzleSavedHash;
     if (isDirty) {
         const name = AppState.puzzleName || '(No name)';
-        messageBox(
-            'Close puzzle',
-            `Puzzle <b>${escapeHtml(name)}</b> has unsaved changes. Close without saving?`,
-            null,
-            () => _doPuzzleCloseConfirmed()
-        );
-    } else {
-        await _doPuzzleCloseConfirmed();
+        const confirmed = await askConfirm('Close puzzle',
+            `Puzzle <b>${escapeHtml(name)}</b> has unsaved changes. Close without saving?`);
+        if (!confirmed) return;
     }
+    await _doPuzzleCloseConfirmed();
 }
 
 async function _doPuzzleCloseConfirmed() {
@@ -343,21 +308,15 @@ async function do_puzzle_delete() {
             return;
         }
         showPreviewChooser('Delete puzzle', puzzles, '/api/puzzles', async (name) => {
-            messageBox(
-                'Delete puzzle',
-                `Are you sure you want to delete puzzle <b>'${escapeHtml(name)}'</b>?`,
-                null,
-                async () => {
-                    try {
-                        await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
-                        if (AppState.puzzleName === name) {
-                            await _doPuzzleCloseConfirmed();
-                            return;
-                        }
-                        showMessageLine(`Puzzle ${name} deleted.`, 'notice');
-                    } catch (e) { showRequestError('Error deleting puzzle', e); }
+            if (!await confirmDelete(name)) return;
+            try {
+                await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
+                if (AppState.puzzleName === name) {
+                    await _doPuzzleCloseConfirmed();
+                    return;
                 }
-            );
+                showMessageLine(`Puzzle ${name} deleted.`, 'notice');
+            } catch (e) { showRequestError('Error deleting puzzle', e); }
         });
     } catch (e) {
         showRequestError('Error listing puzzles', e);
@@ -373,54 +332,40 @@ async function do_puzzle_delete_current() {
         showMessageLine('This puzzle has not been saved yet.', 'notice');
         return;
     }
-    messageBox(
-        'Delete puzzle',
-        `Are you sure you want to delete puzzle <b>'${escapeHtml(name)}'</b>?`,
-        null,
-        async () => {
-            try {
-                await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
-                await _doPuzzleCloseConfirmed();
-                showMessageLine(`Puzzle ${name} deleted.`, 'notice');
-            } catch (e) { showRequestError('Error deleting puzzle', e); }
-        }
-    );
+    if (!await confirmDelete(name)) return;
+    try {
+        await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(name)}`);
+        await _doPuzzleCloseConfirmed();
+        showMessageLine(`Puzzle ${name} deleted.`, 'notice');
+    } catch (e) { showRequestError('Error deleting puzzle', e); }
+}
+
+function confirmDelete(name) {
+    return askConfirm('Delete puzzle',
+        `Are you sure you want to delete puzzle <b>'${escapeHtml(name)}'</b>?`);
 }
 
 // ---------------------------------------------------------------------------
 // Name checks
 // ---------------------------------------------------------------------------
 
-function validateUserFacingName(kind, name) {
-    if (name.startsWith('__wc__')) {
-        messageBox(
-            `Invalid ${kind} name`,
-            `Names starting with <b>__wc__</b> are reserved for internal working copies used while editing a ${kind}. Please choose a different ${kind} name.`,
-            null,
-            null
-        );
-        return false;
-    }
-    return true;
+// Resolves false (after telling the user why) for a name the app keeps for itself
+async function validateUserFacingName(kind, name) {
+    if (!name.startsWith('__wc__')) return true;
+    await showAlert(
+        `Invalid ${kind} name`,
+        `Names starting with <b>__wc__</b> are reserved for internal working copies used while editing a ${kind}. Please choose a different ${kind} name.`
+    );
+    return false;
 }
 
-async function confirmOverwriteIfExists(kind, name, listExistingNames, onConfirmSave) {
-    const existingNames = await listExistingNames();
-    if (!existingNames.includes(name)) {
-        await onConfirmSave();
-        return;
-    }
-    messageBox(
+// Resolves true when no saved puzzle has this name, or the user agrees to overwrite it
+async function confirmOverwriteIfExists(kind, name) {
+    const existingNames = await _listSavedPuzzleNames();
+    if (!existingNames.includes(name)) return true;
+    return askConfirm(
         `Overwrite ${kind}`,
         `${kind.charAt(0).toUpperCase() + kind.slice(1)} <b>${escapeHtml(name)}</b> already exists. Overwrite it?`,
-        null,
-        async () => {
-            try {
-                await onConfirmSave();
-            } catch (e) {
-                showMessageLine(`Save failed: ${e.message}`, 'error', 0);
-            }
-        },
         'Overwrite'
     );
 }
