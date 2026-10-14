@@ -360,6 +360,48 @@ Move code into the target layout, one area per commit:
 - Changes to the backend API.
 - A JavaScript framework, a bundler, or TypeScript compilation.
 
+## Automated checks
+
+The end-to-end tests live in `crossword/tests/frontend/` and run with the
+rest of the suite (`pytest crossword/tests/`). After `pip install -e .`, run
+`playwright install chromium` once to download the browser they drive.
+Run only the browser tests with `pytest crossword/tests/frontend/`, and add
+`--headed --slowmo 300` to watch them.
+
 ## Manual checks
 
-To be filled in during Phase 0.
+Things the tests don't cover, mostly how the page looks. Go through them at
+the end of each phase, with "Disable cache" on in DevTools.
+
+- **Both themes.** With `theme_color` set (say `#104080`) and with it
+  blank: app bar, action bar, sidebar and buttons pick up the color, and
+  text stays readable.
+- **Top menus.** Hovering Puzzle, Import and Export drops each menu down
+  under its button. Disabled items look greyed out and don't react to the
+  mouse. The dividers in the Puzzle menu show.
+- **Dialogs.** The message box, input box, chooser, state dialog, history,
+  constraints and definitions popups sit centered over a dimmed page, with
+  the header icon, title and × button lined up. Clicking the backdrop
+  closes the constraints, definitions and history popups and the state
+  dialog, but not the message box, input box or chooser.
+- **Chooser cards.** Preview pictures are 150×150, cards highlight on
+  hover, and the « ‹ › » buttons grey out at the ends.
+- **Dashboard.** Four colored cards on top with the progress bars in "In
+  progress"; tabs and the table below, scrolling inside its card.
+- **Editor.** Grid centered in the left pane with the title above it and
+  the key hints below. Selected word is blue, the cursor cell pink, locked
+  words pale yellow. Action bar buttons grey out when disabled (Generate on
+  even sizes, Close and Delete while the word editor is open, Grid Mode when
+  a word is locked, with its tooltip).
+- **Word editor panel.** Lock icon inside the Answer box when locked;
+  suggestion bars scaled by score; the chosen suggestion highlighted blue;
+  pager arrows.
+- **Definitions.** The Definitions button looks up a complete word (this
+  calls the configured online dictionary, so the tests skip it).
+- **Message line.** Appears just under the action bar (or under the app bar
+  on the dashboard), green text for notices and red for errors, and goes
+  away after the configured timeout (most errors stay until closed).
+- **Settings.** Tabs down the left, one panel at a time, footer buttons at
+  the bottom right.
+- **Offline.** Icons and fonts load (or fall back cleanly) with the network
+  cable out.
