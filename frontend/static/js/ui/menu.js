@@ -13,7 +13,7 @@ const MENU_RULES = [
     { id: 'menu-puzzle-save-as',     enabledWhen: (s) => s.inEditor },
     { id: 'menu-puzzle-rename',      enabledWhen: (s) => s.inEditor && s.hasName },
     { id: 'menu-puzzle-close',       enabledWhen: (s) => s.inEditor && !s.wordEditorOpen },
-    { id: 'menu-puzzle-delete',      enabledWhen: () => true },
+    { id: 'menu-puzzle-delete',      enabledWhen: (s) => !s.wordEditorOpen },
     { id: 'menu-puzzle-title',       enabledWhen: (s) => s.mode === 'puzzle' },
     { id: 'menu-puzzle-grid-mode',   enabledWhen: (s) => s.mode === 'puzzle' },
     { id: 'menu-puzzle-puzzle-mode', enabledWhen: (s) => s.mode === 'grid' },

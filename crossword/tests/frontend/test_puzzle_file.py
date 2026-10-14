@@ -233,3 +233,60 @@ def test_rename_to_existing_name_is_refused(app_page, api):
     confirm_message_box(page)
     expect_editor_name(page, "five")
     assert sorted(api.puzzle_names()) == ["five", "taken"]
+
+
+def test_delete_from_menu_in_puzzle_mode_deletes_open_puzzle(app_page, api):
+    page = app_page
+    api.create_puzzle("five")
+    api.create_puzzle("six")
+    page.reload()
+    open_from_dashboard(page, "five")
+
+    menu(page, "Puzzle", "#menu-puzzle-delete")
+    expect(page.locator("#ch")).to_be_hidden()
+    expect(page.locator("#mb-prompt")).to_contain_text("'five'")
+    confirm_message_box(page)
+    expect_dashboard(page)
+    expect_message(page, "Puzzle five deleted.")
+    assert api.puzzle_names() == ["six"]
+
+
+def test_delete_from_menu_in_grid_mode_deletes_open_puzzle(app_page, api):
+    page = app_page
+    api.create_puzzle("five")
+    page.reload()
+    open_from_dashboard(page, "five")
+    page.locator(".ab-mode-btn", has_text="Grid Mode").click()
+    confirm_message_box(page)
+    expect(page.locator(".mode-badge")).to_have_text("Grid Mode")
+
+    menu(page, "Puzzle", "#menu-puzzle-delete")
+    expect(page.locator("#mb-prompt")).to_contain_text("'five'")
+    confirm_message_box(page)
+    expect_dashboard(page)
+    assert api.puzzle_names() == []
+
+
+def test_delete_from_menu_on_unsaved_new_puzzle(app_page, api):
+    page = app_page
+    menu(page, "Puzzle", "#menu-puzzle-new")
+    answer_input_box(page, "5", "")
+    expect(page.locator(".mode-badge")).to_have_text("Grid Mode")
+
+    menu(page, "Puzzle", "#menu-puzzle-delete")
+    expect_message(page, "This puzzle has not been saved yet.")
+    expect(page.locator("#ch")).to_be_hidden()
+
+
+def test_delete_menu_disabled_while_word_editor_open(app_page, api):
+    page = app_page
+    api.create_puzzle("five")
+    page.reload()
+    open_from_dashboard(page, "five")
+
+    click_cell(page, 0, 0)
+    expect(page.locator("#we-dialog")).to_be_visible()
+    assert page.locator("#menu-puzzle-delete").get_attribute("aria-disabled") == "true"
+    page.keyboard.press("Escape")
+    expect(page.locator("#we-dialog")).to_have_count(0)
+    assert page.locator("#menu-puzzle-delete").get_attribute("aria-disabled") == "false"

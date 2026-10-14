@@ -290,6 +290,11 @@ async function _doPuzzleCloseConfirmed() {
 }
 
 async function do_puzzle_delete() {
+    // In the editor (either mode) the puzzle to delete is the open one
+    if (AppState.view === 'editor') {
+        await do_puzzle_delete_current();
+        return;
+    }
     try {
         const puzzles = await _listSavedPuzzleNames();
         if (puzzles.length === 0) {
@@ -313,8 +318,8 @@ async function do_puzzle_delete() {
 }
 
 async function do_puzzle_delete_current() {
-    // Delete the puzzle currently open in the editor, using the same
-    // confirmation dialog as the Puzzle > Delete menu item.
+    // Delete the puzzle currently open in the editor. Used by the action
+    // bar's Delete button, and by Puzzle > Delete while the editor is open.
     if (_isWordEditorOpen()) return;
     const name = AppState.puzzleName;
     if (!name) {
