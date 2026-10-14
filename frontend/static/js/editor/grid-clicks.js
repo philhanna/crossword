@@ -5,7 +5,7 @@
 // start of a double click.
 
 import { AppState } from '../core/state.js';
-import { renderPuzzleEditor } from './editor.js';
+import { do_puzzle_toggle_circle, renderPuzzleEditor } from './editor.js';
 import {
     _isWordEditorOpen, _setSelectedWordCursorIdx, completeSelectedWordEdit,
     findWordAtCell, getSelectedWord,
@@ -20,6 +20,12 @@ const CLICK_DELAY = 280;
 const click = { pending: false, timeout: null, event: null };
 
 export async function handlePuzzleClick(event) {
+    if (event.shiftKey) {
+        if (_isWordEditorOpen()) return;
+        const cell = _cellAt(event);
+        if (cell) await do_puzzle_toggle_circle(cell.r, cell.c);
+        return;
+    }
     const wasEditingWord = _isWordEditorOpen();
     if (wasEditingWord) {
         if (click.timeout) {
@@ -46,6 +52,19 @@ export async function handlePuzzleClick(event) {
         click.timeout = null;
         puzzleClickAt(event, 'down', !wasEditingWord);
     }
+}
+
+// The white square under the pointer as {r, c}, counting from one, or null
+function _cellAt(event) {
+    const svg = document.getElementById('puzzle-svg');
+    if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    const r = Math.floor(1 + (event.clientY - rect.top) / BOXSIZE);
+    const c = Math.floor(1 + (event.clientX - rect.left) / BOXSIZE);
+    const n = AppState.puzzleData.grid.size;
+    if (r < 1 || r > n || c < 1 || c > n) return null;
+    if (AppState.puzzleData.grid.cells[(r - 1) * n + (c - 1)]) return null;
+    return { r, c };
 }
 
 async function puzzleClickAt(event, direction, openEditor = true) {

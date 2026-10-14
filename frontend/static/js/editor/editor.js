@@ -37,6 +37,7 @@ registerActions({
     'puzzle-clear': () => do_puzzle_clear(),
     'puzzle-undo':  () => do_puzzle_undo(),
     'puzzle-redo':  () => do_puzzle_redo(),
+    'puzzle-circle': () => do_puzzle_circle_cursor(),
     'puzzle-mode':  () => do_switch_to_puzzle_mode(),
     'grid-mode':    () => do_switch_to_grid_mode(),
     'sidebar-tab':  (el) => switchSidebarTab(el.dataset.tab),
@@ -113,6 +114,7 @@ export function renderPuzzleEditorLhs() {
              <span class="kb-hint"><kbd>A–Z</kbd> fill</span>
              <span class="kb-hint"><kbd>⌫</kbd> clear</span>
              <span class="kb-hint"><kbd>Esc</kbd> deselect</span>
+             <span class="kb-hint"><kbd>Shift</kbd>+<kbd>Click</kbd> circle</span>
            </div>`;
 
     updateAppBarPuzzleInfo();
@@ -211,6 +213,9 @@ export function renderActionBar() {
 <div class="ab-group">
   <button id="puzzle-editword-btn" class="ab-btn" data-action="edit-word">
     <i class="material-icons">edit</i><span>Edit word</span>
+  </button>
+  <button id="puzzle-circle-btn" class="ab-btn" data-action="puzzle-circle">
+    <i class="material-icons">radio_button_unchecked</i><span>Circle</span>
   </button>
   <button id="puzzle-fill-order-btn" class="ab-btn${fillOrderDisabled}" data-action="fill-order"${fillOrderDisabledAttr}>
     <i class="material-icons">format_list_numbered</i><span>Fill order</span>
@@ -343,10 +348,14 @@ export function _updatePuzzleUndoRedo() {
 export function _updatePuzzleToolbar() {
     const mode = _currentEditorMode();
     const eb = document.getElementById('puzzle-editword-btn');
+    const ob = document.getElementById('puzzle-circle-btn');
     const cb = document.getElementById('puzzle-close-btn');
     const db = document.getElementById('puzzle-delete-btn');
     if (eb) {
         eb.classList.toggle('is-disabled', mode !== 'puzzle' || !getSelectedWord() || _isWordEditorOpen());
+    }
+    if (ob) {
+        ob.classList.toggle('is-disabled', mode !== 'puzzle' || !getSelectedWord() || _isWordEditorOpen());
     }
     if (db) {
         db.classList.toggle('is-disabled', _isWordEditorOpen());
@@ -381,6 +390,34 @@ async function _puzzleUndoRedo(action) {
         forgetStats();
         renderPuzzleEditor();
     } catch (e) { showRequestError(`Error during ${action}`, e); }
+}
+
+// ---------------------------------------------------------------------------
+// Circled squares
+// ---------------------------------------------------------------------------
+
+function do_puzzle_circle_cursor() {
+    const sw = getSelectedWord();
+    if (!sw || _isWordEditorOpen()) return;
+    const [r, c] = sw.cells[_getSelectedWordCursorIdx()];
+    return do_puzzle_toggle_circle(r, c);
+}
+
+// Circle or un-circle the square at (r, c), counting from one, keeping the
+// current word selection.
+export async function do_puzzle_toggle_circle(r, c) {
+    const commit = await _peCommitWord();
+    if (commit && commit.error) return;
+    const wn = AppState.puzzleWorkingName;
+    try {
+        AppState.puzzleData = await apiFetch('PUT',
+            `/api/puzzles/${encodeURIComponent(wn)}/cells/${r - 1}/${c - 1}/circle`);
+    } catch (e) {
+        showRequestError('Error changing circle', e);
+        return;
+    }
+    _refreshSelectedWordFromPuzzleData();
+    renderPuzzleEditor();
 }
 
 // ---------------------------------------------------------------------------

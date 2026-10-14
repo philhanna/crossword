@@ -47,7 +47,8 @@ class SolverPdfExportAdapter:
     # ------------------------------------------------------------------
 
     def _build_html(self, puzzle: Puzzle) -> str:
-        svg_str = self._prepare_svg(GridToSVG(puzzle.grid).generate_xml())
+        grid_svg = GridToSVG(puzzle.grid, circled_cells=puzzle.circled_cells)
+        svg_str = self._prepare_svg(grid_svg.generate_xml())
         title = puzzle.title or ""
         clue_blocks_json = self._clue_blocks_json(puzzle)
         grid_bottom_pad = _GRID_SIZE / (puzzle.grid.n * 3)

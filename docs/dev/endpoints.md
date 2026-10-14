@@ -46,12 +46,13 @@ Modules: `puzzle_routes.py`
 | POST | `/api/puzzles/{name}/grid/undo` | [undo_grid](../../crossword/http_server/puzzle_routes.py#L196) |
 | POST | `/api/puzzles/{name}/grid/redo` | [redo_grid](../../crossword/http_server/puzzle_routes.py#L204) |
 | PUT | `/api/puzzles/{name}/cells/{r}/{c}` | [set_cell_letter](../../crossword/http_server/puzzle_routes.py#L212) |
-| POST | `/api/puzzles/{name}/undo` | [undo_puzzle](../../crossword/http_server/puzzle_routes.py#L250) |
-| POST | `/api/puzzles/{name}/redo` | [redo_puzzle](../../crossword/http_server/puzzle_routes.py#L258) |
-| POST | `/api/puzzles/{name}/clear` | [clear_puzzle](../../crossword/http_server/puzzle_routes.py#L266) |
-| GET | `/api/puzzles/{name}/preview` | [get_puzzle_preview](../../crossword/http_server/puzzle_routes.py#L274) |
-| GET | `/api/puzzles/{name}/stats` | [get_puzzle_stats](../../crossword/http_server/puzzle_routes.py#L281) |
-| GET | `/api/puzzles/{name}/fill-order` | [get_fill_order](../../crossword/http_server/puzzle_routes.py#L288) |
+| PUT | `/api/puzzles/{name}/cells/{r}/{c}/circle` | [toggle_circle](../../crossword/http_server/puzzle_routes.py#L222) |
+| POST | `/api/puzzles/{name}/undo` | [undo_puzzle](../../crossword/http_server/puzzle_routes.py#L258) |
+| POST | `/api/puzzles/{name}/redo` | [redo_puzzle](../../crossword/http_server/puzzle_routes.py#L266) |
+| POST | `/api/puzzles/{name}/clear` | [clear_puzzle](../../crossword/http_server/puzzle_routes.py#L274) |
+| GET | `/api/puzzles/{name}/preview` | [get_puzzle_preview](../../crossword/http_server/puzzle_routes.py#L282) |
+| GET | `/api/puzzles/{name}/stats` | [get_puzzle_stats](../../crossword/http_server/puzzle_routes.py#L289) |
+| GET | `/api/puzzles/{name}/fill-order` | [get_fill_order](../../crossword/http_server/puzzle_routes.py#L296) |
 
 ## Words
 
@@ -59,8 +60,8 @@ Modules: `puzzle_routes.py`, `word_routes.py`
 
 | Method | Path | Handler |
 |--------|------|---------|
-| GET | `/api/puzzles/{name}/words/{seq}/{direction}` | [get_word_at](../../crossword/http_server/puzzle_routes.py#L222) |
-| PUT | `/api/puzzles/{name}/words/{seq}/{direction}` | [set_word_clue](../../crossword/http_server/puzzle_routes.py#L236) |
+| GET | `/api/puzzles/{name}/words/{seq}/{direction}` | [get_word_at](../../crossword/http_server/puzzle_routes.py#L230) |
+| PUT | `/api/puzzles/{name}/words/{seq}/{direction}` | [set_word_clue](../../crossword/http_server/puzzle_routes.py#L244) |
 | GET | `/api/words/suggestions?pattern=` | [get_suggestions](../../crossword/http_server/word_routes.py#L14) |
 | GET | `/api/puzzles/{name}/words/{seq}/{direction}/constraints` | [get_word_constraints](../../crossword/http_server/word_routes.py#L40) |
 | GET | `/api/puzzles/{name}/words/{seq}/{direction}/suggestions` | [get_ranked_suggestions](../../crossword/http_server/word_routes.py#L48) |

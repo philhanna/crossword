@@ -45,6 +45,7 @@ and dashboard/preview/stats queries.
 | `redo_grid(name)` | `Puzzle` | Redo the last undone Grid-mode operation. |
 | `set_puzzle_title(name, title)` | `Puzzle` | Set the puzzle title. |
 | `set_cell_letter(name, r, c, letter)` | `Puzzle` | Set a single cell's letter (`A`–`Z` or space); rejects black cells. |
+| `toggle_circle(name, r, c)` | `Puzzle` | Circle or un-circle a white square (Puzzle mode only; refused in Grid mode). Undo-tracked; doesn't invalidate the fill order. |
 | `get_word_at(name, seq, direction)` | `Word` | Look up an across/down word by numbered cell. |
 | `set_word_clue(name, seq, direction, clue, text=None, locked=None)` | `Puzzle` | Set a word's clue and, optionally, its text and/or locked state (both undo-tracked). |
 | `clear_unlocked(name)` | `Puzzle` | Blank text and clue of every unlocked word, leaving locked words untouched. |

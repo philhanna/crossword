@@ -219,6 +219,14 @@ def set_cell_letter(name: str, r: int, c: int, body: SetCellLetterBody,
     return {"name": name, "r": row, "c": column, "letter": body.letter.upper()}
 
 
+@router.put("/api/puzzles/{name}/cells/{r}/{c}/circle")
+def toggle_circle(name: str, r: int, c: int, app: Container, user_id: UserId):
+    """Circle or un-circle a white square. The frontend counts from zero, the puzzle from one."""
+    with puzzle_errors(name):
+        puzzle = app.puzzle_uc.toggle_circle(user_id, name, r + 1, c + 1)
+    return _puzzle_response(puzzle)
+
+
 @router.get("/api/puzzles/{name}/words/{seq}/{direction}")
 def get_word_at(name: str, seq: int, direction: str, app: Container, user_id: UserId):
     """Return the word starting at a numbered cell, with its clue."""
@@ -348,6 +356,10 @@ def _puzzle_response(puzzle):
                 puzzle_cells[cell_idx].setdefault("letter", letter)
             if idx == 0:
                 puzzle_cells[cell_idx].setdefault("number", seq)
+
+    for r, c in puzzle.circled_cells:
+        cell_idx = (r - 1) * puzzle.n + (c - 1)
+        puzzle_cells.setdefault(cell_idx, {})["circled"] = True
 
     return {
         "grid": {"size": puzzle.n, "cells": grid_cells},

@@ -28,6 +28,7 @@ class Puzzle:
         self.grid_redo_stack = []
         self.last_mode = "grid"
         self.cells = {}
+        self.circled_cells = set()
         self._title = title
 
         # All cells are initially empty
@@ -175,6 +176,20 @@ class Puzzle:
         if changes:
             self.undo_stack.append(['clear', changes])
         return bool(changes)
+
+    def is_circled(self, r, c):
+        """ Returns True if the square at (r, c) is circled """
+        return (r, c) in self.circled_cells
+
+    def toggle_circle(self, r, c, undo=True):
+        """ Circles or un-circles the white square at (r, c) """
+        if not (1 <= r <= self.n and 1 <= c <= self.n):
+            raise ValueError(f"({r}, {c}) is outside the grid")
+        if self.is_black_cell(r, c):
+            raise ValueError("Black squares can't be circled")
+        self.circled_cells ^= {(r, c)}
+        if undo:
+            self.undo_stack.append(['circle', r, c])
 
     @property
     def undo_stack(self):
@@ -352,6 +367,11 @@ class Puzzle:
                 word.set_clue(old_clue)
             self.redo_stack.append([undo_type, redo_changes])
 
+        elif undo_type == 'circle':
+            # Toggling is its own opposite
+            self.toggle_circle(undoable[1], undoable[2], undo=False)
+            self.redo_stack.append(undoable)
+
     def redo(self):
         """ Redoes the last change """
 
@@ -400,6 +420,11 @@ class Puzzle:
                 word.set_clue(old_clue)
             self.undo_stack.append([undo_type, undo_changes])
 
+        elif undo_type == 'circle':
+            # Toggling is its own opposite
+            self.toggle_circle(undoable[1], undoable[2], undo=False)
+            self.undo_stack.append(undoable)
+
     #   ========================================================
     #   to_json and from_json logic
     #   ========================================================
@@ -437,6 +462,7 @@ class Puzzle:
             }
             dwlist.append(dwdict)
         image['down_words'] = dwlist
+        image['circled_cells'] = [list(cell) for cell in sorted(self.circled_cells)]
         image['undo_stack'] = self.undo_stack
         image['redo_stack'] = self.redo_stack
         image['puzzle_undo_stack'] = self.undo_stack
@@ -490,6 +516,7 @@ class Puzzle:
             word.set_clue(clue)     # TODO: Can't do this - undo/redo
             word.set_locked(dw.get('locked', False))
 
+        puzzle.circled_cells = {tuple(cell) for cell in image.get('circled_cells', [])}
         puzzle.undo_stack = image.get('puzzle_undo_stack', image.get('undo_stack', []))
         puzzle.redo_stack = image.get('puzzle_redo_stack', image.get('redo_stack', []))
         puzzle.grid_undo_stack = image.get('grid_undo_stack', [])
@@ -533,6 +560,7 @@ class Puzzle:
             self.cells[cell] = Puzzle.WHITE
         for cell in new_black_cells:
             self.cells[cell] = Puzzle.BLACK
+        self.circled_cells -= new_black_cells
 
         self.initialize_words()
 

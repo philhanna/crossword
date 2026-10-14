@@ -484,6 +484,31 @@ class PuzzleUseCases:
         self.persistence.save_puzzle(user_id, name, puzzle)
         return puzzle
 
+    def toggle_circle(self, user_id: int, name: str, r: int, c: int) -> Puzzle:
+        """
+        Circle or un-circle a white square (Puzzle mode only) and save the change.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            r: Row (1-indexed)
+            c: Column (1-indexed)
+
+        Returns:
+            Updated Puzzle object
+
+        Raises:
+            PersistenceError: If load/save fails
+            ValueError: If the puzzle is in Grid mode, or the square is black
+                or outside the grid
+        """
+        def mutate(puzzle):
+            if puzzle.last_mode == "grid":
+                raise ValueError("Circles can only be changed in Puzzle mode")
+            puzzle.toggle_circle(r, c)
+
+        return self._edit(user_id, name, mutate, invalidate=False)
+
     def get_word_at(self, user_id: int, name: str, seq: int, direction: str):
         """
         Get a word (across or down) at the specified numbered cell.

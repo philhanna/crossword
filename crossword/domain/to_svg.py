@@ -33,7 +33,7 @@ class ToSVG:
         self.root.set("id", self.id)
         self.black_cells = None
         self.numbered_cells = None
-        pass
+        self.circled_cells = kwargs.get('circled_cells', set())
 
     def generate_xml(self):
         self.generate_root()
@@ -112,7 +112,21 @@ class ToSVG:
                     elem_rect.set("height", str(self.boxsize))
                     elem_rect.set("fill", "black")
                 else:
+                    if (r, c) in self.circled_cells:
+                        self.generate_circle(r, c)
                     self.generate_cell(r, c)
+
+    def generate_circle(self, r, c):
+        """ Draws a circle inside the square at (r, c) """
+        xbase, ybase = self.get_x_y_base(r, c)
+        half = self.boxsize / 2
+        elem = ET.SubElement(self.root, "circle")
+        elem.set("cx", str(xbase + half))
+        elem.set("cy", str(ybase + half))
+        elem.set("r", str(half - 1))
+        elem.set("fill", "none")
+        elem.set("stroke", "black")
+        elem.set("stroke-width", "1")
 
     def generate_word_numbers(self):
         """ Fills in the word numbers """
@@ -146,6 +160,7 @@ class PuzzleToSVG(ToSVG):
         self.puzzle = puzzle
         self.black_cells = puzzle.black_cells
         self.numbered_cells = puzzle.numbered_cells
+        self.circled_cells = puzzle.circled_cells
 
     def generate_cell(self, r, c):
         letter = self.puzzle.get_cell(r, c)

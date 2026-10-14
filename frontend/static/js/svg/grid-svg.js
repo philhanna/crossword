@@ -7,7 +7,7 @@ export const BOXSIZE = 32;
 export function buildPuzzleSvg(puzzleData, editState = null) {
     const n           = puzzleData.grid.size;
     const blackCells  = puzzleData.grid.cells;        // bool[], true = black
-    const puzzleCells = puzzleData.puzzle.cells;      // {"idx": {number?, letter?}}
+    const puzzleCells = puzzleData.puzzle.cells;      // {"idx": {number?, letter?, circled?}}
     const totalPx     = n * BOXSIZE + 1;
 
     // Cells belonging to any locked word get a pale-yellow background
@@ -72,6 +72,12 @@ export function buildPuzzleSvg(puzzleData, editState = null) {
 
             if (!black) {
                 const cd = puzzleCells[String(idx)] || {};
+                if (cd.circled) {
+                    parts.push(
+                        `<circle cx="${x + BOXSIZE / 2}" cy="${y + BOXSIZE / 2}" r="${BOXSIZE / 2 - 1.5}" ` +
+                        `fill="none" stroke="#555" stroke-width="1" pointer-events="none"/>`
+                    );
+                }
                 if (cd.number !== undefined) {
                     parts.push(
                         `<text x="${x + 2}" y="${y + 10}" ` +
