@@ -5,9 +5,9 @@ import { renderDashboard } from './dashboard.js';
 import {
     _currentEditorMode, renderActionBar, renderPuzzleEditor,
     updateAppBarPuzzleInfo,
-} from './puzzle-editor.js';
+} from './editor/editor.js';
+import { _isWordEditorOpen } from './editor/selection.js';
 import { AppState, MESSAGE_LINE_TIMEOUT_MS } from './state.js';
-import { _isWordEditorOpen } from './word-editor.js';
 
 const CHOOSER_PAGES = {
     first: () => chPageFirst(),
@@ -47,12 +47,6 @@ export function escapeHtml(s) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
-}
-
-export function _closeSidePanels() {
-    AppState.showingStats     = false;
-    AppState.showingFillOrder = false;
-    AppState.sidebarTab       = 'clues';
 }
 
 // A request the server answered with an error status. `message` is the

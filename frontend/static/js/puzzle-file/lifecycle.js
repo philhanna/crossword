@@ -6,16 +6,18 @@
 
 import { registerActions } from '../core/actions.js';
 import {
-    _settlePuzzleEditingBeforeSave, do_puzzle_generate_grid, renderPuzzleEditor,
-    renderPuzzleEditorLhs,
-} from '../puzzle-editor.js';
+    _settlePuzzleEditingBeforeSave, renderPuzzleEditor, renderPuzzleEditorLhs,
+} from '../editor/editor.js';
+import { _peOutsideMousedown } from '../editor/grid-clicks.js';
+import { do_puzzle_generate_grid } from '../editor/grid-mode.js';
+import { _peKeydown, _weKeydown } from '../editor/keyboard.js';
+import { _isWordEditorOpen } from '../editor/selection.js';
 import { AppState } from '../state.js';
 import {
     _hash, apiFetch, confirmOverwriteIfExists, escapeHtml, inputBox, messageBox,
     multiInputBox, showMessageLine, showPreviewChooser, showRequestError,
     showView, updateMenu, validateUserFacingName,
 } from '../ui.js';
-import { _isWordEditorOpen, _peKeydown, _peOutsideMousedown, _weKeydown } from '../word-editor.js';
 
 registerActions({
     'puzzle-new':            () => do_puzzle_new(),
