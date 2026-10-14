@@ -25,10 +25,11 @@ class ToSVG:
         self.cell_number_fontsize = "8pt"
 
         # Figure out where the cell letter goes: horizontally centred via
-        # text-anchor, with the baseline half a cap height below the centre
+        # text-anchor, with the baseline half a cap height (6.25) below the
+        # centre plus 2 more so the letter clears the word number
         self.cell_letter_x = ToSVG.BOXSIZE / 2
-        self.cell_letter_y = ToSVG.BOXSIZE / 2 + 7.75
-        self.cell_letter_fontsize = str(int(ToSVG.BOXSIZE / 2)) + "pt"
+        self.cell_letter_y = ToSVG.BOXSIZE / 2 + 8.25
+        self.cell_letter_fontsize = "13pt"
 
         self.root = ET.Element("svg")
         self.root.set("id", self.id)

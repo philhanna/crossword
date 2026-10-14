@@ -91,9 +91,10 @@ export function buildPuzzleSvg(puzzleData, editState = null) {
                 if (letter) {
                     const letterFill = (idx === cursorFlatIdx) ? '#1a1a1a' : '#1a1a2e';
 
-                    // Baseline sits half a cap height below the centre so the glyph is centred
+                    // Baseline sits half a cap height (5.5) below the centre, plus 2 more
+                    // so the letter clears the word number
                     parts.push(
-                        `<text x="${x + BOXSIZE / 2}" y="${y + BOXSIZE / 2 + 5.5}" ` +
+                        `<text x="${x + BOXSIZE / 2}" y="${y + BOXSIZE / 2 + 7.5}" ` +
                         `font-size="16" font-family="'IBM Plex Mono', monospace" font-weight="500" ` +
                         `fill="${letterFill}" text-anchor="middle">${escapeHtml(letter)}</text>`
                     );
