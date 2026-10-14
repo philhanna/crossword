@@ -4,14 +4,18 @@
 // Constants
 // ---------------------------------------------------------------------------
 
-const BOXSIZE = 32;
-let MESSAGE_LINE_TIMEOUT_MS = 3000; // default; may be overridden by /api/config
+export const BOXSIZE = 32;
+export let MESSAGE_LINE_TIMEOUT_MS = 3000; // default; may be overridden by /api/config
+
+export function setMessageLineTimeout(ms) {
+    MESSAGE_LINE_TIMEOUT_MS = ms;
+}
 
 // ---------------------------------------------------------------------------
 // Application state
 // ---------------------------------------------------------------------------
 
-const AppState = {
+export const AppState = {
     view: 'home',            // 'home' | 'editor'
     puzzleName: null,        // user-facing name of the open puzzle; null until first Save
     puzzleOriginalName: null,// backend name of the original (may be '__new__…' for unnamed)

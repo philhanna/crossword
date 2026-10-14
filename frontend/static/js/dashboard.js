@@ -5,6 +5,12 @@
 // in a single round-trip and is cached in DashboardState so tab switches and the
 // top cards render client-side without refetching.
 
+import {
+    apiFetch, escapeHtml, hideElement, messageBox, showContextMenu, showElement,
+    showRequestError,
+} from './ui.js';
+import { _openPuzzleInEditor, _openWorkingCopyInEditor } from './puzzle-editor.js';
+
 const ALL_STATES = ['draft', 'filled', 'finished', 'submitted', 'published', 'archived'];
 
 const DASH_CARDS = [
@@ -85,7 +91,7 @@ function _dashPublisher(row) {
 // Data load
 // ---------------------------------------------------------------------------
 
-async function renderDashboard() {
+export async function renderDashboard() {
     let data;
     try {
         data = await apiFetch('GET', '/api/dashboard');
@@ -413,7 +419,7 @@ async function _dashSubmitState(row) {
     }
 }
 
-function _dashCloseStateDialog(revert) {
+export function _dashCloseStateDialog(revert) {
     hideElement('state-dialog');
     if (revert && _dashStateRevertSelect) {
         const name = _dashStateRevertSelect.getAttribute('data-dash-state');

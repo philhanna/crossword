@@ -1,10 +1,18 @@
 // Crossword Puzzle Editor — UI primitives, modals, menu, view management
 
+import { AppState, MESSAGE_LINE_TIMEOUT_MS } from './state.js';
+import { _isWordEditorOpen } from './word-editor.js';
+import { renderDashboard } from './dashboard.js';
+import {
+    _currentEditorMode, renderActionBar, renderPuzzleEditor,
+    updateAppBarPuzzleInfo,
+} from './puzzle-editor.js';
+
 // ---------------------------------------------------------------------------
 // Utility helpers
 // ---------------------------------------------------------------------------
 
-function _hash(obj) {
+export function _hash(obj) {
     // This is the djb2 hash function
     const s = JSON.stringify(obj);
     let h = 5381;
@@ -13,10 +21,10 @@ function _hash(obj) {
     return h;
 }
 
-function showElement(id) { document.getElementById(id).style.display = 'block'; }
-function hideElement(id) { document.getElementById(id).style.display = 'none'; }
+export function showElement(id) { document.getElementById(id).style.display = 'block'; }
+export function hideElement(id) { document.getElementById(id).style.display = 'none'; }
 
-function escapeHtml(s) {
+export function escapeHtml(s) {
     return String(s)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -24,7 +32,7 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;');
 }
 
-function _closeSidePanels() {
+export function _closeSidePanels() {
     AppState.showingStats     = false;
     AppState.showingFillOrder = false;
     AppState.sidebarTab       = 'clues';
@@ -32,7 +40,7 @@ function _closeSidePanels() {
 
 // A request the server answered with an error status. `message` is the
 // server's own explanation from its {"error": ...} body when it sent one.
-class ApiError extends Error {
+export class ApiError extends Error {
     constructor(message, status) {
         super(message);
         this.name = 'ApiError';
@@ -43,7 +51,7 @@ class ApiError extends Error {
 // Send a JSON request and return the parsed response body. Throws ApiError
 // when the server answers with an error status, and lets network failures
 // propagate as they are.
-async function apiFetch(method, path, body) {
+export async function apiFetch(method, path, body) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body !== undefined) opts.body = JSON.stringify(body);
     const resp = await fetch(path, opts);
@@ -56,7 +64,7 @@ async function apiFetch(method, path, body) {
 
 // Report a failed request on the message line: "<what>: <server message>"
 // when the server explained itself, or just "<what>" when it didn't answer.
-function showRequestError(what, e, timeoutMs = 0) {
+export function showRequestError(what, e, timeoutMs = 0) {
     const text = e instanceof ApiError ? `${what}: ${e.message}` : what;
     showMessageLine(text, 'error', timeoutMs);
 }
@@ -67,7 +75,7 @@ function showRequestError(what, e, timeoutMs = 0) {
 
 let _messageLineTimer = null;
 
-function positionMessageLine() {
+export function positionMessageLine() {
     const ml = document.getElementById('ml');
     const ab = document.getElementById('action-bar');
     const appBar = document.querySelector('.app-bar');
@@ -77,7 +85,7 @@ function positionMessageLine() {
     ml.style.top = `${rect.bottom + 8}px`;
 }
 
-function clearMessageLine() {
+export function clearMessageLine() {
     const ml = document.getElementById('ml');
     ml.style.display = 'none';
     ml.classList.remove('message-line-notice', 'message-line-error');
@@ -88,7 +96,7 @@ function clearMessageLine() {
     }
 }
 
-function showMessageLine(text, level = 'notice', timeoutMs = MESSAGE_LINE_TIMEOUT_MS) {
+export function showMessageLine(text, level = 'notice', timeoutMs = MESSAGE_LINE_TIMEOUT_MS) {
     (level === 'error' ? console.error : console.log)(`[${level}] ${text}`);
     const ml = document.getElementById('ml');
     document.getElementById('ml-text').textContent = text;
@@ -107,7 +115,7 @@ function showMessageLine(text, level = 'notice', timeoutMs = MESSAGE_LINE_TIMEOU
     }
 }
 
-function messageBox(title, prompt, ok, okCallback, okLabel = 'OK') {
+export function messageBox(title, prompt, ok, okCallback, okLabel = 'OK') {
     document.getElementById('mb-title').innerHTML = title;
     document.getElementById('mb-prompt').innerHTML = prompt;
     const mbOk = document.getElementById('mb-ok');
@@ -125,7 +133,7 @@ function messageBox(title, prompt, ok, okCallback, okLabel = 'OK') {
     showElement('mb');
 }
 
-function inputBox(title, label, value, onSubmit, { required = true, onCancel = null } = {}) {
+export function inputBox(title, label, value, onSubmit, { required = true, onCancel = null } = {}) {
     document.getElementById('ib-title').innerHTML = title;
     document.getElementById('ib-prompt').innerHTML = '';
     const fieldsEl = document.getElementById('ib-fields');
@@ -150,7 +158,7 @@ function inputBox(title, label, value, onSubmit, { required = true, onCancel = n
     input.focus();
 }
 
-function multiInputBox(title, fields, onSubmit, { onCancel = null } = {}) {
+export function multiInputBox(title, fields, onSubmit, { onCancel = null } = {}) {
     document.getElementById('ib-title').innerHTML = title;
     document.getElementById('ib-prompt').innerHTML = '';
     const fieldsEl = document.getElementById('ib-fields');
@@ -177,7 +185,7 @@ function multiInputBox(title, fields, onSubmit, { onCancel = null } = {}) {
     if (firstInput) firstInput.focus();
 }
 
-async function confirmOverwriteIfExists(kind, name, listExistingNames, onConfirmSave) {
+export async function confirmOverwriteIfExists(kind, name, listExistingNames, onConfirmSave) {
     const existingNames = await listExistingNames();
     if (!existingNames.includes(name)) {
         await onConfirmSave();
@@ -198,7 +206,7 @@ async function confirmOverwriteIfExists(kind, name, listExistingNames, onConfirm
     );
 }
 
-function validateUserFacingName(kind, name) {
+export function validateUserFacingName(kind, name) {
     if (name.startsWith('__wc__')) {
         messageBox(
             `Invalid ${kind} name`,
@@ -240,7 +248,7 @@ async function _chReload() {
     _chRender();
 }
 
-async function showPreviewChooser(title, names, apiPrefix, onSelect, options = {}) {
+export async function showPreviewChooser(title, names, apiPrefix, onSelect, options = {}) {
     _chPreviews  = [];
     _chPage      = 0;
     _chOnSelect  = onSelect;
@@ -330,8 +338,8 @@ function _chRender() {
     }
 }
 
-function chSetSort(order) { _chSortOrder = order; _chPage = 0; _chRender(); }
-async function chSetPuzzleStateFilter(value) {
+export function chSetSort(order) { _chSortOrder = order; _chPage = 0; _chRender(); }
+export async function chSetPuzzleStateFilter(value) {
     _chStateFilter = value;
     _chPage = 0;
     if (!_chLoadItems) return;
@@ -341,10 +349,10 @@ async function chSetPuzzleStateFilter(value) {
         showMessageLine(`Error listing puzzles: ${e.message}`, 'error', 0);
     }
 }
-function chPageFirst() { _chPage = 0; _chRender(); }
-function chPagePrev()  { if (_chPage > 0) { _chPage--; _chRender(); } }
-function chPageNext()  { if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); } }
-function chPageLast()  { _chPage = Math.ceil(_chPreviews.length / CH_PAGE_SIZE) - 1; _chRender(); }
+export function chPageFirst() { _chPage = 0; _chRender(); }
+export function chPagePrev()  { if (_chPage > 0) { _chPage--; _chRender(); } }
+export function chPageNext()  { if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); } }
+export function chPageLast()  { _chPage = Math.ceil(_chPreviews.length / CH_PAGE_SIZE) - 1; _chRender(); }
 
 // ---------------------------------------------------------------------------
 // Right-click context menu
@@ -364,7 +372,7 @@ function hideContextMenu() {
 }
 
 // items: [{ label, onClick }, ...]
-function showContextMenu(x, y, items) {
+export function showContextMenu(x, y, items) {
     hideContextMenu();
 
     const menu = document.createElement('div');
@@ -432,7 +440,7 @@ const MENU_RULES = [
     { id: 'menu-export-solved-pdf',  enabledWhen: () => true },
 ];
 
-function updateMenu() {
+export function updateMenu() {
     const context = _menuContext();
     for (const rule of MENU_RULES) {
         setMenuItemEnabled(rule.id, rule.enabledWhen(context));
@@ -463,7 +471,7 @@ function setMenuItemEnabled(id, enabled) {
 // View management
 // ---------------------------------------------------------------------------
 
-function showView(view) {
+export function showView(view) {
     // 'home' is an alias for the dashboard, which replaced the welcome screen.
     if (view === 'home') view = 'dashboard';
     AppState.view = view;

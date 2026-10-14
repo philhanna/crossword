@@ -1,10 +1,13 @@
 // Crossword Puzzle Editor — client-side SVG renderers
 
+import { BOXSIZE } from './state.js';
+import { escapeHtml } from './ui.js';
+
 // ---------------------------------------------------------------------------
 // Puzzle SVG renderer
 // ---------------------------------------------------------------------------
 
-function buildPuzzleSvg(puzzleData, editState = null) {
+export function buildPuzzleSvg(puzzleData, editState = null) {
     const n           = puzzleData.grid.size;
     const blackCells  = puzzleData.grid.cells;        // bool[], true = black
     const puzzleCells = puzzleData.puzzle.cells;      // {"idx": {number?, letter?}}

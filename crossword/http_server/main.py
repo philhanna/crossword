@@ -78,6 +78,7 @@ def create_app(config=None, container=None) -> FastAPI:
         allow_headers=["Content-Type", "Accept"],
     )
     app.middleware("http")(_log_request)
+    app.middleware("http")(_revalidate_frontend_code)
 
     register_exception_handlers(app)
     register_routes(app)
@@ -98,6 +99,21 @@ async def _log_request(request, call_next):
         return await call_next(request)
     finally:
         logger.debug("Leaving %s %s", request.method, request.url.path)
+
+
+async def _revalidate_frontend_code(request, call_next):
+    """
+    Have the browser check for a newer copy of the frontend's scripts and styles.
+
+    The frontend is a set of ES modules that import one another, and a stale
+    cached copy of one next to fresh copies of the rest fails in confusing
+    ways. "no-cache" still lets the browser reuse an unchanged file; it only
+    has to ask first, which costs nothing noticeable on localhost.
+    """
+    response = await call_next(request)
+    if request.url.path.startswith(("/static/js/", "/static/css/")):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 def register_routes(app: FastAPI) -> None:

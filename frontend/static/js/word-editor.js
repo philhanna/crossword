@@ -1,5 +1,15 @@
 // Crossword Puzzle Editor — click handling, word selection, keyboard entry, word editor panel
 
+import { AppState, BOXSIZE } from './state.js';
+import {
+    ApiError, _closeSidePanels, apiFetch, escapeHtml, showElement,
+    showMessageLine, showRequestError, updateMenu,
+} from './ui.js';
+import {
+    _currentEditorMode, _updatePuzzleToolbar, _updatePuzzleUndoRedo,
+    renderPuzzleEditor, renderPuzzleEditorLhs, renderPuzzleEditorRhs,
+} from './puzzle-editor.js';
+
 // ---------------------------------------------------------------------------
 // Puzzle editor — click handling state
 // ---------------------------------------------------------------------------
@@ -23,24 +33,21 @@ const WE_PAGE_SIZE           = 5;
 // Shared selected-word state
 // ---------------------------------------------------------------------------
 
-let _weClueBeforeEdit = '';  // clue value on focus, for detecting changes on blur
-let _clueDirection  = 'across'; // active clue direction in Clues tab
-
 function _normalizeWordText(text, len) {
     return (text || '').toUpperCase().replace(/\./g, ' ').padEnd(len).slice(0, len);
 }
 
-function _getPuzzleWord(seq, direction) {
+export function _getPuzzleWord(seq, direction) {
     const pd = AppState.puzzleData;
     if (!pd || !pd.puzzle || !pd.puzzle.words) return null;
     return pd.puzzle.words.find(w => w.seq === seq && w.direction === direction) || null;
 }
 
-function _isWordEditorOpen() {
+export function _isWordEditorOpen() {
     return !!(AppState.selectedWord && AppState.selectedWord.editorMode === 'word');
 }
 
-function _getSelectedWordCursorIdx() {
+export function _getSelectedWordCursorIdx() {
     return AppState.selectedWord ? AppState.selectedWord.cursorIdx || 0 : 0;
 }
 
@@ -106,7 +113,7 @@ function _hydrateSelectedWord(word, options = {}) {
     };
 }
 
-function _refreshSelectedWordFromPuzzleData(options = {}) {
+export function _refreshSelectedWordFromPuzzleData(options = {}) {
     const current = AppState.selectedWord;
     if (!current) return null;
     const word = _getPuzzleWord(current.seq, current.direction);
@@ -126,7 +133,7 @@ function _refreshSelectedWordFromPuzzleData(options = {}) {
     return next;
 }
 
-async function completeSelectedWordEdit(options = {}) {
+export async function completeSelectedWordEdit(options = {}) {
     const sw = AppState.selectedWord;
     if (!sw) {
         if (options.nextSelection) {
@@ -180,7 +187,7 @@ async function completeSelectedWordEdit(options = {}) {
 // Puzzle editor — click handling (single = select across, double = select down)
 // ---------------------------------------------------------------------------
 
-function _focusPuzzleSvg() {
+export function _focusPuzzleSvg() {
     const svg = document.getElementById('puzzle-svg');
     if (!svg) return;
     try {
@@ -190,7 +197,7 @@ function _focusPuzzleSvg() {
     }
 }
 
-async function handlePuzzleClick(event) {
+export async function handlePuzzleClick(event) {
     if (Date.now() < _ignorePuzzleClicksUntil) return;
     const wasEditingWord = _isWordEditorOpen();
     if (wasEditingWord) {
@@ -287,11 +294,11 @@ function selectWord(seq, direction, clickR, clickC, editorMode = 'puzzle') {
     renderPuzzleEditorRhs();
 }
 
-async function _peCommitWord() {
+export async function _peCommitWord() {
     return completeSelectedWordEdit();
 }
 
-function _peKeydown(e) {
+export function _peKeydown(e) {
     if (!AppState.selectedWord || _isWordEditorOpen()) return;
     // Don't capture keystrokes going to modal inputs
     const tag = e.target.tagName;
@@ -399,7 +406,7 @@ function _peKeydown(e) {
     }
 }
 
-function _peOutsideMousedown(e) {
+export function _peOutsideMousedown(e) {
     if (!AppState.selectedWord || _isWordEditorOpen()) return;
     const svg = document.getElementById('puzzle-svg');
     if (svg && svg.contains(e.target)) return; // SVG clicks handled by puzzleClickAt
@@ -427,7 +434,7 @@ function _peOutsideMousedown(e) {
     });
 }
 
-async function do_puzzle_edit_word(seq, direction) {
+export async function do_puzzle_edit_word(seq, direction) {
     if (_currentEditorMode() !== 'puzzle') return;
     // Called from toolbar button (no args) or clue list (with args)
     const sw = AppState.selectedWord;
@@ -446,7 +453,7 @@ async function do_puzzle_edit_word(seq, direction) {
 // Word editor panel
 // ---------------------------------------------------------------------------
 
-function renderWordEditorPanel() {
+export function renderWordEditorPanel() {
     const sw       = AppState.selectedWord;
     const clue     = sw.draftClue || '';
     const dirLabel = sw.direction.charAt(0).toUpperCase() + sw.direction.slice(1);
@@ -491,7 +498,6 @@ function renderWordEditorPanel() {
       <input class="we-clue-input" id="we-clue" type="text"
              value="${escapeHtml(clue)}"
              oninput="weHandleClueInput(this.value)"
-             onfocus="_weClueBeforeEdit=this.value"
              onblur="_weOnClueBlur(this.value)"
              placeholder="Enter clue…"/>
     </div>
@@ -574,7 +580,7 @@ function _weLooksLikeDraftAnswer(value, len) {
     return value.length <= len && /^[A-Za-z. ]*$/.test(value);
 }
 
-function weHandleTextInput(value) {
+export function weHandleTextInput(value) {
     const sw = AppState.selectedWord;
     if (!sw) return;
     weUpdateDefinitionsBtn();
@@ -588,11 +594,11 @@ function weHandleTextInput(value) {
     renderPuzzleEditorLhs();
 }
 
-function weHandleClueInput(value) {
+export function weHandleClueInput(value) {
     if (AppState.selectedWord) AppState.selectedWord.draftClue = value;
 }
 
-function weHandleLockToggle(checked) {
+export function weHandleLockToggle(checked) {
     const sw = AppState.selectedWord;
     if (!sw) return;
     sw.draftLocked = checked;
@@ -615,8 +621,7 @@ function weUpdateDefinitionsBtn() {
     btn.disabled = !(val.length === len && /^[A-Za-z]+$/.test(val));
 }
 
-function _weOnClueBlur(newVal) {
-    _weClueBeforeEdit = newVal;
+export function _weOnClueBlur(newVal) {
     if (AppState.selectedWord) AppState.selectedWord.draftClue = newVal;
 }
 
@@ -633,7 +638,7 @@ async function _weApplyAndClose() {
 // Word editor — keyboard handler
 // ---------------------------------------------------------------------------
 
-async function _weKeydown(e) {
+export async function _weKeydown(e) {
     if (!_isWordEditorOpen()) return;
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') {
@@ -739,7 +744,7 @@ async function _weKeydown(e) {
 // Word editor — open / close
 // ---------------------------------------------------------------------------
 
-async function openWordEditor(seq, direction) {
+export async function openWordEditor(seq, direction) {
     if (_currentEditorMode() !== 'puzzle') return;
     const selectedWord = AppState.selectedWord;
     if (selectedWord && selectedWord.seq === seq && selectedWord.direction === direction) {
@@ -756,7 +761,7 @@ async function openWordEditor(seq, direction) {
     renderPuzzleEditor();
 }
 
-function closeWordEditor() {
+export function closeWordEditor() {
     document.removeEventListener('keydown', _weKeydown);
     document.addEventListener('keydown', _peKeydown);
     if (AppState.selectedWord) {
@@ -777,7 +782,7 @@ function closeWordEditor() {
 // Word editor — suggestions (fetch + pagination)
 // ---------------------------------------------------------------------------
 
-async function doWordSuggestFetch() {
+export async function doWordSuggestFetch() {
     const constrained = _weIsConstrained();
     if (constrained) {
         await _fetchConstrainedSuggestions();
@@ -913,11 +918,11 @@ function _weRenderSuggestionList() {
     }
 }
 
-function wePagePrev() {
+export function wePagePrev() {
     if (_wePage > 0) { _wePage--; _weRenderSuggestionList(); }
 }
 
-function wePageNext() {
+export function wePageNext() {
     if ((_wePage + 1) * WE_PAGE_SIZE < _weSuggestions.length) { _wePage++; _weRenderSuggestionList(); }
 }
 
@@ -925,7 +930,7 @@ function wePageNext() {
 // Word editor — Constraints tab
 // ---------------------------------------------------------------------------
 
-async function doWordConstraints() {
+export async function doWordConstraints() {
     const sw = AppState.selectedWord;
     const wn = AppState.puzzleWorkingName;
 
@@ -968,7 +973,7 @@ async function doWordConstraints() {
 // Word editor — Definitions tab
 // ---------------------------------------------------------------------------
 
-async function doWordDefinitions() {
+export async function doWordDefinitions() {
     const inp  = document.getElementById('we-text');
     const word = inp ? inp.value.toUpperCase() : '';
 
@@ -1004,7 +1009,7 @@ async function doWordDefinitions() {
 // Word editor — OK
 // ---------------------------------------------------------------------------
 
-async function doWordEditOK() {
+export async function doWordEditOK() {
     // A lone suggestion is the only possible answer, so take it — unless
     // the user has already typed a complete answer of their own
     if (_weSuggestions.length === 1 && !_weInputIsCompleteAnswer()) {

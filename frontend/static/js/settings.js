@@ -1,4 +1,6 @@
-// Crossword Puzzle Editor — settings dialog and bootstrap
+// Crossword Puzzle Editor — settings dialog
+
+import { apiFetch, hideElement, showElement, showMessageLine } from './ui.js';
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -218,7 +220,7 @@ function _renderSettingsRows(values) {
     }
 }
 
-async function do_settings() {
+export async function do_settings() {
     try {
         const values = await apiFetch('GET', '/api/settings');
         _renderSettingsRows(values);
@@ -228,7 +230,7 @@ async function do_settings() {
     }
 }
 
-async function do_settings_save() {
+export async function do_settings_save() {
     const values = {};
     for (const field of SETTINGS_FIELDS) {
         const el = document.getElementById(`setting-${field.key}`);
@@ -247,24 +249,6 @@ async function do_settings_save() {
     }
 }
 
-function do_settings_cancel() {
+export function do_settings_cancel() {
     hideElement('settings-panel');
 }
-
-// ---------------------------------------------------------------------------
-// Bootstrap
-// ---------------------------------------------------------------------------
-
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const cfg = await apiFetch('GET', '/api/config');
-        if (cfg.message_line_timeout_ms != null) {
-            MESSAGE_LINE_TIMEOUT_MS = cfg.message_line_timeout_ms;
-        }
-    } catch (e) { /* use default */ }
-
-    positionMessageLine();
-    window.addEventListener('scroll', positionMessageLine, { passive: true });
-    window.addEventListener('resize', positionMessageLine);
-    showView('home');
-});

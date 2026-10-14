@@ -597,6 +597,18 @@ class TestFrontendRoutes:
         assert response.headers["content-type"].startswith("text/css")
         assert response.text == ""
 
+    def test_frontend_code_must_be_revalidated(self, client):
+        for path in ["/static/js/main.js", "/static/css/style.css", "/static/css/theme.css"]:
+            response = client.get(path)
+
+            assert response.status_code == 200
+            assert response.headers["cache-control"] == "no-cache"
+
+    def test_images_may_be_cached(self, client):
+        response = client.get("/static/images/favicon.svg")
+
+        assert "cache-control" not in response.headers
+
     def test_theme_css_derives_a_palette(self, container):
         container.config["theme_color"] = "#154d71"
         client = TestClient(create_app(container=container))
