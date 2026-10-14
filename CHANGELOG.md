@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.0.0] - 2026-10-14
+
+### Changed
+
+- The frontend is restructured into ES modules under `frontend/static/js/`
+  (`core/`, `ui/`, `dashboard/`, `editor/`, `puzzle-file/`, `settings/`,
+  `svg/`), started by `main.js`. Clicks are wired with `data-action` instead
+  of inline `onclick` attributes, dialogs return promises, and each piece of
+  state has one owning module. The screens look and behave as before. See
+  `docs/dev/frontend.md`
+- W3.CSS is no longer loaded from w3schools.com; the app's own
+  `controls.css` replaces it, and `style.css` is split into six stylesheets
+- All five Import menu items are now available only from the dashboard
+  (ipuz and Crossword Compiler used to stay enabled in the editor)
+- Error messages from the server are worded the same way everywhere:
+  "what failed: the server's reason"
+- The server sends `Cache-Control: no-cache` for the frontend's scripts and
+  stylesheets, so a stale cached copy is never mixed with fresh ones
+- `pytest-playwright` is now a dependency; run `playwright install chromium`
+  once before running the tests
+
+### Added
+
+- End-to-end browser tests in `crossword/tests/frontend/` that click
+  through the dashboard, editor, menus, import/export and settings
+- `docs/dev/frontend.md`, describing the frontend's modules and how to
+  extend them
+
+### Fixed
+
+- A clue typed in the word editor and then cancelled with Escape is no
+  longer saved with the next edit
+- Renaming a puzzle to a name already in use now says the name is taken,
+  instead of showing a garbled message and doing nothing
+
 ## [5.10.1] - 2026-10-13
 
 ### Fixed
