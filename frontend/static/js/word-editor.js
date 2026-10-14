@@ -1,15 +1,15 @@
 // Crossword Puzzle Editor — click handling, word selection, keyboard entry, word editor panel
 
+import { registerActions } from './core/actions.js';
+import {
+    _currentEditorMode, _updatePuzzleToolbar, _updatePuzzleUndoRedo,
+    renderPuzzleEditor, renderPuzzleEditorLhs, renderPuzzleEditorRhs,
+} from './puzzle-editor.js';
 import { AppState, BOXSIZE } from './state.js';
 import {
     ApiError, _closeSidePanels, apiFetch, escapeHtml, showElement,
     showMessageLine, showRequestError, updateMenu,
 } from './ui.js';
-import {
-    _currentEditorMode, _updatePuzzleToolbar, _updatePuzzleUndoRedo,
-    renderPuzzleEditor, renderPuzzleEditorLhs, renderPuzzleEditorRhs,
-} from './puzzle-editor.js';
-import { registerActions } from './core/actions.js';
 
 registerActions({
     // From a clue row the word is named; from the toolbar it's the selected one

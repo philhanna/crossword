@@ -1,7 +1,7 @@
 // Crossword Puzzle Editor — settings dialog
 
-import { apiFetch, hideElement, showElement, showMessageLine } from './ui.js';
 import { registerActions } from './core/actions.js';
+import { apiFetch, hideElement, showElement, showMessageLine } from './ui.js';
 
 registerActions({
     'settings-open':   () => do_settings(),

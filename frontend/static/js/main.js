@@ -9,8 +9,11 @@ import { setMessageLineTimeout } from './state.js';
 import { apiFetch, positionMessageLine, showView } from './ui.js';
 import './dashboard.js';
 import './puzzle-editor.js';
-import './word-editor.js';
 import './settings.js';
+import './word-editor.js';
+import './puzzle-file/export.js';
+import './puzzle-file/import.js';
+import './puzzle-file/lifecycle.js';
 
 start();
 

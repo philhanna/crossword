@@ -5,12 +5,12 @@
 // in a single round-trip and is cached in DashboardState so tab switches and the
 // top cards render client-side without refetching.
 
+import { registerActions } from './core/actions.js';
+import { _openPuzzleInEditor, _openWorkingCopyInEditor } from './puzzle-file/lifecycle.js';
 import {
     apiFetch, escapeHtml, hideElement, messageBox, showContextMenu, showElement,
     showRequestError,
 } from './ui.js';
-import { _openPuzzleInEditor, _openWorkingCopyInEditor } from './puzzle-editor.js';
-import { registerActions } from './core/actions.js';
 
 registerActions({
     'dash-tab':            (el) => _dashSelectTab(el.getAttribute('data-dash-tab')),

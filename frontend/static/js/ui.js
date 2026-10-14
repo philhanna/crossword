@@ -1,13 +1,13 @@
 // Crossword Puzzle Editor — UI primitives, modals, menu, view management
 
-import { AppState, MESSAGE_LINE_TIMEOUT_MS } from './state.js';
-import { _isWordEditorOpen } from './word-editor.js';
+import { registerActions } from './core/actions.js';
 import { renderDashboard } from './dashboard.js';
 import {
     _currentEditorMode, renderActionBar, renderPuzzleEditor,
     updateAppBarPuzzleInfo,
 } from './puzzle-editor.js';
-import { registerActions } from './core/actions.js';
+import { AppState, MESSAGE_LINE_TIMEOUT_MS } from './state.js';
+import { _isWordEditorOpen } from './word-editor.js';
 
 const CHOOSER_PAGES = {
     first: () => chPageFirst(),
