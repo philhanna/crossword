@@ -155,6 +155,37 @@ class TestClues:
             assert word.get_clue(), f"Empty clue for {seq}D"
 
 
+class TestCircles:
+    def test_circled_squares_are_imported(self, imported):
+        _, _, puzzle = imported
+        assert len(puzzle.circled_cells) == 31
+        assert puzzle.is_circled(1, 4)
+        assert puzzle.undo_stack == []
+
+    def test_round_trip_through_export(self, adapter):
+        from crossword.adapters.puz_export_adapter import PuzExportAdapter
+        from crossword.tests import TestPuzzle
+
+        original = TestPuzzle.create_solved_atlantic_puzzle()
+        original.toggle_circle(1, 1)
+        original.toggle_circle(3, 5)
+        _, _, puzzle = adapter.import_puzzle(PuzExportAdapter().export_puzzle_to_puz(original))
+        assert puzzle.circled_cells == {(1, 1), (3, 5)}
+
+    def test_circle_on_black_square_is_dropped(self, adapter, puz_bytes):
+        import puz
+
+        doc = puz.Puzzle()
+        doc.load(puz_bytes)
+        black = doc.solution.index(doc.blacksquare())
+        white = doc.solution.index(next(ch for ch in doc.solution if ch.isalpha()))
+        doc.markup().clear_markup_squares(list(range(len(doc.solution))))
+        doc.markup().set_markup_squares([black, white], puz.GridMarkup.Circled)
+        _, _, puzzle = adapter.import_puzzle(doc.tobytes())
+        r, c = divmod(white, doc.width)
+        assert puzzle.circled_cells == {(r + 1, c + 1)}
+
+
 class TestParseErrors:
     def test_empty_bytes_raises(self, adapter):
         with pytest.raises(PuzzleImportError, match="Failed to parse"):

@@ -323,11 +323,12 @@ puzzles that have no circles.
 ## Later: circles in the file formats
 
 These are not part of this plan, but the data model above supports them
-without changes:
+without changes. AcrossLite binary (`.puz`) has since been done, for both
+export and import; the others remain open.
 
 | Format | How circles are stored |
 |---|---|
-| AcrossLite binary (`.puz`) | `GEXT` extra section, flag `0x80` per square. The `puz` library already used by the adapters reads and writes it through `puzzle.markup()`. |
+| AcrossLite binary (`.puz`) | `GEXT` extra section, flag `0x80` per square. The `puz` library already used by the adapters reads and writes it through `puzzle.markup()`. **Done** (export and import). |
 | ipuz | A cell in `"puzzle"` becomes an object: `{"cell": 5, "style": {"shapebg": "circle"}}`. |
 | Crossword Compiler XML | `background-shape="circle"` on the `<cell>` element. |
 | xd | No standard form. Some files use lowercase letters in the grid plus a header note; check the spec before supporting it. |

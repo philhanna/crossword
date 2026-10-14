@@ -77,4 +77,9 @@ class PuzExportAdapter:
         p.fill = "".join(fill_chars)
         p.clues = clues
 
+        # Circled squares go in the GEXT markup section
+        if puzzle.circled_cells:
+            circled = [(r - 1) * n + (c - 1) for r, c in sorted(puzzle.circled_cells)]
+            p.markup().set_markup_squares(circled, puz.GridMarkup.Circled)
+
         return p.tobytes()

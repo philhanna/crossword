@@ -65,6 +65,22 @@ class TestPuzExportAdapter:
         doc.load(adapter.export_puzzle_to_puz(puzzle))
         assert all(clue == "" for clue in doc.clues)
 
+    def test_exports_circled_squares_as_markup(self, adapter, puzzle):
+        white = [(r, c) for r in range(1, puzzle.n + 1) for c in range(1, puzzle.n + 1)
+                 if not puzzle.is_black_cell(r, c)]
+        (r1, c1), (r2, c2) = white[0], white[-1]
+        puzzle.toggle_circle(r1, c1)
+        puzzle.toggle_circle(r2, c2)
+        doc = puz.Puzzle()
+        doc.load(adapter.export_puzzle_to_puz(puzzle))
+        assert doc.markup().get_markup_squares(puz.GridMarkup.Circled) == [
+            (r1 - 1) * puzzle.n + (c1 - 1),
+            (r2 - 1) * puzzle.n + (c2 - 1),
+        ]
+
+    def test_no_markup_section_without_circles(self, puz_doc):
+        assert puz.Extensions.Markup not in puz_doc.extensions
+
     def test_wraps_build_errors(self, adapter, puzzle, monkeypatch):
         def boom(_puzzle):
             raise RuntimeError("boom")

@@ -62,6 +62,14 @@ class PuzImportAdapter(ImportPort):
             if ch != black and ch.isalpha():
                 puzzle.set_cell(r + 1, c + 1, ch.upper())
 
+        # Circled squares come from the GEXT markup section; a circle on a
+        # black square makes no sense here, so it is dropped
+        if p.has_markup():
+            for i in p.markup().get_markup_squares(puz.GridMarkup.Circled):
+                r, c = divmod(i, n)
+                if p.solution[i] != black:
+                    puzzle.toggle_circle(r + 1, c + 1, undo=False)
+
         # Map numbered words to clues via puzpy's numbering
         numbering = p.clue_numbering()
 
