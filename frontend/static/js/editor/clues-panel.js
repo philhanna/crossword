@@ -5,15 +5,18 @@ import { escapeHtml } from '../core/dom.js';
 import { AppState } from '../core/state.js';
 import { showMessageLine } from '../ui/message-line.js';
 import { _currentEditorMode, renderPuzzleEditor, renderPuzzleEditorRhs } from './editor.js';
-import { _getPuzzleWord, completeSelectedWordEdit } from './selection.js';
+import { _getPuzzleWord, completeSelectedWordEdit, getSelectedWord } from './selection.js';
 
 registerActions({
     'clue-direction': (el) => switchClueDirection(el.dataset.direction),
     'clue-edit':      (el) => startInlineClueEdit(Number(el.dataset.seq), el.dataset.direction),
 });
 
-let _clueDirection     = 'across'; // active clue direction in Clues tab
-let _lastClueDirection = null;     // direction shown by the previous render
+// direction: which list the Clues tab shows. lastDirection: the one the
+// previous redraw showed, to tell a flip from a refresh. pendingSave: the
+// last in-place clue save, so the next one waits for it and saves reach the
+// server in order.
+const clues = { direction: 'across', lastDirection: null, pendingSave: Promise.resolve() };
 
 // ---------------------------------------------------------------------------
 // Clue list
@@ -24,8 +27,8 @@ export function renderClues() {
     const words    = AppState.puzzleData.puzzle.words;
     const across   = words.filter(w => w.direction === 'across').sort((a, b) => a.seq - b.seq);
     const down     = words.filter(w => w.direction === 'down').sort((a, b) => a.seq - b.seq);
-    const selected = AppState.selectedWord;
-    const dir      = _clueDirection;
+    const selected = getSelectedWord();
+    const dir      = clues.direction;
     const list     = dir === 'across' ? across : down;
 
     const acrossClued = across.filter(w => w.clue).length;
@@ -65,7 +68,7 @@ export function renderClues() {
 }
 
 function switchClueDirection(dir) {
-    _clueDirection = dir;
+    clues.direction = dir;
     renderPuzzleEditorRhs();
 }
 
@@ -79,12 +82,12 @@ export function saveCluesScroll() {
 // After a sidebar redraw: put the clue list back where it was, or, when it is
 // new or shows the other direction now, scroll to the first missing clue.
 export function restoreCluesScroll(oldScroll) {
-    if (oldScroll !== null && _clueDirection === _lastClueDirection) {
+    if (oldScroll !== null && clues.direction === clues.lastDirection) {
         _restoreCluesScroll(oldScroll);
     } else {
         _scrollCluesToFirstMissing();
     }
-    _lastClueDirection = _clueDirection;
+    clues.lastDirection = clues.direction;
 }
 
 function _restoreCluesScroll(scrollTop) {
@@ -111,11 +114,9 @@ function _scrollCluesToFirstMissing() {
 // Editing a clue in place
 // ---------------------------------------------------------------------------
 
-let _inlineClueSave = Promise.resolve();  // pending save from the last inline clue edit
-
 async function startInlineClueEdit(seq, direction) {
     if (_currentEditorMode() !== 'puzzle') return;
-    await _inlineClueSave;  // a blur-triggered save re-renders the list; let it finish first
+    await clues.pendingSave;  // a blur-triggered save re-renders the list; let it finish first
     const word = _getPuzzleWord(seq, direction);
     if (!word) return;
     if (!word.answer || word.answer.includes(' ')) {
@@ -145,7 +146,7 @@ async function startInlineClueEdit(seq, direction) {
         if (finished) return;
         finished = true;
         if (save) {
-            _inlineClueSave = _saveInlineClue(seq, direction, input.value.trim());
+            clues.pendingSave = _saveInlineClue(seq, direction, input.value.trim());
         } else {
             renderPuzzleEditorRhs();
         }
@@ -158,7 +159,7 @@ async function startInlineClueEdit(seq, direction) {
 }
 
 async function _saveInlineClue(seq, direction, clue) {
-    const sw = AppState.selectedWord;
+    const sw = getSelectedWord();
     if (!sw || sw.seq !== seq || sw.direction !== direction) {
         renderPuzzleEditorRhs();
         return;

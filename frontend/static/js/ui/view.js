@@ -11,8 +11,6 @@ registerActions({
 });
 
 export function showView(view) {
-    // 'home' is an alias for the dashboard, which replaced the welcome screen.
-    if (view === 'home') view = 'dashboard';
     AppState.view = view;
     updateMenu();
     const workspace = document.getElementById('workspace');

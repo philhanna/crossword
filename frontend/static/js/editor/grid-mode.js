@@ -3,9 +3,10 @@
 import { registerActions } from '../core/actions.js';
 import { apiFetch } from '../core/api.js';
 import { AppState } from '../core/state.js';
-import { MESSAGE_LINE_TIMEOUT_MS, showMessageLine, showRequestError } from '../ui/message-line.js';
+import { messageLineTimeout, showMessageLine, showRequestError } from '../ui/message-line.js';
 import { _currentEditorMode, renderPuzzleEditor } from './editor.js';
 import { _refreshFillOrderIfVisible } from './fill-order-panel.js';
+import { clearSelection } from './selection.js';
 import { _refreshPuzzleStatsIfVisible } from './stats-panel.js';
 import { BOXSIZE } from '../svg/grid-svg.js';
 
@@ -52,10 +53,25 @@ export async function handleGridModeClick(event) {
     }
 }
 
+// True after a Grid-mode edit, until the user is back in Puzzle mode and has
+// been told to review the recomputed entries
+let gridStructureChanged = false;
+
+// Whether the grid changed since the last call, and forget it
+export function takeGridStructureChanged() {
+    const changed = gridStructureChanged;
+    gridStructureChanged = false;
+    return changed;
+}
+
+export function forgetGridChanges() {
+    gridStructureChanged = false;
+}
+
 async function _applyGridModeUpdate(data) {
-    AppState.puzzleData   = data;
-    AppState.selectedWord = null;
-    AppState.gridStructureChanged = true;
+    AppState.puzzleData = data;
+    clearSelection();
+    gridStructureChanged = true;
     renderPuzzleEditor();
     await _refreshPuzzleStatsIfVisible();
     await _refreshFillOrderIfVisible();
@@ -82,7 +98,7 @@ export async function do_puzzle_generate_grid() {
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/grid/generate${specParam}`);
         if (data.notice) { showMessageLine(data.notice, 'notice'); return; }
         await _applyGridModeUpdate(data);
-    } catch (e) { showRequestError('Error generating grid', e, MESSAGE_LINE_TIMEOUT_MS); }
+    } catch (e) { showRequestError('Error generating grid', e, messageLineTimeout()); }
     finally {
         if (btn) btn.classList.remove('w3-disabled');
     }

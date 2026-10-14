@@ -6,8 +6,8 @@ import { escapeHtml } from '../core/dom.js';
 import { AppState } from '../core/state.js';
 import { showRequestError } from '../ui/message-line.js';
 import {
-    _settlePuzzleEditingBeforeModeSwitch, renderPuzzleEditor,
-    renderPuzzleEditorRhs,
+    _settlePuzzleEditingBeforeModeSwitch, getSidebarTab, renderPuzzleEditor,
+    renderPuzzleEditorRhs, setSidebarTab,
 } from './editor.js';
 
 registerActions({
@@ -15,40 +15,49 @@ registerActions({
     'stats-subtab': (el) => setStatsSubTab(el.dataset.tab),
 });
 
+// data: the last GET .../stats response, or null when it needs fetching.
+// subTab ('slots' or 'words') carries over from one puzzle to the next.
+const stats = { data: null, subTab: 'slots' };
+
+export function statsLoaded() {
+    return stats.data !== null;
+}
+
+export function forgetStats() {
+    stats.data = null;
+}
+
 export async function do_puzzle_stats() {
     const wn = AppState.puzzleWorkingName;
     try {
         await _settlePuzzleEditingBeforeModeSwitch();
-        const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/stats`);
-        AppState._statsData       = data;
-        AppState.showingFillOrder = false;
-        AppState.showingStats     = true;
-        AppState.sidebarTab       = 'stats';
+        stats.data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/stats`);
+        setSidebarTab('stats');
         renderPuzzleEditor();
     } catch (e) { showRequestError('Error fetching stats', e); }
 }
 
 export async function _refreshPuzzleStatsIfVisible() {
-    if (AppState.sidebarTab !== 'stats' || !AppState.puzzleWorkingName) return;
+    if (getSidebarTab() !== 'stats' || !AppState.puzzleWorkingName) return;
     try {
-        const data = await apiFetch('GET',
+        stats.data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/stats`);
-        AppState._statsData = data;
         renderPuzzleEditorRhs();
     } catch (e) {
         // Keep the current panel if the refresh fails.
     }
 }
 
-export function renderStatsPanel(stats) {
-    const validText  = stats.valid ? 'Valid' : 'Invalid';
-    const validClass = stats.valid ? 'stat-valid' : 'stat-invalid';
+export function renderStatsPanel() {
+    const data       = stats.data;
+    const validText  = data.valid ? 'Valid' : 'Invalid';
+    const validClass = data.valid ? 'stat-valid' : 'stat-invalid';
 
-    const allErrors = Object.values(stats.errors).flat();
+    const allErrors = Object.values(data.errors).flat();
     const errorsHtml = allErrors.length === 0 ? '' :
         `<div class="stat-error-box">${allErrors.map(e => escapeHtml(e)).join('<br>')}</div>`;
 
-    const subTab = AppState.statsSubTab === 'words' ? 'words' : 'slots';
+    const subTab = stats.subTab;
     const tabsHtml = `
 <div class="stats-subtabs">
   <button class="stats-subtab${subTab === 'slots' ? ' stats-subtab-active' : ''}" data-action="stats-subtab" data-tab="slots">Slots</button>
@@ -57,7 +66,7 @@ export function renderStatsPanel(stats) {
 
     const bodyHtml = subTab === 'words'
         ? _renderStatsWordsTable()
-        : _renderStatsSlotsTable(stats);
+        : _renderStatsSlotsTable(data);
 
     return `
 <div class="stat-cards">
@@ -66,15 +75,15 @@ export function renderStatsPanel(stats) {
     <div class="stat-card-label">Validity</div>
   </div>
   <div class="stat-card">
-    <div class="stat-card-value">${escapeHtml(stats.size)}</div>
+    <div class="stat-card-value">${escapeHtml(data.size)}</div>
     <div class="stat-card-label">Grid size</div>
   </div>
   <div class="stat-card">
-    <div class="stat-card-value">${stats.wordcount}</div>
+    <div class="stat-card-value">${data.wordcount}</div>
     <div class="stat-card-label">Words</div>
   </div>
   <div class="stat-card">
-    <div class="stat-card-value">${stats.blockcount}</div>
+    <div class="stat-card-value">${data.blockcount}</div>
     <div class="stat-card-label">Black cells</div>
   </div>
 </div>
@@ -83,8 +92,8 @@ ${tabsHtml}
 ${bodyHtml}`;
 }
 
-function _renderStatsSlotsTable(stats) {
-    const wlRows = Object.entries(stats.wordlengths)
+function _renderStatsSlotsTable(data) {
+    const wlRows = Object.entries(data.wordlengths)
         .sort((a, b) => Number(b[0]) - Number(a[0]))
         .map(([len, entry]) => {
             const across = (entry.alist || []).join(', ') || '—';
@@ -136,6 +145,6 @@ function _renderStatsWordsTable() {
 }
 
 function setStatsSubTab(tab) {
-    AppState.statsSubTab = (tab === 'words') ? 'words' : 'slots';
+    stats.subTab = (tab === 'words') ? 'words' : 'slots';
     renderPuzzleEditorRhs();
 }

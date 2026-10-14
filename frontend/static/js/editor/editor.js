@@ -13,15 +13,22 @@ import { askConfirm, askText } from '../ui/dialogs.js';
 import { updateMenu } from '../ui/menu.js';
 import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import { renderClues, restoreCluesScroll, saveCluesScroll } from './clues-panel.js';
-import { _cellLettersKey, do_puzzle_fill_order, renderFillOrderPanel } from './fill-order-panel.js';
+import {
+    cachedFillOrder, do_puzzle_fill_order, fillOrder, forgetFillOrders,
+    isFillOrderLoading, renderFillOrderPanel,
+} from './fill-order-panel.js';
 import { _focusPuzzleSvg, _peOutsideMousedown, handlePuzzleClick } from './grid-clicks.js';
-import { handleGridModeClick, renderGridModePanel } from './grid-mode.js';
+import {
+    forgetGridChanges, handleGridModeClick, renderGridModePanel,
+    takeGridStructureChanged,
+} from './grid-mode.js';
 import { _peKeydown } from './keyboard.js';
 import {
     _getSelectedWordCursorIdx, _isWordEditorOpen, _peCommitWord,
-    _refreshSelectedWordFromPuzzleData, completeSelectedWordEdit,
+    _refreshSelectedWordFromPuzzleData, clearSelection,
+    completeSelectedWordEdit, getSelectedWord,
 } from './selection.js';
-import { do_puzzle_stats, renderStatsPanel } from './stats-panel.js';
+import { do_puzzle_stats, forgetStats, renderStatsPanel, statsLoaded } from './stats-panel.js';
 import { closeWordEditor, openWordEditor, renderWordEditorPanel } from './word-editor.js';
 import { buildPuzzleSvg } from '../svg/grid-svg.js';
 
@@ -34,6 +41,29 @@ registerActions({
     'grid-mode':    () => do_switch_to_grid_mode(),
     'sidebar-tab':  (el) => switchSidebarTab(el.dataset.tab),
 });
+
+// Which sidebar panel shows: 'clues', 'word', 'stats' or 'fill-order' in
+// Puzzle mode; 'grid' or 'stats' in Grid mode. While the word editor is open
+// it shows regardless.
+const sidebar = { tab: 'clues' };
+
+export function getSidebarTab() {
+    return sidebar.tab;
+}
+
+export function setSidebarTab(tab) {
+    sidebar.tab = tab;
+}
+
+// Forget everything the editor knew about the previous puzzle; called when a
+// puzzle is opened or closed.
+export function resetEditor() {
+    clearSelection();
+    sidebar.tab = 'clues';
+    forgetStats();
+    forgetFillOrders();
+    forgetGridChanges();
+}
 
 // ---------------------------------------------------------------------------
 // Rendering
@@ -61,7 +91,7 @@ export function renderPuzzleEditorLhs() {
     const pd   = AppState.puzzleData;
     const mode = _currentEditorMode();
 
-    const sw  = AppState.selectedWord;
+    const sw  = getSelectedWord();
     const editState = mode === 'puzzle' && _isWordEditorOpen() && sw
         ? { cells: sw.cells, cursorIdx: _getSelectedWordCursorIdx(), text: sw.draftText || '' }
         : mode === 'puzzle' && sw
@@ -147,8 +177,8 @@ export function renderActionBar() {
     const mode = _currentEditorMode();
     const size = pd ? pd.grid.size : 0;
     const genDisabled = (size >= 9 && size % 2 === 1) ? '' : ' w3-disabled';
-    const fillOrderDisabled = AppState.fillOrderLoading ? ' w3-disabled' : '';
-    const fillOrderDisabledAttr = AppState.fillOrderLoading ? ' disabled' : '';
+    const fillOrderDisabled = isFillOrderLoading() ? ' w3-disabled' : '';
+    const fillOrderDisabledAttr = isFillOrderLoading() ? ' disabled' : '';
     const closeDisabled = _isWordEditorOpen() ? ' w3-disabled' : '';
     const closeDisabledAttr = _isWordEditorOpen() ? ' disabled' : '';
     const hasLockedWords = !!(pd && pd.puzzle.words.some(w => w.locked));
@@ -227,8 +257,8 @@ export function renderPuzzleEditorRhs() {
     let contentHtml;
 
     if (mode === 'grid') {
-        contentHtml = activeTab === 'stats' && AppState._statsData
-            ? renderStatsPanel(AppState._statsData)
+        contentHtml = activeTab === 'stats' && statsLoaded()
+            ? renderStatsPanel()
             : renderGridModePanel();
     } else {
         switch (activeTab) {
@@ -238,15 +268,14 @@ export function renderPuzzleEditorRhs() {
                     : `<div class="sidebar-empty">Select a word in the grid, then click <b>Edit word</b> to edit it here.</div>`;
                 break;
             case 'stats':
-                contentHtml = AppState._statsData
-                    ? renderStatsPanel(AppState._statsData)
+                contentHtml = statsLoaded()
+                    ? renderStatsPanel()
                     : `<div class="sidebar-empty">Loading stats…</div>`;
                 break;
             case 'fill-order': {
-                const _foData = AppState._fillOrderCache &&
-                    AppState._fillOrderCache.get(_cellLettersKey(AppState.puzzleData));
-                contentHtml = _foData
-                    ? renderFillOrderPanel(_foData)
+                const fillOrder = cachedFillOrder();
+                contentHtml = fillOrder
+                    ? renderFillOrderPanel(fillOrder)
                     : `<div class="sidebar-empty">Loading fill order…</div>`;
                 break;
             }
@@ -263,9 +292,9 @@ export function renderPuzzleEditorRhs() {
 }
 
 function _getActiveTab(mode) {
-    if (mode === 'grid') return AppState.sidebarTab === 'stats' ? 'stats' : 'grid';
+    if (mode === 'grid') return sidebar.tab === 'stats' ? 'stats' : 'grid';
     if (_isWordEditorOpen()) return 'word';
-    return AppState.sidebarTab || 'clues';
+    return sidebar.tab;
 }
 
 function renderSidebarTabs(activeTab, tabs) {
@@ -283,26 +312,18 @@ async function switchSidebarTab(tab) {
         closeWordEditor();
         return;
     }
-    if (tab === 'stats' && !AppState._statsData) {
+    if (tab === 'stats' && !statsLoaded()) {
         await do_puzzle_stats(); return;
     }
-    if (tab === 'fill-order' && !(AppState._fillOrderCache &&
-            AppState._fillOrderCache.has(_cellLettersKey(AppState.puzzleData)))) {
+    if (tab === 'fill-order' && !cachedFillOrder()) {
         await do_puzzle_fill_order(); return;
     }
-    if (tab === 'word' && !_isWordEditorOpen() && AppState.selectedWord) {
-        await openWordEditor(AppState.selectedWord.seq, AppState.selectedWord.direction); return;
+    const sw = getSelectedWord();
+    if (tab === 'word' && !_isWordEditorOpen() && sw) {
+        await openWordEditor(sw.seq, sw.direction); return;
     }
-    AppState.sidebarTab     = tab;
-    AppState.showingStats   = (tab === 'stats');
-    AppState.showingFillOrder = (tab === 'fill-order');
+    sidebar.tab = tab;
     renderPuzzleEditorRhs();
-}
-
-export function _closeSidePanels() {
-    AppState.showingStats     = false;
-    AppState.showingFillOrder = false;
-    AppState.sidebarTab       = 'clues';
 }
 
 export function _updatePuzzleUndoRedo() {
@@ -325,7 +346,7 @@ export function _updatePuzzleToolbar() {
     const cb = document.getElementById('puzzle-close-btn');
     const db = document.getElementById('puzzle-delete-btn');
     if (eb) {
-        eb.classList.toggle('w3-disabled', mode !== 'puzzle' || !AppState.selectedWord || _isWordEditorOpen());
+        eb.classList.toggle('w3-disabled', mode !== 'puzzle' || !getSelectedWord() || _isWordEditorOpen());
     }
     if (db) {
         db.classList.toggle('w3-disabled', _isWordEditorOpen());
@@ -354,13 +375,10 @@ async function _puzzleUndoRedo(action) {
         ? `/api/puzzles/${encodeURIComponent(wn)}/grid/${action}`
         : `/api/puzzles/${encodeURIComponent(wn)}/${action}`;
     try {
-        const data = await apiFetch('POST', path);
-        AppState.puzzleData       = data;
-        AppState.selectedWord     = null;
-        AppState.showingStats     = false;
-        AppState.showingFillOrder = false;
-        AppState.sidebarTab       = 'clues';
-        AppState._statsData       = null;
+        AppState.puzzleData = await apiFetch('POST', path);
+        clearSelection();
+        sidebar.tab = 'clues';
+        forgetStats();
         renderPuzzleEditor();
     } catch (e) { showRequestError(`Error during ${action}`, e); }
 }
@@ -378,7 +396,7 @@ export async function _settlePuzzleEditingBeforeModeSwitch() {
         closeWordEditor();
         return;
     }
-    if (AppState.selectedWord) {
+    if (getSelectedWord()) {
         const result = await _peCommitWord();
         if (result && result.error) {
             throw new Error('Could not save current word edit');
@@ -401,14 +419,11 @@ async function do_switch_to_grid_mode() {
 async function _switchToGridModeConfirmed() {
     try {
         await _settlePuzzleEditingBeforeModeSwitch();
-        const data = await apiFetch('POST',
+        AppState.puzzleData = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/grid`);
-        AppState.puzzleData       = data;
-        AppState.selectedWord     = null;
-        AppState.showingStats     = false;
-        AppState.showingFillOrder = false;
-        AppState.sidebarTab         = 'grid';
-        AppState._statsData         = null;
+        clearSelection();
+        sidebar.tab = 'grid';
+        forgetStats();
         renderPuzzleEditor();
     } catch (e) { showRequestError('Error switching to Grid mode', e); }
 }
@@ -416,16 +431,12 @@ async function _switchToGridModeConfirmed() {
 async function do_switch_to_puzzle_mode() {
     if (!AppState.puzzleWorkingName || _currentEditorMode() === 'puzzle') return;
     try {
-        const data = await apiFetch('POST',
+        AppState.puzzleData = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/mode/puzzle`);
-        const hadGridStructureChange = AppState.gridStructureChanged;
-        AppState.puzzleData   = data;
-        AppState.selectedWord     = null;
-        AppState.showingStats     = false;
-        AppState.showingFillOrder = false;
-        AppState.sidebarTab         = 'clues';
-        AppState._statsData         = null;
-        AppState.gridStructureChanged = false;
+        const hadGridStructureChange = takeGridStructureChanged();
+        clearSelection();
+        sidebar.tab = 'clues';
+        forgetStats();
         renderPuzzleEditor();
         if (hadGridStructureChange) {
             showMessageLine(
@@ -454,7 +465,7 @@ async function do_puzzle_clear() {
     try {
         AppState.puzzleData = await apiFetch('POST',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/clear`);
-        if (AppState.selectedWord) {
+        if (getSelectedWord()) {
             _refreshSelectedWordFromPuzzleData();
         }
         renderPuzzleEditor();

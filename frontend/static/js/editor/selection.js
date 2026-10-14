@@ -1,18 +1,32 @@
 // Crossword Puzzle Editor — the selected word
 //
-// AppState.selectedWord is the word the user is working on, with its saved
-// text, clue and lock state alongside the draft being typed. These functions
-// create it, keep it in step with the puzzle, and save the draft to the
-// server when the user moves on.
+// The selected word is the one the user is working on, with its saved text,
+// clue and lock state alongside the draft being typed. This module creates
+// it, keeps it in step with the puzzle, and saves the draft to the server
+// when the user moves on. Other modules read it with getSelectedWord() and
+// may edit its draft fields; only this module replaces it or clears it.
 
 import { apiFetch } from '../core/api.js';
 import { AppState } from '../core/state.js';
 import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import {
-    _closeSidePanels, _updatePuzzleToolbar, _updatePuzzleUndoRedo,
-    renderPuzzleEditorLhs, renderPuzzleEditorRhs,
+    _updatePuzzleToolbar, _updatePuzzleUndoRedo, renderPuzzleEditorLhs,
+    renderPuzzleEditorRhs, setSidebarTab,
 } from './editor.js';
 import { _syncSelectedWordFromInputs } from './word-editor.js';
+
+// null | { seq, direction, cells, originalText, draftText, originalClue,
+//          draftClue, originalLocked, draftLocked, cursorIdx, editorMode }
+// editorMode is 'word' while the word editor panel is open, else 'puzzle'.
+export let selectedWord = null;
+
+export function getSelectedWord() {
+    return selectedWord;
+}
+
+export function clearSelection() {
+    selectedWord = null;
+}
 
 export function _getPuzzleWord(seq, direction) {
     const pd = AppState.puzzleData;
@@ -31,7 +45,7 @@ export function findWordAtCell(r, c, direction) {
 }
 
 export function _isWordEditorOpen() {
-    return !!(AppState.selectedWord && AppState.selectedWord.editorMode === 'word');
+    return !!(selectedWord && selectedWord.editorMode === 'word');
 }
 
 // ---------------------------------------------------------------------------
@@ -41,9 +55,8 @@ export function _isWordEditorOpen() {
 export function selectWord(seq, direction, clickR, clickC, editorMode = 'puzzle') {
     const word = _getPuzzleWord(seq, direction);
     if (!word) return;
-    AppState.selectedWord = _hydrateSelectedWord(word, { clickR, clickC, editorMode });
-    _closeSidePanels();
-    AppState.sidebarTab = editorMode === 'word' ? 'word' : 'clues';
+    selectedWord = _hydrateSelectedWord(word, { clickR, clickC, editorMode });
+    setSidebarTab(editorMode === 'word' ? 'word' : 'clues');
     _updatePuzzleToolbar();
     renderPuzzleEditorLhs();
     renderPuzzleEditorRhs();
@@ -82,11 +95,11 @@ function _getDefaultCursorIdx(word, text, clickR, clickC) {
 }
 
 export function _refreshSelectedWordFromPuzzleData(options = {}) {
-    const current = AppState.selectedWord;
+    const current = selectedWord;
     if (!current) return null;
     const word = _getPuzzleWord(current.seq, current.direction);
     if (!word) {
-        AppState.selectedWord = null;
+        selectedWord = null;
         return null;
     }
     const next = _hydrateSelectedWord(word, {
@@ -97,7 +110,7 @@ export function _refreshSelectedWordFromPuzzleData(options = {}) {
     next.cursorIdx = options.cursorIdx !== undefined
         ? Math.max(0, Math.min(options.cursorIdx, next.cells.length - 1))
         : Math.max(0, Math.min(current.cursorIdx || 0, next.cells.length - 1));
-    AppState.selectedWord = next;
+    selectedWord = next;
     return next;
 }
 
@@ -106,13 +119,13 @@ export function _refreshSelectedWordFromPuzzleData(options = {}) {
 // ---------------------------------------------------------------------------
 
 export function _getSelectedWordCursorIdx() {
-    return AppState.selectedWord ? AppState.selectedWord.cursorIdx || 0 : 0;
+    return selectedWord ? selectedWord.cursorIdx || 0 : 0;
 }
 
 export function _setSelectedWordCursorIdx(value) {
-    if (!AppState.selectedWord) return;
-    const len = AppState.selectedWord.cells.length;
-    AppState.selectedWord.cursorIdx = Math.max(0, Math.min(value, len - 1));
+    if (!selectedWord) return;
+    const len = selectedWord.cells.length;
+    selectedWord.cursorIdx = Math.max(0, Math.min(value, len - 1));
 }
 
 // ---------------------------------------------------------------------------
@@ -120,7 +133,7 @@ export function _setSelectedWordCursorIdx(value) {
 // ---------------------------------------------------------------------------
 
 export async function completeSelectedWordEdit(options = {}) {
-    const sw = AppState.selectedWord;
+    const sw = selectedWord;
     if (!sw) {
         if (options.nextSelection) {
             const next = options.nextSelection;
@@ -157,11 +170,11 @@ export async function completeSelectedWordEdit(options = {}) {
     }
 
     if (options.keepSelection === false) {
-        AppState.selectedWord = null;
+        selectedWord = null;
     } else if (options.nextSelection) {
         const next = options.nextSelection;
         selectWord(next.seq, next.direction, next.clickR, next.clickC, next.editorMode || 'puzzle');
-    } else if (AppState.selectedWord) {
+    } else if (selectedWord) {
         _refreshSelectedWordFromPuzzleData({ cursorIdx, editorMode });
     }
 
@@ -174,20 +187,20 @@ export async function _peCommitWord() {
 }
 
 function _selectedWordHasChanges() {
-    const sw = AppState.selectedWord;
+    const sw = selectedWord;
     if (!sw) return false;
     return sw.draftText !== sw.originalText || sw.draftClue !== sw.originalClue ||
         sw.draftLocked !== sw.originalLocked;
 }
 
 function _selectedWordIsComplete() {
-    const sw = AppState.selectedWord;
+    const sw = selectedWord;
     if (!sw) return false;
     return !((sw.draftText || '').includes(' '));
 }
 
 function _selectedWordIsPlausibleAnswer() {
-    const sw = AppState.selectedWord;
+    const sw = selectedWord;
     if (!sw) return false;
     return /^[A-Z ]*$/.test(sw.draftText || '');
 }

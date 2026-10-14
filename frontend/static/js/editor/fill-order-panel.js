@@ -6,60 +6,74 @@ import { escapeHtml } from '../core/dom.js';
 import { AppState } from '../core/state.js';
 import { showRequestError } from '../ui/message-line.js';
 import {
-    _currentEditorMode, _settlePuzzleEditingBeforeModeSwitch, renderActionBar,
-    renderPuzzleEditor, renderPuzzleEditorRhs,
+    _currentEditorMode, _settlePuzzleEditingBeforeModeSwitch, getSidebarTab,
+    renderActionBar, renderPuzzleEditor, renderPuzzleEditorRhs, setSidebarTab,
 } from './editor.js';
 
 registerActions({
     'fill-order': () => do_puzzle_fill_order(),
 });
 
+// cache: fill-order responses keyed by the grid's letters (_cellLettersKey),
+// so going back to an earlier fill doesn't ask the server again.
+// loading: true while a request is out, which greys out the button.
+export const fillOrder = { cache: new Map(), loading: false };
+
+export function isFillOrderLoading() {
+    return fillOrder.loading;
+}
+
+// The fill order for the grid as it is now, or undefined if not fetched yet
+export function cachedFillOrder() {
+    return fillOrder.cache.get(_cellLettersKey(AppState.puzzleData));
+}
+
+export function forgetFillOrders() {
+    fillOrder.cache = new Map();
+}
+
 export async function do_puzzle_fill_order() {
-    if (AppState.fillOrderLoading) return;
+    if (fillOrder.loading) return;
     const wn = AppState.puzzleWorkingName;
     const btn = document.getElementById('puzzle-fill-order-btn');
-    AppState.fillOrderLoading = true;
+    fillOrder.loading = true;
     if (btn) {
         btn.classList.add('w3-disabled');
         btn.disabled = true;
     }
     try {
         await _settlePuzzleEditingBeforeModeSwitch();
-        const key = _cellLettersKey(AppState.puzzleData);
-        let data = AppState._fillOrderCache && AppState._fillOrderCache.get(key);
-        if (!data) {
-            data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
-            if (AppState._fillOrderCache) AppState._fillOrderCache.set(key, data);
+        if (!cachedFillOrder()) {
+            const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(wn)}/fill-order`);
+            fillOrder.cache.set(_cellLettersKey(AppState.puzzleData), data);
         }
-        AppState.showingStats       = false;
-        AppState.showingFillOrder   = true;
-        AppState.sidebarTab         = 'fill-order';
+        setSidebarTab('fill-order');
         renderPuzzleEditor();
     } catch (e) { showRequestError('Error fetching fill order', e); }
     finally {
-        AppState.fillOrderLoading = false;
+        fillOrder.loading = false;
         renderActionBar();
     }
 }
 
 export async function _refreshFillOrderIfVisible() {
-    if (AppState.sidebarTab !== 'fill-order' || !AppState.puzzleWorkingName || _currentEditorMode() !== 'puzzle') return;
+    if (getSidebarTab() !== 'fill-order' || !AppState.puzzleWorkingName || _currentEditorMode() !== 'puzzle') return;
     const key = _cellLettersKey(AppState.puzzleData);
-    if (AppState._fillOrderCache && AppState._fillOrderCache.has(key)) {
+    if (fillOrder.cache.has(key)) {
         renderPuzzleEditorRhs();
         return;
     }
     try {
         const data = await apiFetch('GET',
             `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/fill-order`);
-        if (AppState._fillOrderCache) AppState._fillOrderCache.set(key, data);
+        fillOrder.cache.set(key, data);
         renderPuzzleEditorRhs();
     } catch (e) {
         // Keep the current panel if the refresh fails.
     }
 }
 
-export function _cellLettersKey(puzzleData) {
+function _cellLettersKey(puzzleData) {
     if (!puzzleData?.puzzle?.cells) return '';
     return Object.entries(puzzleData.puzzle.cells)
         .sort(([a], [b]) => Number(a) - Number(b))

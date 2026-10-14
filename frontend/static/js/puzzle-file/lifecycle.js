@@ -16,6 +16,7 @@ import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import { showView } from '../ui/view.js';
 import {
     _settlePuzzleEditingBeforeSave, renderPuzzleEditor, renderPuzzleEditorLhs,
+    resetEditor,
 } from '../editor/editor.js';
 import { _peOutsideMousedown } from '../editor/grid-clicks.js';
 import { do_puzzle_generate_grid } from '../editor/grid-mode.js';
@@ -148,13 +149,7 @@ export async function _openWorkingCopyInEditor(name, wn) {
     AppState.puzzleWorkingName = wn;
     AppState.puzzleData        = puzzleData;
     AppState.puzzleSavedHash   = _hash(puzzleData.puzzle);
-    AppState.selectedWord      = null;
-    AppState.showingStats      = false;
-    AppState.showingFillOrder  = false;
-    AppState.sidebarTab         = 'clues';
-    AppState._statsData         = null;
-    AppState._fillOrderCache    = new Map();
-    AppState.gridStructureChanged = false;
+    resetEditor();
     showView('editor');
 }
 
@@ -280,14 +275,8 @@ async function _doPuzzleCloseConfirmed() {
     AppState.puzzleState        = null;
     AppState.puzzleData         = null;
     AppState.puzzleSavedHash    = null;
-    AppState.selectedWord       = null;
-    AppState.showingStats       = false;
-    AppState.showingFillOrder   = false;
-    AppState.sidebarTab         = 'clues';
-    AppState._statsData         = null;
-    AppState._fillOrderCache    = null;
-    AppState.gridStructureChanged = false;
-    AppState.puzzleThemeSpec      = null;
+    AppState.puzzleThemeSpec    = null;
+    resetEditor();
     if (wn) {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(wn)}`); }
         catch (e) { /* ignore cleanup errors */ }
@@ -297,7 +286,7 @@ async function _doPuzzleCloseConfirmed() {
         try { await apiFetch('DELETE', `/api/puzzles/${encodeURIComponent(originalName)}`); }
         catch (e) { /* ignore cleanup errors */ }
     }
-    showView('home');
+    showView('dashboard');
 }
 
 async function do_puzzle_delete() {

@@ -113,3 +113,17 @@ def test_server_error_reaches_message_line(app_page, api):
     page.locator(".ab-btn", has_text="Stats").click()
     expect(page.locator("#ml")).to_have_class("message-line message-line-error")
     expect(page.locator("#ml-text")).to_have_text(f"Error fetching stats: Puzzle not found: {wn}")
+
+
+def test_stats_refresh_after_grid_edit(app_page):
+    page = app_page
+
+    menu(page, "Puzzle", "#menu-puzzle-new")
+    answer_input_box(page, "5", "")
+    page.locator(".ab-btn", has_text="Stats").click()
+    black_cells = page.locator(".stat-card", has_text="Black cells").locator(".stat-card-value")
+    expect(black_cells).to_have_text("0")
+
+    page.mouse.click(*cell_point(page, 0, 0))
+    expect(black_cells).to_have_text("2")
+    expect(page.locator(".sidebar-tab-active")).to_have_text("Stats")

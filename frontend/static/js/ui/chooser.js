@@ -20,31 +20,29 @@ registerActions({
 
 const CH_PAGE_SIZE = 5;
 
-let _chPreviews  = [];
-
-let _chPage      = 0;
-
-let _chOnSelect  = null;
-
-let _chSortOrder = 'recent';
-
-let _chLoadItems = null;
-
-let _chEmptyMessage = 'No items found.';
-
-let _chStateFilter = 'all';
-
-let _chApiPrefix = '';
+// The open chooser. previews: one per puzzle, from GET <apiPrefix>/<name>/preview.
+// loadItems(state), when given, lists the names to show and is called again
+// whenever the state filter changes; onSelect(name) runs on a click.
+const chooser = {
+    previews: [],
+    page: 0,
+    onSelect: null,
+    sortOrder: 'recent',
+    loadItems: null,
+    emptyMessage: 'No items found.',
+    stateFilter: 'all',
+    apiPrefix: '',
+};
 
 export async function showPreviewChooser(title, names, apiPrefix, onSelect, options = {}) {
-    _chPreviews  = [];
-    _chPage      = 0;
-    _chOnSelect  = onSelect;
-    _chSortOrder = 'recent';
-    _chLoadItems = options.loadItems || null;
-    _chEmptyMessage = options.emptyMessage || 'No items found.';
-    _chStateFilter = options.initialStateFilter || 'all';
-    _chApiPrefix = apiPrefix;
+    chooser.previews  = [];
+    chooser.page      = 0;
+    chooser.onSelect  = onSelect;
+    chooser.sortOrder = 'recent';
+    chooser.loadItems = options.loadItems || null;
+    chooser.emptyMessage = options.emptyMessage || 'No items found.';
+    chooser.stateFilter = options.initialStateFilter || 'all';
+    chooser.apiPrefix = apiPrefix;
     document.querySelector('input[name="ch-sort"][value="recent"]').checked = true;
 
     document.getElementById('ch-title').innerHTML = title;
@@ -52,17 +50,17 @@ export async function showPreviewChooser(title, names, apiPrefix, onSelect, opti
     const stateFilterWrap = document.getElementById('ch-state-filter-wrap');
     const stateFilter = document.getElementById('ch-state-filter');
     stateFilterWrap.style.display = options.stateFilterEnabled ? 'inline-flex' : 'none';
-    stateFilter.value = _chStateFilter;
+    stateFilter.value = chooser.stateFilter;
     listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews...</div>';
     document.getElementById('ch-pagination').style.display = 'none';
     showElement('ch');
 
-    if (_chLoadItems) {
+    if (chooser.loadItems) {
         await _chReload();
         return;
     }
 
-    _chPreviews = await _chLoadPreviewsFromNames(names, apiPrefix);
+    chooser.previews = await _chLoadPreviewsFromNames(names, apiPrefix);
     _chRender();
 }
 
@@ -71,8 +69,8 @@ async function _chReload() {
     listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews...</div>';
     document.getElementById('ch-pagination').style.display = 'none';
 
-    const names = await _chLoadItems(_chStateFilter);
-    _chPreviews = await _chLoadPreviewsFromNames(names, _chApiPrefix);
+    const names = await chooser.loadItems(chooser.stateFilter);
+    chooser.previews = await _chLoadPreviewsFromNames(names, chooser.apiPrefix);
     _chRender();
 }
 
@@ -94,16 +92,16 @@ function _chRender() {
     const lastBtn   = document.getElementById('ch-page-last');
     const labelEl   = document.getElementById('ch-page-label');
 
-    const ordered   = _chSortOrder === 'alpha'
-        ? [..._chPreviews].sort((a, b) => a.name.localeCompare(b.name))
-        : _chPreviews;
+    const ordered   = chooser.sortOrder === 'alpha'
+        ? [...chooser.previews].sort((a, b) => a.name.localeCompare(b.name))
+        : chooser.previews;
     const total     = ordered.length;
     if (total === 0) {
-        listEl.innerHTML = `<div class="w3-container w3-padding">${escapeHtml(_chEmptyMessage)}</div>`;
+        listEl.innerHTML = `<div class="w3-container w3-padding">${escapeHtml(chooser.emptyMessage)}</div>`;
         pageDiv.style.display = 'none';
         return;
     }
-    const pageStart = _chPage * CH_PAGE_SIZE;
+    const pageStart = chooser.page * CH_PAGE_SIZE;
     const pageEnd   = Math.min(pageStart + CH_PAGE_SIZE, total);
     const pageItems = ordered.slice(pageStart, pageEnd);
 
@@ -113,7 +111,7 @@ function _chRender() {
         card.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:8px;border:1px solid #ddd;border-radius:4px;width:160px;flex-shrink:0';
         card.onmouseover = () => card.style.background = '#f1f1f1';
         card.onmouseout  = () => card.style.background = '';
-        card.onclick     = () => { hideElement('ch'); _chOnSelect(p.name); };
+        card.onclick     = () => { hideElement('ch'); chooser.onSelect(p.name); };
 
         const svgDiv = document.createElement('div');
         svgDiv.style.cssText = 'width:150px;height:150px;overflow:hidden';
@@ -135,22 +133,22 @@ function _chRender() {
     if (total > CH_PAGE_SIZE) {
         const lastPage = Math.ceil(total / CH_PAGE_SIZE) - 1;
         labelEl.textContent    = `${pageStart + 1}–${pageEnd} of ${total}`;
-        firstBtn.disabled      = _chPage === 0;
-        prevBtn.disabled       = _chPage === 0;
+        firstBtn.disabled      = chooser.page === 0;
+        prevBtn.disabled       = chooser.page === 0;
         nextBtn.disabled       = pageEnd >= total;
-        lastBtn.disabled       = _chPage === lastPage;
+        lastBtn.disabled       = chooser.page === lastPage;
         pageDiv.style.display  = 'flex';
     } else {
         pageDiv.style.display = 'none';
     }
 }
 
-function chSetSort(order) { _chSortOrder = order; _chPage = 0; _chRender(); }
+function chSetSort(order) { chooser.sortOrder = order; chooser.page = 0; _chRender(); }
 
 async function chSetPuzzleStateFilter(value) {
-    _chStateFilter = value;
-    _chPage = 0;
-    if (!_chLoadItems) return;
+    chooser.stateFilter = value;
+    chooser.page = 0;
+    if (!chooser.loadItems) return;
     try {
         await _chReload();
     } catch (e) {
@@ -158,10 +156,10 @@ async function chSetPuzzleStateFilter(value) {
     }
 }
 
-function chPageFirst() { _chPage = 0; _chRender(); }
+function chPageFirst() { chooser.page = 0; _chRender(); }
 
-function chPagePrev()  { if (_chPage > 0) { _chPage--; _chRender(); } }
+function chPagePrev()  { if (chooser.page > 0) { chooser.page--; _chRender(); } }
 
-function chPageNext()  { if ((_chPage + 1) * CH_PAGE_SIZE < _chPreviews.length) { _chPage++; _chRender(); } }
+function chPageNext()  { if ((chooser.page + 1) * CH_PAGE_SIZE < chooser.previews.length) { chooser.page++; _chRender(); } }
 
-function chPageLast()  { _chPage = Math.ceil(_chPreviews.length / CH_PAGE_SIZE) - 1; _chRender(); }
+function chPageLast()  { chooser.page = Math.ceil(chooser.previews.length / CH_PAGE_SIZE) - 1; _chRender(); }

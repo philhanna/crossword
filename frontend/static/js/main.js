@@ -38,5 +38,5 @@ async function start() {
     positionMessageLine();
     window.addEventListener('scroll', positionMessageLine, { passive: true });
     window.addEventListener('resize', positionMessageLine);
-    showView('home');
+    showView('dashboard');
 }

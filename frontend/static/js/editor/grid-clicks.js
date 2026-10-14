@@ -8,43 +8,42 @@ import { AppState } from '../core/state.js';
 import { renderPuzzleEditor } from './editor.js';
 import {
     _isWordEditorOpen, _setSelectedWordCursorIdx, completeSelectedWordEdit,
-    findWordAtCell,
+    findWordAtCell, getSelectedWord,
 } from './selection.js';
 import { _weApplyAndClose, openWordEditor } from './word-editor.js';
 import { BOXSIZE } from '../svg/grid-svg.js';
 
-let _clickState   = 0;
-let _clickTimeout = null;
-let _clickEvent   = null;
-let _ignorePuzzleClicksUntil = 0;
 const CLICK_DELAY = 280;
 
+// A single click waiting out CLICK_DELAY: pending is true while it waits,
+// timeout is its timer, and event the click it will act on.
+const click = { pending: false, timeout: null, event: null };
+
 export async function handlePuzzleClick(event) {
-    if (Date.now() < _ignorePuzzleClicksUntil) return;
     const wasEditingWord = _isWordEditorOpen();
     if (wasEditingWord) {
-        if (_clickTimeout) {
-            clearTimeout(_clickTimeout);
-            _clickTimeout = null;
+        if (click.timeout) {
+            clearTimeout(click.timeout);
+            click.timeout = null;
         }
-        _clickState = 0;
-        _clickEvent = null;
+        click.pending = false;
+        click.event = null;
         await _weApplyAndClose();
         if (_isWordEditorOpen()) return;
     }
     _focusPuzzleSvg();
-    _clickEvent = event;
-    if (_clickState === 0) {
-        _clickState = 1;
-        _clickTimeout = setTimeout(() => {
-            _clickState = 0;
-            _clickTimeout = null;
-            puzzleClickAt(_clickEvent, 'across', !wasEditingWord);
+    click.event = event;
+    if (!click.pending) {
+        click.pending = true;
+        click.timeout = setTimeout(() => {
+            click.pending = false;
+            click.timeout = null;
+            puzzleClickAt(click.event, 'across', !wasEditingWord);
         }, CLICK_DELAY);
     } else {
-        _clickState = 0;
-        clearTimeout(_clickTimeout);
-        _clickTimeout = null;
+        click.pending = false;
+        clearTimeout(click.timeout);
+        click.timeout = null;
         puzzleClickAt(event, 'down', !wasEditingWord);
     }
 }
@@ -70,7 +69,7 @@ async function puzzleClickAt(event, direction, openEditor = true) {
     } // black cell
     const word = findWordAtCell(r, c, direction);
     if (word) {
-        const current = AppState.selectedWord;
+        const current = getSelectedWord();
         const inCurrentWord = current && current.seq === word.seq && current.direction === word.direction &&
             current.cells.some(([wr, wc]) => wr === r && wc === c);
         if (!inCurrentWord) {
@@ -102,7 +101,7 @@ export function _focusPuzzleSvg() {
 }
 
 export function _peOutsideMousedown(e) {
-    if (!AppState.selectedWord || _isWordEditorOpen()) return;
+    if (!getSelectedWord() || _isWordEditorOpen()) return;
     const svg = document.getElementById('puzzle-svg');
     if (svg && svg.contains(e.target)) return; // SVG clicks handled by puzzleClickAt
     if (e.target.closest && (

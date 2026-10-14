@@ -7,15 +7,19 @@ registerActions({
     'message-line-close': () => clearMessageLine(),
 });
 
-export let MESSAGE_LINE_TIMEOUT_MS = 3000; // default; may be overridden by /api/config
+// timeoutMs: how long a notice stays up, from /api/config at startup.
+// timer: the pending timeout that will clear the line, if any.
+const messageLine = { timeoutMs: 3000, timer: null };
 
-export function setMessageLineTimeout(ms) {
-    MESSAGE_LINE_TIMEOUT_MS = ms;
+export function messageLineTimeout() {
+    return messageLine.timeoutMs;
 }
 
-let _messageLineTimer = null;
+export function setMessageLineTimeout(ms) {
+    messageLine.timeoutMs = ms;
+}
 
-export function showMessageLine(text, level = 'notice', timeoutMs = MESSAGE_LINE_TIMEOUT_MS) {
+export function showMessageLine(text, level = 'notice', timeoutMs = messageLine.timeoutMs) {
     (level === 'error' ? console.error : console.log)(`[${level}] ${text}`);
     const ml = document.getElementById('ml');
     document.getElementById('ml-text').textContent = text;
@@ -23,12 +27,12 @@ export function showMessageLine(text, level = 'notice', timeoutMs = MESSAGE_LINE
     ml.classList.add(level === 'error' ? 'message-line-error' : 'message-line-notice');
     positionMessageLine();
     ml.style.display = 'flex';
-    if (_messageLineTimer) {
-        clearTimeout(_messageLineTimer);
-        _messageLineTimer = null;
+    if (messageLine.timer) {
+        clearTimeout(messageLine.timer);
+        messageLine.timer = null;
     }
     if (timeoutMs > 0) {
-        _messageLineTimer = setTimeout(() => {
+        messageLine.timer = setTimeout(() => {
             clearMessageLine();
         }, timeoutMs);
     }
@@ -46,9 +50,9 @@ function clearMessageLine() {
     ml.style.display = 'none';
     ml.classList.remove('message-line-notice', 'message-line-error');
     document.getElementById('ml-text').textContent = '';
-    if (_messageLineTimer) {
-        clearTimeout(_messageLineTimer);
-        _messageLineTimer = null;
+    if (messageLine.timer) {
+        clearTimeout(messageLine.timer);
+        messageLine.timer = null;
     }
 }
 

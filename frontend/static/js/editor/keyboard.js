@@ -9,7 +9,7 @@ import { AppState } from '../core/state.js';
 import { _updatePuzzleToolbar, renderPuzzleEditor, renderPuzzleEditorLhs } from './editor.js';
 import {
     _getSelectedWordCursorIdx, _isWordEditorOpen, _setSelectedWordCursorIdx,
-    completeSelectedWordEdit, findWordAtCell,
+    clearSelection, completeSelectedWordEdit, findWordAtCell, getSelectedWord,
 } from './selection.js';
 import {
     _weSyncTextInputFromAnswer, closeWordEditor, doWordEditOK,
@@ -17,19 +17,19 @@ import {
 } from './word-editor.js';
 
 export function _peKeydown(e) {
-    if (!AppState.selectedWord || _isWordEditorOpen()) return;
+    if (!getSelectedWord() || _isWordEditorOpen()) return;
     // Don't capture keystrokes going to modal inputs
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-    const sw  = AppState.selectedWord;
+    const sw  = getSelectedWord();
     const len = sw.cells.length;
     const isAcross = sw.direction === 'across';
 
     if (e.key === 'Escape') {
         completeSelectedWordEdit({ keepSelection: false }).then((result) => {
             if (result.error) return;
-            AppState.selectedWord = null;
+            clearSelection();
             _updatePuzzleToolbar();
             renderPuzzleEditor();
         });
@@ -142,7 +142,7 @@ export async function _weKeydown(e) {
         return;
     }
 
-    const sw = AppState.selectedWord;
+    const sw = getSelectedWord();
     const len = sw.cells.length;
 
     const isAcross    = sw.direction === 'across';
