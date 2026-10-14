@@ -429,6 +429,7 @@ function _peOutsideMousedown(e) {
         e.target.closest('#ch') ||
         e.target.closest('#constraints-popup') ||
         e.target.closest('#defs-popup') ||
+        e.target.closest('.puzzle-title-display') ||
         e.target.closest('button') ||
         e.target.closest('a') ||
         e.target.closest('input') ||
