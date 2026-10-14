@@ -1,0 +1,142 @@
+/* Crossword Composer — modal dialogs, the chooser and their contents */
+
+/* =========================================================
+   Modal dialogs: a dimmed full-window backdrop with the dialog centered
+   ========================================================= */
+
+.modal {
+  z-index: 3;
+  display: none;
+  padding-top: 100px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  margin: auto;
+  background-color: #fff;
+  position: relative;
+  padding: 0;
+  outline: 0;
+  width: 600px;
+}
+
+@media (max-width: 600px) {
+  .modal-content { margin: 0 10px; width: auto !important; }
+  .modal { padding-top: 30px; }
+}
+
+@media (max-width: 768px) {
+  .modal-content { width: 500px; }
+  .modal { padding-top: 50px; }
+}
+
+@media (min-width: 993px) {
+  .modal-content { width: 900px; }
+}
+
+/* =========================================================
+   Chooser list
+   ========================================================= */
+
+.chooser-list {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+  height: 260px;
+}
+
+.chooser-list a {
+  text-decoration: none;
+}
+
+/* =========================================================
+   Dialogs
+   ========================================================= */
+
+.modal {
+  z-index: 1300 !important;
+}
+
+.dialog-card {
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22) !important;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--c-primary);
+  color: white;
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.dialog-header-icon {
+  font-size: 1.1rem;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.dialog-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.dialog-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.75);
+  font-size: 1.25rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+
+.dialog-close-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+.dialog-body {
+  padding: var(--sp-4) var(--sp-6);
+  background: var(--c-surface);
+  font-size: 0.9rem;
+}
+
+.dialog-prompt {
+  margin: 0 0 var(--sp-4) 0;
+  color: var(--c-text);
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: flex-end;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--c-border);
+}
+
+/* =========================================================
+   Small pieces used inside dialogs
+   ========================================================= */
+
+/* A line of text standing in for a list that is loading or empty */
+.panel-message { padding: 8px 16px; }
+.panel-message::before, .panel-message::after { content: ""; display: table; clear: both; }
+
+.chooser-heading { color: #757575; }

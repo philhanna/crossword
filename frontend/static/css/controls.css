@@ -1,44 +1,7 @@
-/* Crossword Composer — reset and generic controls
+/* Crossword Composer — generic controls: menus, buttons, form inputs
  *
- * Replaces the parts of W3.CSS the app used: the reset, the top menu's
- * hover dropdowns, modal dialogs, the disabled look, pager buttons and the
- * constraints table. It loads before the rest of the styles, which refine
- * these rules, so it must stay first.
+ * The first part replaces what the app used from W3.CSS; the rest refines it.
  */
-
-/* =========================================================
-   Reset (from normalize.css, MIT licence, as W3.CSS 4.15 shipped it)
-   ========================================================= */
-
-html { box-sizing: border-box; -webkit-text-size-adjust: 100%; }
-*, *::before, *::after { box-sizing: inherit; }
-body { margin: 0; }
-main, nav, header, section { display: block; }
-[hidden], template { display: none; }
-a { background-color: transparent; color: inherit; }
-a:active, a:hover { outline-width: 0; }
-b, strong { font-weight: bolder; }
-small { font-size: 80%; }
-img { border-style: none; vertical-align: middle; }
-code, kbd, pre, samp { font-family: monospace, monospace; font-size: 1em; }
-hr { box-sizing: content-box; height: 0; overflow: visible; border: 0; border-top: 1px solid #eee; margin: 20px 0; }
-button, input, select, textarea, optgroup { font: inherit; margin: 0; }
-button, input { overflow: visible; }
-button, select { text-transform: none; }
-button, [type=button], [type=reset], [type=submit] { -webkit-appearance: button; }
-textarea { overflow: auto; }
-[type=checkbox], [type=radio] { padding: 0; }
-::-webkit-file-upload-button { -webkit-appearance: button; font: inherit; }
-
-html, body { font-family: Verdana, sans-serif; font-size: 15px; line-height: 1.5; }
-html { overflow-x: hidden; }
-h1 { font-size: 36px; }
-h2 { font-size: 30px; }
-h3 { font-size: 24px; }
-h4 { font-size: 20px; }
-h5 { font-size: 18px; }
-h6 { font-size: 16px; }
-h1, h2, h3, h4, h5, h6 { font-family: "Segoe UI", Arial, sans-serif; font-weight: 400; margin: 10px 0; }
 
 /* =========================================================
    Disabled look
@@ -88,53 +51,53 @@ h1, h2, h3, h4, h5, h6 { font-family: "Segoe UI", Arial, sans-serif; font-weight
 
 .app-menu-item:hover { color: #000 !important; background-color: #ccc !important; }
 
-/* =========================================================
-   Modal dialogs: a dimmed full-window backdrop with the dialog centered
-   ========================================================= */
+.app-dropdown {
+  background: var(--c-surface) !important;
+  border: 1px solid var(--c-border) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+  min-width: 210px;
+  padding: var(--sp-1) 0 !important;
+  margin-top: 2px;
+}
 
-.modal {
-  z-index: 3;
-  display: none;
-  padding-top: 100px;
-  position: fixed;
+.app-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -4px;
   left: 0;
-  top: 0;
+  right: 0;
+  height: 4px;
+}
+
+.app-dropdown .app-menu-item {
+  color: var(--c-text) !important;
+  background: transparent !important;
+  font-family: var(--font-ui) !important;
+  font-size: 0.875rem !important;
+  padding: 7px 16px !important;
+  display: block;
   width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.4);
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  line-height: 1.4;
 }
 
-.modal-content {
-  margin: auto;
-  background-color: #fff;
-  position: relative;
-  padding: 0;
-  outline: 0;
-  width: 600px;
+.app-dropdown .app-menu-item:hover {
+  background: #eeedf5 !important;
 }
 
-@media (max-width: 600px) {
-  .modal-content { margin: 0 10px; width: auto !important; }
-  .modal { padding-top: 30px; }
+.app-dropdown .app-menu-item.is-disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .modal-content { width: 500px; }
-  .modal { padding-top: 50px; }
+.dropdown-divider {
+  margin: var(--sp-1) 0;
+  border: none;
+  border-top: 1px solid var(--c-border);
 }
-
-@media (min-width: 993px) {
-  .modal-content { width: 900px; }
-}
-
-/* =========================================================
-   Small pieces used inside dialogs
-   ========================================================= */
-
-/* A line of text standing in for a list that is loading or empty */
-.panel-message { padding: 8px 16px; }
-.panel-message::before, .panel-message::after { content: ""; display: table; clear: both; }
 
 /* The chooser's « ‹ › » buttons */
 .pager-btn {
@@ -155,28 +118,102 @@ h1, h2, h3, h4, h5, h6 { font-family: "Segoe UI", Arial, sans-serif; font-weight
 .pager-btn:hover { color: #000; background-color: #ccc; }
 .pager-btn:disabled { cursor: not-allowed; opacity: 0.3; }
 
-.chooser-heading { color: #757575; }
+/* ---- Right-click context menu ---- */
+.context-menu {
+  position: fixed;
+  z-index: 1400;
+  min-width: 160px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  padding: 4px 0;
+  font-size: 0.85rem;
+}
+.context-menu-item {
+  padding: 6px 14px;
+  cursor: pointer;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+.context-menu-item:hover {
+  background: var(--c-primary);
+  color: #fff;
+}
 
-/* The constraints popup */
-.constraints-pattern { padding: 8px 16px; text-align: center; }
+/* =========================================================
+   Form elements (inside dialogs)
+   ========================================================= */
 
-.constraints-table {
-  border-collapse: collapse;
-  border-spacing: 0;
+.form-field {
+  margin-bottom: var(--sp-4);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--c-text-muted);
+}
+
+.form-input {
   width: 100%;
-  display: table;
-  font-size: 12px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--c-text);
+  background: var(--c-surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.constraints-table tr { border-bottom: 1px solid #ddd; }
-
-.constraints-table td,
-.constraints-table th {
-  padding: 8px 8px;
-  display: table-cell;
-  text-align: left;
-  vertical-align: top;
+.form-input:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(59,110,165,0.15);
 }
 
-.constraints-table th:first-child,
-.constraints-table td:first-child { padding-left: 16px; }
+/* =========================================================
+   Buttons (dialogs)
+   ========================================================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 var(--sp-4);
+  border-radius: 5px;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+  line-height: 1;
+}
+
+.btn-primary {
+  background: var(--c-primary);
+  border-color: var(--c-primary-dk);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--c-primary-dk);
+  color: white;
+}
+
+.btn-secondary {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+
+.btn-secondary:hover {
+  background: #eceaf4;
+  border-color: #aba8c0;
+}

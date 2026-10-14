@@ -598,7 +598,7 @@ class TestFrontendRoutes:
         assert response.text == ""
 
     def test_frontend_code_must_be_revalidated(self, client):
-        for path in ["/static/js/main.js", "/static/css/style.css", "/static/css/theme.css"]:
+        for path in ["/static/js/main.js", "/static/css/base.css", "/static/css/theme.css"]:
             response = client.get(path)
 
             assert response.status_code == 200
