@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="/static/css/controls.css">
 <link rel="stylesheet" href="/static/css/style.css">
 <link rel="stylesheet" href="/static/css/theme.css">
 <link rel="icon" type="image/png" href="/static/images/favicon.svg">
@@ -29,48 +29,48 @@
     <a id="menu-dashboard" class="app-nav-btn" data-action="show-dashboard">Dashboard</a>
 
     <!-- Puzzle menu -->
-    <div class="w3-dropdown-hover">
+    <div class="app-menu">
       <button class="app-nav-btn">Puzzle</button>
-      <div class="w3-dropdown-content w3-card-4 app-dropdown">
-        <a id="menu-puzzle-new"            class="w3-bar-item w3-button" data-action="puzzle-new">New puzzle…</a>
-        <a id="menu-puzzle-open"           class="w3-bar-item w3-button" data-action="puzzle-open">Open puzzle…</a>
+      <div class="app-dropdown">
+        <a id="menu-puzzle-new"            class="app-menu-item" data-action="puzzle-new">New puzzle…</a>
+        <a id="menu-puzzle-open"           class="app-menu-item" data-action="puzzle-open">Open puzzle…</a>
         <hr class="dropdown-divider">
-        <a id="menu-puzzle-save"           class="w3-bar-item w3-button" data-action="puzzle-save">Save</a>
-        <a id="menu-puzzle-save-as"        class="w3-bar-item w3-button" data-action="puzzle-save-as">Save as…</a>
-        <a id="menu-puzzle-rename"         class="w3-bar-item w3-button" data-action="puzzle-rename">Rename…</a>
-        <a id="menu-puzzle-close"          class="w3-bar-item w3-button" data-action="puzzle-close">Close</a>
-        <a id="menu-puzzle-delete"         class="w3-bar-item w3-button" data-action="puzzle-delete">Delete…</a>
+        <a id="menu-puzzle-save"           class="app-menu-item" data-action="puzzle-save">Save</a>
+        <a id="menu-puzzle-save-as"        class="app-menu-item" data-action="puzzle-save-as">Save as…</a>
+        <a id="menu-puzzle-rename"         class="app-menu-item" data-action="puzzle-rename">Rename…</a>
+        <a id="menu-puzzle-close"          class="app-menu-item" data-action="puzzle-close">Close</a>
+        <a id="menu-puzzle-delete"         class="app-menu-item" data-action="puzzle-delete">Delete…</a>
         <hr class="dropdown-divider">
-        <a id="menu-puzzle-title"          class="w3-bar-item w3-button" data-action="puzzle-title">Edit title…</a>
-        <a id="menu-puzzle-grid-mode"      class="w3-bar-item w3-button" data-action="grid-mode">Switch to Grid mode</a>
-        <a id="menu-puzzle-puzzle-mode"    class="w3-bar-item w3-button" data-action="puzzle-mode">Switch to Puzzle mode</a>
+        <a id="menu-puzzle-title"          class="app-menu-item" data-action="puzzle-title">Edit title…</a>
+        <a id="menu-puzzle-grid-mode"      class="app-menu-item" data-action="grid-mode">Switch to Grid mode</a>
+        <a id="menu-puzzle-puzzle-mode"    class="app-menu-item" data-action="puzzle-mode">Switch to Puzzle mode</a>
       </div>
     </div>
 
     <!-- Import menu -->
-    <div class="w3-dropdown-hover">
+    <div class="app-menu">
       <button class="app-nav-btn">Import</button>
-      <div class="w3-dropdown-content w3-card-4 app-dropdown">
-        <a id="menu-import-puz"            class="w3-bar-item w3-button" data-action="import" data-format="puz">AcrossLite binary</a>
-        <a id="menu-import-acrosslite"     class="w3-bar-item w3-button" data-action="import" data-format="acrosslite">AcrossLite text</a>
-        <a id="menu-import-ipuz"           class="w3-bar-item w3-button" data-action="import" data-format="ipuz">ipuz…</a>
-        <a id="menu-import-xd"             class="w3-bar-item w3-button" data-action="import" data-format="xd">xword xd…</a>
-        <a id="menu-import-ccxml"          class="w3-bar-item w3-button" data-action="import" data-format="ccxml">Crossword Compiler</a>
+      <div class="app-dropdown">
+        <a id="menu-import-puz"            class="app-menu-item" data-action="import" data-format="puz">AcrossLite binary</a>
+        <a id="menu-import-acrosslite"     class="app-menu-item" data-action="import" data-format="acrosslite">AcrossLite text</a>
+        <a id="menu-import-ipuz"           class="app-menu-item" data-action="import" data-format="ipuz">ipuz…</a>
+        <a id="menu-import-xd"             class="app-menu-item" data-action="import" data-format="xd">xword xd…</a>
+        <a id="menu-import-ccxml"          class="app-menu-item" data-action="import" data-format="ccxml">Crossword Compiler</a>
       </div>
     </div>
 
     <!-- Export menu -->
-    <div class="w3-dropdown-hover">
+    <div class="app-menu">
       <button class="app-nav-btn">Export</button>
-      <div class="w3-dropdown-content w3-card-4 app-dropdown">
-        <a id="menu-export-puz"            class="w3-bar-item w3-button" data-action="export" data-format="puzbin">AcrossLite binary</a>
-        <a id="menu-export-acrosslite"     class="w3-bar-item w3-button" data-action="export" data-format="puz">AcrossLite text</a>
-        <a id="menu-export-ipuz"           class="w3-bar-item w3-button" data-action="export" data-format="ipuz">ipuz…</a>
-        <a id="menu-export-xd"             class="w3-bar-item w3-button" data-action="export" data-format="xd">xword xd…</a>
-        <a id="menu-export-cwcompiler"     class="w3-bar-item w3-button" data-action="export" data-format="xml">Crossword Compiler</a>
-        <a id="menu-export-nytimes"        class="w3-bar-item w3-button" data-action="export" data-format="nyt">New York Times</a>
-        <a id="menu-export-solver-pdf"     class="w3-bar-item w3-button" data-action="export" data-format="solver">Solver PDF</a>
-        <a id="menu-export-solved-pdf"     class="w3-bar-item w3-button" data-action="export" data-format="solved">Solution PDF</a>
+      <div class="app-dropdown">
+        <a id="menu-export-puz"            class="app-menu-item" data-action="export" data-format="puzbin">AcrossLite binary</a>
+        <a id="menu-export-acrosslite"     class="app-menu-item" data-action="export" data-format="puz">AcrossLite text</a>
+        <a id="menu-export-ipuz"           class="app-menu-item" data-action="export" data-format="ipuz">ipuz…</a>
+        <a id="menu-export-xd"             class="app-menu-item" data-action="export" data-format="xd">xword xd…</a>
+        <a id="menu-export-cwcompiler"     class="app-menu-item" data-action="export" data-format="xml">Crossword Compiler</a>
+        <a id="menu-export-nytimes"        class="app-menu-item" data-action="export" data-format="nyt">New York Times</a>
+        <a id="menu-export-solver-pdf"     class="app-menu-item" data-action="export" data-format="solver">Solver PDF</a>
+        <a id="menu-export-solved-pdf"     class="app-menu-item" data-action="export" data-format="solved">Solution PDF</a>
       </div>
     </div>
 
@@ -104,9 +104,9 @@
 <!-- ================ Dialogs ================ -->
 
 <!-- Constraints popup -->
-<div id="constraints-popup" class="w3-modal" style="display:none"
+<div id="constraints-popup" class="modal" style="display:none"
      data-backdrop-action="close-dialog">
-  <div class="w3-modal-content dialog-card" style="width:640px;max-width:95vw">
+  <div class="modal-content dialog-card" style="width:640px;max-width:95vw">
     <div class="dialog-header">
       <i class="material-icons dialog-header-icon">assignment</i>
       <span id="constraints-popup-title" class="dialog-title"></span>
@@ -117,9 +117,9 @@
 </div>
 
 <!-- Definitions popup -->
-<div id="defs-popup" class="w3-modal" style="display:none"
+<div id="defs-popup" class="modal" style="display:none"
      data-backdrop-action="close-dialog">
-  <div class="w3-modal-content dialog-card" style="width:480px;max-width:95vw">
+  <div class="modal-content dialog-card" style="width:480px;max-width:95vw">
     <div class="dialog-header">
       <i class="material-icons dialog-header-icon">menu_book</i>
       <span id="defs-popup-title" class="dialog-title"></span>
@@ -130,8 +130,8 @@
 </div>
 
 <!-- Message box dialog (OK / Cancel) -->
-<div id="mb" class="w3-modal" style="display:none">
-  <div class="w3-modal-content dialog-card" style="width:380px;max-width:90vw">
+<div id="mb" class="modal" style="display:none">
+  <div class="modal-content dialog-card" style="width:380px;max-width:90vw">
     <div class="dialog-header">
       <span id="mb-title" class="dialog-title"></span>
       <button class="dialog-close-btn" data-action="message-box-cancel">&times;</button>
@@ -147,8 +147,8 @@
 </div>
 
 <!-- Input box dialog (text input + OK / Cancel) -->
-<div id="ib" class="w3-modal" style="display:none">
-  <div class="w3-modal-content dialog-card" style="width:380px;max-width:90vw">
+<div id="ib" class="modal" style="display:none">
+  <div class="modal-content dialog-card" style="width:380px;max-width:90vw">
     <div class="dialog-header">
       <span id="ib-title" class="dialog-title"></span>
       <button class="dialog-close-btn" id="ib-close" data-action="input-box-cancel">&times;</button>
@@ -170,8 +170,8 @@
 </div>
 
 <!-- Chooser dialog (scrollable list of grids or puzzles) -->
-<div id="ch" class="w3-modal" style="display:none">
-  <div class="w3-modal-content dialog-card" style="width:900px;max-width:95vw">
+<div id="ch" class="modal" style="display:none">
+  <div class="modal-content dialog-card" style="width:900px;max-width:95vw">
     <div class="dialog-header">
       <span id="ch-title" class="dialog-title"></span>
       <button class="dialog-close-btn" data-action="close-dialog">&times;</button>
@@ -194,19 +194,19 @@
     </div>
     <div id="ch-list" class="chooser-list dialog-body"></div>
     <div id="ch-pagination" style="display:none;justify-content:center;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #ddd">
-      <button id="ch-page-first" class="w3-button w3-border" data-action="chooser-page" data-page="first">&#171;</button>
-      <button id="ch-page-prev"  class="w3-button w3-border" data-action="chooser-page" data-page="prev">&#8249;</button>
+      <button id="ch-page-first" class="pager-btn" data-action="chooser-page" data-page="first">&#171;</button>
+      <button id="ch-page-prev"  class="pager-btn" data-action="chooser-page" data-page="prev">&#8249;</button>
       <span id="ch-page-label" style="font-size:13px"></span>
-      <button id="ch-page-next"  class="w3-button w3-border" data-action="chooser-page" data-page="next">&#8250;</button>
-      <button id="ch-page-last"  class="w3-button w3-border" data-action="chooser-page" data-page="last">&#187;</button>
+      <button id="ch-page-next"  class="pager-btn" data-action="chooser-page" data-page="next">&#8250;</button>
+      <button id="ch-page-last"  class="pager-btn" data-action="chooser-page" data-page="last">&#187;</button>
     </div>
   </div>
 </div>
 
 <!-- State-change dialog (dashboard) -->
-<div id="state-dialog" class="w3-modal" style="display:none"
+<div id="state-dialog" class="modal" style="display:none"
      data-backdrop-action="state-dialog-cancel">
-  <div class="w3-modal-content dialog-card" style="width:420px;max-width:92vw">
+  <div class="modal-content dialog-card" style="width:420px;max-width:92vw">
     <div class="dialog-header">
       <i class="material-icons dialog-header-icon">flag</i>
       <span class="dialog-title">Change puzzle state</span>
@@ -243,9 +243,9 @@
 </div>
 
 <!-- Puzzle state-history popup (dashboard, right-click "Show history") -->
-<div id="history-popup" class="w3-modal" style="display:none"
+<div id="history-popup" class="modal" style="display:none"
      data-backdrop-action="close-dialog">
-  <div class="w3-modal-content dialog-card" style="width:890px;max-width:95vw">
+  <div class="modal-content dialog-card" style="width:890px;max-width:95vw">
     <div class="dialog-header">
       <i class="material-icons dialog-header-icon">history</i>
       <span id="history-popup-title" class="dialog-title"></span>

@@ -25,7 +25,7 @@ function _dashOpenContextMenu(e, name) {
 async function _dashShowHistory(name) {
     document.getElementById('history-popup-title').textContent = `History — ${name}`;
     const body = document.getElementById('history-popup-body');
-    body.innerHTML = '<div class="w3-container w3-padding">Loading...</div>';
+    body.innerHTML = '<div class="panel-message">Loading...</div>';
     showElement('history-popup');
 
     try {

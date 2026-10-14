@@ -1,0 +1,182 @@
+/* Crossword Composer — reset and generic controls
+ *
+ * Replaces the parts of W3.CSS the app used: the reset, the top menu's
+ * hover dropdowns, modal dialogs, the disabled look, pager buttons and the
+ * constraints table. It loads before the rest of the styles, which refine
+ * these rules, so it must stay first.
+ */
+
+/* =========================================================
+   Reset (from normalize.css, MIT licence, as W3.CSS 4.15 shipped it)
+   ========================================================= */
+
+html { box-sizing: border-box; -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; }
+main, nav, header, section { display: block; }
+[hidden], template { display: none; }
+a { background-color: transparent; color: inherit; }
+a:active, a:hover { outline-width: 0; }
+b, strong { font-weight: bolder; }
+small { font-size: 80%; }
+img { border-style: none; vertical-align: middle; }
+code, kbd, pre, samp { font-family: monospace, monospace; font-size: 1em; }
+hr { box-sizing: content-box; height: 0; overflow: visible; border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+button, input, select, textarea, optgroup { font: inherit; margin: 0; }
+button, input { overflow: visible; }
+button, select { text-transform: none; }
+button, [type=button], [type=reset], [type=submit] { -webkit-appearance: button; }
+textarea { overflow: auto; }
+[type=checkbox], [type=radio] { padding: 0; }
+::-webkit-file-upload-button { -webkit-appearance: button; font: inherit; }
+
+html, body { font-family: Verdana, sans-serif; font-size: 15px; line-height: 1.5; }
+html { overflow-x: hidden; }
+h1 { font-size: 36px; }
+h2 { font-size: 30px; }
+h3 { font-size: 24px; }
+h4 { font-size: 20px; }
+h5 { font-size: 18px; }
+h6 { font-size: 16px; }
+h1, h2, h3, h4, h5, h6 { font-family: "Segoe UI", Arial, sans-serif; font-weight: 400; margin: 10px 0; }
+
+/* =========================================================
+   Disabled look
+   ========================================================= */
+
+.is-disabled { cursor: not-allowed; opacity: 0.3; }
+.is-disabled *, :disabled * { pointer-events: none; }
+
+/* =========================================================
+   Top menu: a dropdown opens while the pointer is over it
+   ========================================================= */
+
+.app-menu {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.app-menu:hover .app-dropdown { display: block; }
+
+.app-dropdown {
+  cursor: auto;
+  color: #000;
+  background-color: #fff;
+  display: none;
+  position: absolute;
+  min-width: 160px;
+  margin: 0;
+  padding: 0;
+  z-index: 1;
+}
+
+.app-menu-item {
+  border: none;
+  display: inline-block;
+  padding: 8px 16px;
+  vertical-align: middle;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  background-color: inherit;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.app-menu-item:hover { color: #000 !important; background-color: #ccc !important; }
+
+/* =========================================================
+   Modal dialogs: a dimmed full-window backdrop with the dialog centered
+   ========================================================= */
+
+.modal {
+  z-index: 3;
+  display: none;
+  padding-top: 100px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  margin: auto;
+  background-color: #fff;
+  position: relative;
+  padding: 0;
+  outline: 0;
+  width: 600px;
+}
+
+@media (max-width: 600px) {
+  .modal-content { margin: 0 10px; width: auto !important; }
+  .modal { padding-top: 30px; }
+}
+
+@media (max-width: 768px) {
+  .modal-content { width: 500px; }
+  .modal { padding-top: 50px; }
+}
+
+@media (min-width: 993px) {
+  .modal-content { width: 900px; }
+}
+
+/* =========================================================
+   Small pieces used inside dialogs
+   ========================================================= */
+
+/* A line of text standing in for a list that is loading or empty */
+.panel-message { padding: 8px 16px; }
+.panel-message::before, .panel-message::after { content: ""; display: table; clear: both; }
+
+/* The chooser's « ‹ › » buttons */
+.pager-btn {
+  border: 1px solid #ccc;
+  display: inline-block;
+  padding: 8px 16px;
+  vertical-align: middle;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  background-color: inherit;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.pager-btn:hover { color: #000; background-color: #ccc; }
+.pager-btn:disabled { cursor: not-allowed; opacity: 0.3; }
+
+.chooser-heading { color: #757575; }
+
+/* The constraints popup */
+.constraints-pattern { padding: 8px 16px; text-align: center; }
+
+.constraints-table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  display: table;
+  font-size: 12px;
+}
+
+.constraints-table tr { border-bottom: 1px solid #ddd; }
+
+.constraints-table td,
+.constraints-table th {
+  padding: 8px 8px;
+  display: table-cell;
+  text-align: left;
+  vertical-align: top;
+}
+
+.constraints-table th:first-child,
+.constraints-table td:first-child { padding-left: 16px; }

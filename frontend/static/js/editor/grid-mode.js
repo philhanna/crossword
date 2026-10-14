@@ -89,7 +89,7 @@ async function do_puzzle_rotate_grid() {
 export async function do_puzzle_generate_grid() {
     if (!AppState.puzzleWorkingName || _currentEditorMode() !== 'grid') return;
     const btn = document.getElementById('puzzle-generate-btn');
-    if (btn) btn.classList.add('w3-disabled');
+    if (btn) btn.classList.add('is-disabled');
     try {
         const specParam = AppState.puzzleThemeSpec
             ? '?spec=' + AppState.puzzleThemeSpec.join(',')
@@ -100,6 +100,6 @@ export async function do_puzzle_generate_grid() {
         await _applyGridModeUpdate(data);
     } catch (e) { showRequestError('Error generating grid', e, messageLineTimeout()); }
     finally {
-        if (btn) btn.classList.remove('w3-disabled');
+        if (btn) btn.classList.remove('is-disabled');
     }
 }

@@ -484,11 +484,11 @@ async function doWordConstraints() {
         ).join('');
 
         bodyEl.innerHTML = `
-<div class="w3-padding w3-center">
+<div class="constraints-pattern">
   <b>Overall pattern:</b>
   <code style="margin:0 8px">${escapeHtml(data.pattern)}</code>
 </div>
-<table class="w3-table w3-small w3-bordered">
+<table class="constraints-table">
   <tr>${headerRow}</tr>
   ${bodyRows}
 </table>`;

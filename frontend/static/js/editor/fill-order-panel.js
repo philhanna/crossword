@@ -38,7 +38,7 @@ export async function do_puzzle_fill_order() {
     const btn = document.getElementById('puzzle-fill-order-btn');
     fillOrder.loading = true;
     if (btn) {
-        btn.classList.add('w3-disabled');
+        btn.classList.add('is-disabled');
         btn.disabled = true;
     }
     try {

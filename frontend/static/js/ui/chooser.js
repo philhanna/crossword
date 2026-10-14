@@ -51,7 +51,7 @@ export async function showPreviewChooser(title, names, apiPrefix, onSelect, opti
     const stateFilter = document.getElementById('ch-state-filter');
     stateFilterWrap.style.display = options.stateFilterEnabled ? 'inline-flex' : 'none';
     stateFilter.value = chooser.stateFilter;
-    listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews...</div>';
+    listEl.innerHTML = '<div class="panel-message">Loading previews...</div>';
     document.getElementById('ch-pagination').style.display = 'none';
     showElement('ch');
 
@@ -66,7 +66,7 @@ export async function showPreviewChooser(title, names, apiPrefix, onSelect, opti
 
 async function _chReload() {
     const listEl = document.getElementById('ch-list');
-    listEl.innerHTML = '<div class="w3-container w3-padding">Loading previews...</div>';
+    listEl.innerHTML = '<div class="panel-message">Loading previews...</div>';
     document.getElementById('ch-pagination').style.display = 'none';
 
     const names = await chooser.loadItems(chooser.stateFilter);
@@ -97,7 +97,7 @@ function _chRender() {
         : chooser.previews;
     const total     = ordered.length;
     if (total === 0) {
-        listEl.innerHTML = `<div class="w3-container w3-padding">${escapeHtml(chooser.emptyMessage)}</div>`;
+        listEl.innerHTML = `<div class="panel-message">${escapeHtml(chooser.emptyMessage)}</div>`;
         pageDiv.style.display = 'none';
         return;
     }
@@ -123,7 +123,7 @@ function _chRender() {
 
         const textDiv = document.createElement('div');
         textDiv.style.cssText = 'margin-top:6px;text-align:center;font-size:13px;word-break:break-word;max-width:150px';
-        textDiv.innerHTML = `<b>${escapeHtml(p.name)}</b><br><small class="w3-text-gray">${escapeHtml(p.heading || '')}</small>`;
+        textDiv.innerHTML = `<b>${escapeHtml(p.name)}</b><br><small class="chooser-heading">${escapeHtml(p.heading || '')}</small>`;
 
         card.appendChild(svgDiv);
         card.appendChild(textDiv);

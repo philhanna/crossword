@@ -57,7 +57,7 @@ function _menuContext() {
 function setMenuItemEnabled(id, enabled) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.classList.toggle('w3-disabled', !enabled);
+    el.classList.toggle('is-disabled', !enabled);
     el.style.pointerEvents = enabled ? '' : 'none';
     el.setAttribute('aria-disabled', enabled ? 'false' : 'true');
     el.tabIndex = enabled ? 0 : -1;

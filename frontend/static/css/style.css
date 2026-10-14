@@ -177,11 +177,6 @@ h3 { font-size: 1.05rem; }
 .app-nav-icon { padding: 0 var(--sp-2); }
 .app-nav-icon .material-icons { font-size: 1.25rem; }
 
-/* W3.CSS dropdown overrides for app bar */
-#top-menu .w3-dropdown-hover { position: relative; }
-/* W3.CSS applies background-color:#ccc to .w3-dropdown-hover:first-child unconditionally */
-#top-menu .w3-dropdown-hover:first-child { background-color: transparent; color: inherit; }
-
 .app-dropdown {
   background: var(--c-surface) !important;
   border: 1px solid var(--c-border) !important;
@@ -201,7 +196,7 @@ h3 { font-size: 1.05rem; }
   height: 4px;
 }
 
-.app-dropdown .w3-bar-item.w3-button {
+.app-dropdown .app-menu-item {
   color: var(--c-text) !important;
   background: transparent !important;
   font-family: var(--font-ui) !important;
@@ -215,11 +210,11 @@ h3 { font-size: 1.05rem; }
   line-height: 1.4;
 }
 
-.app-dropdown .w3-bar-item.w3-button:hover {
+.app-dropdown .app-menu-item:hover {
   background: #eeedf5 !important;
 }
 
-.app-dropdown .w3-bar-item.w3-button.w3-disabled {
+.app-dropdown .app-menu-item.is-disabled {
   opacity: 0.35 !important;
   cursor: not-allowed;
 }
@@ -297,7 +292,7 @@ h3 { font-size: 1.05rem; }
   font-size: calc(15px * var(--font-scale));
 }
 
-.ab-btn.w3-disabled,
+.ab-btn.is-disabled,
 .ab-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
@@ -1129,7 +1124,7 @@ kbd {
    Dialogs
    ========================================================= */
 
-.w3-modal {
+.modal {
   z-index: 1300 !important;
 }
 
@@ -1688,10 +1683,10 @@ kbd {
   gap: var(--sp-2);
   min-height: 140px;
 }
-.dash-card-1 { background: #ffffcc; }  /* w3-pale-yellow */
-.dash-card-2 { background: #ddffdd; }  /* w3-pale-green  */
-.dash-card-3 { background: #ddffff; }  /* w3-pale-blue   */
-.dash-card-4 { background: #f1f1f1; }  /* w3-light-grey  */
+.dash-card-1 { background: #ffffcc; }  /* pale yellow */
+.dash-card-2 { background: #ddffdd; }  /* pale green  */
+.dash-card-3 { background: #ddffff; }  /* pale blue   */
+.dash-card-4 { background: #f1f1f1; }  /* light grey  */
 
 .dash-card-title {
   font-weight: 700;

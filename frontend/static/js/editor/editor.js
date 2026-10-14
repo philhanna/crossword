@@ -176,13 +176,13 @@ export function renderActionBar() {
     const pd   = AppState.puzzleData;
     const mode = _currentEditorMode();
     const size = pd ? pd.grid.size : 0;
-    const genDisabled = (size >= 9 && size % 2 === 1) ? '' : ' w3-disabled';
-    const fillOrderDisabled = isFillOrderLoading() ? ' w3-disabled' : '';
+    const genDisabled = (size >= 9 && size % 2 === 1) ? '' : ' is-disabled';
+    const fillOrderDisabled = isFillOrderLoading() ? ' is-disabled' : '';
     const fillOrderDisabledAttr = isFillOrderLoading() ? ' disabled' : '';
-    const closeDisabled = _isWordEditorOpen() ? ' w3-disabled' : '';
+    const closeDisabled = _isWordEditorOpen() ? ' is-disabled' : '';
     const closeDisabledAttr = _isWordEditorOpen() ? ' disabled' : '';
     const hasLockedWords = !!(pd && pd.puzzle.words.some(w => w.locked));
-    const gridModeDisabled = hasLockedWords ? ' w3-disabled' : '';
+    const gridModeDisabled = hasLockedWords ? ' is-disabled' : '';
     const gridModeDisabledAttr = hasLockedWords ? ' disabled' : '';
     const gridModeTitle = hasLockedWords ? ' title="Unlock all words before switching to Grid Mode"' : '';
 
@@ -335,8 +335,8 @@ export function _updatePuzzleUndoRedo() {
     if (!ub || !rb) return;
     const canUndo = !pd ? false : (mode === 'grid' ? !!pd.grid_can_undo : !!pd.puzzle_can_undo);
     const canRedo = !pd ? false : (mode === 'grid' ? !!pd.grid_can_redo : !!pd.puzzle_can_redo);
-    ub.classList.toggle('w3-disabled', editing || !canUndo);
-    rb.classList.toggle('w3-disabled', editing || !canRedo);
+    ub.classList.toggle('is-disabled', editing || !canUndo);
+    rb.classList.toggle('is-disabled', editing || !canRedo);
     _updatePuzzleToolbar();
 }
 
@@ -346,14 +346,14 @@ export function _updatePuzzleToolbar() {
     const cb = document.getElementById('puzzle-close-btn');
     const db = document.getElementById('puzzle-delete-btn');
     if (eb) {
-        eb.classList.toggle('w3-disabled', mode !== 'puzzle' || !getSelectedWord() || _isWordEditorOpen());
+        eb.classList.toggle('is-disabled', mode !== 'puzzle' || !getSelectedWord() || _isWordEditorOpen());
     }
     if (db) {
-        db.classList.toggle('w3-disabled', _isWordEditorOpen());
+        db.classList.toggle('is-disabled', _isWordEditorOpen());
         db.disabled = _isWordEditorOpen();
     }
     if (cb) {
-        cb.classList.toggle('w3-disabled', _isWordEditorOpen());
+        cb.classList.toggle('is-disabled', _isWordEditorOpen());
         cb.disabled = _isWordEditorOpen();
     }
 }

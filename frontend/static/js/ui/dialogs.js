@@ -12,7 +12,7 @@ import { registerActions } from '../core/actions.js';
 import { escapeHtml, hideElement, showElement } from '../core/dom.js';
 
 registerActions({
-    'close-dialog':       (el) => { el.closest('.w3-modal').style.display = 'none'; },
+    'close-dialog':       (el) => { el.closest('.modal').style.display = 'none'; },
     'message-box-ok':     () => closeMessageBox(true),
     'message-box-cancel': () => closeMessageBox(false),
     'input-box-submit':   (el, e) => { e.preventDefault(); closeInputBox(true); },
