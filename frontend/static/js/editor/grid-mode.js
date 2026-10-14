@@ -1,11 +1,13 @@
 // Crossword Puzzle Editor — Grid mode: toggling black cells, rotating and generating the grid
 
 import { registerActions } from '../core/actions.js';
+import { apiFetch } from '../core/api.js';
+import { AppState } from '../core/state.js';
+import { MESSAGE_LINE_TIMEOUT_MS, showMessageLine, showRequestError } from '../ui/message-line.js';
 import { _currentEditorMode, renderPuzzleEditor } from './editor.js';
 import { _refreshFillOrderIfVisible } from './fill-order-panel.js';
 import { _refreshPuzzleStatsIfVisible } from './stats-panel.js';
-import { AppState, BOXSIZE, MESSAGE_LINE_TIMEOUT_MS } from '../state.js';
-import { apiFetch, showMessageLine, showRequestError } from '../ui.js';
+import { BOXSIZE } from '../svg/grid-svg.js';
 
 registerActions({
     'grid-rotate':   () => do_puzzle_rotate_grid(),

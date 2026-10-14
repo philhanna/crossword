@@ -1,12 +1,14 @@
 // Crossword Puzzle Editor — the Fill order panel: which slots to fill next
 
 import { registerActions } from '../core/actions.js';
+import { apiFetch } from '../core/api.js';
+import { escapeHtml } from '../core/dom.js';
+import { AppState } from '../core/state.js';
+import { showRequestError } from '../ui/message-line.js';
 import {
     _currentEditorMode, _settlePuzzleEditingBeforeModeSwitch, renderActionBar,
     renderPuzzleEditor, renderPuzzleEditorRhs,
 } from './editor.js';
-import { AppState } from '../state.js';
-import { apiFetch, escapeHtml, showRequestError } from '../ui.js';
 
 registerActions({
     'fill-order': () => do_puzzle_fill_order(),

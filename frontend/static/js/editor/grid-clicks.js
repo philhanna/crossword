@@ -4,13 +4,14 @@
 // Down word. A single click waits CLICK_DELAY ms first, to be sure it isn't the
 // start of a double click.
 
+import { AppState } from '../core/state.js';
 import { renderPuzzleEditor } from './editor.js';
 import {
     _isWordEditorOpen, _setSelectedWordCursorIdx, completeSelectedWordEdit,
     findWordAtCell,
 } from './selection.js';
 import { _weApplyAndClose, openWordEditor } from './word-editor.js';
-import { AppState, BOXSIZE } from '../state.js';
+import { BOXSIZE } from '../svg/grid-svg.js';
 
 let _clickState   = 0;
 let _clickTimeout = null;

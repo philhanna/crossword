@@ -5,8 +5,10 @@
 // below holds what differs between formats.
 
 import { registerActions } from '../core/actions.js';
+import { apiFetch } from '../core/api.js';
+import { inputBox } from '../ui/dialogs.js';
+import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import { _openPuzzleInEditor } from './lifecycle.js';
-import { apiFetch, inputBox, showMessageLine, showRequestError } from '../ui.js';
 
 // read: 'text' posts { name, content }; 'base64' posts { name, content_b64 }
 const IMPORT_FORMATS = {

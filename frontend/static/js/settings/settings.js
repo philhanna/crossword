@@ -1,17 +1,15 @@
-// Crossword Puzzle Editor — settings dialog
+// Crossword Puzzle Editor — the settings panel
 
-import { registerActions } from './core/actions.js';
-import { apiFetch, hideElement, showElement, showMessageLine } from './ui.js';
+import { registerActions } from '../core/actions.js';
+import { apiFetch } from '../core/api.js';
+import { hideElement, showElement } from '../core/dom.js';
+import { showMessageLine } from '../ui/message-line.js';
 
 registerActions({
     'settings-open':   () => do_settings(),
     'settings-cancel': () => do_settings_cancel(),
     'settings-save':   () => do_settings_save(),
 });
-
-// ---------------------------------------------------------------------------
-// Settings
-// ---------------------------------------------------------------------------
 
 const SETTINGS_SCHEMA = [
   {
@@ -136,21 +134,13 @@ const SETTINGS_SCHEMA = [
 
 const SETTINGS_FIELDS = SETTINGS_SCHEMA.flatMap((tab) => tab.fields);
 
-function _activateSettingsTab(key) {
-    const tabs = document.querySelectorAll('.settings-tab');
-    const panels = document.querySelectorAll('.settings-panel-card');
-
-    for (const tab of tabs) {
-        const isActive = tab.dataset.key === key;
-        tab.classList.toggle('active', isActive);
-        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        tab.setAttribute('tabindex', isActive ? '0' : '-1');
-    }
-
-    for (const panel of panels) {
-        const isActive = panel.dataset.key === key;
-        panel.classList.toggle('active', isActive);
-        panel.hidden = !isActive;
+async function do_settings() {
+    try {
+        const values = await apiFetch('GET', '/api/settings');
+        _renderSettingsRows(values);
+        showElement('settings-panel');
+    } catch (e) {
+        showMessageLine('Failed to load settings.', 'error');
     }
 }
 
@@ -227,13 +217,21 @@ function _renderSettingsRows(values) {
     }
 }
 
-async function do_settings() {
-    try {
-        const values = await apiFetch('GET', '/api/settings');
-        _renderSettingsRows(values);
-        showElement('settings-panel');
-    } catch (e) {
-        showMessageLine('Failed to load settings.', 'error');
+function _activateSettingsTab(key) {
+    const tabs = document.querySelectorAll('.settings-tab');
+    const panels = document.querySelectorAll('.settings-panel-card');
+
+    for (const tab of tabs) {
+        const isActive = tab.dataset.key === key;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        tab.setAttribute('tabindex', isActive ? '0' : '-1');
+    }
+
+    for (const panel of panels) {
+        const isActive = panel.dataset.key === key;
+        panel.classList.toggle('active', isActive);
+        panel.hidden = !isActive;
     }
 }
 

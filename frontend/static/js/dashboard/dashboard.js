@@ -5,24 +5,19 @@
 // in a single round-trip and is cached in DashboardState so tab switches and the
 // top cards render client-side without refetching.
 
-import { registerActions } from './core/actions.js';
-import { _openPuzzleInEditor, _openWorkingCopyInEditor } from './puzzle-file/lifecycle.js';
-import {
-    apiFetch, escapeHtml, hideElement, messageBox, showContextMenu, showElement,
-    showRequestError,
-} from './ui.js';
+import { registerActions } from '../core/actions.js';
+import { apiFetch } from '../core/api.js';
+import { escapeHtml } from '../core/dom.js';
+import { showRequestError } from '../ui/message-line.js';
+import { _openPuzzleInEditor } from '../puzzle-file/lifecycle.js';
 
 registerActions({
-    'dash-tab':            (el) => _dashSelectTab(el.getAttribute('data-dash-tab')),
-    'dash-sort':           (el) => _dashSortBy(el.getAttribute('data-dash-sort')),
-    'dash-open':           (el) => _dashOpenPuzzle(el.getAttribute('data-dash-preview')),
-    'dash-state':          (el) => _dashStateChosen(el),
-    'dash-row-menu':       (el, e) => _dashOpenContextMenu(e, el.getAttribute('data-dash-name')),
-    'state-dialog-cancel': () => _dashCloseStateDialog(true),
-    'history-restore':     (el) => _dashConfirmRestore(el.dataset.name, parseInt(el.dataset.historyId, 10)),
+    'dash-tab':  (el) => _dashSelectTab(el.getAttribute('data-dash-tab')),
+    'dash-sort': (el) => _dashSortBy(el.getAttribute('data-dash-sort')),
+    'dash-open': (el) => _dashOpenPuzzle(el.getAttribute('data-dash-preview')),
 });
 
-const ALL_STATES = ['draft', 'filled', 'finished', 'submitted', 'published', 'archived'];
+export const ALL_STATES = ['draft', 'filled', 'finished', 'submitted', 'published', 'archived'];
 
 const DASH_CARDS = [
     { idx: 1, title: 'IN PROGRESS', states: ['draft'] },
@@ -33,7 +28,7 @@ const DASH_CARDS = [
 
 const DASH_TABS = ['all', ...ALL_STATES];
 
-const DashboardState = {
+export const DashboardState = {
     puzzles: [],          // rows from GET /api/dashboard, modified DESC
     activeTab: 'all',     // active bottom-half tab
     sortKey: null,        // column key to sort by; null keeps the default (modified DESC)
@@ -58,7 +53,7 @@ const DASH_COLUMNS = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-function fmtMonthDay(iso) {
+export function fmtMonthDay(iso) {
     // Parse an ISO-ish timestamp and format as MM/dd/yy. Guards against blanks.
     if (!iso) return '';
     const d = new Date(iso);
@@ -67,17 +62,6 @@ function fmtMonthDay(iso) {
     const dd = String(d.getDate()).padStart(2, '0');
     const yy = String(d.getFullYear() % 100).padStart(2, '0');
     return `${mm}/${dd}/${yy}`;
-}
-
-function fmtDateTime(iso) {
-    // Parse an ISO-ish timestamp and format as MM/dd/yy HH:mm. Guards against blanks.
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    const hh = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    const ss = String(d.getSeconds()).padStart(2, '0');
-    return `${fmtMonthDay(iso)} ${hh}:${min}:${ss}`;
 }
 
 function _dashRowLengths(row) {
@@ -295,12 +279,6 @@ function _dashRedrawTable() {
     if (scroll) scroll.innerHTML = _dashTableBodyHtml();
 }
 
-function _dashStateChosen(sel) {
-    const name = sel.getAttribute('data-dash-state');
-    const row = DashboardState.puzzles.find(p => p.name === name);
-    openStateDialog(row, sel.value, sel);
-}
-
 // ---------------------------------------------------------------------------
 // Open-from-dashboard
 // ---------------------------------------------------------------------------
@@ -311,172 +289,4 @@ async function _dashOpenPuzzle(name) {
     } catch (e) {
         showRequestError('Error opening puzzle', e);
     }
-}
-
-// ---------------------------------------------------------------------------
-// State-change dialog
-// ---------------------------------------------------------------------------
-
-let _dashStateRevertSelect = null;  // <select> to reset on cancel/error
-
-function openStateDialog(row, newState, selectEl) {
-    if (!row) return;
-    _dashStateRevertSelect = selectEl;
-
-    document.getElementById('state-dialog-name').textContent = row.name;
-
-    let curText = row.state;
-    if ((row.state === 'submitted' || row.state === 'published') && row.publisher) {
-        curText += ` (${row.publisher})`;
-    }
-    document.getElementById('state-dialog-current').textContent = curText;
-
-    const stateSel = document.getElementById('state-dialog-new');
-    stateSel.innerHTML = ALL_STATES.map(s =>
-        `<option value="${s}"${s === newState ? ' selected' : ''}>${s}</option>`).join('');
-
-    const pubInput = document.getElementById('state-dialog-publisher');
-    pubInput.value = row.publisher || '';
-    const dateInput = document.getElementById('state-dialog-date');
-    dateInput.value = new Date().toISOString().slice(0, 10);
-
-    document.getElementById('state-dialog-error').textContent = '';
-
-    stateSel.onchange = _dashUpdateStateDialogFields;
-    _dashUpdateStateDialogFields();
-
-    document.getElementById('state-dialog-ok').onclick = () => _dashSubmitState(row);
-    const cancel = () => _dashCloseStateDialog(true);
-    document.getElementById('state-dialog-cancel').onclick = cancel;
-    document.getElementById('state-dialog-close').onclick = cancel;
-
-    showElement('state-dialog');
-}
-
-function _dashUpdateStateDialogFields() {
-    const newState = document.getElementById('state-dialog-new').value;
-    const show = newState === 'submitted' || newState === 'published';
-    const pubRow = document.getElementById('state-dialog-publisher-row');
-    const dateRow = document.getElementById('state-dialog-date-row');
-    pubRow.style.display = show ? '' : 'none';
-    dateRow.style.display = show ? '' : 'none';
-    // publisher required only for 'submitted' (matches backend)
-    document.getElementById('state-dialog-publisher').required = (newState === 'submitted');
-}
-
-async function _dashSubmitState(row) {
-    const newState = document.getElementById('state-dialog-new').value;
-    const pub = document.getElementById('state-dialog-publisher').value.trim();
-    const date = document.getElementById('state-dialog-date').value;
-    const errEl = document.getElementById('state-dialog-error');
-
-    if (newState === 'submitted' && !pub) {
-        errEl.textContent = 'Publisher is required when submitting.';
-        return;
-    }
-
-    const body = { state: newState };
-    if (newState === 'submitted') { body.publisher = pub; body.date_submitted = date; }
-    if (newState === 'published') { if (pub) body.publisher = pub; body.date_published = date; }
-
-    try {
-        await apiFetch('PUT', `/api/puzzles/${encodeURIComponent(row.name)}/state`, body);
-        _dashStateRevertSelect = null;   // success — no need to revert
-        _dashCloseStateDialog(false);
-        await renderDashboard();
-    } catch (e) {
-        errEl.textContent = e.message || 'Failed to change state.';
-    }
-}
-
-function _dashCloseStateDialog(revert) {
-    hideElement('state-dialog');
-    if (revert && _dashStateRevertSelect) {
-        const name = _dashStateRevertSelect.getAttribute('data-dash-state');
-        const row = DashboardState.puzzles.find(p => p.name === name);
-        if (row) _dashStateRevertSelect.value = row.state;
-    }
-    _dashStateRevertSelect = null;
-}
-
-// ---------------------------------------------------------------------------
-// Right-click context menu — "Show history" (more items may follow)
-// ---------------------------------------------------------------------------
-
-function _dashOpenContextMenu(e, name) {
-    if (!name) return;
-    e.preventDefault();
-    showContextMenu(e.clientX, e.clientY, [
-        { label: 'Show history', onClick: () => _dashShowHistory(name) },
-    ]);
-}
-
-async function _dashShowHistory(name) {
-    document.getElementById('history-popup-title').textContent = `History — ${name}`;
-    const body = document.getElementById('history-popup-body');
-    body.innerHTML = '<div class="w3-container w3-padding">Loading...</div>';
-    showElement('history-popup');
-
-    try {
-        const data = await apiFetch('GET', `/api/puzzles/${encodeURIComponent(name)}/state/history`);
-        body.innerHTML = _historyTableHtml(name, data.history || []);
-    } catch (e) {
-        body.innerHTML = `<p>Error loading history: ${escapeHtml(e.message)}</p>`;
-    }
-}
-
-function _historyTableHtml(name, history) {
-    if (history.length === 0) {
-        return '<p class="dash-empty">No state history recorded.</p>';
-    }
-    const sorted = [...history].sort((a, b) => b.id - a.id);
-    const rows = sorted.map((h, i) => {
-        let detail = '';
-        if (h.state === 'submitted' && h.publisher) {
-            detail = `submitted to ${escapeHtml(h.publisher)}`;
-        } else if (h.state === 'published' && h.publisher) {
-            detail = `published by ${escapeHtml(h.publisher)}`;
-        }
-        const restoreCell = (h.has_content && i > 0)
-            ? `<button class="dash-history-restore" data-action="history-restore" ` +
-              `data-name="${escapeHtml(name)}" data-history-id="${h.id}">Restore</button>`
-            : '';
-        return `<tr>
-            <td>${fmtDateTime(h.changed_at)}</td>
-            <td>${escapeHtml(h.state)}</td>
-            <td>${detail}</td>
-            <td>${escapeHtml(h.comment || '')}</td>
-            <td>${restoreCell}</td>
-          </tr>`;
-    }).join('');
-    return `
-      <table class="dash-table" style="table-layout:fixed">
-        <colgroup>
-          <col style="width:150px"><col style="width:90px"><col style="width:150px">
-          <col style="width:250px"><col style="width:70px">
-        </colgroup>
-        <thead><tr><th>Changed</th><th>State</th><th>Details</th><th>Comment</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-}
-
-function _dashConfirmRestore(name, historyId) {
-    hideElement('history-popup');
-    messageBox(
-        'Restore puzzle',
-        `Open this earlier saved version of <b>'${escapeHtml(name)}'</b> for editing? ` +
-        `This leaves the dashboard. The current version stays untouched until you ` +
-        `explicitly Save.`,
-        null,
-        () => _dashRestorePuzzle(name, historyId),
-        'Restore',
-    );
-}
-
-async function _dashRestorePuzzle(name, historyId) {
-    try {
-        const data = await apiFetch('POST',
-            `/api/puzzles/${encodeURIComponent(name)}/state/history/${historyId}/restore`);
-        await _openWorkingCopyInEditor(name, data.working_name);
-    } catch (e) { showRequestError('Error restoring puzzle', e); }
 }

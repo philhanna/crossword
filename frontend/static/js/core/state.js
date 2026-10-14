@@ -1,19 +1,4 @@
-// Crossword Puzzle Editor — application state and constants
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-export const BOXSIZE = 32;
-export let MESSAGE_LINE_TIMEOUT_MS = 3000; // default; may be overridden by /api/config
-
-export function setMessageLineTimeout(ms) {
-    MESSAGE_LINE_TIMEOUT_MS = ms;
-}
-
-// ---------------------------------------------------------------------------
-// Application state
-// ---------------------------------------------------------------------------
+// Crossword Puzzle Editor — application state shared across modules
 
 export const AppState = {
     view: 'home',            // 'home' | 'editor'

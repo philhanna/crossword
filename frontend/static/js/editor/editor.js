@@ -5,6 +5,13 @@
 // from their own module; this one picks which to show.
 
 import { registerActions } from '../core/actions.js';
+import { apiFetch } from '../core/api.js';
+import { escapeHtml } from '../core/dom.js';
+import { _hash } from '../core/hash.js';
+import { AppState } from '../core/state.js';
+import { inputBox, messageBox } from '../ui/dialogs.js';
+import { updateMenu } from '../ui/menu.js';
+import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import { renderClues, restoreCluesScroll, saveCluesScroll } from './clues-panel.js';
 import { _cellLettersKey, do_puzzle_fill_order, renderFillOrderPanel } from './fill-order-panel.js';
 import { _focusPuzzleSvg, _peOutsideMousedown, handlePuzzleClick } from './grid-clicks.js';
@@ -16,12 +23,7 @@ import {
 } from './selection.js';
 import { do_puzzle_stats, renderStatsPanel } from './stats-panel.js';
 import { closeWordEditor, openWordEditor, renderWordEditorPanel } from './word-editor.js';
-import { AppState } from '../state.js';
-import { buildPuzzleSvg } from '../svg.js';
-import {
-    _hash, apiFetch, escapeHtml, inputBox, messageBox, showMessageLine,
-    showRequestError, updateMenu,
-} from '../ui.js';
+import { buildPuzzleSvg } from '../svg/grid-svg.js';
 
 registerActions({
     'puzzle-title': () => do_puzzle_title(),

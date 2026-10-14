@@ -5,6 +5,15 @@
 // AppState.
 
 import { registerActions } from '../core/actions.js';
+import { apiFetch } from '../core/api.js';
+import { escapeHtml } from '../core/dom.js';
+import { _hash } from '../core/hash.js';
+import { AppState } from '../core/state.js';
+import { showPreviewChooser } from '../ui/chooser.js';
+import { inputBox, messageBox, multiInputBox } from '../ui/dialogs.js';
+import { updateMenu } from '../ui/menu.js';
+import { showMessageLine, showRequestError } from '../ui/message-line.js';
+import { showView } from '../ui/view.js';
 import {
     _settlePuzzleEditingBeforeSave, renderPuzzleEditor, renderPuzzleEditorLhs,
 } from '../editor/editor.js';
@@ -12,12 +21,6 @@ import { _peOutsideMousedown } from '../editor/grid-clicks.js';
 import { do_puzzle_generate_grid } from '../editor/grid-mode.js';
 import { _peKeydown, _weKeydown } from '../editor/keyboard.js';
 import { _isWordEditorOpen } from '../editor/selection.js';
-import { AppState } from '../state.js';
-import {
-    _hash, apiFetch, confirmOverwriteIfExists, escapeHtml, inputBox, messageBox,
-    multiInputBox, showMessageLine, showPreviewChooser, showRequestError,
-    showView, updateMenu, validateUserFacingName,
-} from '../ui.js';
 
 registerActions({
     'puzzle-new':            () => do_puzzle_new(),
@@ -381,5 +384,43 @@ async function do_puzzle_delete_current() {
                 showMessageLine(`Puzzle ${name} deleted.`, 'notice');
             } catch (e) { showRequestError('Error deleting puzzle', e); }
         }
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Name checks
+// ---------------------------------------------------------------------------
+
+function validateUserFacingName(kind, name) {
+    if (name.startsWith('__wc__')) {
+        messageBox(
+            `Invalid ${kind} name`,
+            `Names starting with <b>__wc__</b> are reserved for internal working copies used while editing a ${kind}. Please choose a different ${kind} name.`,
+            null,
+            null
+        );
+        return false;
+    }
+    return true;
+}
+
+async function confirmOverwriteIfExists(kind, name, listExistingNames, onConfirmSave) {
+    const existingNames = await listExistingNames();
+    if (!existingNames.includes(name)) {
+        await onConfirmSave();
+        return;
+    }
+    messageBox(
+        `Overwrite ${kind}`,
+        `${kind.charAt(0).toUpperCase() + kind.slice(1)} <b>${escapeHtml(name)}</b> already exists. Overwrite it?`,
+        null,
+        async () => {
+            try {
+                await onConfirmSave();
+            } catch (e) {
+                showMessageLine(`Save failed: ${e.message}`, 'error', 0);
+            }
+        },
+        'Overwrite'
     );
 }

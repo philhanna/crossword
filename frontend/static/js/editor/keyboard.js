@@ -5,6 +5,7 @@
 // opens or closes the word editor swaps them; exactly one may be attached at
 // a time, or each key is handled twice.
 
+import { AppState } from '../core/state.js';
 import { _updatePuzzleToolbar, renderPuzzleEditor, renderPuzzleEditorLhs } from './editor.js';
 import {
     _getSelectedWordCursorIdx, _isWordEditorOpen, _setSelectedWordCursorIdx,
@@ -14,7 +15,6 @@ import {
     _weSyncTextInputFromAnswer, closeWordEditor, doWordEditOK,
     doWordSuggestFetch, openWordEditor,
 } from './word-editor.js';
-import { AppState } from '../state.js';
 
 export function _peKeydown(e) {
     if (!AppState.selectedWord || _isWordEditorOpen()) return;

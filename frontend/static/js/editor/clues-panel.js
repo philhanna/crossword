@@ -1,10 +1,11 @@
 // Crossword Puzzle Editor — the Clues panel: the clue list and editing a clue in place
 
 import { registerActions } from '../core/actions.js';
+import { escapeHtml } from '../core/dom.js';
+import { AppState } from '../core/state.js';
+import { showMessageLine } from '../ui/message-line.js';
 import { _currentEditorMode, renderPuzzleEditor, renderPuzzleEditorRhs } from './editor.js';
 import { _getPuzzleWord, completeSelectedWordEdit } from './selection.js';
-import { AppState } from '../state.js';
-import { escapeHtml, showMessageLine } from '../ui.js';
 
 registerActions({
     'clue-direction': (el) => switchClueDirection(el.dataset.direction),

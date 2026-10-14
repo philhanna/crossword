@@ -1,11 +1,8 @@
-// Crossword Puzzle Editor — client-side SVG renderers
+// Crossword Puzzle Editor — drawing the grid as an SVG picture
 
-import { BOXSIZE } from './state.js';
-import { escapeHtml } from './ui.js';
+import { escapeHtml } from '../core/dom.js';
 
-// ---------------------------------------------------------------------------
-// Puzzle SVG renderer
-// ---------------------------------------------------------------------------
+export const BOXSIZE = 32;
 
 export function buildPuzzleSvg(puzzleData, editState = null) {
     const n           = puzzleData.grid.size;

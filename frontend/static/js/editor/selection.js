@@ -5,13 +5,14 @@
 // create it, keep it in step with the puzzle, and save the draft to the
 // server when the user moves on.
 
+import { apiFetch } from '../core/api.js';
+import { AppState } from '../core/state.js';
+import { showMessageLine, showRequestError } from '../ui/message-line.js';
 import {
     _closeSidePanels, _updatePuzzleToolbar, _updatePuzzleUndoRedo,
     renderPuzzleEditorLhs, renderPuzzleEditorRhs,
 } from './editor.js';
 import { _syncSelectedWordFromInputs } from './word-editor.js';
-import { AppState } from '../state.js';
-import { apiFetch, showMessageLine, showRequestError } from '../ui.js';
 
 export function _getPuzzleWord(seq, direction) {
     const pd = AppState.puzzleData;

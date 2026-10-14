@@ -1,8 +1,10 @@
 // Crossword Puzzle Editor — the Export menu
 
 import { registerActions } from '../core/actions.js';
-import { AppState } from '../state.js';
-import { apiFetch, showMessageLine, showPreviewChooser, showRequestError } from '../ui.js';
+import { apiFetch } from '../core/api.js';
+import { AppState } from '../core/state.js';
+import { showPreviewChooser } from '../ui/chooser.js';
+import { showMessageLine, showRequestError } from '../ui/message-line.js';
 
 registerActions({
     'export': (el) => do_export(el.dataset.format),

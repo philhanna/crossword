@@ -1,12 +1,14 @@
 // Crossword Puzzle Editor — the Stats panel
 
 import { registerActions } from '../core/actions.js';
+import { apiFetch } from '../core/api.js';
+import { escapeHtml } from '../core/dom.js';
+import { AppState } from '../core/state.js';
+import { showRequestError } from '../ui/message-line.js';
 import {
     _settlePuzzleEditingBeforeModeSwitch, renderPuzzleEditor,
     renderPuzzleEditorRhs,
 } from './editor.js';
-import { AppState } from '../state.js';
-import { apiFetch, escapeHtml, showRequestError } from '../ui.js';
 
 registerActions({
     'puzzle-stats': () => do_puzzle_stats(),

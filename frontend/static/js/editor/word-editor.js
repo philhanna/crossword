@@ -1,6 +1,10 @@
 // Crossword Puzzle Editor — the word editor panel: answer, clue, lock, suggestions
 
 import { registerActions } from '../core/actions.js';
+import { ApiError, apiFetch } from '../core/api.js';
+import { escapeHtml, showElement } from '../core/dom.js';
+import { AppState } from '../core/state.js';
+import { updateMenu } from '../ui/menu.js';
 import {
     _currentEditorMode, renderPuzzleEditor, renderPuzzleEditorLhs,
     renderPuzzleEditorRhs,
@@ -9,8 +13,6 @@ import { _peKeydown, _weKeydown } from './keyboard.js';
 import {
     _isWordEditorOpen, _normalizeWordText, completeSelectedWordEdit, selectWord,
 } from './selection.js';
-import { AppState } from '../state.js';
-import { ApiError, apiFetch, escapeHtml, showElement, updateMenu } from '../ui.js';
 
 registerActions({
     // From a clue row the word is named; from the toolbar it's the selected one
