@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.1.2] - 2026-10-17
+
+### Changed
+
+- The Circle button is gone from the Puzzle-mode toolbar. Shift+click a
+  square to circle or un-circle it
+
+### Fixed
+
+- Circles in the PDF exports no longer run into the word numbers. They are
+  a little smaller and sit slightly below and right of centre, and the PDF
+  word numbers are a little smaller (7pt instead of 8pt)
+
 ## [6.1.1] - 2026-10-14
 
 ### Fixed
