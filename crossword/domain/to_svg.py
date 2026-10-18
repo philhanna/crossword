@@ -22,7 +22,7 @@ class ToSVG:
         # Figure out where the cell number goes
         self.cell_number_x = 2
         self.cell_number_y = 10
-        self.cell_number_fontsize = "8pt"
+        self.cell_number_fontsize = "7pt"
 
         # Figure out where the cell letter goes: horizontally centred via
         # text-anchor, with the baseline half a cap height (6.25) below the
@@ -125,9 +125,9 @@ class ToSVG:
         # Nudged down and right of centre, and small enough to clear a
         # two-digit word number in the top-left corner
         elem = ET.SubElement(self.root, "circle")
-        elem.set("cx", str(xbase + 18))
-        elem.set("cy", str(ybase + 19))
-        elem.set("r", "10")
+        elem.set("cx", str(xbase + 18.5))
+        elem.set("cy", str(ybase + 19.5))
+        elem.set("r", "11")
         elem.set("fill", "none")
         elem.set("stroke", "black")
         elem.set("stroke-width", "1")
