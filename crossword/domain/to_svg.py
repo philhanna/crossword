@@ -121,11 +121,13 @@ class ToSVG:
     def generate_circle(self, r, c):
         """ Draws a circle inside the square at (r, c) """
         xbase, ybase = self.get_x_y_base(r, c)
-        half = self.boxsize / 2
+
+        # Nudged down and right of centre, and small enough to clear a
+        # two-digit word number in the top-left corner
         elem = ET.SubElement(self.root, "circle")
-        elem.set("cx", str(xbase + half))
-        elem.set("cy", str(ybase + half))
-        elem.set("r", str(half - 1))
+        elem.set("cx", str(xbase + 18))
+        elem.set("cy", str(ybase + 19))
+        elem.set("r", "10")
         elem.set("fill", "none")
         elem.set("stroke", "black")
         elem.set("stroke-width", "1")
