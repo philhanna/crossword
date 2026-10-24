@@ -18,7 +18,7 @@ from crossword.http_server.schemas import (
     SetPuzzleTitleBody,
     SetWordClueBody,
 )
-from crossword.ports.persistence_port import PersistenceError
+from crossword.ports.persistence_port import PersistenceError, PuzzleNotFoundError
 
 router = APIRouter(tags=["puzzles"])
 
@@ -102,7 +102,7 @@ def set_puzzle_state(name: str, body: SetPuzzleStateBody, app: Container, user_i
             date_submitted=body.date_submitted,
             date_published=body.date_published,
         )
-    except PersistenceError as e:
+    except PuzzleNotFoundError as e:
         raise ApiError(404, str(e))
     return {"name": name, **new_state}
 
@@ -124,7 +124,7 @@ def restore_puzzle_from_history(name: str, history_id: int, app: Container, user
     """
     try:
         working_name = app.puzzle_uc.restore_puzzle_from_history(user_id, name, history_id)
-    except PersistenceError as e:
+    except PuzzleNotFoundError as e:
         raise ApiError(404, str(e))
     return {"original_name": name, "working_name": working_name}
 

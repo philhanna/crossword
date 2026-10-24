@@ -8,7 +8,9 @@ but not how they are implemented.
 Adapters implement these ports to provide concrete implementations (e.g., SQLite, file system).
 """
 
-from .persistence_port import PersistencePort, PersistenceError
+from .persistence_port import (
+    PersistencePort, PersistenceError, PuzzleNotFoundError, PuzzleExistsError,
+)
 from .word_list_port import WordListPort
 from .export_port import ExportPort, ExportError
 from .definition_port import DefinitionProviderPort, DefinitionNotFound
@@ -18,6 +20,8 @@ from .grid_generator_port import GridGeneratorPort
 __all__ = [
     "PersistencePort",
     "PersistenceError",
+    "PuzzleNotFoundError",
+    "PuzzleExistsError",
     "WordListPort",
     "ExportPort",
     "ExportError",

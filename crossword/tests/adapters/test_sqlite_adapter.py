@@ -9,7 +9,9 @@ from unittest.mock import patch, MagicMock
 from crossword import Grid, Puzzle
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
 from crossword.domain import puzzle_state as ps
-from crossword.ports.persistence_port import PersistenceError
+from crossword.ports.persistence_port import (
+    PersistenceError, PuzzleExistsError, PuzzleNotFoundError,
+)
 
 
 class TestSQLitePersistenceAdapter:
@@ -252,7 +254,7 @@ class TestSQLitePersistenceAdapter:
         assert state["state"] == "finished"
 
     def test_set_puzzle_state_not_found_raises(self, adapter):
-        with pytest.raises(PersistenceError, match="not found"):
+        with pytest.raises(PuzzleNotFoundError, match="not found"):
             adapter.set_puzzle_state(user_id=1, name="nope", state="draft")
 
     def test_rename_puzzle_preserves_id_and_state(self, adapter, sample_puzzle):
@@ -271,13 +273,13 @@ class TestSQLitePersistenceAdapter:
         assert adapter.get_puzzle_state(user_id=1, name="old") is None
 
     def test_rename_puzzle_not_found_raises(self, adapter):
-        with pytest.raises(PersistenceError, match="not found"):
+        with pytest.raises(PuzzleNotFoundError, match="not found"):
             adapter.rename_puzzle(user_id=1, old_name="nope", new_name="new")
 
     def test_rename_puzzle_rejects_clashing_name(self, adapter, sample_puzzle):
         adapter.save_puzzle(user_id=1, name="a", puzzle=sample_puzzle)
         adapter.save_puzzle(user_id=1, name="b", puzzle=sample_puzzle)
-        with pytest.raises(PersistenceError, match="already exists"):
+        with pytest.raises(PuzzleExistsError, match="already exists"):
             adapter.rename_puzzle(user_id=1, old_name="a", new_name="b")
 
     def test_delete_removes_row_and_state(self, adapter, sample_puzzle):
@@ -475,7 +477,7 @@ class TestSQLitePersistenceAdapter:
             adapter.save_puzzle(1, "test", sample_puzzle)
 
     def test_load_puzzle_not_found_raises_persistence_error(self, adapter):
-        with pytest.raises(PersistenceError, match="not found"):
+        with pytest.raises(PuzzleNotFoundError, match="not found"):
             adapter.load_puzzle(1, "nonexistent")
 
     def test_load_puzzle_sqlite_error_raises_persistence_error(self, adapter):
@@ -491,7 +493,7 @@ class TestSQLitePersistenceAdapter:
                 adapter.load_puzzle(1, "test")
 
     def test_delete_puzzle_not_found_raises_persistence_error(self, adapter):
-        with pytest.raises(PersistenceError, match="not found"):
+        with pytest.raises(PuzzleNotFoundError, match="not found"):
             adapter.delete_puzzle(1, "nonexistent")
 
     def test_delete_puzzle_sqlite_error_raises_persistence_error(self, adapter):
@@ -505,6 +507,60 @@ class TestSQLitePersistenceAdapter:
         adapter.conn.cursor.return_value.execute.side_effect = sqlite3.Error("list error")
         with pytest.raises(PersistenceError, match="Failed to list puzzles"):
             adapter.list_puzzles(1)
+
+    # ======================================================================
+    # Unmigrated schemas
+    # ======================================================================
+
+    @staticmethod
+    def _make_db(path, ddl):
+        conn = sqlite3.connect(path)
+        conn.executescript(ddl)
+        conn.close()
+
+    _PUZZLES_DDL = """
+        CREATE TABLE puzzles (
+            id INTEGER PRIMARY KEY, userid INTEGER NOT NULL,
+            puzzlename TEXT NOT NULL, created TEXT NOT NULL,
+            modified TEXT NOT NULL, last_mode TEXT NOT NULL DEFAULT 'puzzle',
+            jsonstr TEXT NOT NULL);
+    """
+
+    def test_fresh_database_file_opens(self, tmp_path):
+        SQLitePersistenceAdapter(str(tmp_path / "new.db")).close()
+
+    def test_rejects_state_columns_on_puzzles(self, tmp_path):
+        path = tmp_path / "old.db"
+        self._make_db(path, self._PUZZLES_DDL.replace(
+            "jsonstr TEXT NOT NULL", "state TEXT NOT NULL DEFAULT 'draft', jsonstr TEXT NOT NULL"))
+
+        with pytest.raises(PersistenceError, match="migrate_puzzle_state_history.py"):
+            SQLitePersistenceAdapter(str(path))
+
+        # Nothing was created in the old database on the way out
+        conn = sqlite3.connect(path)
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        conn.close()
+        assert "puzzle_state_history" not in tables
+
+    @pytest.mark.parametrize("missing, tool", [
+        ("content", "migrate_puzzle_content_snapshots.py"),
+        ("comment", "migrate_puzzle_save_comments.py"),
+    ])
+    def test_rejects_history_table_missing_a_column(self, tmp_path, missing, tool):
+        columns = ["content TEXT", "comment TEXT"]
+        columns = [c for c in columns if not c.startswith(missing)]
+        path = tmp_path / "old.db"
+        self._make_db(path, self._PUZZLES_DDL + f"""
+            CREATE TABLE puzzle_state_history (
+                id INTEGER PRIMARY KEY, puzzle_id INTEGER NOT NULL,
+                state TEXT NOT NULL, publisher TEXT, date_submitted TEXT,
+                date_published TEXT, {", ".join(columns)},
+                changed_at TEXT NOT NULL);
+        """)
+
+        with pytest.raises(PersistenceError, match=tool):
+            SQLitePersistenceAdapter(str(path))
 
     # ======================================================================
     # Integration with Production Database

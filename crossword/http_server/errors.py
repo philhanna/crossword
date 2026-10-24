@@ -15,7 +15,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
 
-from crossword.ports.persistence_port import PersistenceError
+from crossword.ports.persistence_port import PuzzleExistsError, PuzzleNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -88,12 +88,17 @@ def puzzle_errors(name: str):
     """
     Translate the errors a puzzle use case raises into API errors.
 
-    A missing puzzle becomes a 404 naming it, and a rejected argument becomes
-    a 400 carrying the use case's own explanation.
+    A missing puzzle becomes a 404 naming it, a name that is already taken
+    becomes a 409, and a rejected argument becomes a 400 carrying the use
+    case's own explanation. Any other PersistenceError is a real storage
+    failure (e.g. a read-only or moved database file), so it is left to
+    escape and reach the client as a logged 500.
     """
     try:
         yield
-    except PersistenceError:
+    except PuzzleNotFoundError:
         raise ApiError(404, f"Puzzle not found: {name}")
+    except PuzzleExistsError as e:
+        raise ApiError(409, str(e))
     except ValueError as e:
         raise ApiError(400, str(e))

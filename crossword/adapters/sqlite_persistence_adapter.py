@@ -9,7 +9,9 @@ import sqlite3
 import threading
 from datetime import datetime
 from crossword import Puzzle
-from crossword.ports.persistence_port import PersistencePort, PersistenceError
+from crossword.ports.persistence_port import (
+    PersistencePort, PersistenceError, PuzzleNotFoundError, PuzzleExistsError,
+)
 
 # The latest puzzle_state_history row per puzzle_id, used wherever "current
 # state" needs to be derived rather than read from a column.
@@ -89,12 +91,38 @@ class SQLitePersistenceAdapter(PersistencePort):
         rows = cursor.fetchall()
         return any(row["name"] == column_name for row in rows)
 
+    def _reject_unmigrated_schema(self) -> None:
+        """
+        Refuse to open a database that predates a schema migration.
+
+        The CREATE TABLE IF NOT EXISTS statements below would otherwise run
+        happily against an old database, leaving it half-upgraded: an empty
+        puzzle_state_history beside the old state columns, so every puzzle
+        silently loses its state. Raise instead, naming the tool that brings
+        the database forward. A brand-new database has no tables and passes.
+        """
+        if self._table_exists("puzzles") and self._column_exists("puzzles", "state"):
+            self._raise_unmigrated("tools/dev/migrate_puzzle_state_history.py")
+        if self._table_exists("puzzle_state_history"):
+            if not self._column_exists("puzzle_state_history", "content"):
+                self._raise_unmigrated("tools/dev/migrate_puzzle_content_snapshots.py")
+            if not self._column_exists("puzzle_state_history", "comment"):
+                self._raise_unmigrated("tools/dev/migrate_puzzle_save_comments.py")
+
+    def _raise_unmigrated(self, tool: str) -> None:
+        raise PersistenceError(
+            f"Database {self.db_path} uses an older schema. Run {tool} on it"
+            " (then any later migrate_puzzle_*.py tools, in commit order) and"
+            " point 'dbfile' at the new file."
+        )
+
     def _ensure_schema_compatibility(self) -> None:
         """
         Bring the SQLite schema forward to the puzzle-centric layout expected
         by the merged editor work.
         """
         try:
+            self._reject_unmigrated_schema()
             cursor = self.conn.cursor()
 
             cursor.execute("""
@@ -209,7 +237,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             row = cursor.fetchone()
 
             if not row:
-                raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+                raise PuzzleNotFoundError(f"Puzzle '{name}' not found for user {user_id}")
 
             puzzle = Puzzle.from_json(row["jsonstr"])
             row_last_mode = row["last_mode"] if "last_mode" in row.keys() else None
@@ -234,7 +262,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             )
 
             if cursor.rowcount == 0:
-                raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+                raise PuzzleNotFoundError(f"Puzzle '{name}' not found for user {user_id}")
 
             self.conn.commit()
         except PersistenceError:
@@ -261,7 +289,7 @@ class SQLitePersistenceAdapter(PersistencePort):
             )
 
             if cursor.rowcount == 0:
-                raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+                raise PuzzleNotFoundError(f"Puzzle '{name}' not found for user {user_id}")
 
             cursor.execute(
                 "UPDATE puzzles SET modified = ? WHERE userid = ? AND puzzlename = ?",
@@ -370,13 +398,13 @@ class SQLitePersistenceAdapter(PersistencePort):
             )
 
             if cursor.rowcount == 0:
-                raise PersistenceError(f"Puzzle '{old_name}' not found for user {user_id}")
+                raise PuzzleNotFoundError(f"Puzzle '{old_name}' not found for user {user_id}")
 
             self.conn.commit()
         except PersistenceError:
             raise
         except sqlite3.IntegrityError:
-            raise PersistenceError(f"Puzzle '{new_name}' already exists for user {user_id}")
+            raise PuzzleExistsError(f"Puzzle '{new_name}' already exists for user {user_id}")
         except sqlite3.Error as e:
             raise PersistenceError(f"Failed to rename puzzle: {e}")
 

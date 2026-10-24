@@ -13,7 +13,9 @@ from fastapi.testclient import TestClient
 from crossword.http_server.main import create_app, iter_routes, run_http_server
 from crossword.http_server.puzzle_routes import _puzzle_response
 from crossword.ports.definition_port import DefinitionNotFound
-from crossword.ports.persistence_port import PersistenceError
+from crossword.ports.persistence_port import (
+    PersistenceError, PuzzleExistsError, PuzzleNotFoundError,
+)
 from crossword.tests import TestPuzzle
 
 
@@ -89,12 +91,30 @@ class TestErrorEnvelope:
         assert response.json() == {"error": "Invalid state: 'bogus'"}
 
     def test_missing_puzzle_becomes_404(self, client, container):
-        container.puzzle_uc.load_puzzle.side_effect = PersistenceError("gone")
+        container.puzzle_uc.load_puzzle.side_effect = PuzzleNotFoundError("gone")
 
         response = client.get("/api/puzzles/nope")
 
         assert response.status_code == 404
         assert response.json() == {"error": "Puzzle not found: nope"}
+
+    def test_storage_failure_is_a_500_not_a_404(self, client, container):
+        container.puzzle_uc.open_puzzle_for_editing.side_effect = PersistenceError(
+            "Failed to save puzzle: attempt to write a readonly database")
+
+        response = client.post("/api/puzzles/demo/open")
+
+        assert response.status_code == 500
+        assert "readonly database" in response.json()["error"]
+
+    def test_rename_onto_existing_name_is_a_409(self, client, container):
+        container.puzzle_uc.rename_puzzle.side_effect = PuzzleExistsError(
+            "Puzzle 'taken' already exists for user 1")
+
+        response = client.post("/api/puzzles/demo/rename", json={"new_name": "taken"})
+
+        assert response.status_code == 409
+        assert "already exists" in response.json()["error"]
 
     def test_unexpected_error_becomes_500(self, client, container):
         container.puzzle_uc.get_dashboard.side_effect = RuntimeError("disk on fire")
@@ -391,7 +411,7 @@ class TestExportRoutes:
         assert response.headers["content-disposition"] == 'attachment; filename="demo.txt"'
 
     def test_missing_puzzle_is_a_404(self, client, container):
-        container.export_uc.export_puzzle_to_solver_pdf.side_effect = PersistenceError("gone")
+        container.export_uc.export_puzzle_to_solver_pdf.side_effect = PuzzleNotFoundError("gone")
 
         response = client.get("/api/export/puzzles/nope/solver-pdf")
 
@@ -552,7 +572,7 @@ class TestPuzzleStateRoutes:
         assert [row["state"] for row in body["history"]] == ["draft", "submitted"]
 
     def test_get_puzzle_state_history_not_found(self, client, container):
-        container.puzzle_uc.get_puzzle_state_history.side_effect = PersistenceError("not found")
+        container.puzzle_uc.get_puzzle_state_history.side_effect = PuzzleNotFoundError("not found")
 
         response = client.get("/api/puzzles/nope/state/history")
 
@@ -568,7 +588,7 @@ class TestPuzzleStateRoutes:
             "original_name": "demo", "working_name": "__wc__demo__a1b2c3d4"}
 
     def test_restore_from_history_without_content(self, client, container):
-        container.puzzle_uc.restore_puzzle_from_history.side_effect = PersistenceError(
+        container.puzzle_uc.restore_puzzle_from_history.side_effect = PuzzleNotFoundError(
             "No restorable content for history row 31 of puzzle 'demo'")
 
         response = client.post("/api/puzzles/demo/state/history/31/restore")

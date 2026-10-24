@@ -40,7 +40,7 @@ from crossword import Grid, Puzzle, PuzzleToSVG
 from crossword.domain import puzzle_state as ps
 from crossword.domain.fill_priority import FillPriorityAnalyzer
 from crossword.domain.word import Word
-from crossword.ports.persistence_port import PersistencePort, PersistenceError
+from crossword.ports.persistence_port import PersistencePort, PuzzleNotFoundError
 from crossword.use_cases._name_validation import validate_new_public_name, validate_public_name
 
 logger = logging.getLogger(__name__)
@@ -266,7 +266,7 @@ class PuzzleUseCases:
         """
         state = self.persistence.get_puzzle_state(user_id, name)
         if state is None:
-            raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+            raise PuzzleNotFoundError(f"Puzzle '{name}' not found for user {user_id}")
         return state
 
     def set_puzzle_state(self, user_id: int, name: str, state: str, *,
@@ -332,7 +332,7 @@ class PuzzleUseCases:
         """
         history = self.persistence.get_puzzle_state_history(user_id, name)
         if history is None:
-            raise PersistenceError(f"Puzzle '{name}' not found for user {user_id}")
+            raise PuzzleNotFoundError(f"Puzzle '{name}' not found for user {user_id}")
         return history
 
     def open_puzzle_for_editing(self, user_id: int, name: str) -> str:
@@ -385,7 +385,7 @@ class PuzzleUseCases:
         """
         content = self.persistence.get_puzzle_state_history_content(user_id, name, history_id)
         if content is None:
-            raise PersistenceError(
+            raise PuzzleNotFoundError(
                 f"No restorable content for history row {history_id} of puzzle '{name}'"
             )
         working_name = f"__wc__{name}__{uuid.uuid4().hex[:8]}"

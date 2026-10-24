@@ -16,6 +16,16 @@ class PersistenceError(Exception):
     pass
 
 
+class PuzzleNotFoundError(PersistenceError):
+    """The named puzzle (or the history row asked for) does not exist"""
+    pass
+
+
+class PuzzleExistsError(PersistenceError):
+    """The target puzzle name is already taken"""
+    pass
+
+
 class PersistencePort(ABC):
     """
     Abstract interface for persistent storage.
