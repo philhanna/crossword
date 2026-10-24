@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.1.3] - 2026-10-24
+
+### Fixed
+
+- A database error is no longer reported as "Puzzle not found". If the
+  database can't be read or written (for example, the file was moved while
+  the app was running), the real error is shown and logged
+- Renaming a puzzle to a name that is already taken now says so, instead
+  of reporting that the original puzzle was not found
+- The app now refuses to start on a database that hasn't been migrated to
+  the current schema, and names the migration tool to run. Before, it
+  opened such a database and every puzzle silently lost its state
+
 ## [6.1.2] - 2026-10-17
 
 ### Changed
