@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.1.4] - 2026-10-26
+
+### Added
+
+- `grid_generator.py`, a standalone script that makes a random 15x15
+  grid with at most 74 words and saves it as a PDF named after the
+  current date and time (`yyyymmddhhmmss.pdf`). It needs only Python
+  itself, with no other packages and none of this project's code
+
 ## [6.1.3] - 2026-10-24
 
 ### Fixed
