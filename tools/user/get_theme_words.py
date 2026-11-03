@@ -1,8 +1,9 @@
 """
 Print the theme words of a puzzle, with their lengths and clues.
 
-Theme words are the words that are locked in the puzzle. Each one is
-printed on its own line as:
+The first line is the puzzle title, as Title: "<title>". Theme words are
+the words that are locked in the puzzle. Each one is printed on its own
+line as:
 
     WORD (length) clue
 
@@ -44,6 +45,7 @@ def main() -> None:
         print(e, file=sys.stderr)
         sys.exit(1)
 
+    print(f'Title: "{puzzle.title or ""}"')
     for word in get_theme_words(puzzle):
         print(format_word(word))
 
