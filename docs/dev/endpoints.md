@@ -25,34 +25,34 @@ Modules: `puzzle_routes.py`
 
 | Method | Path | Handler |
 |--------|------|---------|
-| GET | `/api/dashboard` | [get_dashboard](../../crossword/http_server/puzzle_routes.py#L26) |
-| GET | `/api/puzzles` | [list_puzzles](../../crossword/http_server/puzzle_routes.py#L32) |
-| POST | `/api/puzzles` | [create_puzzle](../../crossword/http_server/puzzle_routes.py#L39) |
-| GET | `/api/puzzles/{name}` | [load_puzzle](../../crossword/http_server/puzzle_routes.py#L51) |
-| DELETE | `/api/puzzles/{name}` | [delete_puzzle](../../crossword/http_server/puzzle_routes.py#L59) |
-| POST | `/api/puzzles/{name}/copy` | [copy_puzzle](../../crossword/http_server/puzzle_routes.py#L67) |
-| POST | `/api/puzzles/{name}/rename` | [rename_puzzle](../../crossword/http_server/puzzle_routes.py#L78) |
-| GET | `/api/puzzles/{name}/state` | [get_puzzle_state](../../crossword/http_server/puzzle_routes.py#L87) |
-| PUT | `/api/puzzles/{name}/state` | [set_puzzle_state](../../crossword/http_server/puzzle_routes.py#L95) |
-| GET | `/api/puzzles/{name}/state/history` | [get_puzzle_state_history](../../crossword/http_server/puzzle_routes.py#L110) |
-| POST | `/api/puzzles/{name}/state/history/{history_id}/restore` | [restore_puzzle_from_history](../../crossword/http_server/puzzle_routes.py#L118) |
-| POST | `/api/puzzles/{name}/open` | [open_puzzle_for_editing](../../crossword/http_server/puzzle_routes.py#L132) |
-| POST | `/api/puzzles/{name}/mode/grid` | [switch_to_grid_mode](../../crossword/http_server/puzzle_routes.py#L140) |
-| POST | `/api/puzzles/{name}/mode/puzzle` | [switch_to_puzzle_mode](../../crossword/http_server/puzzle_routes.py#L148) |
-| PUT | `/api/puzzles/{name}/title` | [set_puzzle_title](../../crossword/http_server/puzzle_routes.py#L156) |
-| PUT | `/api/puzzles/{name}/grid/cells/{r}/{c}` | [toggle_black_cell](../../crossword/http_server/puzzle_routes.py#L164) |
-| POST | `/api/puzzles/{name}/grid/rotate` | [rotate_grid](../../crossword/http_server/puzzle_routes.py#L172) |
-| POST | `/api/puzzles/{name}/grid/generate` | [generate_grid](../../crossword/http_server/puzzle_routes.py#L180) |
-| POST | `/api/puzzles/{name}/grid/undo` | [undo_grid](../../crossword/http_server/puzzle_routes.py#L196) |
-| POST | `/api/puzzles/{name}/grid/redo` | [redo_grid](../../crossword/http_server/puzzle_routes.py#L204) |
-| PUT | `/api/puzzles/{name}/cells/{r}/{c}` | [set_cell_letter](../../crossword/http_server/puzzle_routes.py#L212) |
-| PUT | `/api/puzzles/{name}/cells/{r}/{c}/circle` | [toggle_circle](../../crossword/http_server/puzzle_routes.py#L222) |
-| POST | `/api/puzzles/{name}/undo` | [undo_puzzle](../../crossword/http_server/puzzle_routes.py#L258) |
-| POST | `/api/puzzles/{name}/redo` | [redo_puzzle](../../crossword/http_server/puzzle_routes.py#L266) |
-| POST | `/api/puzzles/{name}/clear` | [clear_puzzle](../../crossword/http_server/puzzle_routes.py#L274) |
-| GET | `/api/puzzles/{name}/preview` | [get_puzzle_preview](../../crossword/http_server/puzzle_routes.py#L282) |
-| GET | `/api/puzzles/{name}/stats` | [get_puzzle_stats](../../crossword/http_server/puzzle_routes.py#L289) |
-| GET | `/api/puzzles/{name}/fill-order` | [get_fill_order](../../crossword/http_server/puzzle_routes.py#L296) |
+| GET | `/api/dashboard` | [get_dashboard](../../crossword/http_server/puzzle_routes.py#L27) |
+| GET | `/api/puzzles` | [list_puzzles](../../crossword/http_server/puzzle_routes.py#L33) |
+| POST | `/api/puzzles` | [create_puzzle](../../crossword/http_server/puzzle_routes.py#L40) |
+| GET | `/api/puzzles/{name}` | [load_puzzle](../../crossword/http_server/puzzle_routes.py#L52) |
+| DELETE | `/api/puzzles/{name}` | [delete_puzzle](../../crossword/http_server/puzzle_routes.py#L60) |
+| POST | `/api/puzzles/{name}/copy` | [copy_puzzle](../../crossword/http_server/puzzle_routes.py#L68) |
+| POST | `/api/puzzles/{name}/rename` | [rename_puzzle](../../crossword/http_server/puzzle_routes.py#L79) |
+| GET | `/api/puzzles/{name}/state` | [get_puzzle_state](../../crossword/http_server/puzzle_routes.py#L88) |
+| PUT | `/api/puzzles/{name}/state` | [set_puzzle_state](../../crossword/http_server/puzzle_routes.py#L96) |
+| GET | `/api/puzzles/{name}/state/history` | [get_puzzle_state_history](../../crossword/http_server/puzzle_routes.py#L111) |
+| POST | `/api/puzzles/{name}/state/history/{history_id}/restore` | [restore_puzzle_from_history](../../crossword/http_server/puzzle_routes.py#L119) |
+| POST | `/api/puzzles/{name}/open` | [open_puzzle_for_editing](../../crossword/http_server/puzzle_routes.py#L133) |
+| POST | `/api/puzzles/{name}/mode/grid` | [switch_to_grid_mode](../../crossword/http_server/puzzle_routes.py#L141) |
+| POST | `/api/puzzles/{name}/mode/puzzle` | [switch_to_puzzle_mode](../../crossword/http_server/puzzle_routes.py#L149) |
+| PUT | `/api/puzzles/{name}/title` | [set_puzzle_title](../../crossword/http_server/puzzle_routes.py#L157) |
+| PUT | `/api/puzzles/{name}/grid/cells/{r}/{c}` | [toggle_black_cell](../../crossword/http_server/puzzle_routes.py#L165) |
+| POST | `/api/puzzles/{name}/grid/rotate` | [rotate_grid](../../crossword/http_server/puzzle_routes.py#L173) |
+| POST | `/api/puzzles/{name}/grid/generate` | [generate_grid](../../crossword/http_server/puzzle_routes.py#L181) |
+| POST | `/api/puzzles/{name}/grid/undo` | [undo_grid](../../crossword/http_server/puzzle_routes.py#L197) |
+| POST | `/api/puzzles/{name}/grid/redo` | [redo_grid](../../crossword/http_server/puzzle_routes.py#L205) |
+| PUT | `/api/puzzles/{name}/cells/{r}/{c}` | [set_cell_letter](../../crossword/http_server/puzzle_routes.py#L213) |
+| PUT | `/api/puzzles/{name}/cells/{r}/{c}/circle` | [toggle_circle](../../crossword/http_server/puzzle_routes.py#L223) |
+| POST | `/api/puzzles/{name}/undo` | [undo_puzzle](../../crossword/http_server/puzzle_routes.py#L271) |
+| POST | `/api/puzzles/{name}/redo` | [redo_puzzle](../../crossword/http_server/puzzle_routes.py#L279) |
+| POST | `/api/puzzles/{name}/clear` | [clear_puzzle](../../crossword/http_server/puzzle_routes.py#L287) |
+| GET | `/api/puzzles/{name}/preview` | [get_puzzle_preview](../../crossword/http_server/puzzle_routes.py#L295) |
+| GET | `/api/puzzles/{name}/stats` | [get_puzzle_stats](../../crossword/http_server/puzzle_routes.py#L302) |
+| GET | `/api/puzzles/{name}/fill-order` | [get_fill_order](../../crossword/http_server/puzzle_routes.py#L309) |
 
 ## Words
 
@@ -60,8 +60,9 @@ Modules: `puzzle_routes.py`, `word_routes.py`
 
 | Method | Path | Handler |
 |--------|------|---------|
-| GET | `/api/puzzles/{name}/words/{seq}/{direction}` | [get_word_at](../../crossword/http_server/puzzle_routes.py#L230) |
-| PUT | `/api/puzzles/{name}/words/{seq}/{direction}` | [set_word_clue](../../crossword/http_server/puzzle_routes.py#L244) |
+| POST | `/api/puzzles/{name}/words/swap` | [swap_words](../../crossword/http_server/puzzle_routes.py#L231) |
+| GET | `/api/puzzles/{name}/words/{seq}/{direction}` | [get_word_at](../../crossword/http_server/puzzle_routes.py#L243) |
+| PUT | `/api/puzzles/{name}/words/{seq}/{direction}` | [set_word_clue](../../crossword/http_server/puzzle_routes.py#L257) |
 | GET | `/api/words/suggestions?pattern=` | [get_suggestions](../../crossword/http_server/word_routes.py#L14) |
 | GET | `/api/puzzles/{name}/words/{seq}/{direction}/constraints` | [get_word_constraints](../../crossword/http_server/word_routes.py#L40) |
 | GET | `/api/puzzles/{name}/words/{seq}/{direction}/suggestions` | [get_ranked_suggestions](../../crossword/http_server/word_routes.py#L48) |

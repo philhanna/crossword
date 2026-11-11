@@ -51,6 +51,13 @@ class SetWordClueBody(BaseModel):
     locked: bool | None = None
 
 
+class SwapWordsBody(BaseModel):
+    """POST /api/puzzles/{name}/words/swap"""
+    direction: str
+    seq_a: int
+    seq_b: int
+
+
 class ImportTextBody(BaseModel):
     """POST /api/import/{acrosslite,xd,ipuz,ccxml}"""
     name: str | None = None

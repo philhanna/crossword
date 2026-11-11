@@ -48,6 +48,7 @@ and dashboard/preview/stats queries.
 | `toggle_circle(name, r, c)` | `Puzzle` | Circle or un-circle a white square (Puzzle mode only; refused in Grid mode). Undo-tracked; doesn't invalidate the fill order. |
 | `get_word_at(name, seq, direction)` | `Word` | Look up an across/down word by numbered cell. |
 | `set_word_clue(name, seq, direction, clue, text=None, locked=None)` | `Puzzle` | Set a word's clue and, optionally, its text and/or locked state (both undo-tracked). |
+| `swap_words(name, direction, seq_a, seq_b)` | `Puzzle` | Swap the letters and clues of two locked words of the same direction and length (Puzzle mode only). Both stay locked; crossing words whose letters change lose their clue; refused if a locked crossing word would change or a duplicate would result. One undo step. |
 | `clear_unlocked(name)` | `Puzzle` | Blank text and clue of every unlocked word, leaving locked words untouched. |
 | `undo_puzzle(name)` | `Puzzle` | Undo the last Puzzle-mode operation. |
 | `redo_puzzle(name)` | `Puzzle` | Redo the last undone Puzzle-mode operation. |

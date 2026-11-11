@@ -30,11 +30,13 @@ import {
 } from './selection.js';
 import { do_puzzle_stats, forgetStats, renderStatsPanel, statsLoaded } from './stats-panel.js';
 import { closeWordEditor, openWordEditor, renderWordEditorPanel } from './word-editor.js';
+import { attachWordDrag, canPermute, isPermuteOn, stopPermute, togglePermute } from './word-drag.js';
 import { buildPuzzleSvg } from '../svg/grid-svg.js';
 
 registerActions({
     'puzzle-title': () => do_puzzle_title(),
     'puzzle-clear': () => do_puzzle_clear(),
+    'puzzle-permute': () => togglePermute(),
     'puzzle-undo':  () => do_puzzle_undo(),
     'puzzle-redo':  () => do_puzzle_redo(),
     'puzzle-mode':  () => do_switch_to_puzzle_mode(),
@@ -58,6 +60,7 @@ export function setSidebarTab(tab) {
 // Forget everything the editor knew about the previous puzzle; called when a
 // puzzle is opened or closed.
 export function resetEditor() {
+    stopPermute();
     clearSelection();
     sidebar.tab = 'clues';
     forgetStats();
@@ -74,6 +77,7 @@ export function _currentEditorMode() {
 }
 
 export function renderPuzzleEditor() {
+    if (_currentEditorMode() !== 'puzzle') stopPermute();
     document.removeEventListener('keydown', _peKeydown);
     document.removeEventListener('mousedown', _peOutsideMousedown);
     if (_currentEditorMode() === 'puzzle') {
@@ -132,6 +136,7 @@ ${clickHelp}`;
 
     const svg = document.getElementById('puzzle-svg');
     if (svg && mode === 'puzzle') svg.addEventListener('click', handlePuzzleClick);
+    if (svg && mode === 'puzzle') attachWordDrag(svg);
     if (svg && mode === 'grid') svg.addEventListener('click', handleGridModeClick);
     if (mode === 'puzzle' && sw && !_isWordEditorOpen()) _focusPuzzleSvg();
     _updatePuzzleUndoRedo();
@@ -185,6 +190,12 @@ export function renderActionBar() {
     const hasLockedWords = !!(pd && pd.puzzle.words.some(w => w.locked));
     const gridModeDisabled = hasLockedWords ? ' is-disabled' : '';
     const gridModeDisabledAttr = hasLockedWords ? ' disabled' : '';
+    const permuteOn = isPermuteOn();
+    const permuteBlocked = !permuteOn && (_isWordEditorOpen() || !canPermute());
+    const permuteDisabled = permuteBlocked ? ' is-disabled' : '';
+    const permuteDisabledAttr = permuteBlocked ? ' disabled' : '';
+    const permuteTitle = permuteBlocked && !_isWordEditorOpen()
+        ? ' title="Permute needs two locked words of the same direction and length"' : '';
     const gridModeTitle = hasLockedWords ? ' title="Unlock all words before switching to Grid Mode"' : '';
 
     const modeSpecific = mode === 'grid' ? `
@@ -221,6 +232,9 @@ export function renderActionBar() {
   </button>
 </div>
 <div class="ab-group ab-group-right">
+  <button id="puzzle-permute-btn" class="ab-btn${permuteOn ? ' ab-mode-active' : ''}${permuteDisabled}" data-action="puzzle-permute"${permuteDisabledAttr}${permuteTitle}>
+    <i class="material-icons">${permuteOn ? 'close' : 'swap_horiz'}</i><span>${permuteOn ? 'Cancel' : 'Permute'}</span>
+  </button>
   <button id="puzzle-clear-btn" class="ab-btn" data-action="puzzle-clear">
     <i class="material-icons">clear_all</i><span>Clear</span>
   </button>
@@ -346,6 +360,12 @@ export function _updatePuzzleToolbar() {
     const eb = document.getElementById('puzzle-editword-btn');
     const cb = document.getElementById('puzzle-close-btn');
     const db = document.getElementById('puzzle-delete-btn');
+    const pb = document.getElementById('puzzle-permute-btn');
+    if (pb && !isPermuteOn()) {
+        const blocked = _isWordEditorOpen() || !canPermute();
+        pb.classList.toggle('is-disabled', blocked);
+        pb.disabled = blocked;
+    }
     if (eb) {
         eb.classList.toggle('is-disabled', mode !== 'puzzle' || !getSelectedWord() || _isWordEditorOpen());
     }

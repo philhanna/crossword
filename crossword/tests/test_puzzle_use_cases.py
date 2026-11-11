@@ -1174,3 +1174,59 @@ class TestStaleClues:
         puzzle_uc.copy_puzzle(1, "wc", "p", "comment")
 
         assert word.get_clue() is None
+
+
+class TestSwapWords:
+    """Tests for swap_words"""
+
+    @staticmethod
+    def locked_pair(puzzle):
+        """ Two across words of the same length, both locked """
+        by_length = {}
+        for word in puzzle.across_words.values():
+            by_length.setdefault(word.length, []).append(word)
+        a, b = next(ws for ws in by_length.values() if len(ws) >= 2)[:2]
+        a.set_locked(True)
+        b.set_locked(True)
+        return a, b
+
+    def test_swaps_and_saves(self, puzzle_uc, mock_persistence):
+        puzzle = Puzzle(Grid(5))
+        puzzle.last_mode = "puzzle"
+        a, b = self.locked_pair(puzzle)
+        a.set_locked(False)
+        b.set_locked(False)
+        a.set_text("ABCDE")
+        b.set_text("FGHIJ")
+        a.set_locked(True)
+        b.set_locked(True)
+        mock_persistence.load_puzzle.return_value = puzzle
+
+        puzzle_uc.swap_words(1, "p", "across", a.seq, b.seq)
+
+        assert "FGHIJ" == a.get_text()
+        assert "ABCDE" == b.get_text()
+        mock_persistence.save_puzzle.assert_called_once_with(1, "p", puzzle)
+
+    def test_refused_in_grid_mode(self, puzzle_uc, mock_persistence):
+        puzzle = Puzzle(Grid(5))
+        puzzle.last_mode = "grid"
+        a, b = self.locked_pair(puzzle)
+        mock_persistence.load_puzzle.return_value = puzzle
+
+        with pytest.raises(ValueError, match="Puzzle mode"):
+            puzzle_uc.swap_words(1, "p", "across", a.seq, b.seq)
+        mock_persistence.save_puzzle.assert_not_called()
+
+    def test_refused_for_unlocked_word(self, puzzle_uc, mock_persistence):
+        puzzle = Puzzle(Grid(5))
+        puzzle.last_mode = "puzzle"
+        mock_persistence.load_puzzle.return_value = puzzle
+
+        with pytest.raises(ValueError, match="locked"):
+            puzzle_uc.swap_words(1, "p", "across", 1, 6)
+        mock_persistence.save_puzzle.assert_not_called()
+
+    def test_refused_for_bad_direction(self, puzzle_uc):
+        with pytest.raises(ValueError, match="Direction"):
+            puzzle_uc.swap_words(1, "p", "sideways", 1, 6)

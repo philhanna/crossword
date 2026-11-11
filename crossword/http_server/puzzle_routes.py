@@ -17,6 +17,7 @@ from crossword.http_server.schemas import (
     SetPuzzleStateBody,
     SetPuzzleTitleBody,
     SetWordClueBody,
+    SwapWordsBody,
 )
 from crossword.ports.persistence_port import PersistenceError, PuzzleNotFoundError
 
@@ -224,6 +225,18 @@ def toggle_circle(name: str, r: int, c: int, app: Container, user_id: UserId):
     """Circle or un-circle a white square. The frontend counts from zero, the puzzle from one."""
     with puzzle_errors(name):
         puzzle = app.puzzle_uc.toggle_circle(user_id, name, r + 1, c + 1)
+    return _puzzle_response(puzzle)
+
+
+@router.post("/api/puzzles/{name}/words/swap")
+def swap_words(name: str, body: SwapWordsBody, app: Container, user_id: UserId):
+    """
+    Swap the letters and clues of two locked words of the same direction and
+    length. Both stay locked; one undo reverses the swap.
+    """
+    with puzzle_errors(name):
+        puzzle = app.puzzle_uc.swap_words(
+            user_id, name, body.direction, body.seq_a, body.seq_b)
     return _puzzle_response(puzzle)
 
 

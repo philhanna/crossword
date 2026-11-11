@@ -12,6 +12,7 @@ import {
 } from './selection.js';
 import { _weApplyAndClose, openWordEditor } from './word-editor.js';
 import { BOXSIZE } from '../svg/grid-svg.js';
+import { wasJustDragged } from './word-drag.js';
 
 const CLICK_DELAY = 280;
 
@@ -20,6 +21,7 @@ const CLICK_DELAY = 280;
 const click = { pending: false, timeout: null, event: null };
 
 export async function handlePuzzleClick(event) {
+    if (wasJustDragged()) return;  // the click that ends a Permute drag
     if (event.shiftKey) {
         if (_isWordEditorOpen()) return;
         const cell = _cellAt(event);

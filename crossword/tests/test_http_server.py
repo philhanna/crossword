@@ -57,6 +57,7 @@ class TestRouteTable:
             ("DELETE", "/api/puzzles/{name}"),
             ("POST", "/api/puzzles/{name}/mode/grid"),
             ("POST", "/api/puzzles/{name}/mode/puzzle"),
+            ("POST", "/api/puzzles/{name}/words/swap"),
             ("PUT", "/api/puzzles/{name}/grid/cells/{r}/{c}"),
             ("POST", "/api/puzzles/{name}/grid/rotate"),
             ("POST", "/api/puzzles/{name}/grid/undo"),
@@ -288,6 +289,25 @@ class TestPuzzleRoutes:
 
 class TestWordRoutes:
     """Suggestions, constraints and definitions."""
+
+    def test_swap_words_calls_use_case(self, client, container):
+        container.puzzle_uc.swap_words.return_value = TestPuzzle.create_nyt_puzzle()
+
+        response = client.post("/api/puzzles/demo/words/swap",
+                               json={"direction": "across", "seq_a": 1, "seq_b": 5})
+
+        assert response.status_code == 200
+        container.puzzle_uc.swap_words.assert_called_once_with(1, "demo", "across", 1, 5)
+
+    def test_swap_words_refusal_comes_back_as_error(self, client, container):
+        container.puzzle_uc.swap_words.side_effect = ValueError(
+            "Only locked words can be swapped")
+
+        response = client.post("/api/puzzles/demo/words/swap",
+                               json={"direction": "across", "seq_a": 1, "seq_b": 5})
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "Only locked words can be swapped"}
 
     def test_set_word_clue_surfaces_duplicate_error(self, client, container):
         container.puzzle_uc.set_word_clue.side_effect = ValueError(

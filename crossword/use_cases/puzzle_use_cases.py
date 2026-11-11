@@ -26,6 +26,7 @@ Public interface:
   set_word_clue(user_id, name, seq, direction, clue) -> Puzzle
   undo_puzzle(user_id, name) -> Puzzle
   redo_puzzle(user_id, name) -> Puzzle
+  swap_words(user_id, name, direction, seq_a, seq_b) -> Puzzle
   clear_unlocked(user_id, name) -> Puzzle
   get_puzzle_preview(user_id, name) -> dict
   get_puzzle_stats(user_id, name) -> dict
@@ -508,6 +509,43 @@ class PuzzleUseCases:
             puzzle.toggle_circle(r, c)
 
         return self._edit(user_id, name, mutate, invalidate=False)
+
+    def swap_words(self, user_id: int, name: str, direction: str,
+                   seq_a: int, seq_b: int) -> Puzzle:
+        """
+        Swap the letters and clues of two locked words of the same direction
+        and length, and save the change. Both words stay locked, and the
+        clue of every crossing word whose letters change is cleared. The
+        swap is one undo step.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            direction: 'across' or 'down'
+            seq_a: Numbered cell sequence number of the first word
+            seq_b: Numbered cell sequence number of the second word
+
+        Returns:
+            Updated Puzzle object
+
+        Raises:
+            PersistenceError: If load/save fails
+            ValueError: If the puzzle is in Grid mode, the direction is
+                invalid, either word is missing or unlocked, the lengths
+                differ, a locked crossing word would change, or the swap
+                would create a duplicate word
+        """
+        dir_lower = direction.lower()
+        if dir_lower not in ("across", "down"):
+            raise ValueError(f"Direction must be 'across' or 'down', got {repr(direction)}")
+        word_dir = Word.ACROSS if dir_lower == "across" else Word.DOWN
+
+        def mutate(puzzle):
+            if puzzle.last_mode == "grid":
+                raise ValueError("Words can only be swapped in Puzzle mode")
+            puzzle.swap_words(seq_a, seq_b, word_dir)
+
+        return self._edit(user_id, name, mutate)
 
     def get_word_at(self, user_id: int, name: str, seq: int, direction: str):
         """

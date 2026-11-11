@@ -45,7 +45,7 @@ export function showRequestError(what, e, timeoutMs = 0) {
     showMessageLine(text, 'error', timeoutMs);
 }
 
-function clearMessageLine() {
+export function clearMessageLine() {
     const ml = document.getElementById('ml');
     ml.style.display = 'none';
     ml.classList.remove('message-line-notice', 'message-line-error');

@@ -55,6 +55,7 @@ frontend/
       selection.js           the selected word and saving it
       grid-clicks.js         single click = Across, double click = Down
       keyboard.js            typing into the grid
+      word-drag.js           Permute: swapping two locked words by drag and drop
       word-editor.js         the word editor panel and its suggestions
       clues-panel.js         the clue list and editing a clue in place
       stats-panel.js         the Stats panel
@@ -142,6 +143,19 @@ A single click on the grid waits 280 ms before acting, to be sure it isn't
 the first half of a double click. A single click selects the Across word, a
 double click the Down word. See `editor/grid-clicks.js`.
 
+### Permute (swapping two locked words)
+
+The **Permute** button, left of Clear and Delete, turns on a mode in which a
+locked word can be dragged onto another locked word of the same direction and
+length. While the mode is on the button reads **Cancel**. Until then
+`editor/word-drag.js` attaches nothing to the grid; `renderPuzzleEditorLhs()`
+calls `attachWordDrag()` after each redraw, which does nothing unless the mode
+is on. The mode ends after one swap, on Cancel, on Escape (when no drag is
+under way), or when the editor is reset or leaves Puzzle mode. A press that
+becomes a drag sets a flag so `handlePuzzleClick()` ignores the click the
+browser sends afterwards. The swap itself is `POST /api/puzzles/{name}/words/swap`,
+and the server enforces the rules (locked words, length, duplicates).
+
 ## Who owns which state
 
 `AppState` (in `core/state.js`) holds only what every part of the app needs:
@@ -160,6 +174,7 @@ Other modules go through the functions it exports.
 | "Grid changed since Grid mode" | `editor/grid-mode.js` | `takeGridStructureChanged()`, `forgetGridChanges()` |
 | Clue list direction, pending clue save | `editor/clues-panel.js` | (private) |
 | Click timing | `editor/grid-clicks.js` | (private) |
+| Whether Permute is on, the drag under way | `editor/word-drag.js` | `isPermuteOn()`, `stopPermute()` |
 | Suggestions and their page | `editor/word-editor.js` | (private) |
 | Chooser contents and page | `ui/chooser.js` | (private) |
 | Message timeout and timer | `ui/message-line.js` | `messageLineTimeout()`, `setMessageLineTimeout()` |

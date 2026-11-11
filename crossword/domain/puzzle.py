@@ -177,6 +177,105 @@ class Puzzle:
             self.undo_stack.append(['clear', changes])
         return bool(changes)
 
+    def swap_words(self, seq_a, seq_b, direction):
+        """
+        Swaps the letters and clues of two locked words of the same direction
+        and length, and returns True. Returns False, changing nothing, if the
+        two are the same word or already hold the same letters.
+
+        Both words stay locked. They are unlocked only while their letters are
+        written, because writes into locked squares are silently ignored.
+        The clue of every crossing word whose letters change is cleared.
+
+        Raises ValueError, leaving the puzzle exactly as it was, if either
+        word does not exist, is not locked, or the lengths differ; if a
+        crossing word that is locked would change; or if the swap would
+        duplicate another word in the puzzle.
+        """
+        word_a = self.get_word(seq_a, direction)
+        word_b = self.get_word(seq_b, direction)
+        if word_a is None or word_b is None:
+            raise ValueError("No such word to swap")
+        if not (word_a.is_locked() and word_b.is_locked()):
+            raise ValueError("Only locked words can be swapped")
+        if word_a.length != word_b.length:
+            raise ValueError(
+                f"{word_a.location} and {word_b.location} have different lengths")
+        text_a, text_b = word_a.get_text(), word_b.get_text()
+        if word_a is word_b or text_a == text_b:
+            return False
+
+        crossing = self._crossing_words_that_change(word_a, word_b)
+        for other in crossing:
+            if other.is_locked():
+                raise ValueError(
+                    f"Swapping would change {other.location}, which is locked")
+
+        before = [self._snapshot(w) for w in [word_a, word_b] + crossing]
+        texts_before = self._all_word_texts()
+        clue_a, clue_b = word_a.get_clue(), word_b.get_clue()
+
+        word_a.set_locked(False)
+        word_b.set_locked(False)
+        try:
+            word_a.set_text(text_b)
+            word_b.set_text(text_a)
+            word_a.set_clue(clue_b)
+            word_b.set_clue(clue_a)
+            for other in crossing:
+                other.set_clue(None)
+            try:
+                self._check_for_duplicates(word_a, texts_before)
+            except ValueError:
+                self._restore(before)
+                raise
+        finally:
+            word_a.set_locked(True)
+            word_b.set_locked(True)
+        self.undo_stack.append(['swap', seq_a, seq_b, direction, before])
+        return True
+
+    @staticmethod
+    def _snapshot(word):
+        return (word.seq, word.direction, word.get_text(), word.get_clue())
+
+    def _restore(self, snapshot):
+        """ Puts back the letters and clue of each (seq, direction, text, clue) """
+        for seq, direction, text, clue in snapshot:
+            word = self.get_word(seq, direction)
+            word.set_text(text)
+            word.set_clue(clue)
+
+    @staticmethod
+    def _crossing_words_that_change(word_a, word_b):
+        """ The words crossing word_a or word_b at a square where the two
+        words differ, without duplicates """
+        found = {}
+        for word, other in ((word_a, word_b), (word_b, word_a)):
+            cells = zip(word.cell_iterator(), word.get_text(), other.get_text())
+            for (r, c), mine, theirs in cells:
+                if mine == theirs:
+                    continue
+                crossing = word.get_crossing_word(r, c)
+                if crossing is not None:
+                    found[(crossing.seq, crossing.direction)] = crossing
+        return list(found.values())
+
+    def _swap_history(self, undoable):
+        """ Undoes or redoes a 'swap' entry; returns the opposite entry """
+        _, seq_a, seq_b, direction, changes = undoable
+        words = [self.get_word(seq_a, direction), self.get_word(seq_b, direction)]
+        opposite = [self._snapshot(self.get_word(seq, d)) for seq, d, _, _ in changes]
+        locks = [w.is_locked() for w in words]
+        for w in words:
+            w.set_locked(False)
+        try:
+            self._restore(changes)
+        finally:
+            for w, locked in zip(words, locks):
+                w.set_locked(locked)
+        return ['swap', seq_a, seq_b, direction, opposite]
+
     def is_circled(self, r, c):
         """ Returns True if the square at (r, c) is circled """
         return (r, c) in self.circled_cells
@@ -367,6 +466,9 @@ class Puzzle:
                 word.set_clue(old_clue)
             self.redo_stack.append([undo_type, redo_changes])
 
+        elif undo_type == 'swap':
+            self.redo_stack.append(self._swap_history(undoable))
+
         elif undo_type == 'circle':
             # Toggling is its own opposite
             self.toggle_circle(undoable[1], undoable[2], undo=False)
@@ -419,6 +521,9 @@ class Puzzle:
                 word.set_text(old_text)
                 word.set_clue(old_clue)
             self.undo_stack.append([undo_type, undo_changes])
+
+        elif undo_type == 'swap':
+            self.undo_stack.append(self._swap_history(undoable))
 
         elif undo_type == 'circle':
             # Toggling is its own opposite
