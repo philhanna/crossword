@@ -125,8 +125,9 @@ for it with a button.
 
 **Where it is.** In the Puzzle-mode toolbar, in the group on the right, as the
 first button, so it sits just to the left of **Clear** and **Delete**. It has
-the label "Permute" and the standard swap-arrows icon (`swap_horiz`). It is
-not shown in Grid mode. The change is in the toolbar markup in
+the label "Permute" and the standard swap-arrows icon (`swap_horiz`). While
+Permute mode is on, the same button reads **Cancel** instead (see below). It
+is not shown in Grid mode. The change is in the toolbar markup in
 [editor.js](../../frontend/static/js/editor/editor.js) (the block that holds
 `puzzle-clear-btn` and `puzzle-delete-btn`), with a new `data-action`
 (`puzzle-permute`) registered alongside the others.
@@ -145,8 +146,9 @@ updates the button.
 **Turning the mode on.** Clicking Permute:
 
 1. Saves any word being typed, just as clicking elsewhere on the grid does.
-2. Highlights the button (the same look the active mode buttons have), and
-   changes the pointer to a "grab" hand over locked words.
+2. Changes the button's label from "Permute" to "Cancel" and highlights it
+   (the same look the active mode buttons have), and changes the pointer to a
+   "grab" hand over locked words.
 3. Shows a message: "Permute: drag a locked word onto another locked word of
    the same length. Esc to cancel."
 4. Starts listening for drags on the grid. Before this point, no drag code is
@@ -154,12 +156,19 @@ updates the button.
 
 **Turning the mode off.** The mode ends, and the drag code is detached, when:
 
-- a swap is done (one swap per click on Permute; click again for another),
-- the user clicks Permute again,
+- a swap is done (one swap per click on Permute; click Permute again for
+  another),
+- the user clicks the button while it reads "Cancel",
 - the user presses Escape (when no drag is under way; during a drag, Escape
   only cancels that drag), or
 - the editor changes in a way that redraws everything: switching to Grid
   mode, closing or deleting the puzzle, or opening another one.
+
+Whichever way the mode ends, the button goes back to reading "Permute" and is
+enabled again (provided a swappable pair still exists, per "When it can be
+clicked"). In particular, after a successful swap the button is immediately
+usable for the next one. While the mode is on, the button is always enabled,
+since it is the way out.
 
 A refused swap leaves the mode on, so the user can try a different target.
 
@@ -326,13 +335,6 @@ code stays simple.
 
 ## Things to decide before building
 
-0. **Button plus drag, or button plus a dialog.** As designed, Permute turns
-   on drag and drop. Since swapping is rare, a simpler alternative is for
-   Permute to open a small dialog with two lists of the locked words (same
-   direction and length) and an OK button, with no dragging at all. That
-   would need no pointer code and works from the keyboard. This doc keeps drag
-   and drop because that is what was asked for; the server side is identical
-   either way, so the choice can be changed later.
 1. **Dragging from the clue list too.** The Clues tab already lists every
    word with its answer and clue. Dragging one row onto another would be a
    natural second way to swap, and it avoids the "which word at this square"
@@ -386,10 +388,12 @@ word number, an unlocked word, and that a refused swap comes back as
   nothing but select it, as today.
 - Permute is greyed out when there is no swappable pair, and enabled once
   two same-length locked words exist.
-- Clicking Permute highlights it; clicking it again, or pressing Escape,
-  turns the mode off.
+- Clicking Permute highlights it and changes its label to "Cancel";
+  clicking it again, or pressing Escape, turns the mode off and restores the
+  label "Permute".
 - With Permute on, dragging one locked word onto another swaps them, shows
-  the message, and turns Permute off.
+  the message, turns the mode off, and the button reads "Permute" and is
+  enabled again.
 - Pressing and dragging on an unlocked word does nothing (and a plain click
   on it still selects it).
 - A short press-and-release on a locked word is still an ordinary click.
