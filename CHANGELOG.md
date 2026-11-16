@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.3.1] - 2026-11-16
+
+### Changed
+
+- `compare_puzzles` now shows each changed line's old (`-`) and new (`+`)
+  values together, instead of all deletes followed by all adds
+- `compare_puzzles` word numbers now include the direction, e.g. `1A` or `2D`
+
 ## [6.3.0] - 2026-11-16
 
 ### Added
