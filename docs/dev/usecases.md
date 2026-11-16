@@ -109,7 +109,7 @@ Compares two puzzles of the same size and black squares. Design:
 
 | Method | Returns | Description |
 |---|---|---|
-| `compare_puzzles(first, second)` | `list[str]` | Unified diff lines for the title, Across words/clues and Down words/clues. `first` and `second` are `PuzzleSource` values (database name or import file). Raises `PuzzleCompareError` if a puzzle can't be loaded, or the sizes or black squares differ. |
+| `compare_puzzles(first, second)` | `list[str]` | Only the changed lines (`-` first puzzle, `+` second; no context or headers) for the title, Across words/clues and Down words/clues. `first` and `second` are `PuzzleSource` values (database name or import file). Raises `PuzzleCompareError` if a puzzle can't be loaded, or the sizes or black squares differ. |
 
 ## DefinitionUseCases
 

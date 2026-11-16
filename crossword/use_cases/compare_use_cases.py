@@ -33,7 +33,7 @@ class CompareUseCases:
 
     def compare_puzzles(self, user_id: int, first: PuzzleSource, second: PuzzleSource) -> list[str]:
         """
-        Return the lines of a unified diff between two puzzles.
+        Return the changed lines between two puzzles.
 
         Args:
             user_id: Owner of any database puzzles
@@ -41,7 +41,8 @@ class CompareUseCases:
             second: Source of the second puzzle
 
         Returns:
-            Diff lines (without line endings). Empty if the puzzles match.
+            Lines starting with '-' (first puzzle only) or '+' (second puzzle
+            only), without line endings, no context. Empty if the puzzles match.
 
         Raises:
             PuzzleCompareError: If a puzzle cannot be loaded, or the two puzzles
@@ -53,11 +54,11 @@ class CompareUseCases:
 
         lines1 = self.puzzle_lines(puzzle1)
         lines2 = self.puzzle_lines(puzzle2)
-        return list(difflib.unified_diff(
-            lines1, lines2,
-            fromfile=first.value, tofile=second.value,
-            lineterm="", n=1000,
-        ))
+        diff = list(difflib.unified_diff(lines1, lines2, lineterm="", n=0))
+
+        # Keep only the changed lines: skip the two ---/+++ file header lines
+        # and the @@ hunk headers.
+        return [line for line in diff[2:] if not line.startswith("@@")]
 
     def _load(self, user_id, source: PuzzleSource):
         """Load one puzzle from the database or a file."""

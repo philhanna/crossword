@@ -1,5 +1,5 @@
 """
-Compare two puzzles and print the differences as a unified diff.
+Compare two puzzles and print only the lines that differ (- first, + second).
 
 What is compared is the title, then every Across word with its clue, then
 every Down word with its clue. The two puzzles must have the same size and
