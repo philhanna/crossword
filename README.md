@@ -151,6 +151,7 @@ browser; see [docs/dev/frontend.md](docs/dev/frontend.md#tests).
 | Script | Description |
 |--------|-------------|
 | `tools/user/clear_work_files.py` | Remove leftover working-copy (`__wc__`) and new-puzzle (`__new__`) rows from the database |
+| `tools/user/compare_puzzles.py` | Compare two puzzles (database names or import files) and print a diff of their title, words and clues |
 | `tools/user/get_theme_words.py` | Print a puzzle's theme (locked) words with their lengths and clues |
 | `tools/user/grid_generator.py` | Generate a random valid grid and print it to stdout |
 

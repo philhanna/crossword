@@ -99,6 +99,16 @@ name. Each method validates the name is new before parsing.
 | `import_puzzle_from_ipuz(name, content)` | `str` | ipuz JSON format. |
 | `import_puzzle_from_ccxml(name, content)` | `str` | Crossword Compiler `.xml` format. |
 | `import_puzzle_from_puz(name, content)` | `bytes` | AcrossLite binary `.puz` format. |
+| `read_puzzle_from_file(path)` | `Puzzle` | Reads a file into memory without saving it. The format comes from the extension (`.txt`, `.puz`, `.ipuz`, `.xd`, `.xml`). |
+
+## CompareUseCases
+
+Compares two puzzles of the same size and black squares. Design:
+[compare_puzzles.md](compare_puzzles.md).
+
+| Method | Returns | Description |
+|---|---|---|
+| `compare_puzzles(user_id, first, second)` | `list[str]` | Unified diff lines for the title, Across words/clues and Down words/clues. `first` and `second` are `PuzzleSource` values (database name or import file). Raises `PuzzleCompareError` if a puzzle can't be loaded, or the sizes or black squares differ. |
 
 ## DefinitionUseCases
 

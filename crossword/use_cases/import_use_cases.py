@@ -11,16 +11,26 @@ Public interface:
 """
 
 import logging
+from pathlib import Path
 
 from crossword.adapters.acrosslite_import_adapter import AcrossLiteImportAdapter
 from crossword.adapters.ccxml_import_adapter import CcxmlImportAdapter
 from crossword.adapters.ipuz_import_adapter import IpuzImportAdapter
 from crossword.adapters.puz_import_adapter import PuzImportAdapter
 from crossword.adapters.xd_import_adapter import XdImportAdapter
+from crossword.ports.import_port import PuzzleImportError
 from crossword.ports.persistence_port import PersistencePort
 from crossword.use_cases._name_validation import validate_new_public_name
 
 logger = logging.getLogger(__name__)
+
+# File extensions that identify an import format.
+IMPORT_EXTENSIONS = (".txt", ".puz", ".ipuz", ".xd", ".xml")
+
+
+def is_import_file_name(text: str) -> bool:
+    """Return True if text ends with an extension of an accepted import format."""
+    return text.lower().endswith(IMPORT_EXTENSIONS)
 
 
 class ImportUseCases:
@@ -135,3 +145,40 @@ class ImportUseCases:
         _title, _author, puzzle = self.puz_adapter.import_puzzle(content)
         self.persistence.save_puzzle(user_id, name, puzzle)
         logger.info("Imported puzzle %r from .puz format for user %s", name, user_id)
+
+    def read_puzzle_from_file(self, path: str):
+        """
+        Read a puzzle file into memory without saving it.
+
+        The format is chosen from the file extension.
+
+        Args:
+            path: Path to a .txt, .puz, .ipuz, .xd or .xml file
+
+        Returns:
+            The Puzzle
+
+        Raises:
+            PuzzleImportError: If the extension is unknown, the file is missing,
+                or the content cannot be parsed
+        """
+        suffix = Path(path).suffix.lower()
+        adapters = {
+            ".txt": self.acrosslite_adapter,
+            ".puz": self.puz_adapter,
+            ".ipuz": self.ipuz_adapter,
+            ".xd": self.xd_adapter,
+            ".xml": self.ccxml_adapter,
+        }
+        adapter = adapters.get(suffix)
+        if adapter is None:
+            raise PuzzleImportError(f"Unknown puzzle file type: {path}")
+        try:
+            if suffix == ".puz":
+                content = Path(path).read_bytes()
+            else:
+                content = Path(path).read_text(encoding="utf-8")
+        except OSError as e:
+            raise PuzzleImportError(f"Cannot read {path}: {e}") from e
+        _title, _author, puzzle = adapter.import_puzzle(content)
+        return puzzle

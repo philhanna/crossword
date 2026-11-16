@@ -31,6 +31,7 @@ from crossword.use_cases.word_use_cases import WordUseCases
 from crossword.use_cases.export_use_cases import ExportUseCases
 from crossword.use_cases.import_use_cases import ImportUseCases
 from crossword.use_cases.definition_use_cases import DefinitionUseCases
+from crossword.use_cases.compare_use_cases import CompareUseCases
 
 # Registry of selectable DefinitionProviderPort implementations, keyed by the
 # 'definition_provider' config value.
@@ -49,12 +50,13 @@ class AppContainer:
     """
 
     def __init__(self, puzzle_uc, word_uc, export_uc=None, import_uc=None,
-                 definition_uc=None, config=None):
+                 definition_uc=None, config=None, compare_uc=None):
         self.puzzle_uc = puzzle_uc
         self.word_uc = word_uc
         self.export_uc = export_uc
         self.import_uc = import_uc
         self.definition_uc = definition_uc
+        self.compare_uc = compare_uc
         self.config = config or {}
 
 
@@ -142,6 +144,8 @@ def make_app(config=None):
     export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, solver_pdf_adapter, solved_pdf_adapter, puz_export_adapter, xd_export_adapter, ipuz_export_adapter)
     import_uc = ImportUseCases(persistence, acrosslite_import_adapter, xd_import_adapter, puz_import_adapter, ipuz_import_adapter, ccxml_import_adapter)
 
+    compare_uc = CompareUseCases(persistence, import_uc)
+
     if not config.get("host"):
         raise ValueError("config['host'] is required")
     if not config.get("port"):
@@ -161,4 +165,4 @@ def make_app(config=None):
     # ========================================================================
 
     return AppContainer(puzzle_uc, word_uc, export_uc, import_uc,
-                        definition_uc=definition_uc, config=config)
+                        definition_uc=definition_uc, config=config, compare_uc=compare_uc)
