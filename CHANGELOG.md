@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.2.0] - 2026-11-16
+
+### Added
+
+- Permute: swap two locked words by drag and drop
+- `compare_puzzles` tool and `CompareUseCases` for comparing two puzzles
+- `get_theme_words` output now starts with the puzzle title
+- Design documents for swapping words and for comparing puzzles
+
+### Changed
+
+- A puzzle title can now be set to blank
+
 ## [6.1.4] - 2026-10-26
 
 ### Added
