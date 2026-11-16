@@ -124,7 +124,7 @@ The backend follows a **Hexagonal (Ports & Adapters)** design:
 | Domain | `grid`, `puzzle`, `word` — pure Python, no framework deps |
 | Ports | `persistence`, `word_list`, `export`, `import`, `definition`, `grid_generator` |
 | Adapters | `sqlite_persistence`, `flat_file_word_list`, `random_grid_generator`, `settings`, one export adapter per format (Across Lite text and binary, Crossword Compiler XML, ipuz, xd, NYTimes PDF, solver PDF, solved PDF), one import adapter per format (Across Lite text and binary, Crossword Compiler XML, ipuz, xd), and two definition providers (Dictionary API, Wiktionary) |
-| Use Cases | `PuzzleUseCases`, `WordUseCases`, `ExportUseCases`, `ImportUseCases`, `DefinitionUseCases` |
+| Use Cases | `PuzzleUseCases`, `WordUseCases`, `ExportUseCases`, `ImportUseCases`, `CompareUseCases`, `DefinitionUseCases` |
 | HTTP Server | FastAPI app served by uvicorn, wired in `crossword/wiring/` |
 | Frontend | Single `index.html` + six stylesheets in `static/css/` + plain-JavaScript ES modules in `static/js/` (`core/`, `ui/`, `dashboard/`, `editor/`, `puzzle-file/`, `settings/`, `svg/`), started by `main.js`; no build step |
 

@@ -13,6 +13,7 @@ HTTP routes that call into these use cases.
 | [WordUseCases](#wordusecases) | `word_use_cases.py` | `WordListPort` |
 | [ExportUseCases](#exportusecases) | `export_use_cases.py` | `PersistencePort` + one export adapter per format |
 | [ImportUseCases](#importusecases) | `import_use_cases.py` | `PersistencePort` + one import adapter per format |
+| [CompareUseCases](#compareusecases) | `compare_use_cases.py` | `PersistencePort`, `ImportUseCases` |
 | [DefinitionUseCases](#definitionusecases) | `definition_use_cases.py` | `DefinitionProviderPort` |
 
 Every method below takes `user_id` as its first argument (persistence and
@@ -108,7 +109,7 @@ Compares two puzzles of the same size and black squares. Design:
 
 | Method | Returns | Description |
 |---|---|---|
-| `compare_puzzles(user_id, first, second)` | `list[str]` | Unified diff lines for the title, Across words/clues and Down words/clues. `first` and `second` are `PuzzleSource` values (database name or import file). Raises `PuzzleCompareError` if a puzzle can't be loaded, or the sizes or black squares differ. |
+| `compare_puzzles(first, second)` | `list[str]` | Unified diff lines for the title, Across words/clues and Down words/clues. `first` and `second` are `PuzzleSource` values (database name or import file). Raises `PuzzleCompareError` if a puzzle can't be loaded, or the sizes or black squares differ. |
 
 ## DefinitionUseCases
 
