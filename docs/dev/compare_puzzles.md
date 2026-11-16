@@ -15,13 +15,15 @@ Each puzzle is turned into a list of text lines:
    and the clue.
 2. Then one line for every Down word, in the same way.
 
-The two lists are then compared line by line and the differences are
-printed in the familiar "diff" style (lines starting with `-` exist only in
+The title is printed as a first line (`Title: ...`). The two lists are then
+compared line by line and the differences are printed in the familiar "diff"
+style (lines starting with `-` exist only in
 the first puzzle, lines starting with `+` exist only in the second).
 
 Example. Puzzle A has these lines:
 
 ```
+Title: Water words
 Across
 1 OCEAN  Big blue expanse
 5 RIVER  Flows to the sea
@@ -34,6 +36,7 @@ Puzzle B has the same grid, but 5-Across has a new clue and 2-Down has a
 new answer. The result is:
 
 ```
+ Title: Water words
  Across
  1 OCEAN  Big blue expanse
 -5 RIVER  Flows to the sea
@@ -48,12 +51,19 @@ If the two puzzles are the same, the tool says so and shows no differences.
 
 ## What is compared, and what is not
 
-**Compared:** the answer letters and the clue of every Across and Down
-word.
+**Compared:** the title, and the answer letters and clue of every Across
+and Down word.
 
-**Not compared:** the title, author, locked words, circled squares, the
-puzzle's state (draft, submitted, and so on), undo history, and anything
-else. Only the words and clues you asked about. (See question 3 below.)
+**Not compared:** author, locked words (locks are ignored), circled squares,
+the puzzle's state (draft, submitted, and so on), undo history, and anything
+else.
+
+Clues are compared exactly, except that spaces at the very start or end of
+a clue are ignored. Upper and lower case differences count as changes.
+
+Because the two puzzles are required to have the same shape, words can only
+be *changed*, never added or removed, and a word keeps its number. So the
+diff only ever shows changed lines in pairs (`-` then `+`).
 
 ## When the two puzzles cannot be compared
 
@@ -97,18 +107,18 @@ it away after the comparison. Importing is not needed first.
 
 ### How the tool decides "file or database name"
 
-Proposal: if the text given matches an existing file on disk, it is a file.
-Otherwise it is treated as the name of a puzzle in the database. If it is
-neither, the tool reports "No file or puzzle named X". To force the database
-reading (for example, a puzzle named `grid.txt`), the user can write
-`db:grid.txt`. (See question 1.)
+The rule is simple: an input is a **database puzzle name** unless it ends
+with one of the import extensions (`.txt`, `.puz`, `.ipuz`, `.xd`, `.xml`),
+in which case it is a file path. If the file does not exist, or the name is
+not in the database, the tool reports "No file or puzzle named X".
+
+(Consequence: a database puzzle whose name itself ends in one of those
+extensions cannot be compared. Such names are unlikely, so this is accepted.)
 
 ### Which version of a database puzzle
 
-A puzzle in the database may have a "working copy" that holds unsaved edits
-(see "Working copy pattern" in the project notes). Proposal: the tool always
-reads the **saved** puzzle by its real name, never a working copy. This is
-what the user last saved, which is normally what they want to compare.
+Always the latest saved version, read by its real name. Working copies
+(unsaved edits) and older versions from the puzzle's history are never used.
 
 ## How it looks to the user
 
@@ -121,17 +131,16 @@ python3 tools/user/compare_puzzles.py <first> <second> [--user-id 1]
 ```
 
 - `<first>` and `<second>` are file paths or puzzle names.
-- The diff goes to standard output.
+- `--user-id` defaults to 1, like the other tools.
+- The diff goes to standard output in ordinary unified diff format.
 - Exit code 0 means the puzzles are the same, 1 means they differ, and 2
   means they could not be compared (the error message goes to standard
   error). This is the same convention the `diff` command uses, so the tool
   can be used in scripts.
 
-### Browser (not in the first version)
+### Browser
 
-A later addition could be a "Compare…" item in the Puzzle menu with two
-pickers and a side-by-side result. It would call the same use case through a
-new route. It is left out of the first version; see question 6.
+No browser version is planned. This is a command-line tool only.
 
 ## Where it fits in the code
 
@@ -157,9 +166,8 @@ adapters. The comparison follows that rule.
 
 2. **A small "source" description.** Rather than passing around loose text,
    each input is a tiny object: either `("db", name)` or `("file", path)`.
-   The command-line script does the "is it a file or a name?" guessing and
-   builds these. The use case itself never guesses, which keeps it easy to
-   test and keeps file-system checks out of the use case.
+   The command-line script applies the extension rule above and builds
+   these. The use case itself never guesses, which keeps it easy to test.
 
 3. **Reading a file.** The use case picks the right import adapter from the
    file extension. This is the same list of five adapters that
@@ -169,15 +177,14 @@ adapters. The comparison follows that rule.
    rest are read as text.
 
 4. **Building the lines.** A function takes a puzzle and returns its lines:
-   a heading `Across`, the Across lines, a heading `Down`, the Down lines.
+   the title line, a heading `Across`, the Across lines, a heading `Down`, the Down lines.
    Each word line is `<number> <ANSWER>  <clue>`. A blank square in an
    unfinished answer is shown as `.`, and a word with no clue shows nothing
    after the answer. Python's built-in `difflib.unified_diff` does the
    comparing, so no new library is needed.
 
 5. **Wiring.** `CompareUseCases` is created in
-   `crossword/wiring/__init__.py` like the others, so a later browser route
-   can use it without further plumbing.
+   `crossword/wiring/__init__.py` like the others.
 
 6. **The script** `tools/user/compare_puzzles.py` is thin: parse the
    arguments, work out file-or-name, call the use case, print the result,
@@ -191,6 +198,8 @@ dependency rule requires; it does not touch the web layer.
 Using pytest, in `crossword/tests/`:
 
 - Identical puzzles produce no diff lines.
+- A changed title shows as one `-` and one `+` line.
+- Locks and a trailing space on a clue do not cause differences.
 - A changed clue shows as one `-` line and one `+` line.
 - A changed answer shows as one `-` and one `+` line.
 - Several changes show in number order, Across before Down.
@@ -202,7 +211,7 @@ Using pytest, in `crossword/tests/`:
   format, and a database puzzle to a database puzzle. One test per format
   would be a lot, so: one per import adapter against a database puzzle,
   plus one mixed-format pair.
-- A name that is neither a file nor a puzzle gives a clear error.
+- A name that is not in the database, and a missing file with an import extension, each give a clear error.
 - The script's exit codes (0, 1, 2), checked by running it on small files.
 
 ## Not included
@@ -219,50 +228,24 @@ Using pytest, in `crossword/tests/`:
 - [usecases.md](usecases.md): add `CompareUseCases`.
 - A short "Tools" mention of `compare_puzzles.py` wherever the other
   `tools/user/` scripts are described.
-- If a browser route is added later, regenerate
-  [endpoints.md](endpoints.md) (it is generated; do not edit by hand).
 
-## Questions for you
+## Decisions
 
-Each has my proposed answer, so a plain "go with your proposals" works.
+All questions from the first draft have been answered:
 
-1. **File or database name?** I proposed: a real file on disk wins; use
-   `db:name` to force a database puzzle. Would you rather have an explicit
-   flag on each input (for example `--file x.puz` / `--db "My puzzle"`)? It
-   is wordier but never ambiguous.
-2. **Clue text and whitespace.** Should `Big blue expanse` and
-   `Big  blue expanse ` (extra spaces) count as different? Proposal: ignore
-   leading and trailing spaces only; otherwise compare exactly. Should upper
-   and lower case differences count? Proposal: yes, they count, since a
-   publisher's edit of "ocean" to "Ocean" is a real edit.
-3. **Anything else in the comparison?** The title and author are shown in
-   the import formats and could be compared too. Proposal: leave them out,
-   as you described the content to be words and clues only. Do you want an
-   optional `--include-title` later?
-4. **Answers that were reordered.** If a publisher renumbers or moves a
-   word, the shapes still match (as required), so numbers line up and this
-   cannot happen by design. I am assuming that is the intent. Correct?
-5. **Output style.** Proposal: a normal unified diff with the headings
-   `Across` and `Down` shown as unchanged lines for context. Would you
-   prefer a shorter report that only lists changed words, for example
-   `5-Across clue: "Flows to the sea" -> "Water that flows to the sea"`?
-   The shorter form is easier to read for a puzzle; the diff form can be fed
-   to other diff tools.
-6. **Browser version.** Do you want the Compare dialog in the browser in the
-   first version, or is the command line enough for now? If it is wanted,
-   what would the result look like: a plain text diff in a dialog, or a
-   two-column view with changes highlighted?
-7. **Importing a file with the same size but a different number of words.**
-   The black squares being identical means the words are identical, so I
-   treat this as impossible. If an import format ever produces a different
-   numbering for the same grid, I would raise the same error. Is that
-   acceptable?
-8. **Which database puzzle.** I proposed always the saved puzzle, never a
-   working copy. Should there also be a way to name an earlier saved version
-   from the puzzle's history (see
-   [puzzle_content_snapshots.md](puzzle_content_snapshots.md)), for example
-   `db:My puzzle@3`? That would make "compare to what I submitted" a
-   one-liner, but it needs the snapshot feature to be finished first.
-9. **User ID.** Other tools take `--user-id` and default to 1. Same here?
-10. **Locked words.** Should the diff mark whether a word is locked (a theme
-    word), so theme changes stand out? Proposal: no.
+1. File or database: a database puzzle name, unless the input ends in an
+   import extension.
+2. Whitespace and case: ignore only leading/trailing spaces in clues; case
+   differences count.
+3. The title is compared too.
+4. (Withdrawn. The question was whether a word could be moved or renumbered
+   between versions. Because the shapes must match, it cannot, so nothing to
+   decide.)
+5. Output is an ordinary unified diff; only changes occur, no additions or
+   deletions.
+6. No browser version.
+7. If an import format ever numbered the same grid differently, raise the
+   same error. Accepted.
+8. Always the latest saved version of a database puzzle.
+9. `--user-id` defaults to 1.
+10. Locks are ignored.
