@@ -109,7 +109,7 @@ Compares two puzzles of the same size and black squares. Design:
 
 | Method | Returns | Description |
 |---|---|---|
-| `compare_puzzles(first, second)` | `list[str]` | Only the changed lines (`-` first puzzle, `+` second; no context or headers) for the title, Across words/clues and Down words/clues. `first` and `second` are `PuzzleSource` values (database name, optionally `NAME@N` for a saved version, or import file). Raises `PuzzleCompareError` if a puzzle can't be loaded, or the sizes or black squares differ. |
+| `compare_puzzles(first, second)` | `list[str]` | Only the changed lines (`-` first puzzle, `+` second, each `-` line immediately followed by its `+` line; no context or headers) for the title, Across words/clues and Down words/clues. `first` and `second` are `PuzzleSource` values (database name, optionally `NAME@N` for a saved version, or import file). Raises `PuzzleCompareError` if a puzzle can't be loaded, or the sizes or black squares differ. |
 | `list_versions(name)` | `list[dict]` | The saved versions of a database puzzle that kept a content snapshot, oldest first, as `{number, back, id, state, comment, changed_at}`. `number` counts from 1; `back` is 0 for the newest, -1 for the one before. Raises `PuzzleCompareError` if the puzzle isn't found. |
 
 ## DefinitionUseCases

@@ -7,8 +7,6 @@ Public interface:
   list_versions(user_id, name) -> list[dict]
 """
 
-import difflib
-
 from crossword import Puzzle
 from crossword.ports.import_port import PuzzleImportError
 from crossword.ports.persistence_port import PersistencePort, PersistenceError
@@ -44,7 +42,9 @@ class CompareUseCases:
 
         Returns:
             Lines starting with '-' (first puzzle only) or '+' (second puzzle
-            only), without line endings, no context. Empty if the puzzles match.
+            only), without line endings, no context. Each
+            '-' line is immediately followed by its '+' line. Empty if the
+            puzzles match.
 
         Raises:
             PuzzleCompareError: If a puzzle cannot be loaded, or the two puzzles
@@ -56,11 +56,15 @@ class CompareUseCases:
 
         lines1 = self.puzzle_lines(puzzle1)
         lines2 = self.puzzle_lines(puzzle2)
-        diff = list(difflib.unified_diff(lines1, lines2, lineterm="", n=0))
 
-        # Keep only the changed lines: skip the two ---/+++ file header lines
-        # and the @@ hunk headers.
-        return [line for line in diff[2:] if not line.startswith("@@")]
+        # Same size and black squares means the same word numbers, so the two
+        # line lists match up one-to-one. Show each changed pair together.
+        diff = []
+        for old, new in zip(lines1, lines2):
+            if old != new:
+                diff.append(f"-{old}")
+                diff.append(f"+{new}")
+        return diff
 
     def list_versions(self, user_id: int, name: str) -> list[dict]:
         """
@@ -150,15 +154,15 @@ class CompareUseCases:
         """The text compared: title, then Across words, then Down words."""
         lines = [f"Title: {(puzzle.title or '').strip()}", "Across"]
         for seq in sorted(puzzle.across_words):
-            lines.append(CompareUseCases._word_line(seq, puzzle.across_words[seq]))
+            lines.append(CompareUseCases._word_line(seq, "A", puzzle.across_words[seq]))
         lines.append("Down")
         for seq in sorted(puzzle.down_words):
-            lines.append(CompareUseCases._word_line(seq, puzzle.down_words[seq]))
+            lines.append(CompareUseCases._word_line(seq, "D", puzzle.down_words[seq]))
         return lines
 
     @staticmethod
-    def _word_line(seq, word) -> str:
-        """'<number> <ANSWER>  <clue>', blank squares shown as '.'."""
+    def _word_line(seq, direction, word) -> str:
+        """'<number><A or D> <ANSWER>  <clue>', blank squares shown as '.'."""
         text = word.get_text().replace(" ", ".")
         clue = (word.get_clue() or "").strip()
-        return f"{seq} {text}  {clue}".rstrip()
+        return f"{seq}{direction} {text}  {clue}".rstrip()

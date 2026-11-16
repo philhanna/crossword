@@ -25,11 +25,11 @@ Example. Puzzle A has these lines:
 ```
 Title: Water words
 Across
-1 OCEAN  Big blue expanse
-5 RIVER  Flows to the sea
+1A OCEAN  Big blue expanse
+5A RIVER  Flows to the sea
 Down
-1 ORB    Round object
-2 CAR    Vehicle
+1D ORB    Round object
+2D CAR    Vehicle
 ```
 
 Puzzle B has the same grid, but 5-Across has a new clue and 2-Down has a
@@ -38,13 +38,13 @@ new answer. The result is:
 ```
  Title: Water words
  Across
- 1 OCEAN  Big blue expanse
--5 RIVER  Flows to the sea
-+5 RIVER  Water that flows to the sea
+ 1A OCEAN  Big blue expanse
+-5A RIVER  Flows to the sea
++5A RIVER  Water that flows to the sea
  Down
- 1 ORB    Round object
--2 CAR    Vehicle
-+2 CAB    Vehicle
+ 1D ORB    Round object
+-2D CAR    Vehicle
++2D CAB    Vehicle
 ```
 
 If the two puzzles are the same, the tool says so and shows no differences.
@@ -178,7 +178,7 @@ adapters. The comparison follows that rule.
 
 4. **Building the lines.** A function takes a puzzle and returns its lines:
    the title line, a heading `Across`, the Across lines, a heading `Down`, the Down lines.
-   Each word line is `<number> <ANSWER>  <clue>`. A blank square in an
+   Each word line is `<number><A|D> <ANSWER>  <clue>`. A blank square in an
    unfinished answer is shown as `.`, and a word with no clue shows nothing
    after the answer. Python's built-in `difflib.unified_diff` does the
    comparing, so no new library is needed.

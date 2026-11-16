@@ -63,15 +63,15 @@ def test_changed_clue(uc, puzzles):
     old = puzzles["b"].get_clue(1, "A")
     puzzles["b"].set_clue(1, "A", "A new clue")
     diff = changed(uc.compare_puzzles(1, db("a"), db("b")))
-    assert diff == [f"-1 DAB  {old}", "+1 DAB  A new clue"]
+    assert diff == [f"-1A DAB  {old}", "+1A DAB  A new clue"]
 
 
 def test_changed_answer(uc, puzzles):
     puzzles["b"].set_text(1, "A", "DUB", check_duplicates=False)
     diff = changed(uc.compare_puzzles(1, db("a"), db("b")))
     assert len(diff) >= 2
-    assert diff[0].startswith("-1 DAB")
-    assert any(x.startswith("+1 DUB") for x in diff)
+    assert diff[0].startswith("-1A DAB")
+    assert any(x.startswith("+1A DUB") for x in diff)
 
 
 def test_changed_title(uc, puzzles):
@@ -86,8 +86,16 @@ def test_changes_are_in_order_across_before_down(uc, puzzles):
     puzzles["b"].set_clue(1, "A", "Across change")
     diff = changed(uc.compare_puzzles(1, db("a"), db("b")))
     plus = [x for x in diff if x.startswith("+")]
-    assert plus == ["+1 DAB  Across change", "+1 DAD  Down change"] or \
+    assert plus == ["+1A DAB  Across change", "+1D DAD  Down change"] or \
         plus[0].endswith("Across change") and plus[1].endswith("Down change")
+
+
+def test_old_and_new_lines_are_paired(uc, puzzles):
+    puzzles["b"].title = "Something else"
+    puzzles["b"].set_clue(1, "A", "Across change")
+    diff = uc.compare_puzzles(1, db("a"), db("b"))
+    assert [x[0] for x in diff] == ["-", "+", "-", "+"]
+    assert diff[2][1:].split()[0] == diff[3][1:].split()[0] == "1A"
 
 
 def test_leading_and_trailing_spaces_in_clue_ignored(uc, puzzles):
@@ -112,7 +120,7 @@ def test_blank_squares_shown_as_dots_and_missing_clue_blank(puzzles):
     puzzle = Puzzle(grid)
     puzzle.enter_puzzle_mode()
     lines = CompareUseCases.puzzle_lines(puzzle)
-    assert lines[2] == "1 ....."
+    assert lines[2] == "1A ....."
 
 
 def test_different_sizes_raise(uc, puzzles):
@@ -217,13 +225,13 @@ def test_previous_version_against_live(uc):
     make_versioned(uc, clue_versions("one", "two", "three"))
     uc.persistence.load_puzzle.side_effect = lambda u, n: clue_versions("three")[0]
     diff = uc.compare_puzzles(1, PuzzleSource.parse("v@-1"), db("v"))
-    assert diff == ["-1 DAB  two", "+1 DAB  three"]
+    assert diff == ["-1A DAB  two", "+1A DAB  three"]
 
 
 def test_absolute_and_newest_versions(uc):
     make_versioned(uc, clue_versions("one", "two", "three"))
     assert uc.compare_puzzles(1, PuzzleSource.parse("v@1"), PuzzleSource.parse("v@3")) == [
-        "-1 DAB  one", "+1 DAB  three"]
+        "-1A DAB  one", "+1A DAB  three"]
     assert uc.compare_puzzles(1, PuzzleSource.parse("v@0"), PuzzleSource.parse("v@3")) == []
 
 
@@ -232,7 +240,7 @@ def test_versions_without_content_are_skipped(uc):
     versions = uc.list_versions(1, "v")
     assert [(v["number"], v["back"], v["id"]) for v in versions] == [(1, -1, 100), (2, 0, 102)]
     diff = uc.compare_puzzles(1, PuzzleSource.parse("v@-1"), PuzzleSource.parse("v@0"))
-    assert diff == ["-1 DAB  one", "+1 DAB  three"]
+    assert diff == ["-1A DAB  one", "+1A DAB  three"]
 
 
 @pytest.mark.parametrize("ref", ["v@4", "v@-3", "v@-9"])
