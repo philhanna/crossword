@@ -4,10 +4,12 @@ Compare use cases — show the differences between two puzzles.
 
 Public interface:
   compare_puzzles(user_id, first, second) -> list[str]
+  list_versions(user_id, name) -> list[dict]
 """
 
 import difflib
 
+from crossword import Puzzle
 from crossword.ports.import_port import PuzzleImportError
 from crossword.ports.persistence_port import PersistencePort, PersistenceError
 from crossword.use_cases.import_use_cases import ImportUseCases
@@ -60,14 +62,72 @@ class CompareUseCases:
         # and the @@ hunk headers.
         return [line for line in diff[2:] if not line.startswith("@@")]
 
+    def list_versions(self, user_id: int, name: str) -> list[dict]:
+        """
+        List the saved versions of a database puzzle that can be compared.
+
+        Only history rows that kept a content snapshot count. Versions are
+        numbered 1 (oldest) upward; `back` is 0 for the newest, -1 for the
+        one before it, and so on.
+
+        Returns:
+            Dicts with keys: number, back, id, state, comment, changed_at
+
+        Raises:
+            PuzzleCompareError: If the puzzle cannot be found
+        """
+        try:
+            history = self.persistence.get_puzzle_state_history(user_id, name)
+        except PersistenceError as e:
+            raise PuzzleCompareError(f"Cannot load {name}: {e}") from e
+        if history is None:
+            raise PuzzleCompareError(f"Cannot load {name}: puzzle not found")
+
+        rows = [h for h in history if h["has_content"]]
+        return [
+            {
+                "number": i,
+                "back": i - len(rows),
+                "id": h["id"],
+                "state": h["state"],
+                "comment": h["comment"],
+                "changed_at": h["changed_at"],
+            }
+            for i, h in enumerate(rows, start=1)
+        ]
+
     def _load(self, user_id, source: PuzzleSource):
-        """Load one puzzle from the database or a file."""
+        """Load one puzzle from the database (live or an old version) or a file."""
         try:
             if source.kind == PuzzleSource.FILE:
                 return self.import_uc.read_puzzle_from_file(source.value)
+            if source.version is not None:
+                return self._load_version(user_id, source)
             return self.persistence.load_puzzle(user_id, source.value)
         except (PuzzleImportError, PersistenceError) as e:
             raise PuzzleCompareError(f"Cannot load {source.value}: {e}") from e
+
+    def _load_version(self, user_id, source: PuzzleSource):
+        """Load a saved version of a database puzzle from its history."""
+        versions = self.list_versions(user_id, source.value)
+        if not versions:
+            raise PuzzleCompareError(f"{source.value} has no saved versions")
+
+        n = source.version
+        index = n - 1 if n >= 1 else len(versions) - 1 + n
+        if not 0 <= index < len(versions):
+            raise PuzzleCompareError(
+                f"{source.value} has no version {n} "
+                f"(it has {len(versions)}, numbered 1 to {len(versions)}, "
+                f"or 0 to {1 - len(versions)} counting back)"
+            )
+
+        content = self.persistence.get_puzzle_state_history_content(
+            user_id, source.value, versions[index]["id"]
+        )
+        if content is None:
+            raise PuzzleCompareError(f"{source.value}@{n} has no saved content")
+        return Puzzle.from_json(content)
 
     @staticmethod
     def _check_same_shape(puzzle1, puzzle2) -> None:

@@ -162,3 +162,93 @@ def test_script_exit_codes(tmp_path):
     )
     assert result.returncode == 2
     assert "Cannot load" in result.stderr
+
+
+# ---- Saved versions (NAME@N) ---------------------------------------------
+
+
+def make_versioned(uc, versions, no_content=()):
+    """
+    Give puzzle "v" a history. `versions` is a list of puzzles, oldest first.
+    Row ids start at 100; rows whose index is in `no_content` keep no snapshot.
+    """
+    rows, contents = [], {}
+    for i, puzzle in enumerate(versions):
+        hid = 100 + i
+        has = i not in no_content
+        rows.append({"id": hid, "state": "draft", "has_content": has,
+                     "comment": f"save {i}", "changed_at": f"2026-01-0{i + 1}T00:00:00"})
+        contents[hid] = puzzle.to_json() if has else None
+    p = uc.persistence
+    p.get_puzzle_state_history.side_effect = (
+        lambda user_id, name: rows if name == "v" else None)
+    p.get_puzzle_state_history_content.side_effect = (
+        lambda user_id, name, hid: contents.get(hid))
+
+
+def clue_versions(*clues):
+    """Puzzles that differ only in the clue of 1 Across."""
+    out = []
+    for clue in clues:
+        puzzle = helpers.TestPuzzle.create_solved_atlantic_puzzle()
+        puzzle.set_clue(1, "A", clue)
+        out.append(puzzle)
+    return out
+
+
+@pytest.mark.parametrize("text, name, version", [
+    ("My Puzzle", "My Puzzle", None),
+    ("My Puzzle@3", "My Puzzle", 3),
+    ("My Puzzle@-1", "My Puzzle", -1),
+    ("My Puzzle@0", "My Puzzle", 0),
+    ("Fri @ 5", "Fri @ 5", None),
+    ("a@b", "a@b", None),
+    ("foo.xd@3", "foo.xd", 3),
+])
+def test_parse_version(text, name, version):
+    assert PuzzleSource.parse(text) == PuzzleSource(PuzzleSource.DB, name, version)
+
+
+def test_file_source_has_no_version():
+    assert PuzzleSource.parse("p@2.xd") == PuzzleSource(PuzzleSource.FILE, "p@2.xd")
+
+
+def test_previous_version_against_live(uc):
+    make_versioned(uc, clue_versions("one", "two", "three"))
+    uc.persistence.load_puzzle.side_effect = lambda u, n: clue_versions("three")[0]
+    diff = uc.compare_puzzles(1, PuzzleSource.parse("v@-1"), db("v"))
+    assert diff == ["-1 DAB  two", "+1 DAB  three"]
+
+
+def test_absolute_and_newest_versions(uc):
+    make_versioned(uc, clue_versions("one", "two", "three"))
+    assert uc.compare_puzzles(1, PuzzleSource.parse("v@1"), PuzzleSource.parse("v@3")) == [
+        "-1 DAB  one", "+1 DAB  three"]
+    assert uc.compare_puzzles(1, PuzzleSource.parse("v@0"), PuzzleSource.parse("v@3")) == []
+
+
+def test_versions_without_content_are_skipped(uc):
+    make_versioned(uc, clue_versions("one", "two", "three"), no_content={1})
+    versions = uc.list_versions(1, "v")
+    assert [(v["number"], v["back"], v["id"]) for v in versions] == [(1, -1, 100), (2, 0, 102)]
+    diff = uc.compare_puzzles(1, PuzzleSource.parse("v@-1"), PuzzleSource.parse("v@0"))
+    assert diff == ["-1 DAB  one", "+1 DAB  three"]
+
+
+@pytest.mark.parametrize("ref", ["v@4", "v@-3", "v@-9"])
+def test_version_out_of_range_raises(uc, ref):
+    make_versioned(uc, clue_versions("one", "two", "three"))
+    with pytest.raises(PuzzleCompareError, match="no version"):
+        uc.compare_puzzles(1, PuzzleSource.parse(ref), db("v"))
+
+
+def test_puzzle_with_no_versions_raises(uc):
+    make_versioned(uc, clue_versions("one"), no_content={0})
+    with pytest.raises(PuzzleCompareError, match="no saved versions"):
+        uc.compare_puzzles(1, PuzzleSource.parse("v@-1"), db("v"))
+
+
+def test_version_of_unknown_puzzle_raises(uc):
+    make_versioned(uc, clue_versions("one"))
+    with pytest.raises(PuzzleCompareError, match="Cannot load"):
+        uc.compare_puzzles(1, PuzzleSource.parse("nope@1"), db("v"))
