@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.3.0] - 2026-11-16
+
+### Added
+
+- `compare_puzzles` can compare earlier saved versions of a database puzzle,
+  written `NAME@N` (1 is the oldest, 0 the newest, -1 the one before it)
+- `compare_puzzles --history NAME` lists a puzzle's saved versions, newest first
+
+### Changed
+
+- `compare_puzzles` now prints only the lines that differ, with no context
+  lines or headers
+- README and `usecases.md` now list `CompareUseCases`
+
 ## [6.2.0] - 2026-11-16
 
 ### Added
