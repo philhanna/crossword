@@ -517,7 +517,7 @@ async function do_puzzle_clear() {
 async function do_puzzle_title() {
     const wn = AppState.puzzleWorkingName;
     const current = AppState.puzzleData && AppState.puzzleData.puzzle.title || '';
-    const title = await askText('Set puzzle title', '<b>Puzzle title:</b>', current);
+    const title = await askText('Set puzzle title', '<b>Puzzle title:</b>', current, { required: false });
     if (title === null) return;
     try {
         await apiFetch('PUT', `/api/puzzles/${encodeURIComponent(wn)}/title`, { title });
