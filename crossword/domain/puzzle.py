@@ -79,9 +79,13 @@ class Puzzle:
     #   ========================================================
 
     def get_cell(self, r: int, c: int) -> str | None:
+        """ Returns the letter at row r, column c (both 1-based, so the
+        top left square is (1, 1)), or None if (r, c) is outside the grid """
         return self.cells.get((r, c), None)
 
     def set_cell(self, r: int, c: int, letter: str) -> None:
+        """ Sets the letter at row r, column c (both 1-based, so the top
+        left square is (1, 1)). Does nothing if the square is locked """
         if (r, c) in self.locked_cells:
             return  # silently a no-op; callers don't need a special case
         self.cells[(r, c)] = letter
@@ -96,7 +100,7 @@ class Puzzle:
         return word
 
     def get_text(self, seq: int, direction: str) -> str:
-        """ Returns the text of the word at <seq><directino>"""
+        """ Returns the text of the word at <seq><direction>"""
         word = self.get_word(seq, direction)
         return word.get_text()
 
