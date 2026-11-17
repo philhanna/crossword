@@ -9,6 +9,7 @@ server directly, so a test can set up puzzles without clicking for them.
 
 import base64
 import socket
+import sqlite3
 import threading
 import time
 from pathlib import Path
@@ -25,14 +26,23 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 SAMPLE_PUZ = DATA_DIR / "remedialchaostheory.puz"
 
 
-@pytest.fixture
-def server(tmp_path, monkeypatch):
-    """Start the app on a free port and yield its base URL."""
+@pytest.fixture(scope="session")
+def _server_env(tmp_path_factory):
+    """
+    Start the app once per test process and yield (base URL, reset function).
+
+    Starting uvicorn and creating a database is the slow part of a test, so
+    it happens once. Under pytest-xdist every worker process runs its own
+    copy, on its own port and with its own files, so workers never share
+    state.
+    """
+    tmp_path = tmp_path_factory.mktemp("frontend_server")
     port = _free_port()
+    db_file = tmp_path / "crossword.db"
     config = {
         "host": "127.0.0.1",
         "port": port,
-        "dbfile": str(tmp_path / "crossword.db"),
+        "dbfile": str(db_file),
         "word_file": str(DATA_DIR / "words.txt"),
         "log_level": "WARNING",
         "message_line_timeout_ms": 3000,
@@ -42,7 +52,9 @@ def server(tmp_path, monkeypatch):
 
     # PUT /api/settings writes the user's config file; point it somewhere safe.
     settings_file = tmp_path / "config.yaml"
-    settings_file.write_text(yaml.safe_dump(config))
+    initial_settings = yaml.safe_dump(config)
+    settings_file.write_text(initial_settings)
+    monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(settings_adapter, "_config_path", lambda: str(settings_file))
 
     app = create_app(config)
@@ -56,10 +68,30 @@ def server(tmp_path, monkeypatch):
             raise RuntimeError("Test server did not start")
         time.sleep(0.02)
 
-    yield f"http://127.0.0.1:{port}"
+    def reset():
+        """Return the server to its just-started state."""
+        settings_file.write_text(initial_settings)
+        conn = sqlite3.connect(db_file)
+        try:
+            conn.execute("DELETE FROM puzzle_state_history")
+            conn.execute("DELETE FROM puzzles")
+            conn.commit()
+        finally:
+            conn.close()
+
+    yield f"http://127.0.0.1:{port}", reset
 
     uv_server.should_exit = True
     thread.join(timeout=10)
+    monkeypatch.undo()
+
+
+@pytest.fixture
+def server(_server_env):
+    """The app's base URL, with an empty database and the original settings."""
+    base_url, reset = _server_env
+    reset()
+    return base_url
 
 
 @pytest.fixture
