@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.4.0] - 2026-11-17
+
+### Added
+
+- `search_puzzles` tool to regex-search the words and clues of puzzles
+
 ## [6.3.1] - 2026-11-16
 
 ### Changed
