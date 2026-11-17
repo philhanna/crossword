@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning],
 and the format is based on [Keep a Changelog].
 
+## [6.4.1] - 2026-11-17
+
+### Changed
+
+- Added type hints throughout `Puzzle`
+- Documented that `Puzzle.get_cell` and `set_cell` coordinates are 1-based
+- Frontend tests now start the app server once per session, not once per test
+
 ## [6.4.0] - 2026-11-17
 
 ### Added
