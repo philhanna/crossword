@@ -36,6 +36,7 @@ import { buildPuzzleSvg } from '../svg/grid-svg.js';
 registerActions({
     'puzzle-title': () => do_puzzle_title(),
     'puzzle-clear': () => do_puzzle_clear(),
+    'puzzle-autofill': () => do_puzzle_autofill(),
     'puzzle-permute': () => togglePermute(),
     'puzzle-undo':  () => do_puzzle_undo(),
     'puzzle-redo':  () => do_puzzle_redo(),
@@ -234,6 +235,9 @@ export function renderActionBar() {
 <div class="ab-group ab-group-right">
   <button id="puzzle-permute-btn" class="ab-btn${permuteOn ? ' ab-mode-active' : ''}${permuteDisabled}" data-action="puzzle-permute"${permuteDisabledAttr}${permuteTitle}>
     <i class="material-icons">${permuteOn ? 'close' : 'swap_horiz'}</i><span>${permuteOn ? 'Cancel' : 'Permute'}</span>
+  </button>
+  <button id="puzzle-autofill-btn" class="ab-btn" data-action="puzzle-autofill">
+    <i class="material-icons">auto_fix_high</i><span>Autofill</span>
   </button>
   <button id="puzzle-clear-btn" class="ab-btn" data-action="puzzle-clear">
     <i class="material-icons">clear_all</i><span>Clear</span>
@@ -512,6 +516,25 @@ async function do_puzzle_clear() {
         }
         renderPuzzleEditor();
     } catch (e) { showRequestError('Error clearing puzzle', e); }
+}
+
+async function do_puzzle_autofill() {
+    if (_isWordEditorOpen()) return;
+    const btn = document.getElementById('puzzle-autofill-btn');
+    if (btn) { btn.classList.add('is-disabled'); btn.disabled = true; }
+    showMessageLine('Autofilling\u2026');
+    try {
+        AppState.puzzleData = await apiFetch('POST',
+            `/api/puzzles/${encodeURIComponent(AppState.puzzleWorkingName)}/autofill`);
+        if (getSelectedWord()) {
+            _refreshSelectedWordFromPuzzleData();
+        }
+        renderPuzzleEditor();
+        showMessageLine('Autofill complete. Undo takes it back.');
+    } catch (e) {
+        if (btn) { btn.classList.remove('is-disabled'); btn.disabled = false; }
+        showRequestError('Autofill failed', e);
+    }
 }
 
 async function do_puzzle_title() {

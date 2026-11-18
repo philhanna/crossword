@@ -50,9 +50,10 @@ Modules: `puzzle_routes.py`
 | POST | `/api/puzzles/{name}/undo` | [undo_puzzle](../../crossword/http_server/puzzle_routes.py#L271) |
 | POST | `/api/puzzles/{name}/redo` | [redo_puzzle](../../crossword/http_server/puzzle_routes.py#L279) |
 | POST | `/api/puzzles/{name}/clear` | [clear_puzzle](../../crossword/http_server/puzzle_routes.py#L287) |
-| GET | `/api/puzzles/{name}/preview` | [get_puzzle_preview](../../crossword/http_server/puzzle_routes.py#L295) |
-| GET | `/api/puzzles/{name}/stats` | [get_puzzle_stats](../../crossword/http_server/puzzle_routes.py#L302) |
-| GET | `/api/puzzles/{name}/fill-order` | [get_fill_order](../../crossword/http_server/puzzle_routes.py#L309) |
+| POST | `/api/puzzles/{name}/autofill` | [autofill_puzzle](../../crossword/http_server/puzzle_routes.py#L295) |
+| GET | `/api/puzzles/{name}/preview` | [get_puzzle_preview](../../crossword/http_server/puzzle_routes.py#L306) |
+| GET | `/api/puzzles/{name}/stats` | [get_puzzle_stats](../../crossword/http_server/puzzle_routes.py#L313) |
+| GET | `/api/puzzles/{name}/fill-order` | [get_fill_order](../../crossword/http_server/puzzle_routes.py#L320) |
 
 ## Words
 

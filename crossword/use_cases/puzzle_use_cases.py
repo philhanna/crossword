@@ -28,6 +28,7 @@ Public interface:
   redo_puzzle(user_id, name) -> Puzzle
   swap_words(user_id, name, direction, seq_a, seq_b) -> Puzzle
   clear_unlocked(user_id, name) -> Puzzle
+  autofill(user_id, name, time_limit=None, seed=None) -> Puzzle
   get_puzzle_preview(user_id, name) -> dict
   get_puzzle_stats(user_id, name) -> dict
   get_fill_order(user_id, name, top_n=10) -> dict
@@ -41,6 +42,7 @@ from crossword import Grid, Puzzle, PuzzleToSVG
 from crossword.domain import puzzle_state as ps
 from crossword.domain.fill_priority import FillPriorityAnalyzer
 from crossword.domain.word import Word
+from crossword.use_cases.autofill_use_cases import AutofillError
 from crossword.ports.persistence_port import PersistencePort, PuzzleNotFoundError
 from crossword.use_cases._name_validation import validate_new_public_name, validate_public_name
 
@@ -54,10 +56,12 @@ class PuzzleUseCases:
     Constructor injection: takes a PersistencePort instance.
     """
 
-    def __init__(self, persistence: PersistencePort, word_uc=None, grid_generator=None):
+    def __init__(self, persistence: PersistencePort, word_uc=None, grid_generator=None,
+                 autofill_uc=None):
         self.persistence = persistence
         self.word_uc = word_uc
         self.grid_generator = grid_generator
+        self.autofill_uc = autofill_uc
         self._fill_order_cache: dict = {}
 
     def _invalidate_fill_order(self, user_id, name):
@@ -689,6 +693,37 @@ class PuzzleUseCases:
 
         return puzzle
 
+    def autofill(self, user_id: int, name: str, time_limit: float | None = None,
+                 seed: int | None = None) -> Puzzle:
+        """
+        Fill every incomplete word of a puzzle from the word list and save
+        the result. Complete words, locked words and letters already placed
+        are kept. The fill is one undo step.
+
+        Args:
+            user_id: The user who owns this puzzle
+            name: Name/identifier for the puzzle
+            time_limit: Seconds to search before giving up (default 10)
+            seed: Random seed, to repeat a run
+
+        Returns:
+            Updated Puzzle object
+
+        Raises:
+            AutofillError: If no fill was found (the puzzle is left unchanged)
+            PersistenceError: If load/save fails
+        """
+        if self.autofill_uc is None:
+            raise AutofillError("Autofill is not available: no word list is configured")
+        options = {} if time_limit is None else {"time_limit": time_limit}
+
+        def fill(puzzle):
+            result = self.autofill_uc.autofill(puzzle, seed=seed, **options)
+            if not result.success:
+                raise AutofillError(result.message)
+
+        return self._edit(user_id, name, fill)
+
     def undo_puzzle(self, user_id: int, name: str) -> Puzzle:
         """
         Undo the last operation on a puzzle.
@@ -730,7 +765,7 @@ class PuzzleUseCases:
         op = stack[-1]
         texts_before = self._word_texts(puzzle)
         step()
-        if op[0] == 'clear':
+        if op[0] in ('clear', 'autofill'):
             return
         if op[0] == 'text':
             texts_before.pop((op[1], op[2]), None)

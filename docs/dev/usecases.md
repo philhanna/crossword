@@ -51,6 +51,7 @@ and dashboard/preview/stats queries.
 | `set_word_clue(name, seq, direction, clue, text=None, locked=None)` | `Puzzle` | Set a word's clue and, optionally, its text and/or locked state (both undo-tracked). |
 | `swap_words(name, direction, seq_a, seq_b)` | `Puzzle` | Swap the letters and clues of two locked words of the same direction and length (Puzzle mode only). Both stay locked; crossing words whose letters change lose their clue; refused if a locked crossing word would change or a duplicate would result. One undo step. |
 | `clear_unlocked(name)` | `Puzzle` | Blank text and clue of every unlocked word, leaving locked words untouched. |
+| `autofill(name, time_limit=None, seed=None)` | `Puzzle` | Fill every incomplete word from the word list (see [autofill.md](autofill.md)). All or nothing: raises `AutofillError` with the reason and saves nothing if no fill is found. One undo step. |
 | `undo_puzzle(name)` | `Puzzle` | Undo the last Puzzle-mode operation. |
 | `redo_puzzle(name)` | `Puzzle` | Redo the last undone Puzzle-mode operation. |
 | `get_puzzle_stats(name)` | `dict` | Validation results and statistics (`valid`, `errors`, `size`, `wordcount`, `blockcount`, `wordlengths`). |

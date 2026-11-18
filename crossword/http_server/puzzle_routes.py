@@ -292,6 +292,17 @@ def clear_puzzle(name: str, app: Container, user_id: UserId):
     return _puzzle_response(puzzle)
 
 
+@router.post("/api/puzzles/{name}/autofill")
+def autofill_puzzle(name: str, app: Container, user_id: UserId):
+    """Fill every incomplete word from the word list, as one undo step.
+
+    Answers 400 with the reason, leaving the puzzle unchanged, when no fill
+    is found."""
+    with puzzle_errors(name):
+        puzzle = app.puzzle_uc.autofill(user_id, name)
+    return _puzzle_response(puzzle)
+
+
 @router.get("/api/puzzles/{name}/preview")
 def get_puzzle_preview(name: str, app: Container, user_id: UserId):
     """Return a scaled-down SVG thumbnail and summary heading."""

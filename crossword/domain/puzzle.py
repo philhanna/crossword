@@ -187,6 +187,33 @@ class Puzzle:
             self.undo_stack.append(['clear', changes])
         return bool(changes)
 
+    def apply_fill(self, fills: dict[tuple[int, str], str]) -> bool:
+        """ Writes the given texts into the words they name, as one undoable step.
+
+        fills maps (seq, direction) to the new text of that word. Words whose
+        text would not change are skipped. Returns True if anything changed """
+        changes = []
+        for (seq, direction), text in fills.items():
+            word = self.get_word(seq, direction)
+            old_text = word.get_text()
+            if old_text != text:
+                changes.append((seq, direction, old_text))
+        for seq, direction, _ in changes:
+            self.get_word(seq, direction).set_text(fills[(seq, direction)])
+        if changes:
+            self.undo_stack.append(['autofill', changes])
+        return bool(changes)
+
+    def _swap_fill_texts(self, changes: list) -> list:
+        """ Puts back the text of each (seq, direction, text) in changes and
+        returns the same list holding the texts that were replaced, so the
+        same step can be applied the other way round """
+        replaced = [(seq, direction, self.get_text(seq, direction))
+                    for seq, direction, _ in changes]
+        for seq, direction, text in changes:
+            self.get_word(seq, direction).set_text(text)
+        return replaced
+
     def swap_words(self, seq_a: int, seq_b: int, direction: str) -> bool:
         """
         Swaps the letters and clues of two locked words of the same direction
@@ -476,6 +503,9 @@ class Puzzle:
                 word.set_clue(old_clue)
             self.redo_stack.append([undo_type, redo_changes])
 
+        elif undo_type == 'autofill':
+            self.redo_stack.append([undo_type, self._swap_fill_texts(undoable[1])])
+
         elif undo_type == 'swap':
             self.redo_stack.append(self._swap_history(undoable))
 
@@ -531,6 +561,9 @@ class Puzzle:
                 word.set_text(old_text)
                 word.set_clue(old_clue)
             self.undo_stack.append([undo_type, undo_changes])
+
+        elif undo_type == 'autofill':
+            self.undo_stack.append([undo_type, self._swap_fill_texts(undoable[1])])
 
         elif undo_type == 'swap':
             self.undo_stack.append(self._swap_history(undoable))

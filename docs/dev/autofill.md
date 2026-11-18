@@ -1,5 +1,41 @@
 # Autofill — design doc
 
+## Status
+
+Implemented. The code is in
+[autofill_use_cases.py](../../crossword/use_cases/autofill_use_cases.py), with
+`Puzzle.apply_fill` in [puzzle.py](../../crossword/domain/puzzle.py), the
+`POST /api/puzzles/{name}/autofill` route, and an Autofill button in the
+editor toolbar. Where the result differs from the plan below:
+
+- **The search starts over when it gets stuck.** If it has tried 500 words
+  without finishing, it throws its work away and starts again in a new random
+  order, allowing twice as many tries each time, until the time limit. This
+  rescues runs that made a bad early choice and then spent the whole time
+  digging around its consequences. Without it, a hard 15×15 grid could eat
+  the full 10 seconds.
+- **Word lookup is faster than first planned.** Rather than first measuring,
+  the "which words have letter X in position N" lookup from *Speed notes* was
+  built from the start: for each word length, each (position, letter) pair is
+  stored as one big number whose bits mark the matching words, and combining
+  constraints is a single "and".
+- **Failure messages tell three cases apart:** a slot with no possible words
+  from the start ("No words fit 7-Across as it stands"), a search that ran
+  out of time ("No fill found in 10 seconds"), and a search that tried every
+  possibility ("No fill is possible with this word list and the words already
+  placed"). Each names the hardest spot where it can.
+- **A locked word with blanks** is reported up front, since autofill is not
+  allowed to touch locked words but the puzzle can't be filled while one has
+  blanks.
+- **The random seed is not shown in the error message.** The use case accepts
+  one (so tests are repeatable) but the web route doesn't expose it yet.
+- The undo entry is `['autofill', [(seq, direction, text), ...]]`; undo and
+  redo swap the stored texts with the current ones.
+
+Rough timing on a 368,000-word list: most 11×11 to 15×15 grids from the
+random grid generator fill in under a second; a minority take the whole
+10 seconds and give up.
+
 ## The problem this solves
 
 Filling a grid by hand is the slow part of building a crossword. You place a

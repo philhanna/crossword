@@ -17,6 +17,7 @@ from crossword.ports.persistence_port import (
     PersistenceError, PuzzleExistsError, PuzzleNotFoundError,
 )
 from crossword.tests import TestPuzzle
+from crossword.use_cases.autofill_use_cases import AutofillError
 
 
 @pytest.fixture
@@ -60,6 +61,7 @@ class TestRouteTable:
             ("POST", "/api/puzzles/{name}/words/swap"),
             ("PUT", "/api/puzzles/{name}/grid/cells/{r}/{c}"),
             ("POST", "/api/puzzles/{name}/grid/rotate"),
+            ("POST", "/api/puzzles/{name}/autofill"),
             ("POST", "/api/puzzles/{name}/grid/undo"),
             ("POST", "/api/puzzles/{name}/grid/redo"),
             ("GET", "/api/puzzles/{name}/state"),
@@ -155,6 +157,22 @@ class TestPuzzleRoutes:
         assert response["puzzle_can_undo"] is False
         assert response["puzzle_can_redo"] is False
         assert response["can_undo"] is True
+
+    def test_autofill_returns_the_filled_puzzle(self, client, container):
+        container.puzzle_uc.autofill.return_value = TestPuzzle.create_solved_atlantic_puzzle()
+
+        response = client.post("/api/puzzles/demo/autofill")
+
+        assert response.status_code == 200
+        container.puzzle_uc.autofill.assert_called_once_with(1, "demo")
+
+    def test_autofill_failure_is_a_400_with_the_reason(self, client, container):
+        container.puzzle_uc.autofill.side_effect = AutofillError("No fill found in 10 seconds.")
+
+        response = client.post("/api/puzzles/demo/autofill")
+
+        assert response.status_code == 400
+        assert response.json() == {"error": "No fill found in 10 seconds."}
 
     def test_create_puzzle_accepts_size(self, client, container):
         puzzle = TestPuzzle.create_puzzle()

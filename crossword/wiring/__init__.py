@@ -26,6 +26,7 @@ from crossword.adapters.dictionary_api_definition_adapter import DictionaryAPIDe
 from crossword.adapters.wiktionary_api_definition_adapter import WiktionaryAPIDefinition
 from crossword.adapters.flat_file_word_list_adapter import FlatFileWordListAdapter
 from crossword.adapters.sqlite_persistence_adapter import SQLitePersistenceAdapter
+from crossword.use_cases.autofill_use_cases import AutofillUseCases
 from crossword.use_cases.puzzle_use_cases import PuzzleUseCases
 from crossword.use_cases.word_use_cases import WordUseCases
 from crossword.use_cases.export_use_cases import ExportUseCases
@@ -140,7 +141,9 @@ def make_app(config=None):
     grid_generator = XdGridGeneratorAdapter(xdfile) if xdfile else RandomGridGeneratorAdapter()
 
     word_uc = WordUseCases(word_adapter)
-    puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc, grid_generator=grid_generator)
+    autofill_uc = AutofillUseCases(word_adapter)
+    puzzle_uc = PuzzleUseCases(persistence, word_uc=word_uc, grid_generator=grid_generator,
+                               autofill_uc=autofill_uc)
     export_uc = ExportUseCases(persistence, acrosslite_adapter, xml_adapter, nytimes_adapter, solver_pdf_adapter, solved_pdf_adapter, puz_export_adapter, xd_export_adapter, ipuz_export_adapter)
     import_uc = ImportUseCases(persistence, acrosslite_import_adapter, xd_import_adapter, puz_import_adapter, ipuz_import_adapter, ccxml_import_adapter)
 
